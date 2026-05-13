@@ -1,0 +1,1 @@
+{"version":3,"file":"species.d.ts","sourceRoot":"","sources":["species.ts"],"names":[],"mappings":"AAAA,MAAM,WAAW,cAAc;IAC7B,EAAE,EAAE,MAAM,CAAA;IACV,cAAc,EAAE,MAAM,CAAA;IACtB,UAAU,EAAE,MAAM,CAAA;IAClB,SAAS,EAAE,MAAM,CAAA;CAClB;AAED,eAAO,MAAM,gBAAgB,EAAE,cAAc,EAyB5C,CAAA;AAED,eAAO,MAAM,kBAAkB,KAAK,CAAA;AACpC,eAAO,MAAM,cAAc,MAAM,CAAA"}

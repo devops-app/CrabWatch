@@ -1,0 +1,19 @@
+
+> @crabwatch/mobile@0.1.0 dev D:\demo\CrabWatch\mobile
+> expo start
+
+env: load .env
+env: export EXPO_PUBLIC_API_URL EXPO_PUBLIC_FIREBASE_API_KEY EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN EXPO_PUBLIC_FIREBASE_PROJECT_ID EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID EXPO_PUBLIC_FIREBASE_APP_ID EXPO_NO_CACHE
+Starting project at D:\demo\CrabWatch\mobile
+Starting Metro Bundler
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+iOS mobile\index.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS mobile\index.js ▓░░░░░░░░░░░░░░░ 10.9% (29/88)
+iOS mobile\index.js ▓▓▓▓░░░░░░░░░░░░ 28.1% (229/433)
+iOS mobile\index.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 61.5% (619/789)
+iOS mobile\index.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.6% (992/994)
+iOS Bundled 17226ms mobile\index.js (1077 modules)
+^CD:\demo\CrabWatch\mobile:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @crabwatch/mobile@0.1.0 dev: `expo start`
+Exit status 3221225786

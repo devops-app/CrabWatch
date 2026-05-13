@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "@crabwatch/shared": ["../shared/src"]
+    }
+  },
+  "include": ["src", "../shared/src"],
+  "exclude": ["src/**/__tests__", "src/**/__mocks__", "../shared/src/**/__tests__"]
+}

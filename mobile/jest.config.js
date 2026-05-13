@@ -1,0 +1,47 @@
+module.exports = {
+  testEnvironment: 'jsdom',
+  transform: {
+    '^.+\\.(ts|tsx)$': ['ts-jest', {
+      useESM: false,
+      tsconfig: {
+        jsx: 'react-jsx',
+        target: 'ES2020',
+        module: 'commonjs',
+        esModuleInterop: true,
+        skipLibCheck: true,
+        resolveJsonModule: true,
+        moduleResolution: 'node',
+      },
+    }],
+  },
+  setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  moduleNameMapper: {
+    '\\.css': 'identity-obj-proxy',
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '^expo-secure-store$': '<rootDir>/src/__tests__/__mocks__/expo-secure-store.js',
+    '^expo-location$': '<rootDir>/src/__tests__/__mocks__/expo-location.js',
+    '^expo-image-picker$': '<rootDir>/src/__tests__/__mocks__/expo-image-picker.js',
+    '^expo-camera$': '<rootDir>/src/__tests__/__mocks__/expo-camera.js',
+    '^expo-notifications$': '<rootDir>/src/__tests__/__mocks__/expo-notifications.js',
+    '^expo-image-manipulator$': '<rootDir>/src/__tests__/__mocks__/expo-image-manipulator.js',
+    '^react-native-maps$': '<rootDir>/src/__tests__/__mocks__/react-native-maps.js',
+    '^@react-navigation/native$': '<rootDir>/src/__tests__/__mocks__/@react-navigation/native.js',
+    '^@react-navigation/native-stack$': '<rootDir>/src/__tests__/__mocks__/@react-navigation/native-stack.js',
+    '^@react-navigation/bottom-tabs$': '<rootDir>/src/__tests__/__mocks__/@react-navigation/bottom-tabs.js',
+    '^@react-navigation/native-stack$': '<rootDir>/src/__tests__/__mocks__/@react-navigation/native-stack.js',
+    '^@react-navigation/bottom-tabs$': '<rootDir>/src/__tests__/__mocks__/@react-navigation/bottom-tabs.js',
+    '^react-native$': '<rootDir>/src/__tests__/__mocks__/react-native.js',
+    '^@expo/vector-icons$': '<rootDir>/src/__tests__/__mocks__/@expo/vector-icons.js',
+  },
+  transformIgnorePatterns: [
+    '/node_modules/(?!(react-native|@react-native|react-native-safe-area-context|react-native-reanimated|@expo)/)',
+  ],
+  testTimeout: 10000,
+  testPathIgnorePatterns: [
+    '<rootDir>/src/__tests__/__mocks__/',
+    '<rootDir>/src/__tests__/setup.ts',
+    '<rootDir>/node_modules/',
+  ],
+  modulePathIgnorePatterns: ['<rootDir>/node_modules/.cache'],
+}

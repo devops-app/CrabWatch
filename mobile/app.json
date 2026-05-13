@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "CrabWatch",
+    "slug": "crabwatch",
+    "version": "0.1.0",
+"entryPoint": "./index.js",
+    "orientation": "portrait",
+    "scheme": "crabwatch",
+    "platforms": ["ios", "android"],
+    "userInterfaceStyle": "light",
+    "extra": {
+      "apiUrl": "http://192.168.1.170:3001/api/v1",
+      "eas": {
+        "projectId": ""
+      }
+    },
+    "splash": {
+      "backgroundColor": "#0284c7"
+    },
+    "ios": {
+      "bundleIdentifier": "com.crabwatch.app",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.crabwatch.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0284c7"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow CrabWatch to use your location to tag observations."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow CrabWatch to access your camera to capture crab photos."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow CrabWatch to use your camera for crab observations.",
+          "photosPermission": "Allow CrabWatch to access your photo library for crab observations."
+        }
+      ]
+    ],
+    "experiments": {
+      "tsconfigPaths": true
+    }
+  }
+}

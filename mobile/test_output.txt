@@ -1,0 +1,1907 @@
+﻿node.exe : FAIL src/screens/species/__tests__/SpeciesListScreen.test.tsx
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Users\Wilson\AppData\Roaming ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (FAIL src/screen...Screen.test.tsx:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  ΓùÅ Console
+
+    console.error
+      Warning: `ReactDOMTestUtils.act` is deprecated in favor of `React.act`. Import `act` from `react` instead of 
+`react-dom/test-utils`. See https://react.dev/warnings/react-dom-test-utils for more info.
+
+    [0m [90m 61 |[39m
+     [90m 62 |[39m   it([32m'renders search input'[39m[33m,[39m () [33m=>[39m {
+    [31m[1m>[22m[39m[90m 63 |[39m     [36mconst[39m { getByPlaceholderText } [33m=[39m 
+render([33m<[39m[33mSpeciesListScreen[39m [33m/[39m[33m>[39m)
+     [90m    |[39m                                            [31m[1m^[22m[39m
+     [90m 64 |[39m     expect(getByPlaceholderText([32m'Search species...'[39m))[33m.[39mtoBeTruthy()
+     [90m 65 |[39m   })
+     [90m 66 |[39m[0m
+
+      at printWarning (../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom-test-ut
+ils.development.js:71:30)
+      at error (../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom-test-utils.dev
+elopment.js:45:7)
+      at actWithWarning (../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom-test-
+utils.development.js:1736:7)
+      at ../node_modules/.pnpm/@testing-library+react@16.3_2b7278e43f435e98df19b18cbae81bb0/node_modules/@testing-libra
+ry/react/dist/act-compat.js:46:25
+      at renderRoot (../node_modules/.pnpm/@testing-library+react@16.3_2b7278e43f435e98df19b18cbae81bb0/node_modules/@t
+esting-library/react/dist/pure.js:189:26)
+      at render (../node_modules/.pnpm/@testing-library+react@16.3_2b7278e43f435e98df19b18cbae81bb0/node_modules/@testi
+ng-library/react/dist/pure.js:291:10)
+      at Object.<anonymous> (src/screens/species/__tests__/SpeciesListScreen.test.tsx:63:44)
+
+  ΓùÅ SpeciesListScreen ΓÇ║ navigates to detail on species card press
+
+    TestingLibraryElementError: Unable to find an element with the text: Scylla serrata. This could be because the 
+text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your 
+matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mstyle[39m=[32m"flex: 1 1 0%; justify-content: center; align-items: center; background-color: rgb(240, 
+249, 255);"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mrole[39m=[32m"progressbar"[39m
+          [36m/>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</body>[39m
+
+    [0m [90m 116 |[39m     })
+     [90m 117 |[39m     [36mconst[39m { getByText } [33m=[39m render([33m<[39m[33mSpeciesListScreen[39m 
+[33m/[39m[33m>[39m)
+    [31m[1m>[22m[39m[90m 118 |[39m     fireEvent[33m.[39mclick(getByText([32m'Scylla serrata'[39m))
+     [90m     |[39m                     [31m[1m^[22m[39m
+     [90m 119 |[39m     expect(navigateMock)[33m.[39mtoHaveBeenCalledWith([32m'SpeciesDetail'[39m[33m,[39m { 
+speciesId[33m:[39m [32m'1'[39m })
+     [90m 120 |[39m   })
+     [90m 121 |[39m })[0m
+
+      at Object.getElementError 
+(../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/config.js:37:19)
+      at 
+../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at 
+../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at 
+../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.<anonymous> (src/screens/species/__tests__/SpeciesListScreen.test.tsx:118:21)
+
+FAIL src/screens/observation/__tests__/NewObservationScreen.test.tsx
+  ΓùÅ Console
+
+    console.error
+      Warning: `ReactDOMTestUtils.act` is deprecated in favor of `React.act`. Import `act` from `react` instead of 
+`react-dom/test-utils`. See https://react.dev/warnings/react-dom-test-utils for more info.
+
+    [0m [90m 73 |[39m
+     [90m 74 |[39m   it([32m'renders section titles'[39m[33m,[39m () [33m=>[39m {
+    [31m[1m>[22m[39m[90m 75 |[39m     [36mconst[39m { getAllByText[33m,[39m getByText } [33m=[39m 
+render([33m<[39m[33mNewObservationScreen[39m [33m/[39m[33m>[39m)
+     [90m    |[39m                                               [31m[1m^[22m[39m
+     [90m 76 |[39m     
+expect(getAllByText([32m'Species'[39m)[33m.[39mlength)[33m.[39mtoBeGreaterThanOrEqual([35m1[39m)
+     [90m 77 |[39m     expect(getByText([32m'Measurements'[39m))[33m.[39mtoBeTruthy()
+     [90m 78 |[39m     expect(getByText([32m'Biological Data'[39m))[33m.[39mtoBeTruthy()[0m
+
+      at printWarning (../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom-test-ut
+ils.development.js:71:30)
+      at error (../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom-test-utils.dev
+elopment.js:45:7)
+      at actWithWarning (../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom-test-
+utils.development.js:1736:7)
+      at ../node_modules/.pnpm/@testing-library+react@16.3_2b7278e43f435e98df19b18cbae81bb0/node_modules/@testing-libra
+ry/react/dist/act-compat.js:46:25
+      at renderRoot (../node_modules/.pnpm/@testing-library+react@16.3_2b7278e43f435e98df19b18cbae81bb0/node_modules/@t
+esting-library/react/dist/pure.js:189:26)
+      at render (../node_modules/.pnpm/@testing-library+react@16.3_2b7278e43f435e98df19b18cbae81bb0/node_modules/@testi
+ng-library/react/dist/pure.js:291:10)
+      at Object.<anonymous> (src/screens/observation/__tests__/NewObservationScreen.test.tsx:75:47)
+
+    console.error
+      Warning: An update to GPSCapture inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at GPSCapture (D:\demo\CrabWatch\mobile\src\components\observation\GPSCapture.tsx:17:3)
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at NewObservationScreen (D:\demo\CrabWatch\mobile\src\screens\observation\NewObservationScreen.tsx:53:45)
+
+    [0m [90m 13 |[39m     [36mtry[39m {
+     [90m 14 |[39m       [36mconst[39m coords [33m=[39m [36mawait[39m 
+locationService[33m.[39mgetCurrentLocation()
+    [31m[1m>[22m[39m[90m 15 |[39m       setLocation(coords)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 16 |[39m       setHasPermission([36mtrue[39m)
+     [90m 17 |[39m     } [36mcatch[39m (err) {
+     [90m 18 |[39m       setError(err [36minstanceof[39m [33mError[39m [33m?[39m err[33m.[39mmessage 
+[33m:[39m [32m'Failed to get location'[39m)[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:15:7
+
+    console.error
+      Warning: An update to GPSCapture inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at GPSCapture (D:\demo\CrabWatch\mobile\src\components\observation\GPSCapture.tsx:17:3)
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at NewObservationScreen (D:\demo\CrabWatch\mobile\src\screens\observation\NewObservationScreen.tsx:53:45)
+
+    [0m [90m 14 |[39m       [36mconst[39m coords [33m=[39m [36mawait[39m 
+locationService[33m.[39mgetCurrentLocation()
+     [90m 15 |[39m       setLocation(coords)
+    [31m[1m>[22m[39m[90m 16 |[39m       setHasPermission([36mtrue[39m)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 17 |[39m     } [36mcatch[39m (err) {
+     [90m 18 |[39m       setError(err [36minstanceof[39m [33mError[39m [33m?[39m err[33m.[39mmessage 
+[33m:[39m [32m'Failed to get location'[39m)
+     [90m 19 |[39m       setHasPermission([36mfalse[39m)[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:16:7
+
+    console.error
+      Warning: An update to GPSCapture inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at GPSCapture (D:\demo\CrabWatch\mobile\src\components\observation\GPSCapture.tsx:17:3)
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at NewObservationScreen (D:\demo\CrabWatch\mobile\src\screens\observation\NewObservationScreen.tsx:53:45)
+
+    [0m [90m 19 |[39m       setHasPermission([36mfalse[39m)
+     [90m 20 |[39m     } [36mfinally[39m {
+    [31m[1m>[22m[39m[90m 21 |[39m       setLoading([36mfalse[39m)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 22 |[39m     }
+     [90m 23 |[39m   }[33m,[39m [])
+     [90m 24 |[39m[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:21:7
+
+    console.error
+      Warning: An update to GPSCapture inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at GPSCapture (D:\demo\CrabWatch\mobile\src\components\observation\GPSCapture.tsx:17:3)
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at NewObservationScreen (D:\demo\CrabWatch\mobile\src\screens\observation\NewObservationScreen.tsx:53:45)
+
+    [0m [90m 13 |[39m     [36mtry[39m {
+     [90m 14 |[39m       [36mconst[39m coords [33m=[39m [36mawait[39m 
+locationService[33m.[39mgetCurrentLocation()
+    [31m[1m>[22m[39m[90m 15 |[39m       setLocation(coords)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 16 |[39m       setHasPermission([36mtrue[39m)
+     [90m 17 |[39m     } [36mcatch[39m (err) {
+     [90m 18 |[39m       setError(err [36minstanceof[39m [33mError[39m [33m?[39m err[33m.[39mmessage 
+[33m:[39m [32m'Failed to get location'[39m)[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:15:7
+
+    console.error
+      Warning: An update to GPSCapture inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at GPSCapture (D:\demo\CrabWatch\mobile\src\components\observation\GPSCapture.tsx:17:3)
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at NewObservationScreen (D:\demo\CrabWatch\mobile\src\screens\observation\NewObservationScreen.tsx:53:45)
+
+    [0m [90m 14 |[39m       [36mconst[39m coords [33m=[39m [36mawait[39m 
+locationService[33m.[39mgetCurrentLocation()
+     [90m 15 |[39m       setLocation(coords)
+    [31m[1m>[22m[39m[90m 16 |[39m       setHasPermission([36mtrue[39m)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 17 |[39m     } [36mcatch[39m (err) {
+     [90m 18 |[39m       setError(err [36minstanceof[39m [33mError[39m [33m?[39m err[33m.[39mmessage 
+[33m:[39m [32m'Failed to get location'[39m)
+     [90m 19 |[39m       setHasPermission([36mfalse[39m)[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:16:7
+
+    console.error
+      Warning: An update to GPSCapture inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at GPSCapture (D:\demo\CrabWatch\mobile\src\components\observation\GPSCapture.tsx:17:3)
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at NewObservationScreen (D:\demo\CrabWatch\mobile\src\screens\observation\NewObservationScreen.tsx:53:45)
+
+    [0m [90m 19 |[39m       setHasPermission([36mfalse[39m)
+     [90m 20 |[39m     } [36mfinally[39m {
+    [31m[1m>[22m[39m[90m 21 |[39m       setLoading([36mfalse[39m)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 22 |[39m     }
+     [90m 23 |[39m   }[33m,[39m [])
+     [90m 24 |[39m[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:21:7
+
+    console.error
+      Warning: An update to GPSCapture inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at GPSCapture (D:\demo\CrabWatch\mobile\src\components\observation\GPSCapture.tsx:17:3)
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at NewObservationScreen (D:\demo\CrabWatch\mobile\src\screens\observation\NewObservationScreen.tsx:53:45)
+
+    [0m [90m 13 |[39m     [36mtry[39m {
+     [90m 14 |[39m       [36mconst[39m coords [33m=[39m [36mawait[39m 
+locationService[33m.[39mgetCurrentLocation()
+    [31m[1m>[22m[39m[90m 15 |[39m       setLocation(coords)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 16 |[39m       setHasPermission([36mtrue[39m)
+     [90m 17 |[39m     } [36mcatch[39m (err) {
+     [90m 18 |[39m       setError(err [36minstanceof[39m [33mError[39m [33m?[39m err[33m.[39mmessage 
+[33m:[39m [32m'Failed to get location'[39m)[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:15:7
+
+    console.error
+      Warning: An update to GPSCapture inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at GPSCapture (D:\demo\CrabWatch\mobile\src\components\observation\GPSCapture.tsx:17:3)
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at NewObservationScreen (D:\demo\CrabWatch\mobile\src\screens\observation\NewObservationScreen.tsx:53:45)
+
+    [0m [90m 14 |[39m       [36mconst[39m coords [33m=[39m [36mawait[39m 
+locationService[33m.[39mgetCurrentLocation()
+     [90m 15 |[39m       setLocation(coords)
+    [31m[1m>[22m[39m[90m 16 |[39m       setHasPermission([36mtrue[39m)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 17 |[39m     } [36mcatch[39m (err) {
+     [90m 18 |[39m       setError(err [36minstanceof[39m [33mError[39m [33m?[39m err[33m.[39mmessage 
+[33m:[39m [32m'Failed to get location'[39m)
+     [90m 19 |[39m       setHasPermission([36mfalse[39m)[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:16:7
+
+    console.error
+      Warning: An update to GPSCapture inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at GPSCapture (D:\demo\CrabWatch\mobile\src\components\observation\GPSCapture.tsx:17:3)
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at NewObservationScreen (D:\demo\CrabWatch\mobile\src\screens\observation\NewObservationScreen.tsx:53:45)
+
+    [0m [90m 19 |[39m       setHasPermission([36mfalse[39m)
+     [90m 20 |[39m     } [36mfinally[39m {
+    [31m[1m>[22m[39m[90m 21 |[39m       setLoading([36mfalse[39m)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 22 |[39m     }
+     [90m 23 |[39m   }[33m,[39m [])
+     [90m 24 |[39m[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:21:7
+
+    console.error
+      Warning: An update to GPSCapture inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at GPSCapture (D:\demo\CrabWatch\mobile\src\components\observation\GPSCapture.tsx:17:3)
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at NewObservationScreen (D:\demo\CrabWatch\mobile\src\screens\observation\NewObservationScreen.tsx:53:45)
+
+    [0m [90m 13 |[39m     [36mtry[39m {
+     [90m 14 |[39m       [36mconst[39m coords [33m=[39m [36mawait[39m 
+locationService[33m.[39mgetCurrentLocation()
+    [31m[1m>[22m[39m[90m 15 |[39m       setLocation(coords)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 16 |[39m       setHasPermission([36mtrue[39m)
+     [90m 17 |[39m     } [36mcatch[39m (err) {
+     [90m 18 |[39m       setError(err [36minstanceof[39m [33mError[39m [33m?[39m err[33m.[39mmessage 
+[33m:[39m [32m'Failed to get location'[39m)[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:15:7
+
+    console.error
+      Warning: An update to GPSCapture inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at GPSCapture (D:\demo\CrabWatch\mobile\src\components\observation\GPSCapture.tsx:17:3)
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at NewObservationScreen (D:\demo\CrabWatch\mobile\src\screens\observation\NewObservationScreen.tsx:53:45)
+
+    [0m [90m 14 |[39m       [36mconst[39m coords [33m=[39m [36mawait[39m 
+locationService[33m.[39mgetCurrentLocation()
+     [90m 15 |[39m       setLocation(coords)
+    [31m[1m>[22m[39m[90m 16 |[39m       setHasPermission([36mtrue[39m)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 17 |[39m     } [36mcatch[39m (err) {
+     [90m 18 |[39m       setError(err [36minstanceof[39m [33mError[39m [33m?[39m err[33m.[39mmessage 
+[33m:[39m [32m'Failed to get location'[39m)
+     [90m 19 |[39m       setHasPermission([36mfalse[39m)[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:16:7
+
+    console.error
+      Warning: An update to GPSCapture inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at GPSCapture (D:\demo\CrabWatch\mobile\src\components\observation\GPSCapture.tsx:17:3)
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at NewObservationScreen (D:\demo\CrabWatch\mobile\src\screens\observation\NewObservationScreen.tsx:53:45)
+
+    [0m [90m 19 |[39m       setHasPermission([36mfalse[39m)
+     [90m 20 |[39m     } [36mfinally[39m {
+    [31m[1m>[22m[39m[90m 21 |[39m       setLoading([36mfalse[39m)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 22 |[39m     }
+     [90m 23 |[39m   }[33m,[39m [])
+     [90m 24 |[39m[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:21:7
+
+    console.error
+      Warning: An update to GPSCapture inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at GPSCapture (D:\demo\CrabWatch\mobile\src\components\observation\GPSCapture.tsx:17:3)
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at NewObservationScreen (D:\demo\CrabWatch\mobile\src\screens\observation\NewObservationScreen.tsx:53:45)
+
+    [0m [90m 13 |[39m     [36mtry[39m {
+     [90m 14 |[39m       [36mconst[39m coords [33m=[39m [36mawait[39m 
+locationService[33m.[39mgetCurrentLocation()
+    [31m[1m>[22m[39m[90m 15 |[39m       setLocation(coords)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 16 |[39m       setHasPermission([36mtrue[39m)
+     [90m 17 |[39m     } [36mcatch[39m (err) {
+     [90m 18 |[39m       setError(err [36minstanceof[39m [33mError[39m [33m?[39m err[33m.[39mmessage 
+[33m:[39m [32m'Failed to get location'[39m)[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:15:7
+
+    console.error
+      Warning: An update to GPSCapture inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at GPSCapture (D:\demo\CrabWatch\mobile\src\components\observation\GPSCapture.tsx:17:3)
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at NewObservationScreen (D:\demo\CrabWatch\mobile\src\screens\observation\NewObservationScreen.tsx:53:45)
+
+    [0m [90m 14 |[39m       [36mconst[39m coords [33m=[39m [36mawait[39m 
+locationService[33m.[39mgetCurrentLocation()
+     [90m 15 |[39m       setLocation(coords)
+    [31m[1m>[22m[39m[90m 16 |[39m       setHasPermission([36mtrue[39m)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 17 |[39m     } [36mcatch[39m (err) {
+     [90m 18 |[39m       setError(err [36minstanceof[39m [33mError[39m [33m?[39m err[33m.[39mmessage 
+[33m:[39m [32m'Failed to get location'[39m)
+     [90m 19 |[39m       setHasPermission([36mfalse[39m)[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:16:7
+
+    console.error
+      Warning: An update to GPSCapture inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at GPSCapture (D:\demo\CrabWatch\mobile\src\components\observation\GPSCapture.tsx:17:3)
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at div
+          at D:\demo\CrabWatch\mobile\src\__tests__\__mocks__\react-native.js:7:27
+          at NewObservationScreen (D:\demo\CrabWatch\mobile\src\screens\observation\NewObservationScreen.tsx:53:45)
+
+    [0m [90m 19 |[39m       setHasPermission([36mfalse[39m)
+     [90m 20 |[39m     } [36mfinally[39m {
+    [31m[1m>[22m[39m[90m 21 |[39m       setLoading([36mfalse[39m)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 22 |[39m     }
+     [90m 23 |[39m   }[33m,[39m [])
+     [90m 24 |[39m[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:21:7
+
+  ΓùÅ NewObservationScreen ΓÇ║ renders section titles
+
+    TestingLibraryElementError: Found multiple elements with the text: Location
+
+    Here are the matching elements:
+
+    Ignored nodes: comments, script, style
+    [36m<div[39m
+      [33mstyle[39m=[32m"font-size: 16px; font-weight: 600; color: rgb(15, 23, 42); margin-top: 16px; 
+margin-bottom: 8px;"[39m
+    [36m>[39m
+      [0mLocation[0m
+    [36m</div>[39m
+
+    Ignored nodes: comments, script, style
+    [36m<div[39m
+      [33mstyle[39m=[32m"font-size: 14px; font-weight: 600; color: rgb(15, 23, 42);"[39m
+    [36m>[39m
+      [0mLocation[0m
+    [36m</div>[39m
+
+    (If this is intentional, then use the `*AllBy*` variant of the query (like `queryAllByText`, `getAllByText`, or 
+`findAllByText`)).
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mstyle[39m=[32m"flex: 1 1 0%; background-color: rgb(240, 249, 255);"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mstyle[39m=[32m"flex: 1 1 0%;"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"font-size: 16px; font-weight: 600; color: rgb(15, 23, 42); margin-top: 16px; 
+margin-bottom: 8px;"[39m
+              [36m>[39m
+                [0mSpecies[0m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"margin-bottom: 16px; width: 100%;"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mstyle[39m=[32m"font-size: 14px; font-weight: 600; color: rgb(15, 23, 42); margin-bottom: 
+6px;"[39m
+                [36m>[39m
+                  [0mSpecies[0m
+                [36m</div>[39m
+                [36m<div>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"font-size: 16px; color: rgb(15, 23, 42);"[39m
+                  [36m>[39m
+                    [0mSelect species...[0m
+                  [36m</div>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"font-size: 12px; color: rgb(100, 116, 139);"[39m
+                  [36m>[39m
+                    [0mΓû╝[0m
+                  [36m</div>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"font-size: 16px; font-weight: 600; color: rgb(15, 23, 42); margin-top: 16px; 
+margin-bottom: 8px;"[39m
+              [36m>[39m
+                [0mMeasurements[0m
+              [36m</div>[39m
+              [36m<div>[39m
+                [36m<div[39m
+                  [33mstyle[39m=[32m"font-size: 14px; font-weight: 600; color: rgb(15, 23, 42); margin-bottom: 
+6px;"[39m
+                [36m>[39m
+                  [0mCarapace Width (cm, max 50)[0m
+                [36m</div>[39m
+                [36m<input[39m
+                  [33mplaceholder[39m=[32m"e.g. 8.5"[39m
+                  [33mtype[39m=[32m"text"[39m
+                  [33mvalue[39m=[32m""[39m
+                [36m/>[39m
+              [36m</div>[39m
+              [36m<div>[39m
+                [36m<div[39m
+                  [33mstyle[39m=[32m"font-size: 14px; font-weight: 600; color: rgb(15, 23, 42); margin-bottom: 
+6px;"[39m
+                [36m>[39m
+                  [0mBody Weight (g, max 5000)[0m
+                [36m</div>[39m
+                [36m<input[39m
+                  [33mplaceholder[39m=[32m"e.g. 350"[39m
+                  [33mtype[39m=[32m"text"[39m
+                  [33mvalue[39m=[32m""[39m
+                [36m/>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"font-size: 16px; font-weight: 600; color: rgb(15, 23, 42); margin-top: 16px; 
+margin-bottom: 8px;"[39m
+              [36m>[39m
+                [0mBiological Data[0m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"margin-bottom: 16px; width: 100%;"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mstyle[39m=[32m"font-size: 14px; font-weight: 600; color: rgb(15, 23, 42); margin-bottom: 
+6px;"[39m
+                [36m>[39m
+                  [0mSex[0m
+                [36m</div>[39m
+                [36m<div>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"font-size: 16px; color: rgb(15, 23, 42);"[39m
+                  [36m>[39m
+                    [0mSelect...[0m
+                  [36m</div>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"font-size: 12px; color: rgb(100, 116, 139);"[39m
+                  [36m>[39m
+                    [0mΓû╝[0m
+                  [36m</div>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"margin-bottom: 16px; width: 100%;"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mstyle[39m=[32m"font-size: 14px; font-weight: 600; color: rgb(15, 23, 42); margin-bottom: 
+6px;"[39m
+                [36m>[39m
+                  [0mMaturation Status[0m
+                [36m</div>[39m
+                [36m<div>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"font-size: 16px; color: rgb(15, 23, 42);"[39m
+                  [36m>[39m
+                    [0mSelect...[0m
+                  [36m</div>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"font-size: 12px; color: rgb(100, 116, 139);"[39m
+                  [36m>[39m
+                    [0mΓû╝[0m
+                  [36m</div>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"font-size: 16px; font-weight: 600; color: rgb(15, 23, 42); margin-top: 16px; 
+margin-bottom: 8px;"[39m
+              [36m>[39m
+                [0mLocation[0m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"margin-bottom: 16px;"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mstyle[39m=[32m"flex-direction: row; justify-content: space-between; align-items: center; 
+margin-bottom: 8px;"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"font-size: 14px; font-weight: 600; color: rgb(15, 23, 42);"[39m
+                  [36m>[39m
+                    [0mLocation[0m
+                  [36m</div>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"border-radius: 12px; border-width: 1px; border-color: rgb(226, 232, 
+240);"[39m
+                  [36m>[39m
+                    [36m<div>[39m
+                      [0mGPS Auto[0m
+                    [36m</div>[39m
+                  [36m</div>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33mstyle[39m=[32m"background-color: rgb(2, 132, 199); border-radius: 10px; align-self: 
+flex-start; margin-bottom: 8px;"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"color: rgb(255, 255, 255); font-size: 14px; font-weight: 600;"[39m
+                  [36m>[39m
+                    [0mEnable Location Access[0m
+                  [36m</div>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33mstyle[39m=[32m"flex-direction: row; align-items: center; gap: 8px; background-color: rgb(240, 
+249, 255); padding: 12px; border-radius: 10px; border-width: 1px; border-color: rgb(226, 232, 240); margin-bottom: 
+8px;"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"font-size: 14px; color: rgb(15, 23, 42); font-family: monospace; flex: 1 1 
+0%;"[39m
+                  [36m>[39m
+                    [0mAcquiring GPS...[0m
+                  [36m</div>[39m
+                [36m</div>[39m
+                [36m<div>[39m
+                  [36m<span[39m
+                    [33maria-label[39m=[32m"locate"[39m
+                    [33mdata-testid[39m=[32m"icon-locate"[39m
+                    [33mstyle[39m=[32m"font-size: 18px; color: rgb(255, 255, 255);"[39m
+                  [36m>[39m
+                    [0m≡ƒö╖[0m
+                  [36m</span>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"color: rgb(255, 255, 255); font-size: 14px; font-weight: 600;"[39m
+                  [36m>[39m
+                    [0mCapture Location[0m
+                  [36m</div>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"font-size: 16px; font-weight: 600; color: rgb(15, 23, 42); margin-top: 16px; 
+margin-bottom: 8px;"[39m
+              [36m>[39m
+                [0mPhotos[0m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"margin-bottom: 16px;"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mstyle[39m=[32m"font-size: 14px; font-weight: 600; color: rgb(15, 23, 42); margin-bottom: 
+8px;"[39m
+                [36m>[39m
+                  [0mPhotos ([0m
+                  [0m0[0m
+                  [0m/[0m
+                  [0m5[0m
+                  [0m)[0m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33mstyle[39m=[32m"flex-direction: row; flex-wrap: wrap; gap: 8px;"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"width: 80px; height: 80px; border-radius: 10px; border-width: 2px; 
+border-color: rgb(2, 132, 199); border-style: dashed; justify-content: center; align-items: center; background-color: 
+rgb(240, 249, 255);"[39m
+                  [36m>[39m
+                    [36m<span[39m
+                      [33maria-label[39m=[32m"add"[39m
+                      [33mdata-testid[39m=[32m"icon-add"[39m
+                      [33mstyle[39m=[32m"font-size: 28px; color: rgb(2, 132, 199);"[39m
+                    [36m>[39m
+                      [0m≡ƒö╖[0m
+                    [36m</span>[39m
+                  [36m</div>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"font-size: 16px; font-weight: 600; color: rgb(15, 23, 42); margin-top: 16px; 
+margin-bottom: 8px;"[39m
+              [36m>[39m
+                [0mNotes (Optional)[0m
+              [36m</div>[39m
+              [36m<div>[39m
+                [36m<input[39m
+                  [33mplaceholder[39m=[32m"Add any additional notes..."[39m
+                  [33mtype[39m=[32m"text"[39m
+                  [33mvalue[39m=[32m""[39m
+                [36m/>[39m
+              [36m</div>[39m
+              [36m<div>[39m
+                [36m<div>[39m
+                  [0mSubmit Observation[0m
+                [36m</div>[39m
+              [36m</div>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</body>[39m
+
+    [0m [90m 77 |[39m     expect(getByText([32m'Measurements'[39m))[33m.[39mtoBeTruthy()
+     [90m 78 |[39m     expect(getByText([32m'Biological Data'[39m))[33m.[39mtoBeTruthy()
+    [31m[1m>[22m[39m[90m 79 |[39m     expect(getByText([32m'Location'[39m))[33m.[39mtoBeTruthy()
+     [90m    |[39m            [31m[1m^[22m[39m
+     [90m 80 |[39m     expect(getByText([32m'Photos'[39m))[33m.[39mtoBeTruthy()
+     [90m 81 |[39m   })
+     [90m 82 |[39m[0m
+
+      at Object.getElementError 
+(../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/config.js:37:19)
+      at getElementError 
+(../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:20:35)
+      at getMultipleElementsFoundError 
+(../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:23:10)
+      at 
+../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:55:13
+      at 
+../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.<anonymous> (src/screens/observation/__tests__/NewObservationScreen.test.tsx:79:12)
+
+FAIL src/hooks/__tests__/useLocation.test.ts
+  ΓùÅ Console
+
+    console.error
+      Warning: `ReactDOMTestUtils.act` is deprecated in favor of `React.act`. Import `act` from `react` instead of 
+`react-dom/test-utils`. See https://react.dev/warnings/react-dom-test-utils for more info.
+
+    [0m [90m 25 |[39m       })
+     [90m 26 |[39m
+    [31m[1m>[22m[39m[90m 27 |[39m       [36mconst[39m { result } [33m=[39m renderHook(() [33m=>[39m 
+useLocation())
+     [90m    |[39m                                    [31m[1m^[22m[39m
+     [90m 28 |[39m       expect(result[33m.[39mcurrent[33m.[39mlocation)[33m.[39mtoBeNull()
+     [90m 29 |[39m     })
+     [90m 30 |[39m[0m
+
+      at printWarning (../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom-test-ut
+ils.development.js:71:30)
+      at error (../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom-test-utils.dev
+elopment.js:45:7)
+      at actWithWarning (../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom-test-
+utils.development.js:1736:7)
+      at ../node_modules/.pnpm/@testing-library+react@16.3_2b7278e43f435e98df19b18cbae81bb0/node_modules/@testing-libra
+ry/react/dist/act-compat.js:46:25
+      at renderRoot (../node_modules/.pnpm/@testing-library+react@16.3_2b7278e43f435e98df19b18cbae81bb0/node_modules/@t
+esting-library/react/dist/pure.js:189:26)
+      at render (../node_modules/.pnpm/@testing-library+react@16.3_2b7278e43f435e98df19b18cbae81bb0/node_modules/@testi
+ng-library/react/dist/pure.js:291:10)
+      at renderHook (../node_modules/.pnpm/@testing-library+react@16.3_2b7278e43f435e98df19b18cbae81bb0/node_modules/@t
+esting-library/react/dist/pure.js:339:7)
+      at Object.<anonymous> (src/hooks/__tests__/useLocation.test.ts:27:36)
+
+    console.error
+      Warning: An update to TestComponent inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at TestComponent (D:\demo\CrabWatch\node_modules\.pnpm\@testing-library+react@16.3_2b7278e43f435e98df19b18cba
+e81bb0\node_modules\@testing-library\react\dist\pure.js:328:5)
+
+    [0m [90m 13 |[39m     [36mtry[39m {
+     [90m 14 |[39m       [36mconst[39m coords [33m=[39m [36mawait[39m 
+locationService[33m.[39mgetCurrentLocation()
+    [31m[1m>[22m[39m[90m 15 |[39m       setLocation(coords)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 16 |[39m       setHasPermission([36mtrue[39m)
+     [90m 17 |[39m     } [36mcatch[39m (err) {
+     [90m 18 |[39m       setError(err [36minstanceof[39m [33mError[39m [33m?[39m err[33m.[39mmessage 
+[33m:[39m [32m'Failed to get location'[39m)[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:15:7
+
+    console.error
+      Warning: An update to TestComponent inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at TestComponent (D:\demo\CrabWatch\node_modules\.pnpm\@testing-library+react@16.3_2b7278e43f435e98df19b18cba
+e81bb0\node_modules\@testing-library\react\dist\pure.js:328:5)
+
+    [0m [90m 14 |[39m       [36mconst[39m coords [33m=[39m [36mawait[39m 
+locationService[33m.[39mgetCurrentLocation()
+     [90m 15 |[39m       setLocation(coords)
+    [31m[1m>[22m[39m[90m 16 |[39m       setHasPermission([36mtrue[39m)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 17 |[39m     } [36mcatch[39m (err) {
+     [90m 18 |[39m       setError(err [36minstanceof[39m [33mError[39m [33m?[39m err[33m.[39mmessage 
+[33m:[39m [32m'Failed to get location'[39m)
+     [90m 19 |[39m       setHasPermission([36mfalse[39m)[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:16:7
+
+    console.error
+      Warning: An update to TestComponent inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at TestComponent (D:\demo\CrabWatch\node_modules\.pnpm\@testing-library+react@16.3_2b7278e43f435e98df19b18cba
+e81bb0\node_modules\@testing-library\react\dist\pure.js:328:5)
+
+    [0m [90m 19 |[39m       setHasPermission([36mfalse[39m)
+     [90m 20 |[39m     } [36mfinally[39m {
+    [31m[1m>[22m[39m[90m 21 |[39m       setLoading([36mfalse[39m)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 22 |[39m     }
+     [90m 23 |[39m   }[33m,[39m [])
+     [90m 24 |[39m[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:21:7
+
+    console.error
+      Warning: An update to TestComponent inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at TestComponent (D:\demo\CrabWatch\node_modules\.pnpm\@testing-library+react@16.3_2b7278e43f435e98df19b18cba
+e81bb0\node_modules\@testing-library\react\dist\pure.js:328:5)
+
+    [0m [90m 13 |[39m     [36mtry[39m {
+     [90m 14 |[39m       [36mconst[39m coords [33m=[39m [36mawait[39m 
+locationService[33m.[39mgetCurrentLocation()
+    [31m[1m>[22m[39m[90m 15 |[39m       setLocation(coords)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 16 |[39m       setHasPermission([36mtrue[39m)
+     [90m 17 |[39m     } [36mcatch[39m (err) {
+     [90m 18 |[39m       setError(err [36minstanceof[39m [33mError[39m [33m?[39m err[33m.[39mmessage 
+[33m:[39m [32m'Failed to get location'[39m)[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:15:7
+
+    console.error
+      Warning: An update to TestComponent inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at TestComponent (D:\demo\CrabWatch\node_modules\.pnpm\@testing-library+react@16.3_2b7278e43f435e98df19b18cba
+e81bb0\node_modules\@testing-library\react\dist\pure.js:328:5)
+
+    [0m [90m 14 |[39m       [36mconst[39m coords [33m=[39m [36mawait[39m 
+locationService[33m.[39mgetCurrentLocation()
+     [90m 15 |[39m       setLocation(coords)
+    [31m[1m>[22m[39m[90m 16 |[39m       setHasPermission([36mtrue[39m)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 17 |[39m     } [36mcatch[39m (err) {
+     [90m 18 |[39m       setError(err [36minstanceof[39m [33mError[39m [33m?[39m err[33m.[39mmessage 
+[33m:[39m [32m'Failed to get location'[39m)
+     [90m 19 |[39m       setHasPermission([36mfalse[39m)[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:16:7
+
+    console.error
+      Warning: An update to TestComponent inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at TestComponent (D:\demo\CrabWatch\node_modules\.pnpm\@testing-library+react@16.3_2b7278e43f435e98df19b18cba
+e81bb0\node_modules\@testing-library\react\dist\pure.js:328:5)
+
+    [0m [90m 19 |[39m       setHasPermission([36mfalse[39m)
+     [90m 20 |[39m     } [36mfinally[39m {
+    [31m[1m>[22m[39m[90m 21 |[39m       setLoading([36mfalse[39m)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 22 |[39m     }
+     [90m 23 |[39m   }[33m,[39m [])
+     [90m 24 |[39m[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:21:7
+
+    console.error
+      Warning: An update to TestComponent inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at TestComponent (D:\demo\CrabWatch\node_modules\.pnpm\@testing-library+react@16.3_2b7278e43f435e98df19b18cba
+e81bb0\node_modules\@testing-library\react\dist\pure.js:328:5)
+
+    [0m [90m 13 |[39m     [36mtry[39m {
+     [90m 14 |[39m       [36mconst[39m coords [33m=[39m [36mawait[39m 
+locationService[33m.[39mgetCurrentLocation()
+    [31m[1m>[22m[39m[90m 15 |[39m       setLocation(coords)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 16 |[39m       setHasPermission([36mtrue[39m)
+     [90m 17 |[39m     } [36mcatch[39m (err) {
+     [90m 18 |[39m       setError(err [36minstanceof[39m [33mError[39m [33m?[39m err[33m.[39mmessage 
+[33m:[39m [32m'Failed to get location'[39m)[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:15:7
+
+    console.error
+      Warning: An update to TestComponent inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at TestComponent (D:\demo\CrabWatch\node_modules\.pnpm\@testing-library+react@16.3_2b7278e43f435e98df19b18cba
+e81bb0\node_modules\@testing-library\react\dist\pure.js:328:5)
+
+    [0m [90m 14 |[39m       [36mconst[39m coords [33m=[39m [36mawait[39m 
+locationService[33m.[39mgetCurrentLocation()
+     [90m 15 |[39m       setLocation(coords)
+    [31m[1m>[22m[39m[90m 16 |[39m       setHasPermission([36mtrue[39m)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 17 |[39m     } [36mcatch[39m (err) {
+     [90m 18 |[39m       setError(err [36minstanceof[39m [33mError[39m [33m?[39m err[33m.[39mmessage 
+[33m:[39m [32m'Failed to get location'[39m)
+     [90m 19 |[39m       setHasPermission([36mfalse[39m)[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:16:7
+
+    console.error
+      Warning: An update to TestComponent inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at TestComponent (D:\demo\CrabWatch\node_modules\.pnpm\@testing-library+react@16.3_2b7278e43f435e98df19b18cba
+e81bb0\node_modules\@testing-library\react\dist\pure.js:328:5)
+
+    [0m [90m 19 |[39m       setHasPermission([36mfalse[39m)
+     [90m 20 |[39m     } [36mfinally[39m {
+    [31m[1m>[22m[39m[90m 21 |[39m       setLoading([36mfalse[39m)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 22 |[39m     }
+     [90m 23 |[39m   }[33m,[39m [])
+     [90m 24 |[39m[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:21:7
+
+    console.error
+      Warning: An update to TestComponent inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at TestComponent (D:\demo\CrabWatch\node_modules\.pnpm\@testing-library+react@16.3_2b7278e43f435e98df19b18cba
+e81bb0\node_modules\@testing-library\react\dist\pure.js:328:5)
+
+    [0m [90m 13 |[39m     [36mtry[39m {
+     [90m 14 |[39m       [36mconst[39m coords [33m=[39m [36mawait[39m 
+locationService[33m.[39mgetCurrentLocation()
+    [31m[1m>[22m[39m[90m 15 |[39m       setLocation(coords)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 16 |[39m       setHasPermission([36mtrue[39m)
+     [90m 17 |[39m     } [36mcatch[39m (err) {
+     [90m 18 |[39m       setError(err [36minstanceof[39m [33mError[39m [33m?[39m err[33m.[39mmessage 
+[33m:[39m [32m'Failed to get location'[39m)[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:15:7
+
+    console.error
+      Warning: An update to TestComponent inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at TestComponent (D:\demo\CrabWatch\node_modules\.pnpm\@testing-library+react@16.3_2b7278e43f435e98df19b18cba
+e81bb0\node_modules\@testing-library\react\dist\pure.js:328:5)
+
+    [0m [90m 14 |[39m       [36mconst[39m coords [33m=[39m [36mawait[39m 
+locationService[33m.[39mgetCurrentLocation()
+     [90m 15 |[39m       setLocation(coords)
+    [31m[1m>[22m[39m[90m 16 |[39m       setHasPermission([36mtrue[39m)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 17 |[39m     } [36mcatch[39m (err) {
+     [90m 18 |[39m       setError(err [36minstanceof[39m [33mError[39m [33m?[39m err[33m.[39mmessage 
+[33m:[39m [32m'Failed to get location'[39m)
+     [90m 19 |[39m       setHasPermission([36mfalse[39m)[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:16:7
+
+    console.error
+      Warning: An update to TestComponent inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://reactjs.org/link/wrap-tests-with-act
+          at TestComponent (D:\demo\CrabWatch\node_modules\.pnpm\@testing-library+react@16.3_2b7278e43f435e98df19b18cba
+e81bb0\node_modules\@testing-library\react\dist\pure.js:328:5)
+
+    [0m [90m 19 |[39m       setHasPermission([36mfalse[39m)
+     [90m 20 |[39m     } [36mfinally[39m {
+    [31m[1m>[22m[39m[90m 21 |[39m       setLoading([36mfalse[39m)
+     [90m    |[39m       [31m[1m^[22m[39m
+     [90m 22 |[39m     }
+     [90m 23 |[39m   }[33m,[39m [])
+     [90m 24 |[39m[0m
+
+      at printWarning 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at warnIfUpdatesNotWrappedWithActDEV 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:27628:9)
+      at scheduleUpdateOnFiber 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:25547:5)
+      at dispatchSetState 
+(../node_modules/.pnpm/react-dom@18.3.1_react@18.2.0/node_modules/react-dom/cjs/react-dom.development.js:16708:7)
+      at src/hooks/useLocation.ts:21:7
+
+  ΓùÅ useLocation ΓÇ║ refresh ΓÇ║ sets loading during refresh
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+    Ignored nodes: comments, script, style
+    [36m<html>[39m
+      [36m<head />[39m
+      [36m<body>[39m
+        [36m<div />[39m
+      [36m</body>[39m
+    [36m</html>[39m
+
+    [0m [90m 164 |[39m
+     [90m 165 |[39m       [36mawait[39m waitFor(() [33m=>[39m {
+    [31m[1m>[22m[39m[90m 166 |[39m         
+expect(result[33m.[39mcurrent[33m.[39mloading)[33m.[39mtoBe([36mfalse[39m)
+     [90m     |[39m                                        [31m[1m^[22m[39m
+     [90m 167 |[39m       })
+     [90m 168 |[39m
+     [90m 169 |[39m       [36mawait[39m act([36masync[39m () [33m=>[39m {[0m
+
+      at src/hooks/__tests__/useLocation.test.ts:166:40
+      at runWithExpensiveErrorDiagnosticsDisabled 
+(../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/config.js:47:12)
+      at checkCallback 
+(../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:124:77)
+      at checkRealTimersCallback 
+(../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:118:16)
+      at Timeout.task [as _onTimeout] 
+(../node_modules/.pnpm/jsdom@26.1.0/node_modules/jsdom/lib/jsdom/browser/Window.js:579:19)
+
+
+Summary of all failing tests
+FAIL src/screens/species/__tests__/SpeciesListScreen.test.tsx
+  ΓùÅ SpeciesListScreen ΓÇ║ navigates to detail on species card press
+
+    TestingLibraryElementError: Unable to find an element with the text: Scylla serrata. This could be because the 
+text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your 
+matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mstyle[39m=[32m"flex: 1 1 0%; justify-content: center; align-items: center; background-color: rgb(240, 
+249, 255);"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mrole[39m=[32m"progressbar"[39m
+          [36m/>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</body>[39m
+
+    [0m [90m 116 |[39m     })
+     [90m 117 |[39m     [36mconst[39m { getByText } [33m=[39m render([33m<[39m[33mSpeciesListScreen[39m 
+[33m/[39m[33m>[39m)
+    [31m[1m>[22m[39m[90m 118 |[39m     fireEvent[33m.[39mclick(getByText([32m'Scylla serrata'[39m))
+     [90m     |[39m                     [31m[1m^[22m[39m
+     [90m 119 |[39m     expect(navigateMock)[33m.[39mtoHaveBeenCalledWith([32m'SpeciesDetail'[39m[33m,[39m { 
+speciesId[33m:[39m [32m'1'[39m })
+     [90m 120 |[39m   })
+     [90m 121 |[39m })[0m
+
+      at Object.getElementError 
+(../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/config.js:37:19)
+      at 
+../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at 
+../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at 
+../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.<anonymous> (src/screens/species/__tests__/SpeciesListScreen.test.tsx:118:21)
+
+FAIL src/screens/observation/__tests__/NewObservationScreen.test.tsx
+  ΓùÅ NewObservationScreen ΓÇ║ renders section titles
+
+    TestingLibraryElementError: Found multiple elements with the text: Location
+
+    Here are the matching elements:
+
+    Ignored nodes: comments, script, style
+    [36m<div[39m
+      [33mstyle[39m=[32m"font-size: 16px; font-weight: 600; color: rgb(15, 23, 42); margin-top: 16px; 
+margin-bottom: 8px;"[39m
+    [36m>[39m
+      [0mLocation[0m
+    [36m</div>[39m
+
+    Ignored nodes: comments, script, style
+    [36m<div[39m
+      [33mstyle[39m=[32m"font-size: 14px; font-weight: 600; color: rgb(15, 23, 42);"[39m
+    [36m>[39m
+      [0mLocation[0m
+    [36m</div>[39m
+
+    (If this is intentional, then use the `*AllBy*` variant of the query (like `queryAllByText`, `getAllByText`, or 
+`findAllByText`)).
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mstyle[39m=[32m"flex: 1 1 0%; background-color: rgb(240, 249, 255);"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mstyle[39m=[32m"flex: 1 1 0%;"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"font-size: 16px; font-weight: 600; color: rgb(15, 23, 42); margin-top: 16px; 
+margin-bottom: 8px;"[39m
+              [36m>[39m
+                [0mSpecies[0m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"margin-bottom: 16px; width: 100%;"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mstyle[39m=[32m"font-size: 14px; font-weight: 600; color: rgb(15, 23, 42); margin-bottom: 
+6px;"[39m
+                [36m>[39m
+                  [0mSpecies[0m
+                [36m</div>[39m
+                [36m<div>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"font-size: 16px; color: rgb(15, 23, 42);"[39m
+                  [36m>[39m
+                    [0mSelect species...[0m
+                  [36m</div>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"font-size: 12px; color: rgb(100, 116, 139);"[39m
+                  [36m>[39m
+                    [0mΓû╝[0m
+                  [36m</div>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"font-size: 16px; font-weight: 600; color: rgb(15, 23, 42); margin-top: 16px; 
+margin-bottom: 8px;"[39m
+              [36m>[39m
+                [0mMeasurements[0m
+              [36m</div>[39m
+              [36m<div>[39m
+                [36m<div[39m
+                  [33mstyle[39m=[32m"font-size: 14px; font-weight: 600; color: rgb(15, 23, 42); margin-bottom: 
+6px;"[39m
+                [36m>[39m
+                  [0mCarapace Width (cm, max 50)[0m
+                [36m</div>[39m
+                [36m<input[39m
+                  [33mplaceholder[39m=[32m"e.g. 8.5"[39m
+                  [33mtype[39m=[32m"text"[39m
+                  [33mvalue[39m=[32m""[39m
+                [36m/>[39m
+              [36m</div>[39m
+              [36m<div>[39m
+                [36m<div[39m
+                  [33mstyle[39m=[32m"font-size: 14px; font-weight: 600; color: rgb(15, 23, 42); margin-bottom: 
+6px;"[39m
+                [36m>[39m
+                  [0mBody Weight (g, max 5000)[0m
+                [36m</div>[39m
+                [36m<input[39m
+                  [33mplaceholder[39m=[32m"e.g. 350"[39m
+                  [33mtype[39m=[32m"text"[39m
+                  [33mvalue[39m=[32m""[39m
+                [36m/>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"font-size: 16px; font-weight: 600; color: rgb(15, 23, 42); margin-top: 16px; 
+margin-bottom: 8px;"[39m
+              [36m>[39m
+                [0mBiological Data[0m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"margin-bottom: 16px; width: 100%;"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mstyle[39m=[32m"font-size: 14px; font-weight: 600; color: rgb(15, 23, 42); margin-bottom: 
+6px;"[39m
+                [36m>[39m
+                  [0mSex[0m
+                [36m</div>[39m
+                [36m<div>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"font-size: 16px; color: rgb(15, 23, 42);"[39m
+                  [36m>[39m
+                    [0mSelect...[0m
+                  [36m</div>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"font-size: 12px; color: rgb(100, 116, 139);"[39m
+                  [36m>[39m
+                    [0mΓû╝[0m
+                  [36m</div>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"margin-bottom: 16px; width: 100%;"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mstyle[39m=[32m"font-size: 14px; font-weight: 600; color: rgb(15, 23, 42); margin-bottom: 
+6px;"[39m
+                [36m>[39m
+                  [0mMaturation Status[0m
+                [36m</div>[39m
+                [36m<div>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"font-size: 16px; color: rgb(15, 23, 42);"[39m
+                  [36m>[39m
+                    [0mSelect...[0m
+                  [36m</div>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"font-size: 12px; color: rgb(100, 116, 139);"[39m
+                  [36m>[39m
+                    [0mΓû╝[0m
+                  [36m</div>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"font-size: 16px; font-weight: 600; color: rgb(15, 23, 42); margin-top: 16px; 
+margin-bottom: 8px;"[39m
+              [36m>[39m
+                [0mLocation[0m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"margin-bottom: 16px;"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mstyle[39m=[32m"flex-direction: row; justify-content: space-between; align-items: center; 
+margin-bottom: 8px;"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"font-size: 14px; font-weight: 600; color: rgb(15, 23, 42);"[39m
+                  [36m>[39m
+                    [0mLocation[0m
+                  [36m</div>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"border-radius: 12px; border-width: 1px; border-color: rgb(226, 232, 
+240);"[39m
+                  [36m>[39m
+                    [36m<div>[39m
+                      [0mGPS Auto[0m
+                    [36m</div>[39m
+                  [36m</div>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33mstyle[39m=[32m"background-color: rgb(2, 132, 199); border-radius: 10px; align-self: 
+flex-start; margin-bottom: 8px;"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"color: rgb(255, 255, 255); font-size: 14px; font-weight: 600;"[39m
+                  [36m>[39m
+                    [0mEnable Location Access[0m
+                  [36m</div>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33mstyle[39m=[32m"flex-direction: row; align-items: center; gap: 8px; background-color: rgb(240, 
+249, 255); padding: 12px; border-radius: 10px; border-width: 1px; border-color: rgb(226, 232, 240); margin-bottom: 
+8px;"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"font-size: 14px; color: rgb(15, 23, 42); font-family: monospace; flex: 1 1 
+0%;"[39m
+                  [36m>[39m
+                    [0mAcquiring GPS...[0m
+                  [36m</div>[39m
+                [36m</div>[39m
+                [36m<div>[39m
+                  [36m<span[39m
+                    [33maria-label[39m=[32m"locate"[39m
+                    [33mdata-testid[39m=[32m"icon-locate"[39m
+                    [33mstyle[39m=[32m"font-size: 18px; color: rgb(255, 255, 255);"[39m
+                  [36m>[39m
+                    [0m∩┐╜∩┐╜[0m
+                  [36m</span>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"color: rgb(255, 255, 255); font-size: 14px; font-weight: 600;"[39m
+                  [36m>[39m
+                    [0mCapture Location[0m
+                  [36m</div>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"font-size: 16px; font-weight: 600; color: rgb(15, 23, 42); margin-top: 16px; 
+margin-bottom: 8px;"[39m
+              [36m>[39m
+                [0mPhotos[0m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"margin-bottom: 16px;"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mstyle[39m=[32m"font-size: 14px; font-weight: 600; color: rgb(15, 23, 42); margin-bottom: 
+8px;"[39m
+                [36m>[39m
+                  [0mPhotos ([0m
+                  [0m0[0m
+                  [0m/[0m
+                  [0m5[0m
+                  [0m)[0m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33mstyle[39m=[32m"flex-direction: row; flex-wrap: wrap; gap: 8px;"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mstyle[39m=[32m"width: 80px; height: 80px; border-radius: 10px; border-width: 2px; 
+border-color: rgb(2, 132, 199); border-style: dashed; justify-content: center; align-items: center; background-color: 
+rgb(240, 249, 255);"[39m
+                  [36m>[39m
+                    [36m<span[39m
+                      [33maria-label[39m=[32m"add"[39m
+                      [33mdata-testid[39m=[32m"icon-add"[39m
+                      [33mstyle[39m=[32m"font-size: 28px; color: rgb(2, 132, 199);"[39m
+                    [36m>[39m
+                      [0m∩┐╜∩┐╜[0m
+                    [36m</span>[39m
+                  [36m</div>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mstyle[39m=[32m"font-size: 16px; font-weight: 600; color: rgb(15, 23, 42); margin-top: 16px; 
+margin-bottom: 8px;"[39m
+              [36m>[39m
+                [0mNotes (Optional)[0m
+              [36m</div>[39m
+              [36m<div>[39m
+                [36m<input[39m
+                  [33mplaceholder[39m=[32m"Add any additional notes..."[39m
+                  [33mtype[39m=[32m"text"[39m
+                  [33mvalue[39m=[32m""[39m
+                [36m/>[39m
+              [36m</div>[39m
+              [36m<div>[39m
+                [36m<div>[39m
+                  [0mSubmit Observation[0m
+                [36m</div>[39m
+              [36m</div>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</body>[39m
+
+    [0m [90m 77 |[39m     expect(getByText([32m'Measurements'[39m))[33m.[39mtoBeTruthy()
+     [90m 78 |[39m     expect(getByText([32m'Biological Data'[39m))[33m.[39mtoBeTruthy()
+    [31m[1m>[22m[39m[90m 79 |[39m     expect(getByText([32m'Location'[39m))[33m.[39mtoBeTruthy()
+     [90m    |[39m            [31m[1m^[22m[39m
+     [90m 80 |[39m     expect(getByText([32m'Photos'[39m))[33m.[39mtoBeTruthy()
+     [90m 81 |[39m   })
+     [90m 82 |[39m[0m
+
+      at Object.getElementError 
+(../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/config.js:37:19)
+      at getElementError 
+(../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:20:35)
+      at getMultipleElementsFoundError 
+(../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:23:10)
+      at 
+../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:55:13
+      at 
+../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.<anonymous> (src/screens/observation/__tests__/NewObservationScreen.test.tsx:79:12)
+
+FAIL src/hooks/__tests__/useLocation.test.ts
+  ΓùÅ useLocation ΓÇ║ refresh ΓÇ║ sets loading during refresh
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+    Ignored nodes: comments, script, style
+    [36m<html>[39m
+      [36m<head />[39m
+      [36m<body>[39m
+        [36m<div />[39m
+      [36m</body>[39m
+    [36m</html>[39m
+
+    [0m [90m 164 |[39m
+     [90m 165 |[39m       [36mawait[39m waitFor(() [33m=>[39m {
+    [31m[1m>[22m[39m[90m 166 |[39m         
+expect(result[33m.[39mcurrent[33m.[39mloading)[33m.[39mtoBe([36mfalse[39m)
+     [90m     |[39m                                        [31m[1m^[22m[39m
+     [90m 167 |[39m       })
+     [90m 168 |[39m
+     [90m 169 |[39m       [36mawait[39m act([36masync[39m () [33m=>[39m {[0m
+
+      at src/hooks/__tests__/useLocation.test.ts:166:40
+      at runWithExpensiveErrorDiagnosticsDisabled 
+(../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/config.js:47:12)
+      at checkCallback 
+(../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:124:77)
+      at checkRealTimersCallback 
+(../node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:118:16)
+      at Timeout.task [as _onTimeout] 
+(../node_modules/.pnpm/jsdom@26.1.0/node_modules/jsdom/lib/jsdom/browser/Window.js:579:19)
+
+
+Test Suites: 3 failed, 32 passed, 35 total
+Tests:       3 failed, 347 passed, 350 total
+Snapshots:   0 total
+Time:        9.081 s
+Ran all test suites.
