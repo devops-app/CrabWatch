@@ -8,14 +8,20 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import type { NavigationProp } from '@react-navigation/native'
 import { useAuth } from '../../hooks/useAuth'
 import { api } from '../../services/api'
 import { Card } from '../../components/common/Card'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { COLORS } from '../../utils/constants'
 import type { DashboardStats } from '@crabwatch/shared'
+import type { MainTabParamList } from '../../navigation/types'
 
-export function HomeScreen() {
+type HomeScreenProps = {
+  navigation: NavigationProp<MainTabParamList>
+}
+
+export function HomeScreen({ navigation }: HomeScreenProps) {
   const { user } = useAuth()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -79,13 +85,13 @@ export function HomeScreen() {
             <Card padding={20}>
               <View style={styles.quickActions}>
                 <Text style={styles.sectionTitle}>Quick Actions</Text>
-                <TouchableOpacity style={styles.actionBtn}>
+                <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('New')}>
                   <Ionicons name="add-circle" size={22} color={COLORS.primary} />
                   <Text style={styles.actionText}>New Observation</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionBtn}>
-                  <Ionicons name="search" size={22} color={COLORS.secondary} />
-                  <Text style={styles.actionText}>Species Guide</Text>
+                <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Analytics')}>
+                  <Ionicons name="analytics" size={22} color={COLORS.secondary} />
+                  <Text style={styles.actionText}>Analytics</Text>
                 </TouchableOpacity>
               </View>
             </Card>

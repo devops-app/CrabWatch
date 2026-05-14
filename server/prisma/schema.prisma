@@ -9,17 +9,32 @@ datasource db {
 
 model User {
   id        String   @id @default(uuid()) @db.Uuid
-  name      String
-  email     String   @unique
-  role      UserRole @default(USER)
+  name        String
+  email       String   @unique
+  phoneCode   String?
+  phoneNumber String?
+  addressLine1 String?
+  addressLine2 String?
+  addressLine3 String?
+  state       String?
+  postcode    String?
+  country     String?
+  role        UserRole @default(USER)
   avatar    String?
   password  String?
   firebaseUid String?  @unique
+  deletedAt   DateTime?
+  blockedAt   DateTime?
+  blockReason String?
   createdAt DateTime @default(now())
 
   observations Observation[] @relation("UserObservations")
   validatedObs Observation[] @relation("ValidatedBy")
   fcmToken     FcmToken?
+  passwordResets PasswordReset[]
+
+  @@index([deletedAt])
+  @@index([blockedAt])
 }
 
 model FcmToken {
@@ -109,4 +124,31 @@ enum ObservationStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+model Invite {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  role      UserRole
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([email])
+}
+
+model PasswordReset {
+  id        String   @id @default(uuid())
+  userId    String   @db.Uuid
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
 }

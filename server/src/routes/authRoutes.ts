@@ -1,6 +1,6 @@
 import { Router } from 'express'
-import { login, logout, verifyToken } from '../controllers/authController'
-import { loginSchema, verifyTokenSchema } from '../utils/schemas'
+import { login, logout, verifyToken, requestPasswordReset, resetPassword } from '../controllers/authController'
+import { loginSchema, verifyTokenSchema, requestPasswordResetSchema, resetPasswordSchema } from '../utils/schemas'
 import { validate } from '../middleware/validation'
 
 const router: Router = Router()
@@ -89,5 +89,9 @@ router.post('/logout', logout)
  *         description: Invalid token
  */
 router.post('/verify', validate(verifyTokenSchema), verifyToken)
+
+router.post('/password-reset/request', validate(requestPasswordResetSchema), requestPasswordReset)
+
+router.post('/password-reset/reset', validate(resetPasswordSchema), resetPassword)
 
 export default router

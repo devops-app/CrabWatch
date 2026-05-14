@@ -5,9 +5,13 @@ import {
   updateUserProfile,
   listUsers,
   updateUserRole,
+  softDeleteUser,
+  restoreUser,
+  blockUser,
+  unblockUser,
 } from '../controllers/userController'
 import { authMiddleware, requireAuth, resolveUser, requireRole } from '../middleware/auth'
-import { registerSchema, updateUserSchema, updateRoleSchema } from '../utils/schemas'
+import { registerSchema, updateUserSchema, updateRoleSchema, blockUserSchema, restoreUserSchema } from '../utils/schemas'
 import { validate } from '../middleware/validation'
 
 const router: Router = Router()
@@ -181,5 +185,90 @@ router.get('/', requireAuth, resolveUser, requireRole('ADMIN', 'RESEARCHER'), li
  *         description: Admin only
  */
 router.patch('/:id/role', requireAuth, resolveUser, requireRole('ADMIN'), validate(updateRoleSchema), updateUserRole)
+
+/**
+ * @openapi
+ * /api/users/{id}:
+ *   delete:
+ *     tags: [Users]
+ *     summary: Soft-delete a user (Admin only)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: User soft-deleted
+ *       403:
+ *         description: Admin only
+ */
+router.delete('/:id', requireAuth, resolveUser, requireRole('ADMIN'), softDeleteUser)
+
+/**
+ * @openapi
+ * /api/users/{id}/restore:
+ *   post:
+ *     tags: [Users]
+ *     summary: Restore a soft-deleted user (Admin only)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: User restored
+ *       400:
+ *         description: User not deleted or retention period exceeded
+ *       403:
+ *         description: Admin only
+ */
+router.post('/:id/restore', requireAuth, resolveUser, requireRole('ADMIN'), validate(restoreUserSchema), restoreUser)
+
+/**
+ * @openapi
+ * /api/users/{id}/block:
+ *   post:
+ *     tags: [Users]
+ *     summary: Block a user (Admin only)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reason: { type: string, maxLength: 500 }
+ *     responses:
+ *       200:
+ *         description: User blocked
+ *       403:
+ *         description: Admin only
+ */
+router.post('/:id/block', requireAuth, resolveUser, requireRole('ADMIN'), validate(blockUserSchema), blockUser)
+
+/**
+ * @openapi
+ * /api/users/{id}/unblock:
+ *   post:
+ *     tags: [Users]
+ *     summary: Unblock a user (Admin only)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: User unblocked
+ *       403:
+ *         description: Admin only
+ */
+router.post('/:id/unblock', requireAuth, resolveUser, requireRole('ADMIN'), unblockUser)
 
 export default router

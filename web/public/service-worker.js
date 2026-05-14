@@ -1,6 +1,6 @@
 const CRABWATCH_NOTIFICATIONS = 'crabwatch-notifications'
 
-self.addEventListener('install', (event: ExtendableEvent) => {
+self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CRABWATCH_NOTIFICATIONS).then((cache) => {
       return cache.addAll([
@@ -12,7 +12,7 @@ self.addEventListener('install', (event: ExtendableEvent) => {
   self.skipWaiting()
 })
 
-self.addEventListener('activate', (event: ExtendableEvent) => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -25,10 +25,10 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
   self.clients.claim()
 })
 
-self.addEventListener('push', (event: PushEvent) => {
+self.addEventListener('push', (event) => {
   if (!event.data) return
 
-  let data: { title: string; body: string; type?: string; species?: string; zone?: string }
+  let data
   try {
     data = event.data.json()
   } catch {
@@ -38,7 +38,7 @@ self.addEventListener('push', (event: PushEvent) => {
     }
   }
 
-  const options: NotificationOptions = {
+  const options = {
     body: data.body,
     icon: '/favicon.ico',
     badge: '/favicon.ico',
@@ -55,7 +55,7 @@ self.addEventListener('push', (event: PushEvent) => {
   )
 })
 
-self.addEventListener('notificationclick', (event: NotificationClickEvent) => {
+self.addEventListener('notificationclick', (event) => {
   event.notification.close()
 
   const url = event.notification.data?.url || '/'

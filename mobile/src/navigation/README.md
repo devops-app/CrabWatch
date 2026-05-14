@@ -7,11 +7,15 @@ This folder uses centralized route typing in `types.ts`.
 - `AuthStackParamList`
   - `Login`
   - `Register`
+  - `ForgotPassword`
+  - `ResetPassword` (`{ token: string }`)
 
 - `MainTabParamList`
   - `Home`
   - `New`
-  - `Species`
+  - `Analytics`
+  - `Researcher` (conditional — RESEARCHER/ADMIN role only)
+  - `Admin` (conditional — ADMIN role only)
   - `Profile`
 
 - `RootStackParamList`
@@ -19,6 +23,9 @@ This folder uses centralized route typing in `types.ts`.
   - `SpeciesDetail` (`{ speciesId: string }`)
   - `ObservationDetail` (`{ observation: ObservationResponse }`)
   - `EditProfile`
+  - `AnalysisLoading` (`{ photos: string[]; views: PhotoView[]; coinType?: string }`)
+  - `AIReview` (`{ analysis: CrabAnalysisResult; photos: string[]; views: PhotoView[]; coinType?: string }`)
+  - `About`
 
 ## Usage
 

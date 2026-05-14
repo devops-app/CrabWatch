@@ -110,6 +110,13 @@ export function LoginScreen() {
             style={styles.submitBtn}
           />
 
+          <TouchableOpacity
+            style={styles.forgotLink}
+            onPress={() => navigation.navigate('ForgotPassword')}
+          >
+            <Text style={styles.linkText}>Forgot password?</Text>
+          </TouchableOpacity>
+
           <View style={styles.footer}>
             <Text style={styles.footerText}>Don't have an account? </Text>
             <TouchableOpacity
@@ -156,6 +163,10 @@ const styles = StyleSheet.create({
   },
   submitBtn: {
     marginTop: 8,
+  },
+  forgotLink: {
+    alignItems: 'center',
+    marginTop: 12,
   },
   footer: {
     flexDirection: 'row',

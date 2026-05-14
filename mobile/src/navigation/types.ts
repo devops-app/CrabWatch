@@ -4,14 +4,18 @@ import type { ObservationResponse, CrabAnalysisResult, PhotoView } from '@crabwa
 export type AuthStackParamList = {
   Login: undefined
   Register: undefined
+  ForgotPassword: undefined
+  ResetPassword: { token: string }
 }
 
 export type MainTabParamList = {
-  Home: undefined
-  New: undefined
-  Species: undefined
-  Profile: undefined
-}
+   Home: undefined
+   New: undefined
+   Analytics: undefined
+   Researcher: undefined
+   Admin: undefined
+   Profile: undefined
+ }
 
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList>

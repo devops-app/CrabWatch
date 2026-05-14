@@ -9,6 +9,14 @@ export interface LoginCredentials {
 export interface RegisterCredentials {
   name: string
   email: string
+  phoneCode?: string
+  phoneNumber?: string
+  addressLine1?: string
+  addressLine2?: string
+  addressLine3?: string
+  state?: string
+  postcode?: string
+  country?: string
   password: string
 }
 
@@ -20,8 +28,8 @@ export const authService = {
     return user
   },
 
-  async register(name: string, email: string, password: string) {
-    const user = await api.register(name, email, password)
+  async register(name: string, email: string, password: string, phoneCode?: string, phoneNumber?: string, addressLine1?: string, addressLine2?: string, addressLine3?: string, state?: string, postcode?: string, country?: string) {
+    const user = await api.register(name, email, password, phoneCode, phoneNumber, addressLine1, addressLine2, addressLine3, state, postcode, country)
     const result = await api.login({ email, password })
     await useAuthStore.getState().login(user, result.token)
     return user

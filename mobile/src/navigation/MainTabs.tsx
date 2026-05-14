@@ -2,8 +2,11 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { Ionicons } from '@expo/vector-icons'
 import { HomeScreen } from '../screens/home/HomeScreen'
 import { GuidedCaptureScreen } from '../screens/observation/GuidedCaptureScreen'
-import { SpeciesListScreen } from '../screens/species/SpeciesListScreen'
+import { AnalyticsScreen } from '../screens/analytics/AnalyticsScreen'
+import { ResearcherScreen } from '../screens/researcher/ResearcherScreen'
+import { AdminScreen } from '../screens/admin/AdminScreen'
 import { ProfileScreen } from '../screens/profile/ProfileScreen'
+import { useAuthStore } from '../store/authStore'
 import type { MainTabParamList } from './types'
 
 const Tab = createBottomTabNavigator<MainTabParamList>()
@@ -16,6 +19,10 @@ const TAB_COLORS = {
 }
 
 export function MainTabs() {
+  const user = useAuthStore((state) => state.user)
+  const isResearcher = user?.role === 'researcher' || user?.role === 'admin'
+  const isAdmin = user?.role === 'admin'
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -56,15 +63,39 @@ export function MainTabs() {
         }}
       />
       <Tab.Screen
-        name="Species"
-        component={SpeciesListScreen}
+        name="Analytics"
+        component={AnalyticsScreen}
         options={{
-          title: 'Species',
+          title: 'Analytics',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="list" size={size} color={color} />
+            <Ionicons name="analytics" size={size} color={color} />
           ),
         }}
       />
+      {isResearcher && (
+        <Tab.Screen
+          name="Researcher"
+          component={ResearcherScreen}
+          options={{
+            title: 'Review',
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="checkmark-circle" size={size} color={color} />
+            ),
+          }}
+        />
+      )}
+      {isAdmin && (
+        <Tab.Screen
+          name="Admin"
+          component={AdminScreen}
+          options={{
+            title: 'Admin',
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="settings" size={size} color={color} />
+            ),
+          }}
+        />
+      )}
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}

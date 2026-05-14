@@ -79,6 +79,13 @@ export function ProfileScreen() {
           )}
           <Text style={styles.name}>{user?.name}</Text>
           <Text style={styles.email}>{user?.email}</Text>
+          {user?.phoneNumber && <Text style={styles.email}>{user.phoneCode} {user.phoneNumber}</Text>}
+          {user?.addressLine1 && <Text style={styles.email}>{user.addressLine1}{user.addressLine2 ? `, ${user.addressLine2}` : ''}</Text>}
+          {[user?.addressLine3, user?.state, user?.postcode, user?.country].filter(Boolean).length > 0 && (
+            <Text style={styles.email}>
+              {[user?.addressLine3, user?.state, user?.postcode, user?.country].filter(Boolean).join(', ')}
+            </Text>
+          )}
           <View style={styles.roleBadge}>
             <Text
               style={[

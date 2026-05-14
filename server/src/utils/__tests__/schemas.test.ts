@@ -11,6 +11,17 @@ describe('Zod Schemas', () => {
       expect(result.success).toBe(true)
     })
 
+    it('should validate with optional phone and address', () => {
+      const result = schemas.registerSchema.safeParse({
+        name: 'John Doe',
+        email: 'john@example.com',
+        phone: '+60123456789',
+        address: '123 Street, Kuala Lumpur',
+        password: 'password123',
+      })
+      expect(result.success).toBe(true)
+    })
+
     it('should fail when name is empty', () => {
       const result = schemas.registerSchema.safeParse({
         name: '',
@@ -34,6 +45,16 @@ describe('Zod Schemas', () => {
         name: 'John Doe',
         email: 'john@example.com',
         password: '123',
+      })
+      expect(result.success).toBe(false)
+    })
+
+    it('should fail when phone is too short', () => {
+      const result = schemas.registerSchema.safeParse({
+        name: 'John Doe',
+        email: 'john@example.com',
+        phone: '12345',
+        password: 'password123',
       })
       expect(result.success).toBe(false)
     })
@@ -72,6 +93,16 @@ describe('Zod Schemas', () => {
   describe('updateUserSchema', () => {
     it('should validate name update', () => {
       const result = schemas.updateUserSchema.safeParse({ name: 'New Name' })
+      expect(result.success).toBe(true)
+    })
+
+    it('should validate phone and address update', () => {
+      const result = schemas.updateUserSchema.safeParse({ phone: '+60123456789', address: '123 Street' })
+      expect(result.success).toBe(true)
+    })
+
+    it('should validate null phone and address', () => {
+      const result = schemas.updateUserSchema.safeParse({ phone: null, address: null })
       expect(result.success).toBe(true)
     })
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   BarChart,
   Bar,
@@ -55,8 +55,50 @@ export default function AnalyticsPage(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<TabId>('size')
 
   const [selectedSpecies, setSelectedSpecies] = useState<string>('')
-  const [dateFrom, setDateFrom] = useState<string>('')
-  const [dateTo, setDateTo] = useState<string>('')
+  const [dateRange, setDateRange] = useState<string>('')
+  const [customDateFrom, setCustomDateFrom] = useState<string>('')
+  const [customDateTo, setCustomDateTo] = useState<string>('')
+  const [dateDropdownOpen, setDateDropdownOpen] = useState(false)
+  const dateDropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dateDropdownRef.current && !dateDropdownRef.current.contains(e.target as Node)) {
+        setDateDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const dateRangeLabels: Record<string, string> = {
+    '1week': '1 Week',
+    '1month': '1 Month',
+    '3months': '3 Months',
+    '6months': '6 Months',
+    '1year': '1 Year',
+    custom: 'Custom',
+  }
+
+  const dateRangeLabel = dateRange ? (dateRangeLabels[dateRange] || dateRange) : 'All Time'
+
+  const effectiveDates = useMemo(() => {
+    if (!dateRange) return { from: '', to: '' }
+    if (dateRange === 'custom') return { from: customDateFrom, to: customDateTo }
+
+    const now = new Date()
+    const to = now.toISOString().split('T')[0]
+    let from = ''
+
+    switch (dateRange) {
+      case '1week': { const d = new Date(now); d.setDate(d.getDate() - 7); from = d.toISOString().split('T')[0]; break }
+      case '1month': { const d = new Date(now); d.setMonth(d.getMonth() - 1); from = d.toISOString().split('T')[0]; break }
+      case '3months': { const d = new Date(now); d.setMonth(d.getMonth() - 3); from = d.toISOString().split('T')[0]; break }
+      case '6months': { const d = new Date(now); d.setMonth(d.getMonth() - 6); from = d.toISOString().split('T')[0]; break }
+      case '1year': { const d = new Date(now); d.setFullYear(d.getFullYear() - 1); from = d.toISOString().split('T')[0]; break }
+    }
+    return { from, to }
+  }, [dateRange, customDateFrom, customDateTo])
 
   // Map state
   const [mapObs, setMapObs] = useState<ObservationResponse[]>([])
@@ -84,33 +126,33 @@ export default function AnalyticsPage(): React.JSX.Element {
     }
   }
 
-  const loadAll = useCallback(async () => {
+ const loadAll = useCallback(async () => {
     setLoading(true)
     try {
       const sp = selectedSpecies || undefined
-      const df = dateFrom || undefined
-      const dt = dateTo || undefined
+      const df = effectiveDates.from || undefined
+      const dt = effectiveDates.to || undefined
 
       const [sf, sr, c, ci, sd, tt] = await Promise.all([
-        api.getSizeFrequency({ speciesId: sp, gender: undefined }),
+        api.getSizeFrequency({ speciesId: sp, gender: genderFilter || undefined }),
         api.getGenderRatio({ speciesId: sp, dateFrom: df, dateTo: dt }),
         api.getCW50({ speciesId: sp }),
         api.getConditionIndices({ speciesId: sp }),
         api.getSpeciesDistribution({ dateFrom: df, dateTo: dt }),
         api.getTemporalTrends({ speciesId: sp }),
       ])
-      setSizeFreq(sf.items || sf)
-      setGenderRatio(sr.items || sr)
-      setCw50(c.items || c)
+      setSizeFreq(sf)
+      setGenderRatio(sr)
+      setCw50(c)
       setConditionIndices(ci)
       setSpeciesDist(sd)
-      setTrends(tt.items || tt)
+      setTrends(tt)
     } catch (err) {
       console.error('Failed to load analytics:', err)
     } finally {
       setLoading(false)
     }
-  }, [selectedSpecies, dateFrom, dateTo])
+  }, [selectedSpecies, effectiveDates, genderFilter])
 
   useEffect(() => {
     loadAll()
@@ -121,8 +163,8 @@ export default function AnalyticsPage(): React.JSX.Element {
     setMapLoading(true)
     try {
       const sp = selectedSpecies || undefined
-      const df = dateFrom || undefined
-      const dt = dateTo || undefined
+      const df = effectiveDates.from || undefined
+      const dt = effectiveDates.to || undefined
       const gender = genderFilter || undefined
       const data = await api.listObservations({
         speciesId: sp,
@@ -138,7 +180,7 @@ export default function AnalyticsPage(): React.JSX.Element {
     } finally {
       setMapLoading(false)
     }
-  }, [selectedSpecies, dateFrom, dateTo, genderFilter])
+  }, [selectedSpecies, effectiveDates, genderFilter])
 
   useEffect(() => {
     if (activeTab === 'map') {
@@ -238,29 +280,87 @@ export default function AnalyticsPage(): React.JSX.Element {
               ))}
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">From</label>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="input-field text-sm py-1.5"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="input-field text-sm py-1.5"
-            />
+          <div ref={dateDropdownRef} className="relative">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+            <button
+              type="button"
+              onClick={() => setDateDropdownOpen(!dateDropdownOpen)}
+              className={`input-field text-sm py-1.5 text-left flex items-center justify-between gap-2 ${
+                dateRange ? 'text-ocean-700 font-medium' : 'text-gray-500'
+              }`}
+            >
+              <span>{dateRangeLabel}</span>
+              <svg className={`w-4 h-4 transition-transform ${dateDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {dateDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-lg border border-gray-200 z-50 min-w-[200px] overflow-hidden">
+                <div className="py-1">
+                  {[
+                    { id: '1week', label: '1 Week' },
+                    { id: '1month', label: '1 Month' },
+                    { id: '3months', label: '3 Months' },
+                    { id: '6months', label: '6 Months' },
+                    { id: '1year', label: '1 Year' },
+                  ].map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                        dateRange === r.id
+                          ? 'bg-ocean-50 text-ocean-700 font-medium'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                      onClick={() => { setDateRange(r.id); setDateDropdownOpen(false) }}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                  <div className="border-t border-gray-100 mt-1 pt-1">
+                    <button
+                      type="button"
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                        dateRange === 'custom'
+                          ? 'bg-ocean-50 text-ocean-700 font-medium'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                      onClick={() => setDateRange('custom')}
+                    >
+                      Custom
+                    </button>
+                  </div>
+                </div>
+                {dateRange === 'custom' && (
+                  <div className="border-t border-gray-100 p-3 flex gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">From</label>
+                      <input
+                        type="date"
+                        value={customDateFrom}
+                        onChange={(e) => setCustomDateFrom(e.target.value)}
+                        className="input-field text-sm py-1.5 w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">To</label>
+                      <input
+                        type="date"
+                        value={customDateTo}
+                        onChange={(e) => setCustomDateTo(e.target.value)}
+                        className="input-field text-sm py-1.5 w-full"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div>
             <button
               type="button"
               className="btn-secondary text-sm py-1.5"
-              onClick={() => { setSelectedSpecies(''); setDateFrom(''); setDateTo('') }}
+              onClick={() => { setSelectedSpecies(''); setDateRange(''); setCustomDateFrom(''); setCustomDateTo('') }}
             >
               Clear Filters
             </button>
@@ -647,11 +747,11 @@ export default function AnalyticsPage(): React.JSX.Element {
                     <span className="text-gray-400 w-16">Gender</span>
                     <span className="font-medium capitalize">{genderFilter || 'All Genders'}</span>
                   </div>
-                  {(dateFrom || dateTo) && (
+                  {dateRange && (
                     <div className="flex items-center gap-2">
                       <span className="text-gray-400 w-16">Period</span>
                       <span className="font-medium">
-                        {formatFilterDate(dateFrom) || 'Start'} — {formatFilterDate(dateTo) || 'Now'}
+                        {formatFilterDate(effectiveDates.from) || 'Start'} — {formatFilterDate(effectiveDates.to) || 'Now'}
                       </span>
                     </div>
                   )}

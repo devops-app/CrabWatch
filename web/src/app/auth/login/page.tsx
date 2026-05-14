@@ -91,6 +91,12 @@ export default function LoginPage(): React.JSX.Element {
           >
             {isSubmitting ? 'Logging in...' : 'Login'}
           </button>
+
+          <div className="text-right">
+            <Link href="/auth/forgot-password" className="text-sm text-ocean-600 hover:underline">
+              Forgot password?
+            </Link>
+          </div>
         </form>
 
         <p className="mt-4 text-center text-sm text-gray-600">

@@ -112,16 +112,20 @@ export async function analyzeCrabHandler(
 
     await ensureSpeciesExists(result)
 
-    const blobUrlsToCleanup = [...photoUrls]
-
     res.json({
       success: true,
       data: result,
     })
 
-    setTimeout(() => {
-      cleanupAnalysisBlobs(blobUrlsToCleanup).catch(() => {})
-    }, 60000)
+    const cleanupDelayRaw = process.env.ANALYSIS_BLOB_CLEANUP_DELAY_MS
+    const cleanupDelayMs = cleanupDelayRaw != null ? Number(cleanupDelayRaw) : null
+
+    if (cleanupDelayMs != null && Number.isFinite(cleanupDelayMs) && cleanupDelayMs > 0) {
+      const blobUrlsToCleanup = [...photoUrls]
+      setTimeout(() => {
+        cleanupAnalysisBlobs(blobUrlsToCleanup).catch(() => {})
+      }, cleanupDelayMs)
+    }
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Analysis failed'
     console.error('Crab analysis error:', error)

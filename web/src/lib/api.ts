@@ -13,6 +13,8 @@ import type {
   ObservationListResponse,
   CrabAnalysisRequest,
   CrabAnalysisResult,
+  Invite,
+  InviteValidation,
 } from '@crabwatch/shared'
 
 interface ApiResponse<T = unknown> {
@@ -45,14 +47,26 @@ async function request<T>(
 
 export const api = {
   // Auth
-  register: (body: { name: string; email: string; password: string }) =>
+  register: (body: { name: string; email: string; phoneCode?: string; phoneNumber?: string; addressLine1?: string; addressLine2?: string; addressLine3?: string; state?: string; postcode?: string; country?: string; password: string; inviteToken?: string }) =>
     request('/api/v1/users/register', {
       method: 'POST',
       body: JSON.stringify(body),
     }),
 
   login: (body: { email: string; password: string }) =>
-    request<{ token: string; user: { id: string; name: string; email: string; role: string } }>('/api/v1/auth/login', {
+    request<{ token: string; user: { id: string; name: string; email: string; phoneCode: string | null; phoneNumber: string | null; addressLine1: string | null; addressLine2: string | null; addressLine3: string | null; state: string | null; postcode: string | null; country: string | null; role: string } }>('/api/v1/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  requestPasswordReset: (body: { email: string }) =>
+    request('/api/v1/auth/password-reset/request', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  resetPassword: (body: { token: string; password: string }) =>
+    request('/api/v1/auth/password-reset/reset', {
       method: 'POST',
       body: JSON.stringify(body),
     }),
@@ -64,7 +78,7 @@ export const api = {
 
   getProfile: () => request('/api/v1/users/me'),
 
-  updateProfile: (body: { name?: string; avatar?: string | null }) =>
+  updateProfile: (body: { name?: string; phoneCode?: string | null; phoneNumber?: string | null; addressLine1?: string | null; addressLine2?: string | null; addressLine3?: string | null; state?: string | null; postcode?: string | null; country?: string | null; avatar?: string | null }) =>
     request('/api/v1/users/me', {
       method: 'PATCH',
       body: JSON.stringify(body),
@@ -84,6 +98,72 @@ export const api = {
     request(`/api/v1/users/${id}/role`, {
       method: 'PATCH',
       body: JSON.stringify({ role }),
+    }),
+
+  softDeleteUser: (id: string) =>
+    request(`/api/v1/users/${id}`, {
+      method: 'DELETE',
+    }),
+
+  restoreUser: (id: string) =>
+    request(`/api/v1/users/${id}/restore`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+
+  blockUser: (id: string, reason?: string) =>
+    request(`/api/v1/users/${id}/block`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
+
+  unblockUser: (id: string) =>
+    request(`/api/v1/users/${id}/unblock`, {
+      method: 'POST',
+    }),
+
+  backupDatabase: () =>
+    request('/api/v1/admin/backup', {
+      method: 'POST',
+    }),
+
+  listBackups: () =>
+    request('/api/v1/admin/backups'),
+
+  deleteBackup: (fileName: string) =>
+    request(`/api/v1/admin/backups/${encodeURIComponent(fileName)}`, {
+      method: 'DELETE',
+    }),
+
+  downloadBackup: (fileName: string) =>
+    window.open(`/api/v1/admin/backups/${encodeURIComponent(fileName)}/download`, '_blank'),
+
+  cleanupDeletedUsers: () =>
+    request('/api/v1/admin/cleanup-users', {
+      method: 'POST',
+    }),
+
+  listDeletedUsers: (params?: { page?: number; limit?: number }) => {
+    const query = new URLSearchParams()
+    if (params?.page) query.set('page', params.page.toString())
+    if (params?.limit) query.set('limit', params.limit.toString())
+    return request(`/api/v1/admin/deleted-users?${query}`)
+  },
+
+  // Invites
+  createInvite: (body: { email: string; role: string; expiresInHours?: number }): Promise<{ id: string; email: string; role: string; expiresAt: string; inviteLink: string }> =>
+    request('/api/v1/admin/invite', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  listInvites: (): Promise<Invite[]> =>
+    request<Invite[]>('/api/v1/admin/invites'),
+
+  validateInvite: (token: string): Promise<InviteValidation> =>
+    request<InviteValidation>('/api/v1/admin/invite/validate', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
     }),
 
   // Species

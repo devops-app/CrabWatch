@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import Image from 'next/image'
 import { api } from '@/lib/api'
 import { ObservationResponse } from '@crabwatch/shared'
 
@@ -280,13 +279,10 @@ export default function ResearcherPage(): React.JSX.Element {
                           className="block w-24 h-24 rounded-lg overflow-hidden hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-ocean-500"
                           aria-label={`View photo ${i + 1} full screen`}
                         >
-                          <Image
+                          <img
                             src={photo}
                             alt={`Observation photo ${i + 1}`}
-                            width={96}
-                            height={96}
                             className="w-full h-full object-cover"
-                            unoptimized
                           />
                         </button>
                       ))}

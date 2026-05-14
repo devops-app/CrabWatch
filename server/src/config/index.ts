@@ -33,6 +33,10 @@ export const config = {
     projectEndpoint: process.env.FOUNDRY_PROJECT_ENDPOINT,
     apiVersion: process.env.FOUNDRY_API_VERSION || '2025-05-15-preview',
   },
+  resend: {
+    apiKey: process.env.RESEND_API_KEY,
+  },
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
 }
 
 if (!config.databaseUrl) {

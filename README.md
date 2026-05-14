@@ -19,7 +19,7 @@ CrabWatch/
 | -------- | ----------------------------------------------------------------- |
 | **Shared** | TypeScript, Zod validation schemas                              |
 | **Server** | Express.js, Prisma ORM, PostgreSQL, Firebase Admin SDK, JWT    |
-| **Web**    | Next.js 14 (App Router), React, TypeScript, Tailwind CSS        |
+| **Web**    | Next.js 14 (App Router), React 19, TypeScript, Tailwind CSS     |
 | **Mobile** | React Native, Expo SDK 54, TypeScript, Zustand, React 19        |
 | **AI**     | Azure AI Foundry, GPT-4o Vision, Azure Blob Storage             |
 | **Infra**  | Terraform, GitHub Actions                                       |
@@ -165,7 +165,7 @@ The seed script creates:
 2. Navigate to `/auth/login`
 3. Login with seed credentials above
 4. Access dashboard based on role:
-   - **ADMIN**: `/dashboard/admin` — Manage users and species
+   - **ADMIN**: `/dashboard/admin` — Manage users, species, invites, backups
    - **RESEARCHER**: `/dashboard/researcher` — Validate observations, view analytics
    - **USER**: `/dashboard` — Submit observations, view public data
 
@@ -246,10 +246,13 @@ pnpm test:e2e:headed  # Run with visible browser
 
 ### Authentication
 
-| Method | Endpoint                | Auth     | Description              |
-| ------ | ----------------------- | -------- | ------------------------ |
-| POST   | `/api/v1/auth/login`    | Public   | Login with email/password|
-| POST   | `/api/v1/auth/verify`   | Bearer   | Verify JWT token         |
+| Method | Endpoint                        | Auth     | Description                    |
+| ------ | ------------------------------- | -------- | ------------------------------ |
+| POST   | `/api/v1/auth/login`            | Public   | Login with email/password      |
+| POST   | `/api/v1/auth/logout`           | Bearer   | User logout                    |
+| POST   | `/api/v1/auth/verify`           | Public   | Verify JWT token               |
+| POST   | `/api/v1/auth/password-reset/request` | Public | Request password reset email |
+| POST   | `/api/v1/auth/password-reset/reset`   | Public   | Reset password with token    |
 
 ### Species
 
@@ -273,13 +276,17 @@ pnpm test:e2e:headed  # Run with visible browser
 
 ### Users
 
-| Method | Endpoint                      | Auth          | Description                  |
-| ------ | ----------------------------- | ------------- | ---------------------------- |
-| POST   | `/api/v1/users/register`      | Public        | Register new user            |
-| GET    | `/api/v1/users/me`            | Bearer        | Get current user profile     |
-| PATCH  | `/api/v1/users/me`            | Bearer        | Update current user profile  |
-| GET    | `/api/v1/users`               | ADMIN/RESEARCHER | List all users           |
-| PATCH  | `/api/v1/users/:id/role`      | ADMIN         | Update user role             |
+| Method | Endpoint                      | Auth                | Description                  |
+| ------ | ----------------------------- | ------------------- | ---------------------------- |
+| POST   | `/api/v1/users/register`      | Public              | Register new user            |
+| GET    | `/api/v1/users/me`            | Bearer              | Get current user profile     |
+| PATCH  | `/api/v1/users/me`            | Bearer              | Update current user profile  |
+| GET    | `/api/v1/users`               | ADMIN/RESEARCHER    | List all users               |
+| PATCH  | `/api/v1/users/:id/role`      | ADMIN               | Update user role             |
+| DELETE | `/api/v1/users/:id`           | ADMIN               | Soft-delete a user           |
+| POST   | `/api/v1/users/:id/restore`   | ADMIN               | Restore soft-deleted user    |
+| POST   | `/api/v1/users/:id/block`     | ADMIN               | Block a user                 |
+| POST   | `/api/v1/users/:id/unblock`   | ADMIN               | Unblock a user               |
 
 ### Analytics
 
@@ -291,6 +298,7 @@ pnpm test:e2e:headed  # Run with visible browser
 | GET    | `/api/v1/analytics/condition-indices`       | RESEARCHER+   | Body condition indices          |
 | GET    | `/api/v1/analytics/cw50`                    | RESEARCHER+   | CW50 maturity size estimate     |
 | GET    | `/api/v1/analytics/temporal-trends`         | RESEARCHER+   | Observation trends over time    |
+| GET    | `/api/v1/analytics/species-distribution`    | RESEARCHER+   | Species distribution            |
 
 ### AI Analysis
 
@@ -298,6 +306,20 @@ pnpm test:e2e:headed  # Run with visible browser
 | ------ | ----------------------------- | -------- | --------------------------------- |
 | POST   | `/api/v1/analyze/upload`      | Bearer   | Upload photos for AI analysis     |
 | POST   | `/api/v1/analyze/crab`        | Bearer   | Analyze crab photos with AI       |
+
+### Admin
+
+| Method | Endpoint                              | Auth     | Description                       |
+| ------ | ------------------------------------- | -------- | --------------------------------- |
+| POST   | `/api/v1/admin/backup`                | ADMIN    | Trigger manual database backup    |
+| GET    | `/api/v1/admin/backups`               | ADMIN    | List all backup files             |
+| GET    | `/api/v1/admin/backups/:fileName/download` | ADMIN | Download a backup file         |
+| DELETE | `/api/v1/admin/backups/:fileName`     | ADMIN    | Delete a backup file              |
+| POST   | `/api/v1/admin/cleanup-users`         | ADMIN    | Permanently delete expired users  |
+| GET    | `/api/v1/admin/deleted-users`         | ADMIN    | List soft-deleted users           |
+| POST   | `/api/v1/admin/invite`                | ADMIN    | Create invite for new user        |
+| GET    | `/api/v1/admin/invites`               | ADMIN    | List all invites                  |
+| POST   | `/api/v1/admin/invite/validate`       | Public   | Validate invite token             |
 
 ### Uploads
 
@@ -321,16 +343,20 @@ pnpm test:e2e:headed  # Run with visible browser
 ## Database Schema
 
 ```
-User (id, name, email, role, avatar, password, firebaseUid, createdAt)
+User (id, name, email, phoneCode, phoneNumber, addressLine1-3, state, postcode, country,
+      role, avatar, password, firebaseUid, deletedAt, blockedAt, blockReason, createdAt)
   ├── role: USER | RESEARCHER | ADMIN
-  └── observations[] → Observation
+  ├── observations[] → Observation
+  ├── validatedObs[] → Observation (as validator)
+  ├── fcmToken → FcmToken
+  └── passwordResets[] → PasswordReset
 
 Species (id, scientificName, commonName, description, keyFeatures, images, distributionZones)
   └── observations[] → Observation
 
 Observation (id, userId, speciesId, cw, bw, gender, maturationStatus, lat, lng,
-              locationMethod, photos, notes, status, validatedBy, validatedAt,
-              rejectionReason, createdAt)
+             locationMethod, photos, detectedCoin, notes, status, validatedBy, validatedAt,
+             rejectionReason, createdAt)
   ├── status: PENDING | APPROVED | REJECTED
   ├── gender: MALE | FEMALE | UNKNOWN (DB column: `sex`, mapped via Prisma)
   ├── maturationStatus: MATURE | IMMATURE | UNKNOWN
@@ -338,6 +364,15 @@ Observation (id, userId, speciesId, cw, bw, gender, maturationStatus, lat, lng,
   ├── user → User
   ├── validator → User
   └── species → Species
+
+Invite (id, email, role, token, expiresAt, used, createdAt)
+  └── Single-use invite with expiry for user registration
+
+PasswordReset (id, userId, token, expiresAt, used, createdAt)
+  └── Single-use reset token with 1-hour expiry
+
+FcmToken (id, userId, token, createdAt, updatedAt)
+  └── Push notification device token
 ```
 
 ## Role Permissions
@@ -414,12 +449,22 @@ CrabWatch/
 | `FOUNDRY_AGENT_VERSION`            | No       | Foundry agent version              |
 | `FOUNDRY_API_KEY`                  | No*      | Foundry API key                    |
 | `FOUNDRY_API_VERSION`              | No       | API version (default: 2025-05-15-preview) |
+| `RESEND_API_KEY`                   | No*      | Resend API key for email dispatch  |
+| `FRONTEND_URL`                     | No*      | Frontend URL for invite/reset links|
+| `BACKUP_DIR`                       | No       | Backup directory (default: ./backups) |
 | `CORS_ORIGINS`                     | No       | Allowed CORS origins               |
 | `NODE_ENV`                         | No       | Environment (development/production)|
 
 > *Optional for local dev with JWT fallback. Required for production.
 
 ## Deployment
+
+### Target Stack
+
+- **Web**: Vercel
+- **API**: Azure App Service
+- **Database**: Azure PostgreSQL
+- **Mobile**: Expo EAS
 
 ### CI/CD
 
@@ -511,7 +556,11 @@ CORS_ORIGINS="http://localhost:3000,http://localhost:19006,https://yourdomain.co
 - [x] Authentication (Firebase ID tokens + JWT fallback for local dev)
 - [x] API endpoints with versioning (`/api/v1/`)
 - [x] Web dashboard (admin, researcher, user views)
+- [x] Web profile edit, observation detail, species browse pages
+- [x] Web password reset flow (forgot/reset pages)
 - [x] Mobile app (Expo SDK 54, React 19)
+- [x] Mobile analytics, researcher, admin screens
+- [x] Mobile password reset flow (forgot/reset screens)
 - [x] Full-screen modal camera with guided capture
 - [x] CI/CD pipelines
 - [x] Unit tests (shared: 17, server: 113, web: 58, mobile: 350)
@@ -530,8 +579,12 @@ CORS_ORIGINS="http://localhost:3000,http://localhost:19006,https://yourdomain.co
 - [x] Dynamic species detection (mud crabs + swimming crabs)
 - [x] Azure Blob Storage (photo upload for analysis)
 - [x] Dual MYR coin series (Third + Second Series 1989-2011)
-- [x] Body weight estimation (BW formula by crab type)
 - [x] Full-screen modal camera capture
+- [x] Invite system (token-based, email dispatch via Resend)
+- [x] Password reset by email (Resend)
+- [x] Admin panel (user management, species CRUD, backup, invites)
+- [x] User soft-delete with 30-day retention
+- [x] User block/unblock with auth rejection
 
 ## License
 

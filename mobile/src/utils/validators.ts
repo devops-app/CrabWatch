@@ -8,6 +8,14 @@ export const loginSchema = z.object({
 export const registerSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be under 100 characters'),
   email: z.string().email('Invalid email address'),
+  phoneCode: z.string().min(1, 'Country code is required').max(5, 'Country code too long'),
+  phoneNumber: z.string().min(7, 'Phone number must be at least 7 digits').max(20, 'Phone number is too long'),
+  addressLine1: z.string().min(1, 'Address line 1 is required').max(200, 'Address line too long'),
+  addressLine2: z.string().max(200, 'Address line too long').optional().or(z.literal('')),
+  addressLine3: z.string().max(200, 'Address line too long').optional().or(z.literal('')),
+  state: z.string().min(1, 'State is required').max(100, 'State too long'),
+  postcode: z.string().min(1, 'Postcode is required').max(20, 'Postcode too long'),
+  country: z.string().min(1, 'Country is required').max(100, 'Country too long'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string().min(1, 'Please confirm your password'),
 }).refine((data) => data.password === data.confirmPassword, {

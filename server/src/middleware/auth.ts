@@ -94,7 +94,7 @@ export function requireRole(...roles: UserRole[]) {
 
 export async function resolveUser(
   req: AuthRequest,
-  _res: Response,
+  res: Response,
   next: NextFunction
 ): Promise<void> {
   if (!req.user) {
@@ -103,7 +103,7 @@ export async function resolveUser(
   }
 
   const prisma = (await import('../config/database')).default
-  let user: { id: string; role: string; email: string } | null = null
+  let user: { id: string; role: string; email: string; blockedAt: Date | null; deletedAt: Date | null } | null = null
 
   try {
     const uid = req.user.uid
@@ -117,7 +117,7 @@ export async function resolveUser(
 
     user = await prisma.user.findFirst({
       where,
-      select: { id: true, role: true, email: true },
+      select: { id: true, role: true, email: true, blockedAt: true, deletedAt: true },
     })
   } catch (err) {
     console.error('resolveUser: UUID lookup failed:', err)
@@ -127,7 +127,7 @@ export async function resolveUser(
     try {
       user = await prisma.user.findFirst({
         where: { email: req.user.email },
-        select: { id: true, role: true, email: true },
+        select: { id: true, role: true, email: true, blockedAt: true, deletedAt: true },
       })
     } catch (err) {
       console.error('resolveUser: email lookup failed:', err)
@@ -135,7 +135,15 @@ export async function resolveUser(
   }
 
   if (user) {
-    req.dbUser = user
+    if (user.deletedAt) {
+      res.status(403).json({ success: false, error: 'Account has been deleted' })
+      return
+    }
+    if (user.blockedAt) {
+      res.status(403).json({ success: false, error: 'Account has been suspended' })
+      return
+    }
+    req.dbUser = { id: user.id, role: user.role, email: user.email }
   }
   next()
 }

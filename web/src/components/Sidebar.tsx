@@ -12,6 +12,7 @@ interface SidebarProps {
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: '📋' },
   { href: '/dashboard/capture', label: 'Capture', icon: '📷' },
+  { href: '/dashboard/species', label: 'Species', icon: '🦀' },
   { href: '/dashboard/analytics', label: 'Analytics', icon: '📈' },
   { href: '/dashboard/researcher', label: 'Researcher', icon: '🔬', roles: ['researcher', 'admin'] as const },
   { href: '/dashboard/admin', label: 'Admin', icon: '⚙️', roles: ['admin'] as const },

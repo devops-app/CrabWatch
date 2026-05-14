@@ -11,6 +11,7 @@ import { docsAuthMiddleware } from './middleware/docsAuth'
 import { performanceMiddleware, getPerformanceMetrics } from './middleware/performance'
 import authRoutes from './routes/authRoutes'
 import userRoutes from './routes/userRoutes'
+import adminRoutes from './routes/adminRoutes'
 import speciesRoutes from './routes/speciesRoutes'
 import observationRoutes from './routes/observationRoutes'
 import analyticsRoutes from './routes/analyticsRoutes'
@@ -95,6 +96,7 @@ if (isDocsEnabled) {
 
 app.use('/api/v1/auth', authRoutes)
 app.use('/api/v1/users', userRoutes)
+app.use('/api/v1/admin', adminRoutes)
 app.use('/api/v1/species', speciesRoutes)
 app.use('/api/v1/observations', observationRoutes)
 app.use('/api/v1/analytics', analyticsRoutes)

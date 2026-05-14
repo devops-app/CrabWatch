@@ -79,10 +79,24 @@ export const api = {
     })
   },
 
-  async register(name: string, email: string, password: string): Promise<UserResponse> {
+  async register(name: string, email: string, password: string, phoneCode?: string, phoneNumber?: string, addressLine1?: string, addressLine2?: string, addressLine3?: string, state?: string, postcode?: string, country?: string): Promise<UserResponse> {
     return apiRequest('/users/register', {
       method: 'POST',
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, email, phoneCode, phoneNumber, addressLine1, addressLine2, addressLine3, state, postcode, country, password }),
+    })
+  },
+
+  async requestPasswordReset(email: string): Promise<{ message: string }> {
+    return apiRequest('/auth/password-reset/request', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    })
+  },
+
+  async resetPassword(token: string, password: string): Promise<{ message: string }> {
+    return apiRequest('/auth/password-reset/reset', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
     })
   },
 
@@ -90,7 +104,7 @@ export const api = {
     return apiRequest('/users/me')
   },
 
-  async updateProfile(data: { name?: string; avatar?: string | null }): Promise<UserResponse> {
+  async updateProfile(data: { name?: string; phoneCode?: string | null; phoneNumber?: string | null; addressLine1?: string | null; addressLine2?: string | null; addressLine3?: string | null; state?: string | null; postcode?: string | null; country?: string | null; avatar?: string | null }): Promise<UserResponse> {
     return apiRequest('/users/me', {
       method: 'PATCH',
       body: JSON.stringify(data),
@@ -213,6 +227,96 @@ export const api = {
     return apiRequest(`/users/${userId}/role`, {
       method: 'PATCH',
       body: JSON.stringify({ role }),
+    })
+  },
+
+  async softDeleteUser(userId: string): Promise<{ message: string }> {
+    return apiRequest(`/users/${userId}`, {
+      method: 'DELETE',
+    })
+  },
+
+  async restoreUser(userId: string): Promise<{ message: string }> {
+    return apiRequest(`/users/${userId}/restore`, {
+      method: 'POST',
+    })
+  },
+
+  async blockUser(userId: string, reason?: string): Promise<{ message: string }> {
+    return apiRequest(`/users/${userId}/block`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    })
+  },
+
+  async unblockUser(userId: string): Promise<{ message: string }> {
+    return apiRequest(`/users/${userId}/unblock`, {
+      method: 'POST',
+    })
+  },
+
+  async listDeletedUsers(): Promise<{ users: UserResponse[]; total: number }> {
+    return apiRequest('/admin/deleted-users')
+  },
+
+  async cleanupDeletedUsers(): Promise<{ deletedCount: number; users: any[]; retentionDays: number }> {
+    return apiRequest('/admin/cleanup-users', {
+      method: 'POST',
+    })
+  },
+
+  async backupDatabase(): Promise<{ fileName: string; filePath: string; size: number; timestamp: string }> {
+    return apiRequest('/admin/backup', {
+      method: 'POST',
+    })
+  },
+
+  async listBackups(): Promise<{ fileName: string; size: number; timestamp: string }[]> {
+    return apiRequest('/admin/backups')
+  },
+
+  async createInvite(email: string, role: string, expiresInHours?: number): Promise<{ token: string; expiresAt: string }> {
+    return apiRequest('/admin/invite', {
+      method: 'POST',
+      body: JSON.stringify({ email, role, expiresInHours }),
+    })
+  },
+
+  async listInvites(): Promise<any[]> {
+    return apiRequest('/admin/invites')
+  },
+
+  async createSpecies(data: {
+    scientificName: string
+    commonName: string
+    description?: string
+    keyFeatures?: any[]
+    images?: string[]
+    distributionZones?: any[]
+  }): Promise<SpeciesResponse> {
+    return apiRequest('/species', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  async updateSpecies(id: string, data: {
+    scientificName: string
+    commonName: string
+    description?: string
+    keyFeatures?: any[]
+    images?: string[]
+    distributionZones?: any[]
+  }): Promise<SpeciesResponse> {
+    return apiRequest(`/species/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  },
+
+  async deleteSpecies(id: string): Promise<{ message: string }> {
+    return apiRequest(`/species/${id}`, {
+      method: 'DELETE',
     })
   },
 

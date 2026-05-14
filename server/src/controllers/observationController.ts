@@ -13,28 +13,32 @@ type DbUser = { id: string; role: string; email: string }
 
 async function refreshPhotoUrls(photos: string[]): Promise<string[]> {
   const refreshed: string[] = []
+  const containerName = process.env.AZURE_STORAGE_CONTAINER || 'crabwatch-uploads'
+  const service = getBlobService()
+  const containerClient = service.getContainerClient(containerName)
+
   for (const url of photos) {
     if (!url.includes('?sv=')) {
       refreshed.push(url)
       continue
     }
     try {
-      const containerName = process.env.AZURE_STORAGE_CONTAINER || 'crabwatch-uploads'
-      const blobName = url.split(`${containerName}/`)[1]
-      if (!blobName) {
+      // SAS URLs can be absolute (https://account.blob.core.windows.net/container/...)
+      // or relative (/container/path?sv=...). Strip everything before container name.
+      const afterContainer = url.split(`${containerName}/`)
+      if (afterContainer.length < 2) {
         refreshed.push(url)
         continue
       }
-      const decodedName = decodeURIComponent(blobName.split('?')[0])
-      const service = getBlobService()
-      const containerClient = service.getContainerClient(containerName)
+      const blobPath = afterContainer.slice(1).join('/')
+      const decodedName = decodeURIComponent(blobPath.split('?')[0])
       const blobClient = containerClient.getBlockBlobClient(decodedName)
       const sasUrl = await blobClient.generateSasUrl({
-        startsOn: new Date(Date.now() - 2 * 60 * 1000),
-        expiresOn: new Date(Date.now() + 60 * 60 * 1000),
-        permissions: BlobSASPermissions.parse('r'),
-      })
-      refreshed.push(sasUrl)
+         startsOn: new Date(Date.now() - 2 * 60 * 1000),
+         expiresOn: new Date(Date.now() + 60 * 60 * 1000),
+         permissions: BlobSASPermissions.parse('r'),
+       })
+       refreshed.push(sasUrl)
     } catch {
       refreshed.push(url)
     }
