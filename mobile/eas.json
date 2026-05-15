@@ -7,18 +7,25 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "android": {
+        "image": "ubuntu-22.04-ndk"
+      },
       "env": {}
     },
     "preview": {
       "distribution": "internal",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "image": "ubuntu-22.04-ndk"
       },
       "env": {}
     },
     "production": {
       "autoIncrement": true,
-      "env": {}
+      "env": {},
+      "android": {
+        "image": "ubuntu-22.04-ndk"
+      }
     }
   },
   "submit": {
