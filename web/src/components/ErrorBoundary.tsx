@@ -24,6 +24,18 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error('ErrorBoundary caught:', error, errorInfo)
+
+    if (process.env.NODE_ENV === 'production') {
+      fetch('/api/v1/telemetry/error', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: error.message,
+          stack: error.stack,
+          componentStack: errorInfo.componentStack,
+        }),
+      }).catch(() => {})
+    }
   }
 
   render(): ReactNode {

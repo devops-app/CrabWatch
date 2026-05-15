@@ -7,19 +7,21 @@ All three components (API, Web, Database) deployed to a single Azure resource gr
 ## Architecture
 
 ```
-Resource Group: crabwatch-prod  (location: southeastasia)
+Resource Group: VSES-CrabWatch-MY-RG  (location: malaysiawest)
 ├── PostgreSQL Flexible Server  → crabwatch-db
 ├── App Service Plan            → crabwatch-plan  (B1, Linux)
-├── App Service (API)           → crabwatch-api   (Node 18)
-└── App Service (Web)           → crabwatch-web   (Node 18)
+├── App Service (API)           → crabwatch-api   (Node 22)
+├── App Service (Web)           → crabwatch-web   (Node 22)
+└── Application Insights        → crabwatch-insights
 ```
 
 | Component | URL | SKU | Est. Cost |
 |-----------|-----|-----|-----------|
-| PostgreSQL | `crabwatch-db.postgres.database.azure.com` | Basic B1ms (32 GB) | ~$5/mo |
+| PostgreSQL | `crabwatch-db.postgres.database.azure.com` | Basic B1ms (32 GB) | RM86/mo |
 | API | `https://crabwatch-api.azurewebsites.net` | B1 (shared plan) | included |
 | Web | `https://crabwatch-web.azurewebsites.net` | B1 (shared plan) | included |
-| **Total** | | | **~$18/mo** |
+| Application Insights | `crabwatch-insights` | Pay-per-use | ~$0-5 |
+| **Total** | | | **~$18-23/mo** |
 
 ---
 
@@ -67,13 +69,13 @@ npx web-push generate-vapid-keys
 
 ```powershell
 az group create `
-  --name crabwatch-prod `
-  --location southeastasia
+  --name VSES-CrabWatch-MY-RG `
+  --location malaysiawest
 ```
 
 Verify:
 ```powershell
-az group show --name crabwatch-prod --query "{name:name, location:location}"
+az group show --name VSES-CrabWatch-MY-RG --query "{name:name, location:location}"
 ```
 
 ---
@@ -87,8 +89,8 @@ Replace `YOUR-STRONG-PASSWORD` with the password you generated.
 ```powershell
 az postgres flexible-server create `
   --name crabwatch-db `
-  --resource-group crabwatch-prod `
-  --location southeastasia `
+  --resource-group VSES-CrabWatch-MY-RG `
+  --location malaysiawest `
   --admin-user crabwatchadmin `
   --admin-password "YOUR-STRONG-PASSWORD" `
   --sku-name Standard_B1ms `
@@ -100,7 +102,7 @@ az postgres flexible-server create `
 
 ```powershell
 az postgres flexible-server db create `
-  --resource-group crabwatch-prod `
+  --resource-group VSES-CrabWatch-MY-RG `
   --server-name crabwatch-db `
   --name crabwatch
 ```
@@ -109,7 +111,7 @@ az postgres flexible-server db create `
 
 ```powershell
 az postgres flexible-server firewall-rule create `
-  --resource-group crabwatch-prod `
+  --resource-group VSES-CrabWatch-MY-RG `
   --server-name crabwatch-db `
   --name AllowAll `
   --start-ip-address 0.0.0.0 `
@@ -133,7 +135,7 @@ Both API and Web share one plan to save cost.
 ```powershell
 az appservice plan create `
   --name crabwatch-plan `
-  --resource-group crabwatch-prod `
+  --resource-group VSES-CrabWatch-MY-RG `
   --sku B1 `
   --is-linux
 ```
@@ -147,9 +149,9 @@ az appservice plan create `
 ```powershell
 az webapp create `
   --name crabwatch-api `
-  --resource-group crabwatch-prod `
+  --resource-group VSES-CrabWatch-MY-RG `
   --plan crabwatch-plan `
-  --runtime "NODE:18-LTS"
+  --runtime "NODE:22-LTS"
 ```
 
 ### 4.2 Set environment variables
@@ -157,11 +159,10 @@ az webapp create `
 Replace all `YOUR-...` placeholders. The `FIREBASE_PRIVATE_KEY` value comes from your existing `server/.env` (line 7).
 
 ```powershell
-az webapp config appsettings set --name crabwatch-api --resource-group crabwatch-prod --settings `
+az webapp config appsettings set --name crabwatch-api --resource-group VSES-CrabWatch-MY-RG --settings `
   DATABASE_URL="postgresql://crabwatchadmin:YOUR-STRONG-PASSWORD@crabwatch-db.postgres.database.azure.com:5432/crabwatch?sslmode=require" `
   NODE_ENV="production" `
   JWT_SECRET="YOUR-JWT-SECRET-FROM-STEP-0" `
-  PORT="3001" `
   FIREBASE_PROJECT_ID="crabwatch-495303" `
   FIREBASE_CLIENT_EMAIL="firebase-adminsdk-fbsvc@crabwatch-495303.iam.gserviceaccount.com" `
   FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR-FIREBASE-PRIVATE-KEY-HERE\n-----END PRIVATE KEY-----\n" `
@@ -177,8 +178,9 @@ az webapp config appsettings set --name crabwatch-api --resource-group crabwatch
   CORS_ORIGINS="https://crabwatch-web.azurewebsites.net" `
   FCM_VAPID_PRIVATE_KEY="YOUR-VAPID-PRIVATE-KEY" `
   FCM_VAPID_PUBLIC_KEY="YOUR-VAPID-PUBLIC-KEY" `
-  SCM_DO_BUILD_DURING_DEPLOYMENT="false" `
-  WEBSITE_NODE_DEFAULT_VERSION="18"
+  SCM_DO_BUILD_DURING_DEPLOYMENT="1" `
+  ORYX_NODE_COMPRESS_NODE_MODULES="" `
+  WEBSITE_NODE_DEFAULT_VERSION="22"
 ```
 
 ### 4.3 Build locally
@@ -196,30 +198,28 @@ pnpm --filter=server build
 
 ### 4.4 Create deployment package
 
-The server `tsconfig.json` compiles `src/` + `../shared/src` into `dist/`. The runtime needs:
+The server `tsconfig.json` compiles `src/` + `../shared/src` into `dist/`. Package only the built output and config — Azure will run `npm install` to build `node_modules/` automatically (`SCM_DO_BUILD_DURING_DEPLOYMENT=1`).
+
 - `dist/` — compiled JavaScript
-- `node_modules/` — runtime dependencies (express, prisma, etc.)
-- `package.json` — for `node start` command
+- `package.json` — dependencies + start command
 - `prisma/` — schema + migrations
+- `.env` — local env fallback (Azure app settings take precedence)
 
 ```powershell
 # Remove old zip if exists
 Remove-Item -ErrorAction SilentlyContinue server-deploy.zip
 
-# Create zip with all required files
-Compress-Archive -Path `
-  server\dist, `
-  server\node_modules, `
-  server\package.json, `
-  server\prisma `
-  -DestinationPath server-deploy.zip -Force
+# Create zip using tar (POSIX paths, avoids Kudu rsync backslash errors)
+Push-Location server
+tar -a -cf ..\server-deploy.zip dist package.json prisma .env
+Pop-Location
 ```
 
-### 4.5 Deploy to Azure
+### 4.5 Deploy to Azure (Perform at CloudShell)
 
 ```powershell
 az webapp deployment source config-zip `
-  --resource-group crabwatch-prod `
+  --resource-group VSES-CrabWatch-MY-RG `
   --name crabwatch-api `
   --src server-deploy.zip
 ```
@@ -231,10 +231,10 @@ Open the Kudu console in your browser:
 https://crabwatch-api.scm.azurewebsites.net/DebugConsole
 ```
 
-1. Navigate to `site\wwwroot`
-2. Open PowerShell tab
-3. Run:
-```powershell
+1. Run:
+```ssh
+cd site/wwwroot
+tar -xzf node_modules.tar.gz
 npx prisma migrate deploy
 ```
 
@@ -263,15 +263,15 @@ If you get `{"status":"degraded","database":"unreachable"}`, check:
 ```powershell
 az webapp create `
   --name crabwatch-web `
-  --resource-group crabwatch-prod `
+  --resource-group VSES-CrabWatch-MY-RG `
   --plan crabwatch-plan `
-  --runtime "NODE:18-LTS"
+  --runtime "NODE:22-LTS"
 ```
 
 ### 5.2 Set environment variables
 
 ```powershell
-az webapp config appsettings set --name crabwatch-web --resource-group crabwatch-prod --settings `
+az webapp config appsettings set --name crabwatch-web --resource-group VSES-CrabWatch-MY-RG --settings `
   BACKEND_URL="https://crabwatch-api.azurewebsites.net" `
   MAPBOX_TOKEN="YOUR-MAPBOX-TOKEN" `
   NEXT_PUBLIC_FIREBASE_API_KEY="AIzaSyAjMgIfHNtp_8VmVyeGt2rgljA6eLKpMKQ" `
@@ -282,8 +282,8 @@ az webapp config appsettings set --name crabwatch-web --resource-group crabwatch
   NEXT_PUBLIC_FIREBASE_APP_ID="1:591932463898:web:f1e1959828958d849daaa3" `
   NEXT_PUBLIC_FCM_VAPID_KEY="YOUR-VAPID-PUBLIC-KEY" `
   NODE_ENV="production" `
-  SCM_DO_BUILD_DURING_DEPLOYMENT="false" `
-  WEBSITE_NODE_DEFAULT_VERSION="18"
+  SCM_DO_BUILD_DURING_DEPLOYMENT="1" `
+  WEBSITE_NODE_DEFAULT_VERSION="22"
 ```
 
 ### 5.3 Build locally
@@ -300,23 +300,21 @@ pnpm --filter=web build
 
 ### 5.4 Create deployment package
 
+Package the built output and config. Azure will run `npm install --production` automatically.
+
 ```powershell
 Remove-Item -ErrorAction SilentlyContinue web-deploy.zip
 
-Compress-Archive -Path `
-  web\.next, `
-  web\node_modules, `
-  web\package.json, `
-  web\public, `
-  web\next.config.mjs `
-  -DestinationPath web-deploy.zip -Force
+Push-Location web
+tar -a -cf ..\web-deploy.zip .next package.json public next.config.mjs
+Pop-Location
 ```
 
-### 5.5 Deploy to Azure
+### 5.5 Deploy to Azure (Perform at Azure Portal as size is over 100MB limit for CloudShell)
 
 ```powershell
 az webapp deployment source config-zip `
-  --resource-group crabwatch-prod `
+  --resource-group VSES-CrabWatch-MY-RG `
   --name crabwatch-web `
   --src web-deploy.zip
 ```
@@ -399,7 +397,8 @@ UPDATE "User" SET role = 'ADMIN' WHERE email = 'your@email.com';
 ```powershell
 # Via Kudu console (https://crabwatch-api.scm.azurewebsites.net/DebugConsole)
 # Navigate to site\wwwroot, open PowerShell:
-node -e "require('./dist/prisma/seed').default()"
+npx prisma generate
+npx tsx prisma/seed.ts
 ```
 
 Seed creates:
@@ -420,20 +419,20 @@ Remove the `AllowAll` rule and add only App Service outbound IPs:
 ```powershell
 # Remove temporary rule
 az postgres flexible-server firewall-rule delete `
-  --resource-group crabwatch-prod `
+  --resource-group VSES-CrabWatch-MY-RG `
   --server-name crabwatch-db `
   --name AllowAll
 
 # Get App Service outbound IPs
 az webapp show `
-  --resource-group crabwatch-prod `
+  --resource-group VSES-CrabWatch-MY-RG `
   --name crabwatch-api `
   --query outboundIpAddresses `
   --output tsv
 
 # Add each IP (or IP range) as a firewall rule
 az postgres flexible-server firewall-rule create `
-  --resource-group crabwatch-prod `
+  --resource-group VSES-CrabWatch-MY-RG `
   --server-name crabwatch-db `
   --name "app-service-1" `
   --start-ip-address "X.X.X.X" `
@@ -450,25 +449,42 @@ curl -I http://crabwatch-api.azurewebsites.net
 curl -I http://crabwatch-web.azurewebsites.net
 ```
 
-### 8.3 Enable Application Insights (optional)
+### 8.3 Enable Application Insights (required)
 
 ```powershell
 # Create Application Insights
 az monitor app-insights component create `
   --app crabwatch-insights `
-  --location southeastasia `
-  --resource-group crabwatch-prod
+  --location malaysiawest `
+  --resource-group VSES-CrabWatch-MY-RG
 
-# Enable on both apps
+# Get the connection string
+$INSIGHTS_CS=$(az monitor app-insights component show `
+  --app crabwatch-insights `
+  --resource-group VSES-CrabWatch-MY-RG `
+  --query connectionString --output tsv)
+
+# Enable on API app
 az webapp application-insights set `
   --name crabwatch-api `
-  --resource-group crabwatch-prod `
+  --resource-group VSES-CrabWatch-MY-RG `
   --app-insights crabwatch-insights
 
+az webapp config appsettings set `
+  --name crabwatch-api `
+  --resource-group VSES-CrabWatch-MY-RG `
+  --settings APPLICATIONINSIGHTS_CONNECTION_STRING="$INSIGHTS_CS"
+
+# Enable on Web app
 az webapp application-insights set `
   --name crabwatch-web `
-  --resource-group crabwatch-prod `
+  --resource-group VSES-CrabWatch-MY-RG `
   --app-insights crabwatch-insights
+
+az webapp config appsettings set `
+  --name crabwatch-web `
+  --resource-group VSES-CrabWatch-MY-RG `
+  --settings APPLICATIONINSIGHTS_CONNECTION_STRING="$INSIGHTS_CS"
 ```
 
 ---
@@ -496,9 +512,11 @@ cd D:\demo\CrabWatch
 pnpm --filter=shared build
 pnpm --filter=server build
 
-Compress-Archive -Path server\dist,server\node_modules,server\package.json,server\prisma -DestinationPath server-deploy.zip -Force
+Push-Location server
+tar -a -cf ..\server-deploy.zip dist package.json prisma .env
+Pop-Location
 
-az webapp deployment source config-zip --resource-group crabwatch-prod --name crabwatch-api --src server-deploy.zip
+az webapp deployment source config-zip --resource-group VSES-CrabWatch-MY-RG --name crabwatch-api --src server-deploy.zip
 ```
 
 If you changed the Prisma schema, run migrations after deploy:
@@ -514,9 +532,11 @@ cd D:\demo\CrabWatch
 pnpm --filter=shared build
 pnpm --filter=web build
 
-Compress-Archive -Path web\.next,web\node_modules,web\package.json,web\public,web\next.config.mjs -DestinationPath web-deploy.zip -Force
+Push-Location web
+tar -a -cf ..\web-deploy.zip .next package.json public next.config.mjs
+Pop-Location
 
-az webapp deployment source config-zip --resource-group crabwatch-prod --name crabwatch-web --src web-deploy.zip
+az webapp deployment source config-zip --resource-group VSES-CrabWatch-MY-RG --name crabwatch-web --src web-deploy.zip
 ```
 
 ### Mobile
@@ -534,17 +554,17 @@ npx eas-cli build --platform android --profile production
 
 ```powershell
 # Check logs
-az webapp log tail --name crabwatch-api --resource-group crabwatch-prod
+az webapp log tail --name crabwatch-api --resource-group VSES-CrabWatch-MY-RG
 
 # Check app settings
-az webapp config appsettings list --name crabwatch-api --resource-group crabwatch-prod --output table
+az webapp config appsettings list --name crabwatch-api --resource-group VSES-CrabWatch-MY-RG --output table
 ```
 
 ### CORS errors in browser
 
 Verify `CORS_ORIGINS` on the API includes the web URL:
 ```powershell
-az webapp config appsettings list --name crabwatch-api --resource-group crabwatch-prod --query "[?name=='CORS_ORIGINS']"
+az webapp config appsettings list --name crabwatch-api --resource-group VSES-CrabWatch-MY-RG --query "[?name=='CORS_ORIGINS']"
 ```
 
 ### Database connection fails
@@ -553,7 +573,7 @@ az webapp config appsettings list --name crabwatch-api --resource-group crabwatc
 2. Verify `DATABASE_URL` has `?sslmode=require`
 3. Check PostgreSQL server status:
 ```powershell
-az postgres flexible-server show --name crabwatch-db --resource-group crabwatch-prod --query state
+az postgres flexible-server show --name crabwatch-db --resource-group VSES-CrabWatch-MY-RG --query state
 ```
 
 ### Next.js build fails on Azure
@@ -596,7 +616,6 @@ npx eas-cli build --platform android --profile production --non-interactive
 | `DATABASE_URL` | Azure PostgreSQL | App Service config |
 | `NODE_ENV` | — | `production` |
 | `JWT_SECRET` | Generated (Step 0) | App Service config |
-| `PORT` | — | `3001` |
 | `FIREBASE_*` | Firebase console | App Service config |
 | `AZURE_STORAGE_*` | Azure Portal | App Service config |
 | `FOUNDRY_*` | Azure AI Foundry | App Service config |
@@ -604,6 +623,7 @@ npx eas-cli build --platform android --profile production --non-interactive
 | `FRONTEND_URL` | — | `https://crabwatch-web.azurewebsites.net` |
 | `CORS_ORIGINS` | — | `https://crabwatch-web.azurewebsites.net` |
 | `FCM_VAPID_*` | Generated (Step 0) | App Service config |
+| `APPLICATIONINSIGHTS_CONNECTION_STRING` | App Insights component | App Service config (Step 8.3) |
 
 ### Web (`crabwatch-web`)
 
@@ -613,6 +633,7 @@ npx eas-cli build --platform android --profile production --non-interactive
 | `MAPBOX_TOKEN` | Mapbox dashboard | App Service config |
 | `NEXT_PUBLIC_FIREBASE_*` | Firebase console | App Service config |
 | `NEXT_PUBLIC_FCM_VAPID_KEY` | Generated (Step 0) | App Service config |
+| `APPLICATIONINSIGHTS_CONNECTION_STRING` | App Insights component | App Service config (Step 8.3) |
 
 ### Mobile (EAS Build)
 

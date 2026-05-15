@@ -14,8 +14,8 @@ const navItems = [
   { href: '/dashboard/capture', label: 'Capture', icon: '📷' },
   { href: '/dashboard/species', label: 'Species', icon: '🦀' },
   { href: '/dashboard/analytics', label: 'Analytics', icon: '📈' },
-  { href: '/dashboard/researcher', label: 'Researcher', icon: '🔬', roles: ['researcher', 'admin'] as const },
-  { href: '/dashboard/admin', label: 'Admin', icon: '⚙️', roles: ['admin'] as const },
+  { href: '/dashboard/researcher', label: 'Researcher', icon: '🔬', roles: ['researcher', 'admin'] },
+  { href: '/dashboard/admin', label: 'Admin', icon: '⚙️', roles: ['admin'] },
   { href: '/dashboard/about', label: 'About', icon: 'ℹ️' },
 ]
 

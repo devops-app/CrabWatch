@@ -1,7 +1,6 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { api } from '@/lib/api'
 import Link from 'next/link'
@@ -12,8 +11,7 @@ interface ResetPasswordForm {
 }
 
 export default function ResetPasswordPage(): React.JSX.Element {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const [token, setToken] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const {
@@ -23,8 +21,15 @@ export default function ResetPasswordPage(): React.JSX.Element {
     watch,
   } = useForm<ResetPasswordForm>()
 
-  const token = searchParams.get('token')
   const password = watch('password')
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+    const params = new URLSearchParams(window.location.search)
+    setToken(params.get('token'))
+  }, [])
 
   const onSubmit = async (data: ResetPasswordForm) => {
     if (!token) {

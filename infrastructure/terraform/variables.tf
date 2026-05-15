@@ -13,5 +13,5 @@ variable "environment" {
 variable "location" {
   description = "Azure region"
   type        = string
-  default     = "southeastasia"
+  default     = "malaysiawest"
 }

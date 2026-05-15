@@ -133,7 +133,7 @@ async function analyzeView(
   expectedView: PhotoView
 ): Promise<string[]> {
   try {
-    const img = new Image()
+    const img = document.createElement('img')
     img.src = dataUrl
     await new Promise((resolve) => { img.onload = resolve })
     const aspectRatio = img.width / img.height

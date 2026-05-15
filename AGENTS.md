@@ -126,6 +126,16 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - [x] Fixed `AdminScreen.tsx` syntax error (`'return' outside of function`) by removing stray closing brace
 - [x] Fixed mobile admin users management layout: subTabBar now anchors at top with proper flex layout
 - [x] Fixed `generateSasUrl` returning full URL (not just query string) — reverted doubled URL fix
+- [x] Application Insights monitoring: `@azure/monitor-opentelemetry` auto-instrumentation for server and web
+- [x] Server: `useAzureMonitor()` init at top of `server/src/index.ts`
+- [x] Web: `useAzureMonitor()` init at top of `web/src/app/layout.tsx`
+- [x] Enhanced `server/src/middleware/error.ts` with `req.method`/`req.path` context in error logs
+- [x] Added `console.warn` for 404s in `notFoundHandler`
+- [x] Added 4xx/5xx request logging to `server/src/middleware/performance.ts`
+- [x] Added `POST /api/v1/telemetry/error` endpoint in `server/src/index.ts` to capture frontend errors
+- [x] Updated `web/src/components/ErrorBoundary.tsx` to POST errors to backend in production
+- [x] Updated `Azure-Deployment-Plan.md`: promoted App Insights from optional to required step
+- [x] Full documentation update: analyzed entire codebase, updated README, AGENTS, Azure-Deployment-Plan, MOBILE_DEPLOYMENT
 
 ### In Progress
 - (none)
@@ -169,6 +179,7 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - **Admin panel navigation**: Simplified to 3 top-level tabs (Species, Users, Backup) with sub-navigation for user management to reduce clutter.
 - **Deployment stack**: Azure all-in-one — PostgreSQL Flexible Server (DB), App Service (API + Web), EAS Build (mobile). No Vercel, no Terraform, no Docker.
 - **Azure `generateSasUrl`**: Returns full URL (not just query string). Use `refreshed.push(sasUrl)` directly — do NOT prepend `blobClient.url`.
+- **App Insights monitoring**: `@azure/monitor-opentelemetry` auto-instrumentation captures Express routes, outgoing HTTP calls (Foundry, Blob, Resend, Firebase, PostgreSQL), unhandled exceptions, and host metrics with zero extra code. Frontend React errors POSTed to `/api/v1/telemetry/error` to unify logs in a single App Insights resource.
 
 ## Next Steps
 - Execute Azure deployment steps from `Azure-Deployment-Plan.md`
@@ -181,7 +192,7 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - **Stack**: Expo SDK 54, React 19, RN 0.81.5, Zustand, React Navigation, Express, Prisma, Azure Storage, Azure AI Foundry
 - **Foundry Project Endpoint**: `https://wilsontchui-5315-resource.services.ai.azure.com/api/projects/wilsontchui-5315`
 - **Azure OpenAI Endpoint**: `https://wilsontchui-5315-resource.openai.azure.com/openai/v1`
-- **Mapbox**: Web-only (`MAPBOX_TOKEN` in `web/.env.local`). Used in `dashboard/map` (observation markers) and `dashboard/capture` (manual location picker).
+- **Mapbox**: Web-only (`MAPBOX_TOKEN` in `web/.env.local`). Used in `dashboard/capture` (manual location picker). No observation map page exists.
 - **Navigation flow**: `MainTabs "New"` → `GuidedCaptureScreen` → `AnalysisLoadingScreen` → `AIReviewScreen` → Submit → `Home`
 - **Web analytics API endpoints**: `/analytics/stats`, `/analytics/size-frequency`, `/analytics/gender-ratio`, `/analytics/cw50`, `/analytics/condition-indices`, `/analytics/temporal-trends`, `/analytics/species-distribution`
 - **Admin species CRUD**: Uses JSON textareas for `keyFeatures` and `distributionZones` to match backend Prisma JSON fields
@@ -233,12 +244,13 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - `server/src/utils/schemas.ts` — Zod validation (nullable `bw`, `detectedCoin`, strict UUID `speciesId`, invites, password reset)
 - `server/src/services/analytics.ts` — Skips null `bw` in condition factor calc
 - `server/prisma/schema.prisma` — DB schema with `gender @map("sex")`, nullable `bw`, `detectedCoin`, `Invite` model, `PasswordReset` model
-- `server/.env` — Added `RESEND_API_KEY`, `FRONTEND_URL`
+- `server/.env` — Added `RESEND_API_KEY`, `FRONTEND_URL`, `APPLICATIONINSIGHTS_CONNECTION_STRING`
+- `server/src/index.ts` — App Insights init (`useAzureMonitor`), telemetry endpoint (`POST /api/v1/telemetry/error`)
 
 ### Web
 - `web/src/app/dashboard/capture/page.tsx` — Mapbox location picker (GeoJSON layers), AI species auto-pick (`findSpeciesMatch`), strict UUID validation (`isUuid`), passes `detectedCoin`
 - `web/src/app/dashboard/researcher/page.tsx` — Fullscreen photo overlay, coin display
-- `web/src/app/dashboard/map/page.tsx` — Fullscreen photo overlay, coin display in popup
+- (no map page — observation map view was removed; Mapbox only used in capture page for location picker)
 - `web/src/app/dashboard/profile/page.tsx` — Profile edit with avatar upload, country code & country dropdowns
 - `web/src/app/dashboard/observation/[id]/page.tsx` — Observation detail with photos, measurements, biological data, location, validation
 - `web/src/app/dashboard/species/page.tsx` — Species browse with search, detail modal, fullscreen images

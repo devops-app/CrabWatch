@@ -3,6 +3,7 @@ const API_URL = ''
 import type {
   SpeciesResponse,
   UserListResponse,
+  User,
   DashboardStats,
   SizeFrequencyData,
   GenderRatioData,
@@ -11,10 +12,13 @@ import type {
   SpeciesDistributionData,
   ConditionIndexAggregatedData,
   ObservationListResponse,
+  ObservationResponse,
   CrabAnalysisRequest,
   CrabAnalysisResult,
   Invite,
   InviteValidation,
+  BackupResult,
+  BackupFileInfo,
 } from '@crabwatch/shared'
 
 interface ApiResponse<T = unknown> {
@@ -79,7 +83,7 @@ export const api = {
   getProfile: () => request('/api/v1/users/me'),
 
   updateProfile: (body: { name?: string; phoneCode?: string | null; phoneNumber?: string | null; addressLine1?: string | null; addressLine2?: string | null; addressLine3?: string | null; state?: string | null; postcode?: string | null; country?: string | null; avatar?: string | null }) =>
-    request('/api/v1/users/me', {
+    request<User>('/api/v1/users/me', {
       method: 'PATCH',
       body: JSON.stringify(body),
     }),
@@ -123,12 +127,12 @@ export const api = {
     }),
 
   backupDatabase: () =>
-    request('/api/v1/admin/backup', {
+    request<BackupResult>('/api/v1/admin/backup', {
       method: 'POST',
     }),
 
   listBackups: () =>
-    request('/api/v1/admin/backups'),
+    request<BackupFileInfo[]>('/api/v1/admin/backups'),
 
   deleteBackup: (fileName: string) =>
     request(`/api/v1/admin/backups/${encodeURIComponent(fileName)}`, {
@@ -139,7 +143,7 @@ export const api = {
     window.open(`/api/v1/admin/backups/${encodeURIComponent(fileName)}/download`, '_blank'),
 
   cleanupDeletedUsers: () =>
-    request('/api/v1/admin/cleanup-users', {
+    request<{ deletedCount: number }>('/api/v1/admin/cleanup-users', {
       method: 'POST',
     }),
 
@@ -152,7 +156,7 @@ export const api = {
 
   // Invites
   createInvite: (body: { email: string; role: string; expiresInHours?: number }): Promise<{ id: string; email: string; role: string; expiresAt: string; inviteLink: string }> =>
-    request('/api/v1/admin/invite', {
+    request<{ id: string; email: string; role: string; expiresAt: string; inviteLink: string }>('/api/v1/admin/invite', {
       method: 'POST',
       body: JSON.stringify(body),
     }),
@@ -244,7 +248,7 @@ export const api = {
     return request<ObservationListResponse>(`/api/v1/observations?${query}`)
   },
 
-  getObservation: (id: string) => request(`/api/v1/observations/${id}`),
+  getObservation: (id: string) => request<ObservationResponse>(`/api/v1/observations/${id}`),
 
   getPendingObservations: (params?: { page?: number; limit?: number; speciesId?: string }): Promise<ObservationListResponse> => {
     const query = new URLSearchParams()

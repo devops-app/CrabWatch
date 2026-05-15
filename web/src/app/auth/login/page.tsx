@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { useAuthStore } from '@/lib/authStore'
 import type { UserRole } from '@crabwatch/shared'
@@ -15,7 +15,7 @@ interface LoginForm {
 
 export default function LoginPage(): React.JSX.Element {
   const router = useRouter()
-  const searchParams = useSearchParams()
+  const [isRegistered, setIsRegistered] = useState(false)
   const { login } = useAuthStore()
   const [error, setError] = useState('')
   const {
@@ -24,7 +24,12 @@ export default function LoginPage(): React.JSX.Element {
     formState: { isSubmitting },
   } = useForm<LoginForm>()
 
-  const isRegistered = searchParams.get('registered') === 'true'
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      setIsRegistered(params.get('registered') === 'true')
+    }
+  }, [])
 
   const onSubmit = async (data: LoginForm) => {
     try {

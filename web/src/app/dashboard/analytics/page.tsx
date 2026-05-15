@@ -41,6 +41,9 @@ const STATUS_COLORS: Record<string, string> = {
   default: '#94a3b8',
 }
 
+const MAP_PAGE_LIMIT = 500
+const MAP_MAX_OBS = 5000
+
 type TabId = 'size' | 'gender' | 'cw50' | 'condition' | 'species' | 'trends' | 'map'
 
 export default function AnalyticsPage(): React.JSX.Element {
@@ -102,6 +105,7 @@ export default function AnalyticsPage(): React.JSX.Element {
 
   // Map state
   const [mapObs, setMapObs] = useState<ObservationResponse[]>([])
+  const [mapTotal, setMapTotal] = useState(0)
   const [mapLoading, setMapLoading] = useState(false)
   const [selectedObs, setSelectedObs] = useState<ObservationResponse | null>(null)
   const [fullscreenPhoto, setFullscreenPhoto] = useState<string | null>(null)
@@ -166,17 +170,35 @@ export default function AnalyticsPage(): React.JSX.Element {
       const df = effectiveDates.from || undefined
       const dt = effectiveDates.to || undefined
       const gender = genderFilter || undefined
-      const data = await api.listObservations({
-        speciesId: sp,
-        dateFrom: df,
-        dateTo: dt,
-        gender,
-        status: 'approved',
-        limit: 500,
-      })
-      setMapObs(data.observations)
+
+      let page = 1
+      let totalPages = 1
+      let total = 0
+      const all: ObservationResponse[] = []
+
+      while (page <= totalPages && all.length < MAP_MAX_OBS) {
+        const data = await api.listObservations({
+          speciesId: sp,
+          dateFrom: df,
+          dateTo: dt,
+          gender,
+          status: 'approved',
+          page,
+          limit: MAP_PAGE_LIMIT,
+        })
+
+        all.push(...data.observations)
+        totalPages = data.totalPages
+        total = data.total
+        page += 1
+      }
+
+      setMapObs(all)
+      setMapTotal(total)
     } catch (err) {
       console.error('Failed to load map observations:', err)
+      setMapObs([])
+      setMapTotal(0)
     } finally {
       setMapLoading(false)
     }
@@ -188,10 +210,15 @@ export default function AnalyticsPage(): React.JSX.Element {
     }
   }, [activeTab, loadMapObs])
 
+  const validMapObs = useMemo(
+    () => mapObs.filter(obs => obs.lat != null && obs.lng != null),
+    [mapObs]
+  )
+
   // Auto-fit viewport to observations
   useEffect(() => {
     if (activeTab !== 'map' || mapObs.length === 0) return
-    const validObs = mapObs.filter(obs => obs.lat != null && obs.lng != null)
+    const validObs = validMapObs
     if (validObs.length >= 2) {
       const lats = validObs.map(o => o.lat!)
       const lngs = validObs.map(o => o.lng!)
@@ -201,13 +228,20 @@ export default function AnalyticsPage(): React.JSX.Element {
         longitude: (Math.min(...lngs) + Math.max(...lngs)) / 2,
         zoom: Math.min(12, prev.zoom),
       }))
+    } else if (validObs.length === 1) {
+      setViewport(prev => ({
+        ...prev,
+        latitude: validObs[0].lat!,
+        longitude: validObs[0].lng!,
+        zoom: 10,
+      }))
     }
-  }, [mapObs, activeTab])
+  }, [mapObs, activeTab, validMapObs])
 
   // Cluster markers
   const clusteredMarkers = useMemo(() => {
     if (mapObs.length === 0) return []
-    const validObs = mapObs.filter(obs => obs.lat != null && obs.lng != null)
+    const validObs = validMapObs
     if (validObs.length === 0) return []
 
     const lngs = validObs.map(o => o.lng!)
@@ -231,7 +265,17 @@ export default function AnalyticsPage(): React.JSX.Element {
       lng: 0,
       lat: 0,
     }))
-  }, [mapObs, debouncedViewport.zoom])
+  }, [mapObs, validMapObs, debouncedViewport.zoom])
+
+  const trendSeries = useMemo(() => {
+    const monthTotals: Record<string, number> = {}
+    for (const t of trends) {
+      monthTotals[t.month] = (monthTotals[t.month] || 0) + t.count
+    }
+    return Object.entries(monthTotals)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, count]) => ({ month: formatMonth(month), count }))
+  }, [trends])
 
   const tabs: { id: TabId; label: string; icon: string }[] = [
     { id: 'size', label: 'Size Frequency', icon: '📏' },
@@ -585,10 +629,10 @@ export default function AnalyticsPage(): React.JSX.Element {
         <div className="card">
           <h2 className="text-xl font-semibold text-ocean-800 mb-2">Temporal Trends</h2>
           <p className="text-sm text-gray-500 mb-4">Observation count over time</p>
-          {trends.length > 0 ? (
+          {trendSeries.length > 0 ? (
             <ResponsiveContainer width="100%" height={400}>
               <LineChart
-                data={trends.map((t) => ({ ...t, month: formatMonth(t.month) }))}
+                data={trendSeries}
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
@@ -757,8 +801,11 @@ export default function AnalyticsPage(): React.JSX.Element {
                   )}
                   <div className="flex items-center gap-2">
                     <span className="text-gray-400 w-16">Count</span>
-                    <span className="font-medium">{mapObs.length} obs</span>
+                    <span className="font-medium">{validMapObs.length} with coordinates</span>
                   </div>
+                  {mapTotal > mapObs.length && (
+                    <div className="text-[11px] text-amber-700 mt-1">Showing first {mapObs.length} of {mapTotal} observations</div>
+                  )}
                 </div>
               </div>
             </div>

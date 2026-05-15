@@ -207,7 +207,7 @@ export async function analyzeCrabWithAgent(
       throw new Error(`Agent analysis failed: ${response.status} ${errorText}`)
     }
 
-    const body = await response.json()
+    const body: any = await response.json()
     let content: string
 
     const firstMessage = body.output?.find((item: any) => item?.type === 'message')
@@ -287,8 +287,8 @@ export async function detectView(
       throw new Error(`View detection failed: ${response.status} ${errorText}`)
     }
 
-    const body = await response.json()
-    const content = parseAgentResponse(body)
+    const body: any = await response.json()
+    const content = await parseAgentResponse(body)
     const parsed = JSON.parse(content.trim())
 
     const detectedView = parsed.detectedView || 'unknown'

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useRef, useEffect } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native'
 import MapView, { Marker as MapMarker } from 'react-native-maps'
 import { Ionicons } from '@expo/vector-icons'
@@ -30,6 +30,7 @@ export function GPSCapture({
 }: GPSCaptureProps) {
   const { location, loading, error, hasPermission, refresh } = useLocation()
   const [capturing, setCapturing] = useState(false)
+  const mapRef = useRef<MapView | null>(null)
 
   const handleCapture = useCallback(async () => {
     if (manualMode) return
@@ -58,6 +59,47 @@ export function GPSCapture({
     ? { latitude, longitude, latitudeDelta: 0.05, longitudeDelta: 0.05 }
     : MALAYSIA_REGION
 
+  useEffect(() => {
+    if (!manualMode || !mapRef.current || latitude == null || longitude == null) return
+    mapRef.current.animateToRegion(
+      {
+        latitude,
+        longitude,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+      },
+      350
+    )
+  }, [manualMode, latitude, longitude])
+
+  const handleRecenter = useCallback(() => {
+    if (!mapRef.current) return
+    if (latitude != null && longitude != null) {
+      mapRef.current.animateToRegion(
+        {
+          latitude,
+          longitude,
+          latitudeDelta: 0.05,
+          longitudeDelta: 0.05,
+        },
+        350
+      )
+      return
+    }
+
+    if (location) {
+      mapRef.current.animateToRegion(
+        {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          latitudeDelta: 0.08,
+          longitudeDelta: 0.08,
+        },
+        350
+      )
+    }
+  }, [latitude, longitude, location])
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -85,12 +127,14 @@ export function GPSCapture({
       {manualMode && (
         <View style={styles.mapContainer}>
           <MapView
-            region={mapRegion}
+            ref={mapRef}
+            initialRegion={mapRegion}
             onPress={handleMapPress}
             style={styles.map}
             showsUserLocation
             showsMyLocationButton
             showsCompass
+            showsScale
           >
             {latitude != null && longitude != null && (
               <MapMarker
@@ -100,6 +144,10 @@ export function GPSCapture({
               />
             )}
           </MapView>
+          <TouchableOpacity style={styles.recenterBtn} onPress={handleRecenter}>
+            <Ionicons name="locate" size={14} color="#ffffff" />
+            <Text style={styles.recenterText}>Recenter</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -202,10 +250,28 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: COLORS.border,
+    position: 'relative',
   },
   map: {
     width: '100%',
     height: 200,
+  },
+  recenterBtn: {
+    position: 'absolute',
+    right: 10,
+    bottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+    borderRadius: 999,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  recenterText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
   },
   coordsBox: {
     flexDirection: 'row',

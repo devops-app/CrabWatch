@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:https": "next dev --experimental-https --hostname 0.0.0.0 --port 3000",
-    "build": "next build",
+    "build": "node -e \"require('fs').existsSync('.next') || require('child_process').execSync('npx next build', {stdio:'inherit'})\"",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "next lint",
@@ -19,7 +19,8 @@
     "test:e2e:install": "playwright install --with-deps chromium"
   },
   "dependencies": {
-    "@crabwatch/shared": "workspace:*",
+    "@azure/monitor-opentelemetry": "^1.8.0",
+ 
     "@hookform/resolvers": "^3.3.0",
     "@mapbox/mapbox-gl-geocoder": "^5.0.2",
     "date-fns": "^3.6.0",
@@ -42,6 +43,7 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/jest": "^30.0.0",
     "@types/mapbox-gl": "^3.1.0",
+    "@types/node": "^25.8.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@typescript-eslint/eslint-plugin": "^7.18.0",

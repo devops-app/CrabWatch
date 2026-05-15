@@ -136,7 +136,7 @@ export default function AdminPage(): React.JSX.Element {
       requiresInput: true,
       inputPlaceholder: 'Type "delete" to confirm',
       inputLabel: 'Confirmation',
-      onConfirm: () => api.deleteSpecies(s.id),
+      onConfirm: async () => { await api.deleteSpecies(s.id) },
     })
   }
 
@@ -224,7 +224,7 @@ export default function AdminPage(): React.JSX.Element {
       requiresInput: true,
       inputPlaceholder: 'Type "block" to confirm',
       inputLabel: 'Confirmation',
-      onConfirm: () => api.blockUser(user.id, confirmInput || undefined),
+      onConfirm: async () => { await api.blockUser(user.id, confirmInput || undefined) },
     })
   }
 
@@ -233,7 +233,7 @@ export default function AdminPage(): React.JSX.Element {
       title: 'Unblock User',
       message: `Are you sure you want to unblock "${user.name}" (${user.email})? They will be able to log in again.`,
       confirmText: 'Unblock User',
-      onConfirm: () => api.unblockUser(user.id),
+      onConfirm: async () => { await api.unblockUser(user.id) },
     })
   }
 
@@ -246,7 +246,7 @@ export default function AdminPage(): React.JSX.Element {
       requiresInput: true,
       inputPlaceholder: 'Type "delete" to confirm',
       inputLabel: 'Confirmation',
-      onConfirm: () => api.softDeleteUser(user.id),
+      onConfirm: async () => { await api.softDeleteUser(user.id) },
     })
   }
 
@@ -255,7 +255,7 @@ export default function AdminPage(): React.JSX.Element {
       title: 'Restore User',
       message: `Restore "${user.name}" (${user.email})? They will regain access to their account.`,
       confirmText: 'Restore User',
-      onConfirm: () => api.restoreUser(user.id),
+      onConfirm: async () => { await api.restoreUser(user.id) },
     })
   }
 
@@ -308,9 +308,9 @@ export default function AdminPage(): React.JSX.Element {
       const result = await api.backupDatabase()
       setLastBackup(result)
       setSuccess(`Backup created: ${result.fileName} (${formatSize(result.size)})`)
-      const listResult = await api.listBackups()
-      setBackups(listResult)
-    } catch (err: any) {
+   const listResult = await api.listBackups()
+        setBackups(listResult)
+      } catch (err: any) {
       flash(err.message || 'Backup failed', 'error')
     } finally {
       setBackupLoading(false)
@@ -329,7 +329,7 @@ export default function AdminPage(): React.JSX.Element {
       onConfirm: async () => {
         await api.deleteBackup(backup.fileName)
         setSuccess(`Deleted: ${backup.fileName}`)
-        const listResult = await api.listBackups()
+  const listResult = await api.listBackups()
         setBackups(listResult)
       },
     })
@@ -631,7 +631,7 @@ export default function AdminPage(): React.JSX.Element {
                     <option value="admin">Admin</option>
                   </select>
                   <button
-                    onClick={handleSendInvite}
+                    onClick={() => handleSendInvite()}
                     disabled={sendingInvite}
                     className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                   >

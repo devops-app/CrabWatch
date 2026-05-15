@@ -2,9 +2,11 @@ const mockPrisma = {
   observation: {
     count: jest.fn(),
     findMany: jest.fn(),
+    groupBy: jest.fn(),
   },
   species: {
     count: jest.fn(),
+    findMany: jest.fn(),
   },
   user: {
     count: jest.fn(),
@@ -78,106 +80,110 @@ describe('Analytics Service', () => {
         { cw: 5.9 },
         { cw: 10.0 },
       ])
-      mockPrisma.observation.count.mockResolvedValue(0)
 
       const result = await getSizeFrequency()
 
-      expect(result.items).toHaveLength(21)
-      expect(result.items.find((r) => r.sizeBin === '3-4cm')?.count).toBe(2)
-      expect(result.items.find((r) => r.sizeBin === '5-6cm')?.count).toBe(2)
-      expect(result.items.find((r) => r.sizeBin === '10-11cm')?.count).toBe(1)
-      expect(result.total).toBe(0)
+      expect(result).toHaveLength(21)
+      expect(result.find((r) => r.sizeBin === '3-4cm')?.count).toBe(2)
+      expect(result.find((r) => r.sizeBin === '5-6cm')?.count).toBe(2)
+      expect(result.find((r) => r.sizeBin === '10-11cm')?.count).toBe(1)
     })
 
     it('should filter by speciesId when provided', async () => {
       mockPrisma.observation.findMany.mockResolvedValue([])
-      mockPrisma.observation.count.mockResolvedValue(0)
       await getSizeFrequency('species-123')
 
       expect(mockPrisma.observation.findMany).toHaveBeenCalledWith({
         where: { status: 'APPROVED', speciesId: 'species-123' },
         select: { cw: true },
-        skip: 0,
-        take: 500,
       })
     })
 
     it('should filter by gender when provided', async () => {
       mockPrisma.observation.findMany.mockResolvedValue([])
-      mockPrisma.observation.count.mockResolvedValue(0)
       await getSizeFrequency(undefined, 'female')
 
       expect(mockPrisma.observation.findMany).toHaveBeenCalledWith({
         where: { status: 'APPROVED', gender: 'FEMALE' },
         select: { cw: true },
-        skip: 0,
-        take: 500,
       })
     })
 
     it('should handle empty results with zero bins', async () => {
       mockPrisma.observation.findMany.mockResolvedValue([])
-      mockPrisma.observation.count.mockResolvedValue(0)
       const result = await getSizeFrequency()
 
-      expect(result.items).toHaveLength(21)
-      result.items.forEach((r) => expect(r.count).toBe(0))
+      expect(result).toHaveLength(21)
+      result.forEach((r) => expect(r.count).toBe(0))
+    })
+
+    it('should place widths above 20cm into overflow bin', async () => {
+      mockPrisma.observation.findMany.mockResolvedValue([{ cw: 20.1 }, { cw: 25.9 }])
+
+      const result = await getSizeFrequency()
+
+      expect(result.find((r) => r.sizeBin === '20cm+')?.count).toBe(2)
     })
   })
 
   describe('getGenderRatio', () => {
     it('should calculate gender ratio per species', async () => {
-      mockPrisma.observation.findMany.mockResolvedValue([
-        { gender: 'MALE', species: { scientificName: 'Scylla serrata' } },
-        { gender: 'MALE', species: { scientificName: 'Scylla serrata' } },
-        { gender: 'FEMALE', species: { scientificName: 'Scylla serrata' } },
-        { gender: 'FEMALE', species: { scientificName: 'Scylla serrata' } },
-        { gender: 'MALE', species: { scientificName: 'Scylla olivacea' } },
-        { gender: 'FEMALE', species: { scientificName: 'Scylla olivacea' } },
-        { gender: 'FEMALE', species: { scientificName: 'Scylla olivacea' } },
+      mockPrisma.observation.groupBy.mockResolvedValue([
+        { speciesId: 's1', gender: 'MALE', _count: { _all: 2 } },
+        { speciesId: 's1', gender: 'FEMALE', _count: { _all: 2 } },
+        { speciesId: 's2', gender: 'MALE', _count: { _all: 1 } },
+        { speciesId: 's2', gender: 'FEMALE', _count: { _all: 2 } },
       ])
-      mockPrisma.observation.count.mockResolvedValue(0)
+      mockPrisma.species.findMany.mockResolvedValue([
+        { id: 's1', scientificName: 'Scylla serrata' },
+        { id: 's2', scientificName: 'Scylla olivacea' },
+      ])
 
       const result = await getGenderRatio()
 
-      expect(result.items).toHaveLength(2)
-      const serrata = result.items.find((r) => r.species === 'Scylla serrata')
+      expect(result).toHaveLength(2)
+      const serrata = result.find((r) => r.species === 'Scylla serrata')
       expect(serrata?.male).toBe(2)
       expect(serrata?.female).toBe(2)
       expect(serrata?.ratio).toBe(1)
 
-      const olivacea = result.items.find((r) => r.species === 'Scylla olivacea')
+      const olivacea = result.find((r) => r.species === 'Scylla olivacea')
       expect(olivacea?.ratio).toBe(0.5)
     })
 
     it('should handle only male observations with Infinity ratio', async () => {
-      mockPrisma.observation.findMany.mockResolvedValue([
-        { gender: 'MALE', species: { scientificName: 'Scylla serrata' } },
+      mockPrisma.observation.groupBy.mockResolvedValue([
+        { speciesId: 's1', gender: 'MALE', _count: { _all: 1 } },
       ])
-      mockPrisma.observation.count.mockResolvedValue(0)
+      mockPrisma.species.findMany.mockResolvedValue([
+        { id: 's1', scientificName: 'Scylla serrata' },
+      ])
 
       const result = await getGenderRatio()
-      const serrata = result.items.find((r) => r.species === 'Scylla serrata')
+      const serrata = result.find((r) => r.species === 'Scylla serrata')
       expect(serrata?.ratio).toBe(Infinity)
     })
 
     it('should handle only female observations with 0 ratio', async () => {
-      mockPrisma.observation.findMany.mockResolvedValue([
-        { gender: 'FEMALE', species: { scientificName: 'Scylla serrata' } },
+      mockPrisma.observation.groupBy.mockResolvedValue([
+        { speciesId: 's1', gender: 'FEMALE', _count: { _all: 1 } },
       ])
-      mockPrisma.observation.count.mockResolvedValue(0)
+      mockPrisma.species.findMany.mockResolvedValue([
+        { id: 's1', scientificName: 'Scylla serrata' },
+      ])
 
       const result = await getGenderRatio()
-      const serrata = result.items.find((r) => r.species === 'Scylla serrata')
+      const serrata = result.find((r) => r.species === 'Scylla serrata')
       expect(serrata?.ratio).toBe(0)
     })
 
     it('should filter by date range when provided', async () => {
-      mockPrisma.observation.findMany.mockResolvedValue([])
-      mockPrisma.observation.count.mockResolvedValue(0)
+      mockPrisma.observation.groupBy.mockResolvedValue([])
+      mockPrisma.species.findMany.mockResolvedValue([])
       await getGenderRatio(undefined, '2024-01-01', '2024-12-31')
 
-      expect(mockPrisma.observation.findMany).toHaveBeenCalledWith({
+      expect(mockPrisma.observation.groupBy).toHaveBeenCalledWith({
+        by: ['speciesId', 'gender'],
         where: {
           status: 'APPROVED',
           createdAt: {
@@ -185,9 +191,7 @@ describe('Analytics Service', () => {
             lte: new Date('2024-12-31'),
           },
         },
-        select: { gender: true, species: { select: { scientificName: true } } },
-        skip: 0,
-        take: 500,
+        _count: { _all: true },
       })
     })
   })
@@ -241,28 +245,28 @@ describe('Analytics Service', () => {
         { cw: 6, maturationStatus: 'MATURE', species: { scientificName: 'Scylla serrata' } },
         { cw: 7, maturationStatus: 'MATURE', species: { scientificName: 'Scylla serrata' } },
       ])
-      mockPrisma.observation.count.mockResolvedValue(0)
-
       const result = await getCW50()
 
-      expect(result.items).toHaveLength(1)
-      expect(result.items[0].species).toBe('Scylla serrata')
-      expect(result.items[0].sampleSize).toBe(5)
-      expect(result.items[0].cw50).toBeGreaterThan(0)
-      expect(result.items[0].confidenceInterval).toHaveLength(2)
+      expect(result).toHaveLength(1)
+      expect(result[0].species).toBe('Scylla serrata')
+      expect(result[0].sampleSize).toBe(5)
+      expect(result[0].cw50).toBeGreaterThan(0)
+      expect(result[0].confidenceInterval).toHaveLength(2)
     })
 
     it('should filter by speciesId when provided', async () => {
       mockPrisma.observation.findMany.mockResolvedValue([])
-      mockPrisma.observation.count.mockResolvedValue(0)
       await getCW50('species-123')
 
-      expect(mockPrisma.observation.findMany).toHaveBeenCalled()
+      expect(mockPrisma.observation.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ speciesId: 'species-123' }),
+        })
+      )
     })
 
     it('should only include MATURE and IMMATURE observations', async () => {
       mockPrisma.observation.findMany.mockResolvedValue([])
-      mockPrisma.observation.count.mockResolvedValue(0)
       await getCW50()
 
       const callArgs = mockPrisma.observation.findMany.mock.calls[0][0]
@@ -291,14 +295,12 @@ describe('Analytics Service', () => {
           species: { scientificName: 'Scylla olivacea' },
         },
       ])
-      mockPrisma.observation.count.mockResolvedValue(0)
-
       const result = await getTemporalTrends()
 
-      expect(result.items).toHaveLength(3)
-      expect(result.items.find((r) => r.month === '2024-01' && r.species === 'Scylla serrata')?.count).toBe(2)
-      expect(result.items.find((r) => r.month === '2024-02' && r.species === 'Scylla serrata')?.count).toBe(1)
-      expect(result.items.find((r) => r.month === '2024-01' && r.species === 'Scylla olivacea')?.count).toBe(1)
+      expect(result).toHaveLength(3)
+      expect(result.find((r) => r.month === '2024-01' && r.species === 'Scylla serrata')?.count).toBe(2)
+      expect(result.find((r) => r.month === '2024-02' && r.species === 'Scylla serrata')?.count).toBe(1)
+      expect(result.find((r) => r.month === '2024-01' && r.species === 'Scylla olivacea')?.count).toBe(1)
     })
 
     it('should sort results by month', async () => {
@@ -307,13 +309,23 @@ describe('Analytics Service', () => {
         { createdAt: new Date('2024-01-01'), species: { scientificName: 'Scylla serrata' } },
         { createdAt: new Date('2024-02-01'), species: { scientificName: 'Scylla serrata' } },
       ])
-      mockPrisma.observation.count.mockResolvedValue(0)
+      const result = await getTemporalTrends()
+
+      expect(result[0].month).toBe('2024-01')
+      expect(result[1].month).toBe('2024-02')
+      expect(result[2].month).toBe('2024-03')
+    })
+
+    it('should sort by species when months match', async () => {
+      mockPrisma.observation.findMany.mockResolvedValue([
+        { createdAt: new Date('2024-01-02'), species: { scientificName: 'Scylla olivacea' } },
+        { createdAt: new Date('2024-01-03'), species: { scientificName: 'Scylla serrata' } },
+      ])
 
       const result = await getTemporalTrends()
 
-      expect(result.items[0].month).toBe('2024-01')
-      expect(result.items[1].month).toBe('2024-02')
-      expect(result.items[2].month).toBe('2024-03')
+      expect(result[0].species).toBe('Scylla olivacea')
+      expect(result[1].species).toBe('Scylla serrata')
     })
   })
 })

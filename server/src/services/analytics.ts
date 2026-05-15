@@ -6,20 +6,9 @@ import {
   TemporalTrendData,
   SpeciesDistributionData,
   DashboardStats,
-  PaginationParams,
-  PaginatedResponse,
 } from '@crabwatch/shared'
 import { Prisma, Gender as PrismaGender } from '@prisma/client'
 import prisma from '../config/database'
-
-const MAX_PAGE_LIMIT = 1000
-const DEFAULT_PAGE_LIMIT = 500
-
-function validatePagination(page?: number, limit?: number): PaginationParams {
-  const p = Math.max(1, Math.floor(page || 1))
-  const l = Math.min(Math.max(1, Math.floor(limit || DEFAULT_PAGE_LIMIT)), MAX_PAGE_LIMIT)
-  return { page: p, limit: l }
-}
 
 export async function getDashboardStats(): Promise<DashboardStats> {
   const [totalObs, approvedObs, pendingObs, totalSpecies, totalUsers] = await Promise.all([
@@ -55,60 +44,47 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 export async function getSizeFrequency(
   speciesId?: string,
   gender?: string,
-  pagination?: Partial<PaginationParams>
-): Promise<PaginatedResponse<SizeFrequencyData>> {
+  _pagination?: unknown
+): Promise<SizeFrequencyData[]> {
   const where: Prisma.ObservationWhereInput = { status: 'APPROVED' }
   if (speciesId) where.speciesId = speciesId
   if (gender) where.gender = gender.toUpperCase() as PrismaGender
 
-  const { page, limit } = validatePagination(pagination?.page, pagination?.limit)
-  const skip = (page - 1) * limit
-
-  const [observations, total] = await Promise.all([
-    prisma.observation.findMany({
-      where,
-      select: { cw: true },
-      skip,
-      take: limit,
-    }),
-    prisma.observation.count({ where }),
-  ])
+  const observations = await prisma.observation.findMany({
+    where,
+    select: { cw: true },
+  })
 
   const bins: Record<string, number> = {}
-  for (let i = 0; i <= 20; i += 1) {
+  for (let i = 0; i < 20; i += 1) {
     const low = i
     const high = i + 1
     bins[`${low}-${high}cm`] = 0
   }
+  bins['20cm+'] = 0
 
   for (const obs of observations) {
     const binIndex = Math.floor(obs.cw)
     const key = `${binIndex}-${binIndex + 1}cm`
     if (bins[key] !== undefined) {
       bins[key]++
+    } else if (binIndex >= 20) {
+      bins['20cm+']++
     }
   }
 
-  const items = Object.entries(bins).map(([sizeBin, count]) => ({
+  return Object.entries(bins).map(([sizeBin, count]) => ({
     sizeBin,
     count,
   }))
-
-  return {
-    items,
-    total,
-    page,
-    limit,
-    totalPages: Math.ceil(total / limit),
-  }
 }
 
 export async function getGenderRatio(
   speciesId?: string,
   dateFrom?: string,
   dateTo?: string,
-  pagination?: Partial<PaginationParams>
-): Promise<PaginatedResponse<GenderRatioData>> {
+  _pagination?: unknown
+): Promise<GenderRatioData[]> {
   const where: Prisma.ObservationWhereInput = { status: 'APPROVED' }
   if (speciesId) where.speciesId = speciesId
   if (dateFrom || dateTo) {
@@ -117,54 +93,43 @@ export async function getGenderRatio(
     if (dateTo) where.createdAt.lte = new Date(dateTo)
   }
 
-  const { page, limit } = validatePagination(pagination?.page, pagination?.limit)
-  const skip = (page - 1) * limit
+  const observations = await prisma.observation.groupBy({
+    by: ['speciesId', 'gender'],
+    where,
+    _count: { _all: true },
+  })
 
-  const [observations, total] = await Promise.all([
-    prisma.observation.findMany({
-      where,
-      select: {
-        gender: true,
-        species: { select: { scientificName: true } },
-      },
-      skip,
-      take: limit,
-    }),
-    prisma.observation.count({ where }),
-  ])
+  const speciesRows = await prisma.species.findMany({
+    where: { id: { in: observations.map(obs => obs.speciesId) } },
+    select: { id: true, scientificName: true },
+  })
+
+  const speciesNameById = new Map(speciesRows.map(s => [s.id, s.scientificName]))
 
   const grouped: Record<string, { male: number; female: number; unknown: number }> = {}
 
   for (const obs of observations) {
-    const species = obs.species.scientificName
+    const species = speciesNameById.get(obs.speciesId) ?? 'Unknown'
     if (!grouped[species]) {
       grouped[species] = { male: 0, female: 0, unknown: 0 }
     }
-    grouped[species][obs.gender.toLowerCase() as 'male' | 'female' | 'unknown']++
+    grouped[species][obs.gender.toLowerCase() as 'male' | 'female' | 'unknown'] += obs._count._all
   }
 
-  const items = Object.entries(grouped).map(([species, counts]) => {
+  return Object.entries(grouped).map(([species, counts]) => {
     const { male, female } = counts
     const ratio = female > 0 ? male / female : male > 0 ? Infinity : 0
     return {
       species,
       ...counts,
-      ratio: Number(ratio.toFixed(2)),
+      ratio: Number.isFinite(ratio) ? Number(ratio.toFixed(2)) : ratio,
     }
   })
-
-  return {
-    items,
-    total,
-    page,
-    limit,
-    totalPages: Math.ceil(total / limit),
-  }
 }
 
 export async function getConditionIndices(
   speciesId?: string,
-  _pagination?: Partial<PaginationParams>
+  _pagination?: unknown
 ): Promise<ConditionIndexAggregatedData[]> {
   const where: Prisma.ObservationWhereInput = { status: 'APPROVED' }
   if (speciesId) where.speciesId = speciesId
@@ -218,8 +183,8 @@ export async function getConditionIndices(
 
 export async function getCW50(
   speciesId?: string,
-  pagination?: Partial<PaginationParams>
-): Promise<PaginatedResponse<CW50Data>> {
+  _pagination?: unknown
+): Promise<CW50Data[]> {
   const where: Prisma.ObservationWhereInput = {
     status: 'APPROVED',
     maturationStatus: { in: ['MATURE', 'IMMATURE'] },
@@ -227,22 +192,14 @@ export async function getCW50(
   }
   if (speciesId) where.speciesId = speciesId
 
-  const { page, limit } = validatePagination(pagination?.page, pagination?.limit)
-  const skip = (page - 1) * limit
-
-  const [observations, total] = await Promise.all([
-    prisma.observation.findMany({
-      where,
-      select: {
-        cw: true,
-        maturationStatus: true,
-        species: { select: { scientificName: true } },
-      },
-      skip,
-      take: limit,
-    }),
-    prisma.observation.count({ where }),
-  ])
+  const observations = await prisma.observation.findMany({
+    where,
+    select: {
+      cw: true,
+      maturationStatus: true,
+      species: { select: { scientificName: true } },
+    },
+  })
 
   const grouped: Record<string, { cw: number; isMature: boolean }[]> = {}
 
@@ -255,7 +212,7 @@ export async function getCW50(
     })
   }
 
-  const items = Object.entries(grouped).map(([species, data]) => {
+  return Object.entries(grouped).map(([species, data]) => {
     const sorted = data.sort((a, b) => a.cw - b.cw)
     const cw50 = estimateCW50(sorted)
     const ciLow = Number((cw50 - 1).toFixed(1))
@@ -267,14 +224,6 @@ export async function getCW50(
       sampleSize: sorted.length,
     }
   })
-
-  return {
-    items,
-    total,
-    page,
-    limit,
-    totalPages: Math.ceil(total / limit),
-  }
 }
 
 export async function getSpeciesDistribution(
@@ -322,26 +271,18 @@ export async function getSpeciesDistribution(
 
 export async function getTemporalTrends(
   speciesId?: string,
-  pagination?: Partial<PaginationParams>
-): Promise<PaginatedResponse<TemporalTrendData>> {
+  _pagination?: unknown
+): Promise<TemporalTrendData[]> {
   const where: Prisma.ObservationWhereInput = { status: 'APPROVED' }
   if (speciesId) where.speciesId = speciesId
 
-  const { page, limit } = validatePagination(pagination?.page, pagination?.limit)
-  const skip = (page - 1) * limit
-
-  const [observations, total] = await Promise.all([
-    prisma.observation.findMany({
-      where,
-      select: {
-        createdAt: true,
-        species: { select: { scientificName: true } },
-      },
-      skip,
-      take: limit,
-    }),
-    prisma.observation.count({ where }),
-  ])
+  const observations = await prisma.observation.findMany({
+    where,
+    select: {
+      createdAt: true,
+      species: { select: { scientificName: true } },
+    },
+  })
 
   const grouped: Record<string, Record<string, number>> = {}
 
@@ -361,15 +302,10 @@ export async function getTemporalTrends(
     }
   }
 
-  items.sort((a, b) => a.month.localeCompare(b.month))
-
-  return {
-    items,
-    total,
-    page,
-    limit,
-    totalPages: Math.ceil(total / limit),
-  }
+  return items.sort((a, b) => {
+    const monthCompare = a.month.localeCompare(b.month)
+    return monthCompare !== 0 ? monthCompare : a.species.localeCompare(b.species)
+  })
 }
 
 // Helper functions

@@ -1,3 +1,7 @@
+// Application Insights auto-instrumentation (MUST be first import)
+import { useAzureMonitor } from '@azure/monitor-opentelemetry'
+useAzureMonitor()
+
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
@@ -103,6 +107,12 @@ app.use('/api/v1/analytics', analyticsRoutes)
 app.use('/api/v1/upload', uploadRoutes)
 app.use('/api/v1/fcm', fcmRoutes)
 app.use('/api/v1/analyze', analysisRoutes)
+
+app.post('/api/v1/telemetry/error', (req, res) => {
+  const { message, stack, componentStack } = req.body || {}
+  console.error(`[FRONTEND-ERROR] ${message} - ComponentStack: ${componentStack || 'N/A'} - Stack: ${stack || 'N/A'}`)
+  res.status(204).end()
+})
 
 app.get('/health', async (_req, res) => {
   try {

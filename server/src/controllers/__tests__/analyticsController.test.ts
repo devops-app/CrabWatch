@@ -85,8 +85,20 @@ describe('Analytics Controller', () => {
 
        await getSizeFrequency(req as unknown as AuthRequest, res as unknown as Response)
 
-       expect(mockAnalyticsService.getSizeFrequency).toHaveBeenCalledWith('species-1', 'female', expect.objectContaining({ page: 1, limit: 20 }))
-     })
+        expect(mockAnalyticsService.getSizeFrequency).toHaveBeenCalledWith('species-1', 'female', expect.objectContaining({ page: 1, limit: 20 }))
+      })
+
+    it('should return array contract (not paginated object)', async () => {
+      const mockData = [{ sizeBin: '3-4cm', count: 2 }]
+      mockAnalyticsService.getSizeFrequency.mockResolvedValue(mockData)
+
+      await getSizeFrequency(req as unknown as AuthRequest, res as unknown as Response)
+
+      expect(res.json).toHaveBeenCalledWith({ success: true, data: mockData })
+      const payload = (res.json as jest.Mock).mock.calls[0][0]
+      expect(Array.isArray(payload.data)).toBe(true)
+      expect(payload.data.items).toBeUndefined()
+    })
   })
 
 describe('getGenderRatio', () => {
@@ -170,7 +182,18 @@ describe('getGenderRatio', () => {
 
        await getTemporalTrends(req as unknown as AuthRequest, res as unknown as Response)
 
-       expect(mockAnalyticsService.getTemporalTrends).toHaveBeenCalledWith('species-1', expect.objectContaining({ page: 1, limit: 20 }))
-     })
+        expect(mockAnalyticsService.getTemporalTrends).toHaveBeenCalledWith('species-1', expect.objectContaining({ page: 1, limit: 20 }))
+      })
+
+    it('should return array contract for temporal trends', async () => {
+      const mockData = [{ month: '2024-01', count: 4, species: 'Scylla serrata' }]
+      mockAnalyticsService.getTemporalTrends.mockResolvedValue(mockData)
+
+      await getTemporalTrends(req as unknown as AuthRequest, res as unknown as Response)
+
+      const payload = (res.json as jest.Mock).mock.calls[0][0]
+      expect(Array.isArray(payload.data)).toBe(true)
+      expect(payload.data.items).toBeUndefined()
+    })
   })
 })

@@ -110,6 +110,9 @@ export async function createUser(req: AuthRequest, res: Response): Promise<void>
       country: user.country,
       role: user.role.toLowerCase() as UserRole,
       avatar: user.avatar,
+      deletedAt: user.deletedAt?.toISOString() || null,
+      blockedAt: user.blockedAt?.toISOString() || null,
+      blockReason: user.blockReason,
       createdAt: user.createdAt.toISOString(),
     }
 
@@ -145,6 +148,9 @@ export async function getUserProfile(req: AuthRequest, res: Response): Promise<v
         country: true,
         role: true,
         avatar: true,
+        deletedAt: true,
+        blockedAt: true,
+        blockReason: true,
         createdAt: true,
         _count: {
           select: {
@@ -175,6 +181,9 @@ export async function getUserProfile(req: AuthRequest, res: Response): Promise<v
       country: user.country,
       role: user.role.toLowerCase() as UserRole,
       avatar: user.avatar,
+      deletedAt: user.deletedAt?.toISOString() || null,
+      blockedAt: user.blockedAt?.toISOString() || null,
+      blockReason: user.blockReason,
       createdAt: user.createdAt.toISOString(),
       observationCount: user._count.observations,
     }

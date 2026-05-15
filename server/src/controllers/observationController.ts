@@ -1,5 +1,5 @@
 import { Response } from 'express'
-import { Prisma, ObservationStatus as PrismaObservationStatus } from '@prisma/client'
+import { Prisma, ObservationStatus as PrismaObservationStatus, Gender as PrismaObservationGender } from '@prisma/client'
 import { BlobSASPermissions } from '@azure/storage-blob'
 import { AuthRequest } from '../middleware/auth'
 import prisma from '../config/database'

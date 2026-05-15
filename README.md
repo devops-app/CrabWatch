@@ -10,7 +10,7 @@ CrabWatch/
 ├── server/          # Express.js API server with Prisma ORM
 ├── web/             # Next.js web application (App Router)
 ├── mobile/          # React Native mobile app (Expo)
-└── infrastructure/  # Terraform configs, Azure Functions, CI/CD
+└── infrastructure/  # Legacy scaffolding (not used in current deployment)
 ```
 
 ## Tech Stack
@@ -18,15 +18,15 @@ CrabWatch/
 | Layer    | Technologies                                                      |
 | -------- | ----------------------------------------------------------------- |
 | **Shared** | TypeScript, Zod validation schemas                              |
-| **Server** | Express.js, Prisma ORM, PostgreSQL, Firebase Admin SDK, JWT    |
-| **Web**    | Next.js 14 (App Router), React 19, TypeScript, Tailwind CSS     |
-| **Mobile** | React Native, Expo SDK 54, TypeScript, Zustand, React 19        |
+| **Server** | Express.js, Prisma ORM, PostgreSQL, Firebase Admin SDK, JWT, Application Insights |
+| **Web**    | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS, Mapbox GL |
+| **Mobile** | React Native 0.81.5, Expo SDK 54, TypeScript, Zustand, React 19 |
 | **AI**     | Azure AI Foundry, GPT-4o Vision, Azure Blob Storage             |
-| **Infra**  | Terraform, GitHub Actions                                       |
+| **Infra**  | Azure App Service, Azure PostgreSQL, Application Insights, EAS Build |
 
 ## Prerequisites
 
-- Node.js >= 18.0.0
+- Node.js >= 20.0.0
 - pnpm >= 8.0.0
 - PostgreSQL 15+ (local or Docker)
 - Docker (optional, for local database)
@@ -118,14 +118,14 @@ curl http://localhost:3001/api/v1/species
 curl http://localhost:3001/api/v1/observations \
   -H "Authorization: Bearer <your_token>"
 
-# Get dashboard stats (RESEARCHER/ADMIN only)
+# Get dashboard stats (any authenticated user)
 curl http://localhost:3001/api/v1/analytics/stats \
   -H "Authorization: Bearer <your_token>"
 
-# Register new user
+# Register new user (phoneCode, phoneNumber, addressLine1, state, postcode, country are required)
 curl -X POST http://localhost:3001/api/v1/users/register \
   -H "Content-Type: application/json" \
-  -d '{"name":"New User","email":"new@example.com","password":"pass123"}'
+  -d '{"name":"New User","email":"new@example.com","password":"pass123456","phoneCode":"60","phoneNumber":"123456789","addressLine1":"123 Main St","state":"Kuala Lumpur","postcode":"50000","country":"Malaysia"}'
 
 # Upload photos for AI analysis
 curl -X POST http://localhost:3001/api/v1/analyze/upload \
@@ -149,6 +149,18 @@ All users share the same seed password (set via `SEED_PASSWORD` env var, default
 | `admin@crabwatch.my`       | ADMIN       |
 | `researcher@crabwatch.my`  | RESEARCHER  |
 | `citizen@crabwatch.my`     | USER        |
+
+### Swagger API Docs (Development Only)
+
+In development mode, Swagger UI is available at:
+```
+http://localhost:3001/api/v1/docs
+```
+OpenAPI JSON spec at:
+```
+http://localhost:3001/api/v1/docs-json
+```
+Both are IP-whitelisted via `TRUSTED_IPS` env var (defaults to localhost).
 
 ### Seed Data
 
@@ -290,22 +302,23 @@ pnpm test:e2e:headed  # Run with visible browser
 
 ### Analytics
 
-| Method | Endpoint                                    | Auth          | Description                     |
-| ------ | ------------------------------------------- | ------------- | ------------------------------- |
-| GET    | `/api/v1/analytics/stats`                   | RESEARCHER+   | Dashboard statistics            |
-| GET    | `/api/v1/analytics/size-frequency`          | RESEARCHER+   | Carapace width frequency        |
-| GET    | `/api/v1/analytics/gender-ratio`            | RESEARCHER+   | Male/female ratio by species    |
-| GET    | `/api/v1/analytics/condition-indices`       | RESEARCHER+   | Body condition indices          |
-| GET    | `/api/v1/analytics/cw50`                    | RESEARCHER+   | CW50 maturity size estimate     |
-| GET    | `/api/v1/analytics/temporal-trends`         | RESEARCHER+   | Observation trends over time    |
-| GET    | `/api/v1/analytics/species-distribution`    | RESEARCHER+   | Species distribution            |
+| Method | Endpoint                                    | Auth     | Description                     |
+| ------ | ------------------------------------------- | -------- | ------------------------------- |
+| GET    | `/api/v1/analytics/stats`                   | Bearer   | Dashboard statistics            |
+| GET    | `/api/v1/analytics/size-frequency`          | Bearer   | Carapace width frequency        |
+| GET    | `/api/v1/analytics/gender-ratio`            | Bearer   | Male/female ratio by species    |
+| GET    | `/api/v1/analytics/condition-indices`       | Bearer   | Body condition indices          |
+| GET    | `/api/v1/analytics/cw50`                    | Bearer   | CW50 maturity size estimate     |
+| GET    | `/api/v1/analytics/temporal-trends`         | Bearer   | Observation trends over time    |
+| GET    | `/api/v1/analytics/species-distribution`    | Bearer   | Species distribution            |
 
 ### AI Analysis
 
-| Method | Endpoint                      | Auth     | Description                       |
-| ------ | ----------------------------- | -------- | --------------------------------- |
-| POST   | `/api/v1/analyze/upload`      | Bearer   | Upload photos for AI analysis     |
-| POST   | `/api/v1/analyze/crab`        | Bearer   | Analyze crab photos with AI       |
+| Method | Endpoint                        | Auth     | Description                       |
+| ------ | ------------------------------- | -------- | --------------------------------- |
+| POST   | `/api/v1/analyze/upload`        | Bearer   | Upload photos for AI analysis     |
+| POST   | `/api/v1/analyze/crab`          | Bearer   | Analyze crab photos with AI       |
+| POST   | `/api/v1/analyze/detect-view`   | Bearer   | Detect dorsal/ventral/carapace view |
 
 ### Admin
 
@@ -330,15 +343,23 @@ pnpm test:e2e:headed  # Run with visible browser
 
 ### FCM (Push Notifications)
 
-| Method | Endpoint                      | Auth     | Description                       |
-| ------ | ----------------------------- | -------- | --------------------------------- |
-| POST   | `/api/v1/fcm/token`           | Bearer   | Register FCM device token         |
+| Method | Endpoint                              | Auth          | Description                       |
+| ------ | ------------------------------------- | ------------- | --------------------------------- |
+| POST   | `/api/v1/fcm/register`                | Bearer        | Register FCM device token         |
+| DELETE | `/api/v1/fcm/register`                | Bearer        | Unregister FCM device token       |
+| POST   | `/api/v1/fcm/notify/approved`         | RESEARCHER+   | Send "approved" push notification |
+| POST   | `/api/v1/fcm/notify/rejected`         | RESEARCHER+   | Send "rejected" push notification |
+| POST   | `/api/v1/fcm/notify/new-species`      | ADMIN         | Broadcast new species alert       |
 
-### Performance Metrics
+### System
 
 | Method | Endpoint                              | Auth     | Description                       |
 | ------ | ------------------------------------- | -------- | --------------------------------- |
+| GET    | `/health`                             | Public   | Health check with DB connectivity |
 | GET    | `/api/v1/metrics/performance`         | Public   | Runtime performance metrics       |
+| POST   | `/api/v1/telemetry/error`             | Public   | Frontend error reporting          |
+| GET    | `/api/v1/docs`                        | Dev only | Swagger UI (IP-whitelisted)       |
+| GET    | `/api/v1/docs-json`                   | Dev only | OpenAPI spec (IP-whitelisted)     |
 
 ## Database Schema
 
@@ -386,6 +407,9 @@ FcmToken (id, userId, token, createdAt, updatedAt)
 | Manage species            | ❌   | ❌         | ✅    |
 | Manage users              | ❌   | ❌         | ✅    |
 | View analytics            | ✅   | ✅         | ✅    |
+| Access admin panel        | ❌   | ❌         | ✅    |
+| Create invites            | ❌   | ❌         | ✅    |
+| Database backup           | ❌   | ❌         | ✅    |
 
 ## Project Structure
 
@@ -425,8 +449,8 @@ CrabWatch/
 │   │   └── store/          # Zustand state
 │   └── package.json
 └── infrastructure/
-    ├── terraform/          # Azure provisioning
-    ├── azure-functions/    # Serverless functions
+    ├── terraform/          # Legacy scaffolding (not used)
+    ├── azure-functions/    # Legacy scaffolding (not used)
     └── azure-static-webapps/
 ```
 
@@ -453,6 +477,8 @@ CrabWatch/
 | `FRONTEND_URL`                     | No*      | Frontend URL for invite/reset links|
 | `BACKUP_DIR`                       | No       | Backup directory (default: ./backups) |
 | `CORS_ORIGINS`                     | No       | Allowed CORS origins               |
+| `TRUSTED_IPS`                      | No       | IP whitelist for Swagger docs      |
+| `APPLICATIONINSIGHTS_CONNECTION_STRING` | No*  | Application Insights connection string |
 | `NODE_ENV`                         | No       | Environment (development/production)|
 
 > *Optional for local dev with JWT fallback. Required for production.
@@ -461,24 +487,27 @@ CrabWatch/
 
 ### Target Stack
 
-- **Web**: Vercel
-- **API**: Azure App Service
-- **Database**: Azure PostgreSQL
-- **Mobile**: Expo EAS
+- **Web**: Azure App Service (Node 22, Next.js standalone)
+- **API**: Azure App Service (Node 22, Express.js)
+- **Database**: Azure PostgreSQL Flexible Server
+- **Mobile**: Expo EAS Build (Android/iOS)
+- **Monitoring**: Azure Application Insights
 
-### CI/CD
+### Deployment Process
 
-GitHub Actions workflows are configured in `.github/workflows/`:
-- **CI**: Runs lint, typecheck, build, and tests on every push/PR
-  - `lint-and-typecheck` — ESLint + TypeScript across all packages
-  - `test-shared` — Fast unit tests for shared package
-  - `test-server` — Unit + integration tests for server (with PostgreSQL 15 service container)
-  - `test-web` — Unit tests for web (Next.js components, stores, API client)
-  - `test-mobile` — Unit tests for mobile (Expo components, stores, hooks, navigation)
-  - `build-server` / `build-web` / `build-mobile` — Build all packages
-- **Deploy**: Provisions Azure infrastructure with Terraform, deploys server and web app
+Full step-by-step deployment guide: see [`Azure-Deployment-Plan.md`](./Azure-Deployment-Plan.md)
 
-### Manual Deploy
+**Summary:**
+1. Create Azure resource group (`VSES-CrabWatch-MY-RG`)
+2. Provision PostgreSQL Flexible Server (Basic B1ms, 32 GB)
+3. Create shared App Service Plan (B1, Linux)
+4. Deploy API server with environment variables
+5. Deploy Web app with environment variables
+6. Build mobile app with EAS Build
+7. Create Application Insights and configure connection strings
+8. Restrict database firewall to App Service outbound IPs
+
+### Re-Deployment (After Code Changes)
 
 ```bash
 # Build all packages
@@ -486,11 +515,11 @@ pnpm build
 
 # Deploy server
 pnpm --filter=server build
-# Upload dist/ to your hosting provider
+# Upload dist/ to Azure App Service (see Azure-Deployment-Plan.md)
 
 # Deploy web
 pnpm --filter=web build
-# Deploy .next/ to your static hosting
+# Upload .next/ to Azure App Service (see Azure-Deployment-Plan.md)
 ```
 
 ## Troubleshooting
@@ -562,29 +591,28 @@ CORS_ORIGINS="http://localhost:3000,http://localhost:19006,https://yourdomain.co
 - [x] Mobile analytics, researcher, admin screens
 - [x] Mobile password reset flow (forgot/reset screens)
 - [x] Full-screen modal camera with guided capture
-- [x] CI/CD pipelines
-- [x] Unit tests (shared: 17, server: 113, web: 58, mobile: 350)
-- [x] Integration tests (server: 49)
-- [x] E2E tests (Playwright: 60 tests, all passing)
 - [x] Production Firebase configuration
 - [x] API versioning (v1)
 - [x] Response caching
 - [x] Rate limiting per endpoint type
 - [x] Security hardening (Helmet, CSP, COEP, CORP)
-- [x] Mapbox integration (marker clustering, fit-bounds)
+- [x] Mapbox integration (GeoJSON circle layers, manual location picker)
 - [x] Push notifications (FCM)
-- [x] Accessibility (ARIA labels, focus trapping, WCAG checks)
-- [x] Performance monitoring
+- [x] Application Insights monitoring (auto-instrumentation)
 - [x] AI-Guided Crab Capture (GPT-4o Vision analysis)
 - [x] Dynamic species detection (mud crabs + swimming crabs)
 - [x] Azure Blob Storage (photo upload for analysis)
 - [x] Dual MYR coin series (Third + Second Series 1989-2011)
 - [x] Full-screen modal camera capture
+- [x] Real-time capture assistance (gyroscope, accelerometer, focus tracking)
+- [x] Portrait orientation lock with tilt warning
+- [x] Post-capture view validation (dorsal/ventral detection)
 - [x] Invite system (token-based, email dispatch via Resend)
 - [x] Password reset by email (Resend)
 - [x] Admin panel (user management, species CRUD, backup, invites)
 - [x] User soft-delete with 30-day retention
 - [x] User block/unblock with auth rejection
+- [x] Swagger API docs (development only, IP-whitelisted)
 
 ## License
 

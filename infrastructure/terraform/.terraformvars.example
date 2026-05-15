@@ -1,3 +1,3 @@
 azure_subscription_id = "your-subscription-id"
 environment           = "dev"
-location              = "southeastasia"
+location              = "malaysiawest"

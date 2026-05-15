@@ -1,5 +1,7 @@
 # Terraform Configuration
 
+> **LEGACY — NOT IN USE.** CrabWatch uses manual Azure CLI deployment via [`Azure-Deployment-Plan.md`](../../Azure-Deployment-Plan.md). These files are scaffolding from an earlier design and are not part of the current deployment process.
+
 ## Overview
 
 Terraform manages the cloud infrastructure for CrabWatch on Azure.

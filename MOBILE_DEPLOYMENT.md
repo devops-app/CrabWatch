@@ -4,7 +4,7 @@
 
 ### Prerequisites
 
-1. **Node.js** >= 18.0.0
+1. **Node.js** >= 20.0.0
 2. **pnpm** >= 8.0.0
 3. **PostgreSQL** running (Docker or local)
 4. **Expo Go** app installed for **SDK 54** (iOS App Store / Android Play Store)
@@ -82,12 +82,15 @@ pnpm dev:android
 > **Note:** All API calls go through `/api/v1/` endpoints. The mobile app's `.env` should have `EXPO_PUBLIC_API_URL` pointing to your server (e.g., `http://192.168.1.x:3001` for physical devices).
 
 2. **Test key flows:**
-   - Home screen — view species list and stats
+   - Home screen — view stats cards and quick actions
    - AI-Guided Capture — tap "New" tab → select coin series (Third/Second) → dorsal/ventral photos → AI analysis → review & submit
-   - Manual Observation — fallback form when AI analysis fails or is unavailable
-   - Map — view observation locations (requires Mapbox token)
+   - Analytics — view Gender Ratio, Size Frequency, and Temporal Trends charts
    - Profile — view/edit user profile
    - Logout — verify logout redirects to login screen
+
+3. **Role-based tabs (visible based on user role):**
+   - **RESEARCHER**: "Researcher" tab — approve/reject pending observations
+   - **ADMIN**: "Admin" tab — manage users, species, invites, and backups
 
 3. **Test error handling:**
    - Disconnect network — verify offline banner appears

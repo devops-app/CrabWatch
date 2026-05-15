@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useForm, Controller } from 'react-hook-form'
 import { api } from '@/lib/api'
 import { COUNTRIES } from '@crabwatch/shared'
@@ -24,7 +24,6 @@ interface RegisterForm {
 
 export default function RegisterPage(): React.JSX.Element {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [error, setError] = useState('')
   const [isNetworkError, setIsNetworkError] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
@@ -46,6 +45,11 @@ export default function RegisterPage(): React.JSX.Element {
   })
 
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const searchParams = new URLSearchParams(window.location.search)
     const token = searchParams.get('invite')
     if (token) {
       setValidatingInvite(true)
@@ -63,7 +67,7 @@ export default function RegisterPage(): React.JSX.Element {
         .catch(() => setError('Failed to validate invite'))
         .finally(() => setValidatingInvite(false))
     }
-  }, [searchParams, setValue])
+  }, [setValue])
 
   const onSubmit = async (data: RegisterForm) => {
     try {

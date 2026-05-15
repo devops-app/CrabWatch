@@ -36,6 +36,10 @@ export function performanceMiddleware(req: Request, res: Response, next: NextFun
     if (res.statusCode >= 500) {
       metrics.errors += 1
     }
+
+    if (res.statusCode >= 400) {
+      console.warn(`[${res.statusCode}] ${req.method} ${req.path} ${duration}ms`)
+    }
   })
 
   next()
