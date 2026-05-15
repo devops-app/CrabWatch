@@ -234,7 +234,7 @@ https://crabwatch-api.scm.azurewebsites.net/DebugConsole
 1. Run:
 ```ssh
 cd site/wwwroot
-tar -xzf node_modules.tar.gz
+tar -xzf node_modules.tar.gz node_modules
 npx prisma migrate deploy
 ```
 
