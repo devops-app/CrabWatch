@@ -180,6 +180,7 @@ az webapp config appsettings set --name crabwatch-api --resource-group VSES-Crab
   FCM_VAPID_PUBLIC_KEY="YOUR-VAPID-PUBLIC-KEY" `
   SCM_DO_BUILD_DURING_DEPLOYMENT="1" `
   ORYX_NODE_COMPRESS_NODE_MODULES="" `
+  SCM_BUILD_ARGS="-p compress_node_modules=false" `
   WEBSITE_NODE_DEFAULT_VERSION="22"
 ```
 
@@ -205,6 +206,23 @@ The server `tsconfig.json` compiles `src/` + `../shared/src` into `dist/`. Packa
 - `prisma/` — schema + migrations
 - `.env` — local env fallback (Azure app settings take precedence)
 
+**⚠️ CRITICAL: Ensure UTF-8 encoding for migration files!**
+
+PowerShell's `tar` can preserve Windows UTF-16 encoding, which causes Prisma to fail on Linux with `P3015` or `P3009` errors. Before zipping, verify migration files are UTF-8:
+
+```powershell
+# Check encoding (should show "UTF-8 Unicode text")
+Get-Content server\prisma\migrations\init\migration.sql -Encoding Byte | Select-Object -First 3 | ForEach-Object { $_ }
+# If first two bytes are 255,254 (0xFF,0xFE), the file is UTF-16 LE — convert it:
+$utf8 = [System.Text.Encoding]::UTF8
+$bytes = [System.IO.File]::ReadAllBytes("server\prisma\migrations\init\migration.sql")
+if ($bytes[0] -eq 0xFF -and $bytes[1] -eq 0xFE) {
+    $text = [System.IO.File]::ReadAllText("server\prisma\migrations\init\migration.sql")
+    [System.IO.File]::WriteAllText("server\prisma\migrations\init\migration.sql", $text, $utf8)
+    Write-Host "Converted migration.sql to UTF-8"
+}
+```
+
 ```powershell
 # Remove old zip if exists
 Remove-Item -ErrorAction SilentlyContinue server-deploy.zip
@@ -213,6 +231,10 @@ Remove-Item -ErrorAction SilentlyContinue server-deploy.zip
 Push-Location server
 tar -a -cf ..\server-deploy.zip dist package.json prisma .env
 Pop-Location
+
+# Verify zip contents before deploying
+tar -tf server-deploy.zip | Select-Object -First 10
+tar -tf server-deploy.zip | Select-String "migration"
 ```
 
 ### 4.5 Deploy to Azure (Perform at CloudShell)
@@ -226,17 +248,30 @@ az webapp deployment source config-zip `
 
 ### 4.6 Run database migrations
 
-Open the Kudu console in your browser:
+Via Kudu Debug Console (**SSH** tab, NOT PowerShell tab):
 ```
 https://crabwatch-api.scm.azurewebsites.net/DebugConsole
 ```
 
-1. Run:
-```ssh
-cd site/wwwroot
-tar -xzf node_modules.tar.gz node_modules
-npx prisma migrate deploy
+1. SSH into the container, then run:
+```bash
+cd /home/site/wwwroot
+node /home/site/wwwroot/node_modules/prisma/build/index.js migrate deploy
 ```
+
+> **IMPORTANT:** Do NOT use `npx prisma` — it downloads the latest Prisma CLI (7.x) which is incompatible with `@prisma/client@5.x`.
+>
+> **IMPORTANT:** The `.bin/prisma` wrapper is a 0-byte placeholder. Use `node node_modules/prisma/build/index.js` directly.
+>
+> **Note:** `node_modules/` in `~/site/wwwroot` is a symlink to `/node_modules` (Oryx build output). Do NOT delete or replace it — the symlink is the correct working copy.
+>
+> **Note:** If `prisma/migrations/init/migration.sql` is missing, your deploy zip didn't include the migration files. Verify before deploying:
+> ```powershell
+> tar -tf server-deploy.zip | Select-String "migration"
+> ```
+> Should show `prisma/migrations/init/migration.sql` and `migration_lock.toml`.
+>
+> **Note:** If you see `spawn tsx ENOENT` after migration succeeds, ignore it — `tsx` is a devDependency not available in production. The migration itself applied successfully. Skip the seed command and create admin user via Option A (Step 7).
 
 ### 4.7 Verify API
 
@@ -308,6 +343,9 @@ Remove-Item -ErrorAction SilentlyContinue web-deploy.zip
 Push-Location web
 tar -a -cf ..\web-deploy.zip .next package.json public next.config.mjs
 Pop-Location
+
+# Verify zip contents
+tar -tf web-deploy.zip | Select-Object -First 10
 ```
 
 ### 5.5 Deploy to Azure (Perform at Azure Portal as size is over 100MB limit for CloudShell)
@@ -355,6 +393,8 @@ npx eas-cli build --platform android --profile production
 npx eas-cli build --platform android --profile preview
 ```
 
+> **Note:** `eas.json` must have `"image": "ubuntu-22.04-ndk"` for Android builds. Without it, EAS uses Node 18 + pnpm 8.x which will fail with `ERR_PNPM_UNSUPPORTED_ENGINE` (your project requires Node 20+ and pnpm 10+).
+
 ### 6.3 Build iOS (requires Apple Developer account)
 
 ```powershell
@@ -394,10 +434,12 @@ UPDATE "User" SET role = 'ADMIN' WHERE email = 'your@email.com';
 
 ### Option B: Run seed script
 
-```powershell
-# Via Kudu console (https://crabwatch-api.scm.azurewebsites.net/DebugConsole)
-# Navigate to site\wwwroot, open PowerShell:
-npx prisma generate
+```bash
+# Via Kudu SSH (NOT PowerShell tab!):
+cd /home/site/wwwroot
+node /home/site/wwwroot/node_modules/prisma/build/index.js generate
+
+# Note: tsx may not be available in production (devDependency). If it fails, compile seed.ts first locally and deploy the JS output, or skip seeding and use Option A.
 npx tsx prisma/seed.ts
 ```
 
@@ -512,17 +554,34 @@ cd D:\demo\CrabWatch
 pnpm --filter=shared build
 pnpm --filter=server build
 
+# Ensure migration files are UTF-8 (prevents P3015/P3009 errors)
+$bytes = [System.IO.File]::ReadAllBytes("server\prisma\migrations\init\migration.sql")
+if ($bytes[0] -eq 0xFF -and $bytes[1] -eq 0xFE) {
+    $text = [System.IO.File]::ReadAllText("server\prisma\migrations\init\migration.sql")
+    $utf8 = [System.Text.Encoding]::UTF8
+    [System.IO.File]::WriteAllText("server\prisma\migrations\init\migration.sql", $text, $utf8)
+    Write-Host "Fixed UTF-16 encoding"
+}
+
 Push-Location server
 tar -a -cf ..\server-deploy.zip dist package.json prisma .env
 Pop-Location
 
+# Verify migration files are included
+tar -tf server-deploy.zip | Select-String "migration"
+
 az webapp deployment source config-zip --resource-group VSES-CrabWatch-MY-RG --name crabwatch-api --src server-deploy.zip
 ```
 
-If you changed the Prisma schema, run migrations after deploy:
+**Verify migration files are in the zip before deploying:**
 ```powershell
-# Via Kudu console
-npx prisma migrate deploy
+tar -tf server-deploy.zip | Select-String "migration"
+```
+
+If you changed the Prisma schema, run migrations after deploy:
+```bash
+# Via Kudu SSH (NOT PowerShell tab!)
+node /home/site/wwwroot/node_modules/prisma/build/index.js migrate deploy
 ```
 
 ### Web App
@@ -545,6 +604,8 @@ az webapp deployment source config-zip --resource-group VSES-CrabWatch-MY-RG --n
 cd D:\demo\CrabWatch\mobile
 npx eas-cli build --platform android --profile production
 ```
+
+> **Note:** The `eas.json` must specify `"image": "ubuntu-22.04-ndk"` for Android builds to get Node 20+ and compatible pnpm. Without it, EAS uses Node 18 + pnpm 8.x which will fail with `ERR_PNPM_UNSUPPORTED_ENGINE`.
 
 ---
 
@@ -589,6 +650,119 @@ npx eas-cli build:list
 # Rebuild with verbose output
 npx eas-cli build --platform android --profile production --non-interactive
 ```
+
+### `node_modules.tar.gz` in `~/site/wwwroot`
+
+Oryx creates `node_modules.tar.gz` as a compressed backup. The working `node_modules/` is a symlink to `/node_modules` (Oryx build output). **Do NOT extract the `.tar.gz`** — it produces 0-byte binary files. The symlink is the correct, working copy.
+
+**Permanent fix:** `ORYX_NODE_COMPRESS_NODE_MODULES=""` in app settings (Step 4.2) prevents the archive from being created.
+
+### `prisma migrate deploy` fails — use `node` directly
+
+The `.bin/prisma` wrapper is a 0-byte placeholder. Run Prisma via Node:
+
+```bash
+node /home/site/wwwroot/node_modules/prisma/build/index.js migrate deploy
+```
+
+**Do NOT use `npx prisma`** — it downloads the latest Prisma CLI (7.x) which is incompatible with `@prisma/client@5.x`.
+
+### `P3015: Could not find migration file` or `P3009: failed migrations`
+
+**Most common cause: UTF-16 encoding from Windows.**
+
+PowerShell's `tar` preserves Windows file encoding (UTF-16 LE with BOM). Prisma on Linux expects UTF-8. The file exists but Prisma can't parse it.
+
+**Diagnose:**
+```bash
+# Via Kudu SSH — check first bytes (ff fe = UTF-16 LE)
+od -A x -t x1z -N 16 /home/site/wwwroot/prisma/migrations/init/migration.sql
+```
+
+**Fix on server (one-time):**
+```bash
+cd /home/site/wwwroot
+node -e "const fs=require('fs'); let text=fs.readFileSync('prisma/migrations/init/migration.sql','utf8'); text=text.replace(/^\uFEFF/,''); fs.writeFileSync('prisma/migrations/init/migration.sql', text)"
+node /home/site/wwwroot/node_modules/prisma/build/index.js migrate reset --force
+node /home/site/wwwroot/node_modules/prisma/build/index.js migrate deploy
+```
+
+**Prevent on Windows (before zipping):**
+```powershell
+# Check first 2 bytes — 255,254 means UTF-16 LE
+$bytes = [System.IO.File]::ReadAllBytes("server\prisma\migrations\init\migration.sql")
+if ($bytes[0] -eq 0xFF -and $bytes[1] -eq 0xFE) {
+    $text = [System.IO.File]::ReadAllText("server\prisma\migrations\init\migration.sql")
+    $utf8 = [System.Text.Encoding]::UTF8
+    [System.IO.File]::WriteAllText("server\prisma\migrations\init\migration.sql", $text, $utf8)
+}
+```
+
+**Alternative fix:** Use Git to ensure UTF-8 encoding:
+```powershell
+git add server/prisma/migrations/init/migration.sql
+git checkout server/prisma/migrations/init/migration.sql
+```
+
+If the migration files are genuinely missing from the zip, verify:
+```powershell
+tar -tf server-deploy.zip | Select-String "migration"
+```
+
+Should show:
+```
+prisma/migrations/
+prisma/migrations/init/
+prisma/migrations/init/migration.sql
+prisma/migrations/init/migration_lock.toml
+```
+
+If missing, rebuild the zip:
+```powershell
+Push-Location server
+tar -a -cf ..\server-deploy.zip dist package.json prisma .env
+Pop-Location
+```
+
+### Kudu rsync fails with backslash path errors
+
+When deploying from Windows, PowerShell's `Compress-Archive` creates paths with backslashes that Kudu's rsync cannot parse. Always use `tar` to create the zip:
+
+```powershell
+tar -a -cf server-deploy.zip dist package.json prisma .env
+```
+
+### EAS build fails — pnpm lockfile version mismatch or engine error
+
+Error: `ERR_PNPM_UNSUPPORTED_ENGINE` or `ERR_PNPM_NO_LOCKFILE`
+
+This happens when EAS uses Node 18 + pnpm 8.x but your project requires Node 20+ and pnpm 10+.
+
+**Fix 1 — Set build image (recommended):** In `mobile/eas.json`, add `"image": "ubuntu-22.04-ndk"` to each build profile's `android` section:
+```json
+{
+  "build": {
+    "production": {
+      "android": {
+        "image": "ubuntu-22.04-ndk"
+      }
+    }
+  }
+}
+```
+
+**Fix 2 — Specify pnpm version:** Add `packageManager` to root `package.json`:
+```json
+{
+  "packageManager": "pnpm@10.33.2"
+}
+```
+
+Both fixes together ensure EAS uses the correct Node and pnpm versions. Commit `package.json` and `eas.json` before triggering the build.
+
+### `Cannot find module 'babel-preset-expo'` on EAS Build
+
+Ensure `babel-preset-expo` is in `mobile/package.json` dependencies. Run `pnpm install` and commit the updated `pnpm-lock.yaml` before triggering the build.
 
 ---
 
