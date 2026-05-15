@@ -1,4 +1,5 @@
 node_modules/
+.expo/
 dist/
 .next/
 out/
@@ -13,6 +14,7 @@ build/
 .DS_Store
 coverage/
 *.tgz
+*.zip
 *.pem
 .vscode/settings.json
 .idea/
