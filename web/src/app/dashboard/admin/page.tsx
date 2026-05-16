@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '@/lib/api'
 import { SpeciesResponse, UserListResponse, UserResponse, BackupResult, BackupFileInfo, Invite, KeyFeature, DistributionZone } from '@crabwatch/shared'
+import { EngagementAdminTab } from './components'
 
-type Tab = 'species' | 'users' | 'backup'
+type Tab = 'species' | 'users' | 'backup' | 'engagement'
 type UserSubTab = 'active' | 'deleted' | 'invites'
 
 interface ConfirmState {
@@ -365,6 +366,7 @@ export default function AdminPage(): React.JSX.Element {
     { key: 'species', label: 'Species Management' },
     { key: 'users', label: 'Users' },
     { key: 'backup', label: 'Database Backup' },
+    { key: 'engagement', label: 'Engagement' },
   ]
 
   return (
@@ -703,7 +705,7 @@ export default function AdminPage(): React.JSX.Element {
             </>
           )}
         </div>
-      ) : (
+      ) : activeTab === 'backup' ? (
         <div className="card">
           <h2 className="text-xl font-semibold text-ocean-800 mb-6">Database Backup</h2>
 
@@ -764,7 +766,9 @@ export default function AdminPage(): React.JSX.Element {
             <p className="mt-1">Use the CLI command <code className="bg-gray-100 px-1 rounded">pnpm backup:db</code> for scheduled backups.</p>
           </div>
         </div>
-      )}
+      ) : activeTab === 'engagement' ? (
+        <EngagementAdminTab flash={flash} />
+      ) : null}
 
       {confirm.open && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50">

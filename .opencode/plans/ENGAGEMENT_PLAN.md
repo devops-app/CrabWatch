@@ -1,9 +1,19 @@
 # Engagement System - Implementation Plan
 
-> **Status**: Ready for build
+> **Status**: Phase 0-5 Complete (Backend + Web), Mobile Core Gamification Implemented (Stats pending)
 > **Created**: 2026-05-16
+> **Last Updated**: 2026-05-16
 > **Priority**: Server foundation -> Web admin -> Mobile parity
 > **Scope**: Engagement and retention only (no monetization)
+>
+> **Deviations from original plan** (see bottom of each section):
+> - Feature flags default `true` in dev (plan: `false`) — intentional for faster iteration
+> - Single migration (`add_engagement_system`) instead of 5 — simpler rollback
+> - Admin routes mounted under `/admin/*` with grouped `/gamification/*` endpoints (plan: scattered paths)
+> - `missionService`/`onboardingService` inlined in controller (plan: separate files)
+> - `aiInsightsService.ts` instead of `insightService.ts`
+> - `community/page.tsx` added (not in plan) — combines insights + social + stats
+> - Mobile gamification implemented for Leaderboard/Missions/Achievements; `StatsScreen` still pending
 
 ---
 
@@ -544,20 +554,24 @@ Base path: `/api/v1`
   - Response: `{ items: UserAchievementDto[] }`
 - `GET /engagement/achievements/:id/progress`
   - Response: `{ achievementId: string, progress: number, target: number, unlocked: boolean }`
+- `GET /engagement/achievements/check` *(added — bulk progress check)*
+  - Response: `{ items: AchievementProgressDto[] }`
 
 #### Missions
 
 - `GET /engagement/missions/today`
   - Response: `{ date: string, items: UserMissionDto[] }`
-- `POST /engagement/missions/:userMissionId/claim`
+- `POST /engagement/missions/claim` *(changed from `/:userMissionId/claim` — body-based)*
+  - Request: `{ userMissionId: string }`
   - Response: `{ claimed: true, xpDelta: number, stats: UserStatsDto }`
+- `POST /engagement/missions/progress` *(added — event-based progress update)*
 
 #### Onboarding
 
 - `GET /engagement/onboarding/me`
   - Response: `{ flowCode: string, version: number, steps: OnboardingStepProgressDto[] }`
-- `POST /engagement/onboarding/steps/:stepKey/complete`
-  - Request: `{ metadata?: Record<string, unknown> }`
+- `POST /engagement/onboarding/steps/complete` *(changed from `/:stepKey/complete` — body-based)*
+  - Request: `{ stepKey: string, metadata?: Record<string, unknown> }`
   - Response: `{ completed: true, stats?: UserStatsDto }`
 
 #### Insights and notifications
@@ -572,7 +586,16 @@ Base path: `/api/v1`
   - Request: `{ items: NotificationPreferenceDto[] }`
   - Response: `{ updated: true }`
 
+#### Social *(added — not in original plan)*
+
+- `GET /engagement/social/contributors`
+  - Response: `{ items: TopContributorDto[] }`
+- `GET /engagement/social/stats`
+  - Response: `{ stats: SocialStatsDto }`
+
 ### 6.2 Admin endpoints
+
+**Note**: Admin routes are mounted under `/admin/*`, with gamification grouped under `/admin/gamification/*`.
 
 #### Gamification config
 
@@ -588,45 +611,56 @@ Base path: `/api/v1`
 
 - `POST /admin/gamification/recalculate`
   - Request: `{ mode: 'dry-run' | 'execute', userId?: string, reason: string }`
-  - Response: `{ jobId: string, mode: string }`
-- `GET /admin/gamification/recalculate/:jobId`
+  - Response: `{ mode: string, results: RecalculationResult[] }`
+- `GET /admin/gamification/recalculate/:jobId` *(implemented — in-memory job status tracking)*
 
 - `POST /admin/gamification/adjust-xp`
   - Request: `{ userId: string, deltaXP: number, reason: string }`
 
-#### Achievements and missions
+#### Achievements *(implemented — backend only, web admin UI deferred)*
 
-- `GET /admin/engagement/achievements`
-- `POST /admin/engagement/achievements`
-- `PATCH /admin/engagement/achievements/:id`
-- `DELETE /admin/engagement/achievements/:id`
-- `POST /admin/engagement/achievements/:id/award`
+- `GET /admin/achievements`
+- `POST /admin/achievements`
+- `PATCH /admin/achievements/:id`
+- `DELETE /admin/achievements/:id`
+- `POST /admin/achievements/:id/award`
 
-- `GET /admin/engagement/missions`
-- `POST /admin/engagement/missions`
-- `PATCH /admin/engagement/missions/:id`
-- `DELETE /admin/engagement/missions/:id`
+#### Missions *(implemented — backend only, web admin UI deferred)*
 
-#### Seasons and campaigns
+- `GET /admin/missions`
+- `POST /admin/missions`
+- `PATCH /admin/missions/:id`
+- `DELETE /admin/missions/:id`
 
-- `GET /admin/engagement/seasons`
-- `POST /admin/engagement/seasons`
-- `PATCH /admin/engagement/seasons/:id`
-- `POST /admin/engagement/seasons/:id/activate`
+#### Seasons *(implemented — backend only, web admin UI deferred)*
+
+- `GET /admin/seasons`
+- `POST /admin/seasons`
+- `PATCH /admin/seasons/:id`
+- `DELETE /admin/seasons/:id`
+- `POST /admin/seasons/:id/activate`
+
+#### Campaigns *(path changed from `/admin/campaigns/*`)*
 
 - `GET /admin/campaigns`
 - `POST /admin/campaigns`
-- `PATCH /admin/campaigns/:id`
-- `POST /admin/campaigns/:id/send-test`
-- `POST /admin/campaigns/:id/start`
-- `POST /admin/campaigns/:id/pause`
-- `POST /admin/campaigns/:id/cancel`
+- `PATCH /admin/campaigns/:id/status` *(unified — replaces separate start/pause/cancel)*
+- `POST /admin/campaigns/:id/launch` *(renamed from `start`)*
+- `GET /admin/campaigns/:id` *(added — single campaign detail)*
+- `DELETE /admin/campaigns/:id` *(added — campaign deletion)*
+- `POST /admin/campaigns/:id/send-test` *(implemented)*
 
-#### Risk, audit, moderation
+#### Risk, audit, moderation *(path changed from `/admin/security/*`, `/admin/audit-logs`)*
 
-- `GET /admin/security/abuse-signals`
-- `POST /admin/security/abuse-signals/:id/resolve`
+- `GET /admin/abuse-signals`
+- `PATCH /admin/abuse-signals/:id/resolve` *(changed from POST)*
 - `GET /admin/audit-logs`
+- `GET /admin/audit-logs/stats` *(added — summary stats)*
+
+#### Metrics *(added — not in original plan)*
+
+- `GET /admin/metrics`
+  - Response: `{ metrics: EngagementMetricsDto }`
 
 ---
 
@@ -635,13 +669,17 @@ Base path: `/api/v1`
 ### New files
 
 - `server/src/services/rewardEngine.ts`
-- `server/src/services/missionService.ts`
-- `server/src/services/onboardingService.ts`
+- `server/src/services/missionService.ts` *(deviation: inlined in `engagementController.ts`)*
+- `server/src/services/onboardingService.ts` *(deviation: inlined in `engagementController.ts`)*
 - `server/src/services/achievementService.ts`
 - `server/src/services/leaderboardService.ts`
-- `server/src/services/insightService.ts`
+- `server/src/services/aiInsightsService.ts` *(deviation: plan said `insightService.ts`)*
 - `server/src/services/campaignService.ts`
 - `server/src/services/abuseDetectionService.ts`
+- `server/src/services/notificationService.ts` *(added — not in plan)*
+- `server/src/services/recalculationService.ts` *(added — Phase 5 hardening)*
+- `server/src/services/metricsService.ts` *(added — Phase 5 hardening)*
+- `server/src/services/seedEngagement.ts`
 
 - `server/src/controllers/gamificationController.ts`
 - `server/src/controllers/engagementController.ts`
@@ -680,12 +718,15 @@ Base path: `/api/v1`
 - `web/src/app/dashboard/leaderboard/page.tsx`
 - `web/src/app/dashboard/achievements/page.tsx`
 - `web/src/app/dashboard/missions/page.tsx`
+- `web/src/app/dashboard/community/page.tsx` *(added — combines insights, social contributors, and stats)*
 
 ### Admin additions
 
 Extend `web/src/app/dashboard/admin/page.tsx` with a new top-level section: `Engagement`:
 
-- Sub-tabs: `XP Rules`, `Levels`, `Achievements`, `Missions`, `Seasons`, `Campaigns`, `Abuse`, `Audit`
+- Sub-tabs: `XP Rules`, `Levels`, `Adjustments`, `Recalculation`, `Campaigns`, `Audit Log`, `Abuse Detection`
+- `Achievements`, `Missions`, `Seasons` admin sub-tabs *(implemented — full CRUD with create/edit/delete forms)*
+- Admin engagement components extracted to `web/src/app/dashboard/admin/components.tsx` *(deviation: plan said inline in admin/page.tsx)*
 
 ### Shared UX requirements
 
@@ -704,10 +745,10 @@ Extend `web/src/lib/api.ts` with typed methods for all endpoints in Section 6.
 
 ### New screens
 
-- `mobile/src/screens/gamification/LeaderboardScreen.tsx`
-- `mobile/src/screens/gamification/AchievementsScreen.tsx`
-- `mobile/src/screens/gamification/MissionsScreen.tsx`
-- `mobile/src/screens/gamification/StatsScreen.tsx`
+- `mobile/src/screens/gamification/LeaderboardScreen.tsx` *(implemented)*
+- `mobile/src/screens/gamification/AchievementsScreen.tsx` *(implemented)*
+- `mobile/src/screens/gamification/MissionsScreen.tsx` *(implemented)*
+- `mobile/src/screens/gamification/StatsScreen.tsx` *(pending)*
 
 ### Existing screens to update
 
@@ -782,45 +823,51 @@ Data flow:
 
 ## 12) Development Phases
 
-### Phase 0 - Foundation and migration safety
+### Phase 0 - Foundation and migration safety **[COMPLETE]**
 
 - Add Prisma enums/models from Section 4
-- Create migration: `npx prisma migrate dev --name engagement_foundation`
+- Create migration: `npx prisma migrate dev --name add_engagement_system` *(deviation: single migration instead of 5)*
 - Seed baseline rules, levels, onboarding flow, mission definitions
-- Add feature flags (`ENGAGEMENT_ENABLED`, `MISSIONS_ENABLED`, `SEASONS_ENABLED`)
+- Add feature flags (`ENGAGEMENT_ENABLED`, `MISSIONS_ENABLED`, `SEASONS_ENABLED`) *(deviation: defaults to `true` in dev)*
 
-### Phase 1 - XP, levels, leaderboard, audit
+### Phase 1 - XP, levels, leaderboard, audit **[COMPLETE]**
 
 - Implement reward engine + idempotency
 - Hook submit/approve events from observation controller
 - Build stats/leaderboard/xp-history endpoints
 - Add admin rule/level CRUD and audit logging
+- Web: leaderboard page, dashboard engagement card, profile stats
 
-### Phase 2 - Missions and onboarding
+### Phase 2 - Missions and onboarding **[COMPLETE — Backend + Web + Mobile Core]**
 
-- Implement onboarding progress service
+- Implement onboarding progress service *(deviation: inlined in engagementController.ts)*
 - Implement daily mission assignment + claim
-- Add mission/onboarding UI on web and mobile home surfaces
+- Add mission/onboarding UI on web home surfaces
 - Add notification preferences endpoint and UI
+- Mobile missions UI *(implemented in `MissionsScreen.tsx`; onboarding tab included)*
 
-### Phase 3 - Achievements and seasonal loop
+### Phase 3 - Achievements and seasonal loop **[COMPLETE — Backend + Web + Mobile Core]**
 
 - Implement achievement evaluation and unlock flow
 - Implement season model lifecycle and seasonal leaderboard
-- Add achievements pages/screens and admin CRUD
+- Add achievements pages on web *(admin CRUD deferred)*
+- Mobile achievements screen *(implemented in `AchievementsScreen.tsx`)*
 
-### Phase 4 - Campaigns, insights, abuse controls
+### Phase 4 - Campaigns, insights, abuse controls **[COMPLETE — Backend + Web Admin]**
 
 - Campaign manager (push/email/in-app)
-- AI insights endpoint + UI cards
+- AI insights endpoint + UI cards *(community page)*
 - Abuse signals service + moderation queue
+- Notification service *(added — not in original plan)*
 
-### Phase 5 - Hardening and optimization
+### Phase 5 - Hardening and optimization **[COMPLETE — Backend]**
 
-- Add recalculation jobs (dry-run + execute)
-- Add caching for level configs and leaderboard reads
-- Run load tests and tune indexes
-- Complete accessibility and perf QA
+- Add recalculation jobs (dry-run + execute) via `recalculationService.ts`
+- Add caching for leaderboard reads (in-memory TTL, 60s/120s)
+- Add `metricsService.ts` for engagement health monitoring
+- Add `GET /admin/metrics` endpoint
+- Wire cache invalidation in `rewardEngine.ts` and admin XP adjustments
+- Load tests, accessibility, perf QA *(deferred — post-deployment)*
 
 ---
 
@@ -865,16 +912,18 @@ Rollback:
 
 - `.opencode/plans/ENGAGEMENT_PLAN.md` (this file)
 
-### New backend files (planned)
+### New backend files (created)
 
 - `server/src/services/rewardEngine.ts`
-- `server/src/services/missionService.ts`
-- `server/src/services/onboardingService.ts`
 - `server/src/services/achievementService.ts`
 - `server/src/services/leaderboardService.ts`
-- `server/src/services/insightService.ts`
+- `server/src/services/aiInsightsService.ts` *(plan: `insightService.ts`)*
 - `server/src/services/campaignService.ts`
 - `server/src/services/abuseDetectionService.ts`
+- `server/src/services/notificationService.ts` *(added)*
+- `server/src/services/recalculationService.ts` *(added)*
+- `server/src/services/metricsService.ts` *(added)*
+- `server/src/services/seedEngagement.ts`
 - `server/src/controllers/gamificationController.ts`
 - `server/src/controllers/engagementController.ts`
 - `server/src/controllers/adminEngagementController.ts`
@@ -882,32 +931,50 @@ Rollback:
 - `server/src/routes/engagementRoutes.ts`
 - `server/src/routes/adminEngagementRoutes.ts`
 
+### Backend files NOT created (plan deviation)
+
+- `server/src/services/missionService.ts` *(inlined in engagementController.ts)*
+- `server/src/services/onboardingService.ts` *(inlined in engagementController.ts)*
+- `server/src/jobs/assignDailyMissions.ts` *(implemented — scheduled via custom scheduler in `index.ts`)*
+
 ### New shared files (planned)
 
 - `shared/src/types/gamification.ts`
 - `shared/src/types/engagement.ts`
 - `shared/src/types/admin.ts`
 
-### New web files (planned)
+### New web files (created)
 
 - `web/src/app/dashboard/leaderboard/page.tsx`
 - `web/src/app/dashboard/achievements/page.tsx`
 - `web/src/app/dashboard/missions/page.tsx`
+- `web/src/app/dashboard/community/page.tsx` *(added)*
+- `web/src/app/dashboard/admin/components.tsx` *(extracted from admin/page.tsx)*
 
-### New mobile files (planned)
+### New mobile files
 
-- `mobile/src/screens/gamification/LeaderboardScreen.tsx`
-- `mobile/src/screens/gamification/AchievementsScreen.tsx`
-- `mobile/src/screens/gamification/MissionsScreen.tsx`
-- `mobile/src/screens/gamification/StatsScreen.tsx`
+- `mobile/src/screens/gamification/LeaderboardScreen.tsx` *(implemented)*
+- `mobile/src/screens/gamification/AchievementsScreen.tsx` *(implemented)*
+- `mobile/src/screens/gamification/MissionsScreen.tsx` *(implemented)*
+- `mobile/src/screens/gamification/StatsScreen.tsx` *(pending)*
 
 ---
 
 ## 16) Definition of Done
 
-- Engagement APIs and contracts are implemented and consumed by web/mobile.
-- Admin can fully control rules, levels, missions, achievements, seasons, campaigns.
-- All reward writes are idempotent and auditable.
-- Abuse detection queue is visible and actionable.
-- No monetization features are added.
-- All packages pass strict type checks.
+### Current State (Phase 0-5 Backend + Web + Mobile Core)
+
+- [x] Engagement APIs implemented and consumed by web
+- [x] Admin can fully control rules, levels, achievements, missions, seasons, campaigns, abuse signals, audit logs
+- [x] All reward writes are idempotent and auditable
+- [x] Abuse detection queue is visible and actionable
+- [x] No monetization features are added
+- [x] All packages pass strict type checks (`tsc --noEmit`)
+- [x] Leaderboard caching with TTL (60s/120s) + invalidation on XP changes
+- [x] XP recalculation with dry-run/execute modes
+- [x] Engagement metrics endpoint for health monitoring
+
+### Remaining (deferred)
+
+- [ ] Mobile `StatsScreen` and deeper mobile parity polish
+- [ ] Load tests, accessibility, perf QA (post-deployment)

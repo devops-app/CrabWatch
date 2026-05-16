@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { api } from '@/lib/api'
@@ -21,12 +21,21 @@ interface FormValues {
 
 export default function ProfilePage(): React.JSX.Element {
   const router = useRouter()
-  const { user, updateUser } = useAuthStore()
+  const { user, updateUser, logout } = useAuthStore()
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [myStats, setMyStats] = useState<any>(null)
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordSaving, setPasswordSaving] = useState(false)
+  const phoneCodes = useMemo(
+    () => Array.from(new Set(COUNTRIES.map((c) => c.phoneCode))),
+    []
+  )
 
   const { register, handleSubmit, formState: { errors }, setValue } = useForm<FormValues>({
     defaultValues: {
@@ -54,6 +63,9 @@ export default function ProfilePage(): React.JSX.Element {
       setValue('postcode', user.postcode || '')
       setValue('country', user.country || 'MY')
       setAvatarUrl(user.avatar || null)
+
+      // Load engagement stats
+      api.getMyStats().then((data: any) => setMyStats(data.stats)).catch(() => {})
     }
   }, [user, setValue])
 
@@ -89,6 +101,40 @@ export default function ProfilePage(): React.JSX.Element {
       setError(err instanceof Error ? err.message : 'Failed to update profile')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleChangePassword = async () => {
+    setError('')
+    setSuccess('')
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setError('Please fill in all password fields')
+      return
+    }
+    if (newPassword.length < 8) {
+      setError('New password must be at least 8 characters')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setError('New password and confirm password do not match')
+      return
+    }
+
+    setPasswordSaving(true)
+    try {
+      await api.changePassword({ currentPassword, newPassword })
+      try {
+        await api.logout()
+      } catch {
+        // ignore server logout errors
+      }
+      logout()
+      router.replace('/auth/login?reason=password-changed')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update password')
+    } finally {
+      setPasswordSaving(false)
     }
   }
 
@@ -152,6 +198,29 @@ export default function ProfilePage(): React.JSX.Element {
           <p className="text-xs text-gray-500 mt-2">Tap camera to change photo</p>
         </div>
 
+        {/* Engagement Stats */}
+        {myStats && (
+          <div className="bg-gradient-to-r from-ocean-50 to-amber-50 rounded-lg p-4 border border-ocean-200">
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <div className="text-2xl font-bold text-ocean-600">Lv.{myStats.level}</div>
+                <div className="text-xs text-gray-500">{myStats.title}</div>
+                <div className="text-xs text-gray-400 mt-1">{myStats.totalXP.toLocaleString()} XP</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-orange-500">🔥 {myStats.currentStreak}</div>
+                <div className="text-xs text-gray-500">Day Streak</div>
+                <div className="text-xs text-gray-400 mt-1">Best: {myStats.longestStreak}d</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-green-600">{myStats.approvedCount}</div>
+                <div className="text-xs text-gray-500">Approved</div>
+                <div className="text-xs text-gray-400 mt-1">{myStats.totalSubmissions} total</div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Email (read-only) */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
@@ -183,8 +252,8 @@ export default function ProfilePage(): React.JSX.Element {
               {...register('phoneCode')}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-ocean-400 bg-white"
             >
-              {COUNTRIES.map((c) => (
-                <option key={c.phoneCode} value={c.phoneCode}>{c.phoneCode}</option>
+              {phoneCodes.map((phoneCode) => (
+                <option key={phoneCode} value={phoneCode}>{phoneCode}</option>
               ))}
             </select>
           </div>
@@ -272,6 +341,48 @@ export default function ProfilePage(): React.JSX.Element {
             className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
           >
             Cancel
+          </button>
+        </div>
+
+        <div className="pt-4 border-t border-gray-200 space-y-4">
+          <h2 className="text-lg font-semibold text-ocean-900">Change Password</h2>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-ocean-400"
+              placeholder="Current password"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-ocean-400"
+              placeholder="New password"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-ocean-400"
+              placeholder="Confirm new password"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleChangePassword}
+            disabled={passwordSaving}
+            className="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors disabled:opacity-50"
+          >
+            {passwordSaving ? 'Updating Password...' : 'Update Password'}
           </button>
         </div>
       </form>

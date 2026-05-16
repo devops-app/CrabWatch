@@ -254,7 +254,7 @@ function TemporalSection({ data }: { data: TemporalTrendData[] }) {
 function EmptyState({ message }: { message: string }) {
   return (
     <Card padding={32}>
-      <Ionicons name="chart-bar" size={48} color={COLORS.textSecondary} />
+      <Ionicons name="bar-chart-outline" size={48} color={COLORS.textSecondary} />
       <Text style={styles.emptyText}>{message}</Text>
     </Card>
   )

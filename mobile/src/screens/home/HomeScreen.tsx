@@ -7,22 +7,30 @@ import {
   TouchableOpacity,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useNavigation } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
-import type { NavigationProp } from '@react-navigation/native'
 import { useAuth } from '../../hooks/useAuth'
 import { api } from '../../services/api'
 import { Card } from '../../components/common/Card'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { COLORS } from '../../utils/constants'
 import type { DashboardStats } from '@crabwatch/shared'
+import type { NavigationProp } from '@react-navigation/native'
 import type { MainTabParamList } from '../../navigation/types'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { RootStackParamList } from '../../navigation/types'
 
-type HomeScreenProps = {
-  navigation: NavigationProp<MainTabParamList>
-}
+type TabNavigation = NavigationProp<MainTabParamList>
+type StackNavigation = NativeStackNavigationProp<RootStackParamList>
 
-export function HomeScreen({ navigation }: HomeScreenProps) {
+export function HomeScreen() {
+  const tabNav = useNavigation<TabNavigation>()
   const { user } = useAuth()
+
+  const navigateToGamification = (screen: 'Leaderboard' | 'Missions' | 'Achievements') => {
+    const parentNav = tabNav.getParent<StackNavigation>()
+    parentNav?.navigate(screen)
+  }
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -85,13 +93,31 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
             <Card padding={20}>
               <View style={styles.quickActions}>
                 <Text style={styles.sectionTitle}>Quick Actions</Text>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('New')}>
+                <TouchableOpacity style={styles.actionBtn} onPress={() => tabNav.navigate('New')}>
                   <Ionicons name="add-circle" size={22} color={COLORS.primary} />
                   <Text style={styles.actionText}>New Observation</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Analytics')}>
+                <TouchableOpacity style={styles.actionBtn} onPress={() => tabNav.navigate('Analytics')}>
                   <Ionicons name="analytics" size={22} color={COLORS.secondary} />
                   <Text style={styles.actionText}>Analytics</Text>
+                </TouchableOpacity>
+              </View>
+            </Card>
+
+            <Card padding={20}>
+              <View style={styles.quickActions}>
+                <Text style={styles.sectionTitle}>Gamification</Text>
+                <TouchableOpacity style={styles.actionBtn} onPress={() => navigateToGamification('Leaderboard')}>
+                  <Ionicons name="trophy" size={22} color={COLORS.accent} />
+                  <Text style={styles.actionText}>Leaderboard</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionBtn} onPress={() => navigateToGamification('Missions')}>
+                  <Ionicons name="shield-checkmark" size={22} color={COLORS.success} />
+                  <Text style={styles.actionText}>Missions</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionBtn} onPress={() => navigateToGamification('Achievements')}>
+                  <Ionicons name="ribbon" size={22} color={COLORS.primary} />
+                  <Text style={styles.actionText}>Achievements</Text>
                 </TouchableOpacity>
               </View>
             </Card>

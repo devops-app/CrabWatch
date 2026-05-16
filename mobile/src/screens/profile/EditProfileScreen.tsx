@@ -8,6 +8,7 @@ import {
   Platform,
   Alert,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
@@ -39,9 +40,13 @@ type FormValues = {
 
 export function EditProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
-  const { user, updateUser } = useAuth()
+  const { user, updateUser, logout } = useAuth()
   const [loading, setLoading] = useState(false)
   const [avatarUri, setAvatarUri] = useState<string | null>(user?.avatar || null)
+  const [passwordLoading, setPasswordLoading] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
 
   const {
     control,
@@ -108,44 +113,86 @@ export function EditProfileScreen() {
     }
   }
 
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      Alert.alert('Error', 'Please fill in all password fields')
+      return
+    }
+
+    if (newPassword.length < 8) {
+      Alert.alert('Error', 'New password must be at least 8 characters')
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Error', 'New password and confirm password do not match')
+      return
+    }
+
+    setPasswordLoading(true)
+    try {
+      await api.changePassword(currentPassword, newPassword)
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+      Alert.alert('Password Updated', 'Please sign in again with your new password.', [
+        {
+          text: 'OK',
+          onPress: () => {
+            logout()
+          },
+        },
+      ])
+    } catch (err) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to update password')
+    } finally {
+      setPasswordLoading(false)
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         style={styles.inner}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.avatarSection}>
-          <TouchableOpacity onPress={handlePickAvatar} style={styles.avatarWrapper}>
-            {avatarUri ? (
-              <Image source={{ uri: avatarUri }} style={styles.avatar} />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Ionicons name="person" size={36} color="#ffffff" />
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.avatarSection}>
+            <TouchableOpacity onPress={handlePickAvatar} style={styles.avatarWrapper}>
+              {avatarUri ? (
+                <Image source={{ uri: avatarUri }} style={styles.avatar} />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Ionicons name="person" size={36} color="#ffffff" />
+                </View>
+              )}
+              <View style={styles.avatarOverlay}>
+                <Ionicons name="camera" size={18} color="#ffffff" />
               </View>
-            )}
-            <View style={styles.avatarOverlay}>
-              <Ionicons name="camera" size={18} color="#ffffff" />
-            </View>
-          </TouchableOpacity>
-          <Text style={styles.avatarHint}>Tap to change photo</Text>
-        </View>
+            </TouchableOpacity>
+            <Text style={styles.avatarHint}>Tap to change photo</Text>
+          </View>
 
-        <View style={styles.form}>
-          <Controller
-            control={control}
-            name="name"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Display Name"
-                placeholder="Your name"
-                autoCapitalize="words"
-                value={value}
-                onBlur={onBlur}
-                onChangeText={onChange}
-                error={errors.name?.message}
-              />
-            )}
-          />
+          <View style={styles.form}>
+            <Controller
+              control={control}
+              name="name"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <Input
+                  label="Display Name"
+                  placeholder="Your name"
+                  autoCapitalize="words"
+                  value={value}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  error={errors.name?.message}
+                />
+              )}
+            />
 
           <View style={styles.phoneRow}>
             <View style={styles.phoneCodeWrap}>
@@ -299,7 +346,42 @@ export function EditProfileScreen() {
             onPress={() => navigation.goBack()}
             style={styles.cancelBtn}
           />
-        </View>
+
+            <View style={styles.infoCard}>
+              <Text style={styles.sectionTitle}>Change Password</Text>
+              <Input
+                label="Current Password"
+                placeholder="Current password"
+                secureTextEntry
+                autoCapitalize="none"
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+              />
+              <Input
+                label="New Password"
+                placeholder="New password"
+                secureTextEntry
+                autoCapitalize="none"
+                value={newPassword}
+                onChangeText={setNewPassword}
+              />
+              <Input
+                label="Confirm New Password"
+                placeholder="Confirm new password"
+                secureTextEntry
+                autoCapitalize="none"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+              />
+              <Button
+                title="Update Password"
+                loading={passwordLoading}
+                onPress={handleChangePassword}
+                style={styles.passwordBtn}
+              />
+            </View>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   )
@@ -312,6 +394,9 @@ const styles = StyleSheet.create({
   },
   inner: {
     flex: 1,
+  },
+  content: {
+    paddingBottom: 24,
   },
   avatarSection: {
     alignItems: 'center',
@@ -378,6 +463,15 @@ const styles = StyleSheet.create({
     color: COLORS.textLight,
     marginTop: 4,
     fontStyle: 'italic',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+  passwordBtn: {
+    marginTop: 8,
   },
   saveBtn: {
     marginBottom: 12,

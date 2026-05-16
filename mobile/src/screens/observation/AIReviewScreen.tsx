@@ -142,6 +142,7 @@ export function AIReviewScreen() {
 
     const payload = {
       ...data,
+      bw: data.bw ?? null,
       lat: latitude,
       lng: longitude,
       locationMethod: (manualLocation ? 'manual' : 'gps') as 'manual' | 'gps',
@@ -461,7 +462,7 @@ export function AIReviewScreen() {
             <Ionicons name="close-circle" size={32} color="#ffffff" />
           </TouchableOpacity>
           <Image
-            source={{ uri: fullscreenPhoto }}
+            source={fullscreenPhoto ? { uri: fullscreenPhoto } : undefined}
             style={styles.fullscreenImage}
             resizeMode="contain"
           />

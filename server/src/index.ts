@@ -22,6 +22,9 @@ import analyticsRoutes from './routes/analyticsRoutes'
 import uploadRoutes from './routes/uploadRoutes'
 import fcmRoutes from './routes/fcmRoutes'
 import analysisRoutes from './routes/analysisRoutes'
+import gamificationRoutes from './routes/gamificationRoutes'
+import engagementRoutes from './routes/engagementRoutes'
+import adminEngagementRoutes from './routes/adminEngagementRoutes'
 import prisma from './config/database'
 
 const app = express()
@@ -87,6 +90,23 @@ const apiLimiter = rateLimit({
 })
 app.use('/api/', apiLimiter)
 
+const adminEngagementLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: config.nodeEnv === 'production' ? 60 : 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many admin engagement requests. Please try again later.' },
+})
+app.use('/api/v1/admin/engagement/gamification/rules', adminEngagementLimiter)
+app.use('/api/v1/admin/engagement/gamification/levels', adminEngagementLimiter)
+app.use('/api/v1/admin/engagement/gamification/adjust-xp', adminEngagementLimiter)
+app.use('/api/v1/admin/engagement/gamification/recalculate', adminEngagementLimiter)
+app.use('/api/v1/admin/engagement/achievements', adminEngagementLimiter)
+app.use('/api/v1/admin/engagement/missions', adminEngagementLimiter)
+app.use('/api/v1/admin/engagement/seasons', adminEngagementLimiter)
+app.use('/api/v1/admin/engagement/campaigns', adminEngagementLimiter)
+app.use('/api/v1/admin/engagement/abuse-signals', adminEngagementLimiter)
+
 const isDocsEnabled = config.nodeEnv !== 'production'
 if (isDocsEnabled) {
   app.get('/api/v1/docs-json', docsAuthMiddleware, (_req, res) => {
@@ -107,6 +127,9 @@ app.use('/api/v1/analytics', analyticsRoutes)
 app.use('/api/v1/upload', uploadRoutes)
 app.use('/api/v1/fcm', fcmRoutes)
 app.use('/api/v1/analyze', analysisRoutes)
+app.use('/api/v1/gamification', gamificationRoutes)
+app.use('/api/v1/engagement', engagementRoutes)
+app.use('/api/v1/admin', adminEngagementRoutes)
 
 app.post('/api/v1/telemetry/error', (req, res) => {
   const { message, stack, componentStack } = req.body || {}
@@ -133,9 +156,71 @@ app.get('/api/v1/metrics/performance', docsAuthMiddleware, (_req, res) => {
 app.use(errorHandler)
 app.use(notFoundHandler)
 
-const server = app.listen(config.port, config.host, () => {
+function scheduleJob(fn: () => Promise<any>, name: string, getNextRun: () => Date): void {
+  const nextRun = getNextRun()
+  const delay = nextRun.getTime() - Date.now()
+
+  console.log(`[SCHEDULER] ${name} scheduled for ${nextRun.toISOString()} (${Math.round(delay / 1000 / 60)}min from now)`)
+
+  setTimeout(async () => {
+    try {
+      const result = await fn()
+      console.log(`[SCHEDULER] ${name} completed:`, result)
+    } catch (err) {
+      console.error(`[SCHEDULER] ${name} failed:`, err)
+    }
+    // Re-schedule for next run
+    const next = getNextRun()
+    const d = next.getTime() - Date.now()
+    if (d > 0) {
+      scheduleJob(fn, name, getNextRun)
+    }
+  }, delay)
+}
+
+const server = app.listen(config.port, config.host, async () => {
   console.log(`CrabWatch API running on http://${config.host}:${config.port}`)
   console.log(`Environment: ${config.nodeEnv}`)
+
+  // Seed engagement defaults (idempotent)
+  if (process.env.SEED_ENGAGEMENT_ON_STARTUP !== 'false') {
+    try {
+      const { seedEngagement } = await import('./services/seedEngagement')
+      await seedEngagement()
+    } catch (err) {
+      console.error('[STARTUP] Failed to seed engagement data:', err)
+    }
+  } else {
+    console.log('[STARTUP] Skipping engagement seed (SEED_ENGAGEMENT_ON_STARTUP=false)')
+  }
+
+  // Schedule daily mission assignment (runs at midnight UTC)
+  try {
+    const { assignDailyMissions, assignWeeklyMissions } = await import('./jobs/assignDailyMissions')
+    scheduleJob(assignDailyMissions, 'Daily missions', () => new Date(
+      Date.UTC(
+        new Date().getUTCFullYear(),
+        new Date().getUTCMonth(),
+        new Date().getUTCDate() + 1,
+        0, 0, 0
+      )
+    ))
+    scheduleJob(assignWeeklyMissions, 'Weekly missions', () => {
+      const now = new Date()
+      const daysUntilMonday = (8 - now.getUTCDay()) % 7 || 7
+      const nextMonday = new Date(
+        Date.UTC(
+          now.getUTCFullYear(),
+          now.getUTCMonth(),
+          now.getUTCDate() + daysUntilMonday,
+          0, 0, 0
+        )
+      )
+      return nextMonday
+    })
+  } catch (err) {
+    console.error('[STARTUP] Failed to schedule mission jobs:', err)
+  }
 })
 
 async function gracefulShutdown(): Promise<void> {

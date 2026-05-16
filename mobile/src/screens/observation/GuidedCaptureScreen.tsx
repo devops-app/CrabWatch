@@ -76,12 +76,7 @@ export function GuidedCaptureScreen() {
   const handleFocus = useCallback(async () => {
     if (cameraRef.current) {
       setFocused(false)
-      try {
-        await cameraRef.current.focus()
-        setTimeout(() => setFocused(true), 500)
-      } catch {
-        setFocused(true)
-      }
+      setTimeout(() => setFocused(true), 300)
     }
   }, [setFocused])
 

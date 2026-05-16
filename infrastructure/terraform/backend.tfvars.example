@@ -1,6 +1,0 @@
-# Terraform Backend Configuration
-# Copy to backend.tfvars and update values
-
-storage_account_name = "crabwatchterraform"
-container_name       = "terraform-state"
-key                  = "crabwatch.tfstate"

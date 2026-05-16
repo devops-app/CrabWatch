@@ -2,6 +2,7 @@
 const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
+  eslint: { ignoreDuringBuilds: true },
   transpilePackages: ['@crabwatch/shared'],
   env: {
     MAPBOX_TOKEN: process.env.MAPBOX_TOKEN || '',

@@ -8,6 +8,8 @@ import { sendObservationApproved, sendObservationRejected } from '../services/fc
 import { OBSERVATION_INCLUDE, parsePagination, ObservationWithRelations } from '../utils/query'
 import { sanitizeText } from '../utils/sanitize'
 import { getBlobService } from '../services/upload'
+import { awardXP, updateStreak, isFirstObservation, isNewSpecies, incrementSubmissions, incrementApproved, generateIdempotencyKey } from '../services/rewardEngine'
+import { config } from '../config'
 
 type DbUser = { id: string; role: string; email: string }
 
@@ -74,6 +76,110 @@ export async function createObservation(req: AuthRequest, res: Response): Promis
       },
       include: OBSERVATION_INCLUDE,
     })
+
+    // Engagement: award XP and update streak (non-blocking)
+    if (config.engagement.enabled) {
+      const userId = dbUser.id
+      const obsId = observation.id
+
+      // Increment submission count
+      incrementSubmissions(userId).catch(() => {})
+
+      // Award XP for submission
+      awardXP({
+        userId,
+        actionType: 'OBSERVATION_SUBMIT',
+        sourceType: 'Observation',
+        sourceId: obsId,
+        idempotencyKey: generateIdempotencyKey(userId, 'OBSERVATION_SUBMIT', obsId),
+      }).catch(() => {})
+
+      // Check for first observation bonus
+      if (await isFirstObservation(userId)) {
+        awardXP({
+          userId,
+          actionType: 'FIRST_OBSERVATION',
+          sourceType: 'Observation',
+          sourceId: obsId,
+          reason: 'First observation bonus',
+          idempotencyKey: generateIdempotencyKey(userId, 'FIRST_OBSERVATION', 'once'),
+        }).catch(() => {})
+
+        // Complete onboarding step for first observation
+        if (config.engagement.missionsEnabled) {
+          try {
+            await prisma.onboardingProgress.upsert({
+              where: {
+                userId_flowCode_flowVersion_stepKey: {
+                  userId,
+                  flowCode: 'default_v1',
+                  flowVersion: 1,
+                  stepKey: 'first_observation',
+                },
+              },
+              update: { status: 'completed', completedAt: new Date() },
+              create: {
+                userId,
+                flowCode: 'default_v1',
+                flowVersion: 1,
+                stepKey: 'first_observation',
+                status: 'completed',
+                completedAt: new Date(),
+              },
+            })
+          } catch { /* non-blocking */ }
+        }
+      }
+
+      // Check for new species bonus
+      if (await isNewSpecies(userId, speciesId)) {
+        awardXP({
+          userId,
+          actionType: 'NEW_SPECIES',
+          sourceType: 'Observation',
+          sourceId: obsId,
+          reason: `New species: ${speciesId}`,
+          idempotencyKey: generateIdempotencyKey(userId, 'NEW_SPECIES', speciesId),
+        }).catch(() => {})
+      }
+
+      // Update streak
+      updateStreak(userId).catch(() => {})
+
+      // Update mission progress (non-blocking)
+      if (config.engagement.missionsEnabled) {
+        try {
+          const now = new Date()
+          const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+          // Find mission by code
+          const submitMission = await prisma.missionDefinition.findFirst({
+            where: { code: { in: ['daily_submit_1', 'daily_submit_3'] }, active: true },
+          })
+
+          if (submitMission) {
+            // Progress for "submit observation" mission
+            await prisma.userMission.upsert({
+              where: {
+                userId_missionId_assignmentDate: {
+                  userId,
+                  missionId: submitMission.id,
+                  assignmentDate: todayStart,
+                },
+              },
+              update: { progressValue: { increment: 1 } },
+              create: {
+                userId,
+                missionId: submitMission.id,
+                assignmentDate: todayStart,
+                progressValue: 1,
+                targetValue: 1,
+              },
+            })
+          }
+        } catch { /* non-blocking */ }
+      }
+    }
 
     res.status(201).json({ success: true, data: await formatObservation(observation) })
   } catch (error: unknown) {
@@ -180,6 +286,45 @@ export async function validateObservation(req: AuthRequest, res: Response): Prom
       },
       include: OBSERVATION_INCLUDE,
     })
+
+    // Engagement: award XP for validation and approval (non-blocking)
+    if (config.engagement.enabled && normalizedStatus === 'approved') {
+      const authorId = observation.userId
+
+      // Award XP for approved observation
+      awardXP({
+        userId: authorId,
+        actionType: 'OBSERVATION_APPROVED',
+        sourceType: 'Observation',
+        sourceId: id,
+        reason: 'Observation approved by researcher',
+        idempotencyKey: generateIdempotencyKey(authorId, 'OBSERVATION_APPROVED', id),
+      }).catch(() => {})
+
+      // Increment approved count
+      incrementApproved(authorId).catch(() => {})
+
+      // Award XP to researcher for validation
+      awardXP({
+        userId: dbUser.id,
+        actionType: 'VALIDATION',
+        sourceType: 'Observation',
+        sourceId: id,
+        reason: 'Validated observation',
+        idempotencyKey: generateIdempotencyKey(dbUser.id, 'VALIDATION', id),
+      }).catch(() => {})
+
+      // Update mission progress for researcher (non-blocking)
+      if (config.engagement.missionsEnabled) {
+        try {
+          const now = new Date()
+          const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+          // Progress for "validate observation" mission — skip if no matching mission defined
+          // (validate missions would need to be seeded separately)
+        } catch { /* non-blocking */ }
+      }
+    }
 
     const fcmToken = await prisma.fcmToken.findUnique({
       where: { userId: observation.userId },

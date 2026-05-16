@@ -1,7 +1,7 @@
 # CrabWatch — Work Progress Tracker
 
-> **Last Updated**: 2026-05-15
-> **Current Focus**: Production deployment preparation
+> **Last Updated**: 2026-05-16
+> **Current Focus**: Mobile gamification complete — Azure deployment next
 
 ## Goal
 Build an AI-guided crab observation capture flow with fully dynamic species detection. The AI identifies any crab species in photos, and unknown species are auto-created in the database.
@@ -136,12 +136,43 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - [x] Updated `web/src/components/ErrorBoundary.tsx` to POST errors to backend in production
 - [x] Updated `Azure-Deployment-Plan.md`: promoted App Insights from optional to required step
 - [x] Full documentation update: analyzed entire codebase, updated README, AGENTS, Azure-Deployment-Plan, MOBILE_DEPLOYMENT
+- [x] Engagement system Phase 0-4: Schema (24 models, 11 enums), 8 services, 3 controllers, 3 route files
+- [x] Engagement system Phase 5: Extracted `recalculationService.ts` with dry-run/execute modes
+- [x] Engagement system Phase 5: Leaderboard caching with TTL (60s default, 120s all-time) + invalidation on XP changes
+- [x] Engagement system Phase 5: `metricsService.ts` with comprehensive engagement health metrics
+- [x] Engagement system Phase 5: `GET /api/v1/admin/engagement/metrics` endpoint wired
+- [x] Engagement system Phase 5: Cache invalidation in `rewardEngine.ts` on XP award, in `adminEngagementController.ts` on XP adjustment
+- [x] Mobile gamification: `LeaderboardScreen.tsx` with scope toggle (All Time/Seasonal), pagination, medals, "You" badge, pull-to-refresh
+- [x] Mobile gamification: `MissionsScreen.tsx` with Daily Missions/Onboarding tabs, claim/complete actions, progress bars, XP badges
+- [x] Mobile gamification: `AchievementsScreen.tsx` with rarity colors, category/status filters, progress tracking, check-achievements action
+- [x] Mobile navigation: `RootStackParamList` extended with `Leaderboard`, `Missions`, `Achievements` screens
+- [x] Mobile navigation: `AppNavigator.tsx` registered gamification stack screens with header styling
+- [x] Mobile API: `api.ts` extended with all gamification/engagement endpoints (stats, XP history, leaderboard, missions, onboarding, achievements, social, notifications)
+- [x] Mobile ProfileScreen: XP stats card with level, title, XP progress bar, streak/best/approved stats
+- [x] Mobile ProfileScreen: Gamification section with Leaderboard/Missions/Achievements quick-link cards
+- [x] Mobile HomeScreen: Gamification quick-actions card with Leaderboard/Missions/Achievements navigation
+- [x] Mobile HomeScreen: Refactored to use `useNavigation` hook with parent stack navigation for gamification screens
+- [x] Azure CLI installed as portable ZIP (`$env:LOCALAPPDATA\AzureCLI\bin\az.cmd`)
+- [x] Azure deployment: logged in as `Wilson.tchui@gmail.com`, confirmed all resources in `VSES-CrabWatch-MY-RG`
+- [x] Azure deployment: added env vars `ENGAGEMENT_ENABLED`, `MISSIONS_ENABLED`, `SEASONS_ENABLED`, `CAMPAIGNS_ENABLED`, `ABUSE_DETECTION_ENABLED`, `AZURE_STORAGE_BADGE_CONTAINER`
+- [x] Azure deployment: built server, created deployment zip, deployed to `crabwatch-api` App Service
+- [x] Azure deployment: ran `npm install --production` on Kudu SSH to fix empty `node_modules`
+- [x] Azure deployment: applied engagement migration (`20260516082759_add_engagement_system`) via Kudu SSH
+- [x] Azure deployment: API health check passing at `https://crabwatch-api.azurewebsites.net/health`
 
 ### In Progress
 - (none)
 
 ### Blocked
-- Waiting for user to execute Azure deployment steps from `Azure-Deployment-Plan.md`
+- (none)
+
+## Next Steps
+- Execute Azure deployment steps from `Azure-Deployment-Plan.md`
+- Implement mobile deep linking for password reset URLs (`crabwatch://reset-password?token=<token>`)
+- Test researcher observation approval/rejection flow end-to-end on mobile
+- Test admin user management, backup, and invite flows on mobile
+- Investigate web observation image display (SAS URL refresh on server restart)
+- End-to-end testing of full engagement flow (submission -> XP -> level up -> achievements -> notifications)
 
 ## Key Decisions
 - **Dynamic species**: AI identifies any crab species; server auto-creates via `upsert` on `speciesName`
@@ -180,13 +211,18 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - **Deployment stack**: Azure all-in-one — PostgreSQL Flexible Server (DB), App Service (API + Web), EAS Build (mobile). No Vercel, no Terraform, no Docker.
 - **Azure `generateSasUrl`**: Returns full URL (not just query string). Use `refreshed.push(sasUrl)` directly — do NOT prepend `blobClient.url`.
 - **App Insights monitoring**: `@azure/monitor-opentelemetry` auto-instrumentation captures Express routes, outgoing HTTP calls (Foundry, Blob, Resend, Firebase, PostgreSQL), unhandled exceptions, and host metrics with zero extra code. Frontend React errors POSTed to `/api/v1/telemetry/error` to unify logs in a single App Insights resource.
-
-## Next Steps
-- Execute Azure deployment steps from `Azure-Deployment-Plan.md`
-- Implement mobile deep linking for password reset URLs (`crabwatch://reset-password?token=<token>`)
-- Test researcher observation approval/rejection flow end-to-end on mobile
-- Test admin user management, backup, and invite flows on mobile
-- Investigate web observation image display (SAS URL refresh on server restart)
+- **Engagement system**: XP-based gamification with 24 models, 11 enums, 8 services. Split XP award (submission + approval). Global permanent leaderboard (no resets).
+- **XPTransaction ledger**: Immutable audit trail for every XP change with deterministic idempotency keys.
+- **Leaderboard caching**: In-memory TTL cache (60s default, 120s all-time). Invalidated on any XP change via `invalidateLeaderboardCache()`.
+- **XP recalculation**: `recalculationService.ts` with dry-run/execute modes. Compares sum of XPTransaction ledger against stored totalXP. Creates adjustment transactions for discrepancies.
+- **Engagement metrics**: `metricsService.ts` with comprehensive health monitoring (user activity, XP distribution, streaks, missions, abuse signals).
+- **Feature flags**: Safe on/off control for each subsystem via `config.engagement.*`; defaults to `true` in dev.
+- **501 responses in routes**: Feature-flag guards (`config.engagement.enabled`), NOT stubs. Implementations behind them are fully wired.
+- **Admin auth**: Uses `requireRole(UserRole.ADMIN)` middleware.
+- **Schema redesign**: OnboardingFlow stores steps as JSON (`steps` field), MissionDefinition stores criteria as JSON (`criteria` field).
+- **Prisma `count()`**: Does not support `distinct` parameter; replaced with `groupBy().length`.
+- **Prisma JSON fields**: Reject `null`; use `?? undefined` or omit.
+- **Admin engagement components**: Extracted to `components.tsx` to avoid JSX escaping issues.
 
 ## Critical Context
 - **Stack**: Expo SDK 54, React 19, RN 0.81.5, Zustand, React Navigation, Express, Prisma, Azure Storage, Azure AI Foundry
@@ -246,6 +282,22 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - `server/prisma/schema.prisma` — DB schema with `gender @map("sex")`, nullable `bw`, `detectedCoin`, `Invite` model, `PasswordReset` model
 - `server/.env` — Added `RESEND_API_KEY`, `FRONTEND_URL`, `APPLICATIONINSIGHTS_CONNECTION_STRING`
 - `server/src/index.ts` — App Insights init (`useAzureMonitor`), telemetry endpoint (`POST /api/v1/telemetry/error`)
+- `server/src/services/rewardEngine.ts` — Core XP award with idempotency, level calculation, streak tracking, leaderboard cache invalidation
+- `server/src/services/leaderboardService.ts` — Leaderboard queries with in-memory TTL cache (60s/120s) + invalidation on XP changes
+- `server/src/services/recalculationService.ts` — XP recalculation from transaction ledger with dry-run/execute modes
+- `server/src/services/metricsService.ts` — Engagement health metrics (users, observations, XP distribution, streaks, missions, abuse)
+- `server/src/services/seedEngagement.ts` — Idempotent seed script for rules, levels, flows, missions, achievements
+- `server/src/services/notificationService.ts` — Push/email/in-app delivery, FCM integration, social features
+- `server/src/services/aiInsightsService.ts` — Insight generation (streak warnings, milestones, diversity, activity trends)
+- `server/src/services/abuseDetectionService.ts` — Velocity/duplicate/coordinate clustering detection with composite scoring
+- `server/src/services/achievementService.ts` — Achievement progress tracking and awarding
+- `server/src/services/campaignService.ts` — Campaign management and targeting
+- `server/src/controllers/gamificationController.ts` — Stats, XP history, leaderboard endpoints
+- `server/src/controllers/engagementController.ts` — Onboarding, missions, social, notifications endpoints
+- `server/src/controllers/adminEngagementController.ts` — Admin CRUD for rules, levels, XP adjustments, recalculation, campaigns, abuse, metrics
+- `server/src/routes/gamificationRoutes.ts` — `/api/v1/gamification` routes
+- `server/src/routes/engagementRoutes.ts` — `/api/v1/engagement` routes
+- `server/src/routes/adminEngagementRoutes.ts` — `/api/v1/admin/engagement` routes
 
 ### Web
 - `web/src/app/dashboard/capture/page.tsx` — Mapbox location picker (GeoJSON layers), AI species auto-pick (`findSpeciesMatch`), strict UUID validation (`isUuid`), passes `detectedCoin`
@@ -255,21 +307,29 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - `web/src/app/dashboard/observation/[id]/page.tsx` — Observation detail with photos, measurements, biological data, location, validation
 - `web/src/app/dashboard/species/page.tsx` — Species browse with search, detail modal, fullscreen images
 - `web/src/app/dashboard/page.tsx` — Dashboard home with stats cards and recent submissions table
-- `web/src/app/dashboard/admin/page.tsx` — Admin panel UI with 3 tabs (Species, Users with sub-tabs, Backup)
+- `web/src/app/dashboard/admin/page.tsx` — Admin panel UI with tabs (Species, Users with sub-tabs, Backup, Engagement)
+- `web/src/app/dashboard/admin/components.tsx` — Engagement admin tab with XP Rules, Levels, Adjustments, Recalculation, Campaigns, Audit Log, Abuse Detection
 - `web/src/app/dashboard/analytics/page.tsx` — Fixed `loadAll` callback with proper `Promise.all` and API calls
 - `web/src/app/auth/register/page.tsx` — Registration form with phone/address, invite token parsing & pre-filling
 - `web/src/app/auth/login/page.tsx` — Login form with "Forgot password?" link
 - `web/src/app/auth/forgot-password/page.tsx` — Forgot password email form
 - `web/src/app/auth/reset-password/page.tsx` — Reset password form with token from URL params
-- `web/src/lib/api.ts` — `detectedCoin` in `createObservation` type, invite/analytics/password reset API methods
-- `web/src/lib/authStore.ts` — Web auth state (includes phone/address)
+- `web/src/lib/api.ts` — `detectedCoin` in `createObservation` type, invite/analytics/password reset API methods, engagement endpoints
+- `web/src/lib/authStore.ts` — Web auth state (includes phone/address, engagement fields)
+- `web/src/app/dashboard/leaderboard/page.tsx` — Leaderboard page component
+- `web/src/app/dashboard/community/page.tsx` — Community page with Insights, Top Contributors, and Stats tabs
+- `web/src/components/Sidebar.tsx` — Nav items including Leaderboard, Missions, Community
 - `web/src/components/Header.tsx` — User dropdown menu (Profile & Sign Out), click-outside handler, logout routing
 - `web/src/components/Sidebar.tsx` — Nav items including Species (🦀)
 - `web/package.json` — Pinned `react` and `react-dom` to `19.2.6`
 - `web/next.config.mjs` — API proxy rewrites to backend
 
 ### Mobile
-- `mobile/src/screens/home/HomeScreen.tsx` — Updated quick actions to navigate to Analytics/New tabs
+- `mobile/src/screens/home/HomeScreen.tsx` — Updated quick actions to navigate to Analytics/New tabs; gamification quick-actions card with Leaderboard/Missions/Achievements navigation
+- `mobile/src/screens/gamification/LeaderboardScreen.tsx` — Scope toggle (All Time/Seasonal), pagination, medals, "You" badge, pull-to-refresh
+- `mobile/src/screens/gamification/MissionsScreen.tsx` — Daily missions + onboarding tabs, claim/complete actions, progress bars, XP badges
+- `mobile/src/screens/gamification/AchievementsScreen.tsx` — Rarity colors, category/status filters, progress tracking, check-achievements action
+- `mobile/src/screens/profile/ProfileScreen.tsx` — XP stats card with level/title/XP/streak/progress; gamification quick-link cards
 - `mobile/src/screens/analytics/AnalyticsScreen.tsx` — Fixed `data.map` crash with array guards
 - `mobile/src/screens/researcher/ResearcherScreen.tsx` — Researcher validation screen for approving/rejecting pending observations
 - `mobile/src/screens/admin/AdminScreen.tsx` — Admin panel with Users (Active/Deleted/Invites sub-tabs), Species, Backup tabs; fixed syntax error and layout

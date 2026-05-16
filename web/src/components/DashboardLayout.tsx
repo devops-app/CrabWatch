@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Sidebar from './Sidebar'
 import Header from './Header'
+import { useEngagementToasts } from '@/lib/useEngagementToasts'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -10,6 +11,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps): React.JSX.Element {
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  useEngagementToasts()
 
   return (
     <div className="min-h-screen bg-gray-50 flex">

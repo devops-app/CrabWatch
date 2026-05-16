@@ -65,6 +65,12 @@ npx web-push generate-vapid-keys
 
 ---
 
+# FIRST-TIME DEPLOYMENT
+
+Follow Steps 1 through 9 in order.
+
+---
+
 ## Step 1: Create Resource Group
 
 ```powershell
@@ -118,7 +124,7 @@ az postgres flexible-server firewall-rule create `
   --end-ip-address 255.255.255.255
 ```
 
-> **IMPORTANT:** After all components are deployed and verified, restrict this to only the App Service outbound IPs. See Step 6.
+> **IMPORTANT:** After all components are deployed and verified, restrict this to only the App Service outbound IPs. See Step 8.1.
 
 ### 2.4 Save your connection string
 
@@ -168,6 +174,7 @@ az webapp config appsettings set --name crabwatch-api --resource-group VSES-Crab
   FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR-FIREBASE-PRIVATE-KEY-HERE\n-----END PRIVATE KEY-----\n" `
   AZURE_STORAGE_CONNECTION_STRING="YOUR-AZURE-STORAGE-CONNECTION-STRING" `
   AZURE_STORAGE_CONTAINER="crabwatch-uploads" `
+  AZURE_STORAGE_BADGE_CONTAINER="crabwatch-badges" `
   FOUNDRY_PROJECT_ENDPOINT="https://wilsontchui-5315-resource.services.ai.azure.com/api/projects/wilsontchui-5315" `
   FOUNDRY_AGENT_NAME="crab-analyzer" `
   FOUNDRY_AGENT_VERSION="3" `
@@ -178,13 +185,20 @@ az webapp config appsettings set --name crabwatch-api --resource-group VSES-Crab
   CORS_ORIGINS="https://crabwatch-web.azurewebsites.net" `
   FCM_VAPID_PRIVATE_KEY="YOUR-VAPID-PRIVATE-KEY" `
   FCM_VAPID_PUBLIC_KEY="YOUR-VAPID-PUBLIC-KEY" `
+  ENGAGEMENT_ENABLED="true" `
+  MISSIONS_ENABLED="true" `
+  SEASONS_ENABLED="true" `
+  CAMPAIGNS_ENABLED="true" `
+  ABUSE_DETECTION_ENABLED="true" `
   SCM_DO_BUILD_DURING_DEPLOYMENT="1" `
   ORYX_NODE_COMPRESS_NODE_MODULES="" `
   SCM_BUILD_ARGS="-p compress_node_modules=false" `
   WEBSITE_NODE_DEFAULT_VERSION="22"
 ```
 
-### 4.3 Build locally
+> **Engagement flags:** In production (`NODE_ENV=production`), engagement features default to `false`. Set each `*_ENABLED="true"` explicitly to turn them on. Omit or set to `"false"` to disable.
+
+### 4.3 Build + package server
 
 ```powershell
 cd D:\demo\CrabWatch
@@ -195,50 +209,21 @@ pnpm install --frozen-lockfile
 # Build shared + server
 pnpm --filter=shared build
 pnpm --filter=server build
-```
 
-### 4.4 Create deployment package
-
-The server `tsconfig.json` compiles `src/` + `../shared/src` into `dist/`. Package only the built output and config — Azure will run `npm install` to build `node_modules/` automatically (`SCM_DO_BUILD_DURING_DEPLOYMENT=1`).
-
-- `dist/` — compiled JavaScript
-- `package.json` — dependencies + start command
-- `prisma/` — schema + migrations
-
-> Do **not** include `.env` in `server-deploy.zip`. Keep all secrets in App Service settings.
-
-**⚠️ CRITICAL: Ensure UTF-8 encoding for migration files!**
-
-PowerShell's `tar` can preserve Windows UTF-16 encoding, which causes Prisma to fail on Linux with `P3015` or `P3009` errors. Before zipping, verify migration files are UTF-8:
-
-```powershell
-# Check encoding (should show "UTF-8 Unicode text")
-Get-Content server\prisma\migrations\init\migration.sql -Encoding Byte | Select-Object -First 3 | ForEach-Object { $_ }
-# If first two bytes are 255,254 (0xFF,0xFE), the file is UTF-16 LE — convert it:
-$utf8 = [System.Text.Encoding]::UTF8
-$bytes = [System.IO.File]::ReadAllBytes("server\prisma\migrations\init\migration.sql")
-if ($bytes[0] -eq 0xFF -and $bytes[1] -eq 0xFE) {
-    $text = [System.IO.File]::ReadAllText("server\prisma\migrations\init\migration.sql")
-    [System.IO.File]::WriteAllText("server\prisma\migrations\init\migration.sql", $text, $utf8)
-    Write-Host "Converted migration.sql to UTF-8"
-}
-```
-
-```powershell
-# Remove old zip if exists
+# Create deployment zip (see Troubleshooting → UTF-16 for encoding fix)
 Remove-Item -ErrorAction SilentlyContinue server-deploy.zip
-
-# Create zip using tar (POSIX paths, avoids Kudu rsync backslash errors)
 Push-Location server
 tar -a -cf ..\server-deploy.zip dist package.json prisma
 Pop-Location
 
-# Verify zip contents before deploying
-tar -tf server-deploy.zip | Select-Object -First 10
+# Verify migration files are included
 tar -tf server-deploy.zip | Select-String "migration"
 ```
 
-### 4.5 Deploy to Azure (Perform at CloudShell)
+> Do **not** include `.env` in the zip. Keep all secrets in App Service settings.
+> Always use `tar` (not `Compress-Archive`) to avoid backslash path errors in Kudu rsync.
+
+### 4.4 Deploy to Azure
 
 ```powershell
 az webapp deployment source config-zip `
@@ -247,46 +232,32 @@ az webapp deployment source config-zip `
   --src server-deploy.zip
 ```
 
-### 4.6 Run database migrations
+### 4.5 Run database migrations
 
 Via Kudu Debug Console (**SSH** tab, NOT PowerShell tab):
 ```
 https://crabwatch-api.scm.azurewebsites.net/DebugConsole
 ```
 
-1. SSH into the container, then run:
+SSH into the container, then run:
+
 ```bash
 cd /home/site/wwwroot
 node /home/site/wwwroot/node_modules/prisma/build/index.js migrate deploy
 ```
 
-> **IMPORTANT:** Do NOT use `npx prisma` — it downloads the latest Prisma CLI (7.x) which is incompatible with `@prisma/client@5.x`.
->
-> **IMPORTANT:** The `.bin/prisma` wrapper is a 0-byte placeholder. Use `node node_modules/prisma/build/index.js` directly.
->
-> **Note:** `node_modules/` in `~/site/wwwroot` is a symlink to `/node_modules` (Oryx build output). Do NOT delete or replace it — the symlink is the correct working copy.
->
-> **Note:** If `prisma/migrations/init/migration.sql` is missing, your deploy zip didn't include the migration files. Verify before deploying:
-> ```powershell
-> tar -tf server-deploy.zip | Select-String "migration"
-> ```
-> Should show `prisma/migrations/init/migration.sql` and `migration_lock.toml`.
->
-> **Note:** If you see `spawn tsx ENOENT` after migration succeeds, ignore it — `tsx` is a devDependency not available in production. The migration itself applied successfully. Skip the seed command and create admin user via Option A (Step 7).
+> **IMPORTANT:** Use `node .../prisma/build/index.js` — do NOT use `npx prisma` (downloads Prisma 7.x, incompatible with `@prisma/client@5.x`). The `.bin/prisma` wrapper is a 0-byte placeholder.
 
-### 4.7 Verify API
+### 4.6 Verify API
 
 ```powershell
 curl https://crabwatch-api.azurewebsites.net/health
 ```
 
-Expected response:
-```json
-{"status":"ok","timestamp":"2025-05-15T...Z"}
-```
+Expected: `{"status":"ok","timestamp":"2025-05-15T...Z"}`
 
 If you get `{"status":"degraded","database":"unreachable"}`, check:
-- DATABASE_URL is correct
+- `DATABASE_URL` is correct
 - Firewall allows App Service outbound IPs
 - PostgreSQL server is running
 
@@ -329,7 +300,7 @@ Set startup command once:
 az webapp config set --name crabwatch-web --resource-group VSES-CrabWatch-MY-RG --startup-file "npm start"
 ```
 
-### 5.3 Build locally
+### 5.3 Build + package web
 
 ```powershell
 cd D:\demo\CrabWatch
@@ -340,19 +311,13 @@ pnpm --filter=shared build
 # Force clean Next.js build output
 Remove-Item -Recurse -Force -ErrorAction SilentlyContinue web\.next
 
-# IMPORTANT: Set production backend URL before build (rewrites are baked into .next)
+# Set production backend URL before build (rewrites are baked into .next)
 $env:BACKEND_URL="https://crabwatch-api.azurewebsites.net"
 
 # Build web
 pnpm --filter=web build
-```
 
-### 5.4 Create deployment package (runtime + real npm node_modules)
-
-Build the runtime folder in a temp directory and install production dependencies with `npm`.
-This avoids PNPM symlink issues (`styled-jsx` not found) on Linux App Service.
-
-```powershell
+# Package runtime folder with real npm node_modules (avoids PNPM symlink issues)
 $runtime = "C:\Users\Wilson\AppData\Local\Temp\opencode\web-runtime"
 Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $runtime
 New-Item -ItemType Directory -Path $runtime | Out-Null
@@ -375,10 +340,9 @@ Pop-Location
 tar -tf web-deploy.zip | Select-Object -First 10
 ```
 
-### 5.5 Deploy to Azure
+### 5.4 Deploy to Azure
 
 ```powershell
-# Azure CLI compatibility: use config-zip
 az webapp deployment source config-zip `
   --resource-group VSES-CrabWatch-MY-RG `
   --name crabwatch-web `
@@ -387,23 +351,13 @@ az webapp deployment source config-zip `
 az webapp restart --resource-group VSES-CrabWatch-MY-RG --name crabwatch-web
 ```
 
-### 5.6 Verify Web
+### 5.5 Verify Web
 
 ```powershell
 curl https://crabwatch-web.azurewebsites.net/auth/login
 ```
 
 Expected: HTML response with login page content.
-
-Also verify web runtime files exist in App Service `wwwroot` (Kudu SSH):
-
-```bash
-cd /home/site/wwwroot
-ls -la
-[ -f package.json ] && echo "package.json exists" || echo "package.json missing"
-[ -d .next ] && echo ".next exists" || echo ".next missing"
-[ -d node_modules ] && echo "node_modules exists" || echo "node_modules missing"
-```
 
 Open in browser: **https://crabwatch-web.azurewebsites.net**
 
@@ -478,17 +432,17 @@ UPDATE "User" SET role = 'ADMIN' WHERE email = 'your@email.com';
 # Via Kudu SSH (NOT PowerShell tab!):
 cd /home/site/wwwroot
 node /home/site/wwwroot/node_modules/prisma/build/index.js generate
-
-# Note: tsx may not be available in production (devDependency). If it fails, compile seed.ts first locally and deploy the JS output, or skip seeding and use Option A.
 npx tsx prisma/seed.ts
 ```
+
+> **Note:** `tsx` may not be available in production (devDependency). If it fails, use Option A.
 
 Seed creates:
 - `admin@crabwatch.my` (ADMIN)
 - `researcher@crabwatch.my` (RESEARCHER)
 - `citizen@crabwatch.my` (USER)
 
-All with password from `SEED_PASSWORD` env var (default: `SeedPassword2026!Secure`).
+All with password from `SEED_PASSWORD` env var (default: `Pa55w.rd`).
 
 ---
 
@@ -585,46 +539,39 @@ az webapp config appsettings set `
 
 ---
 
-## Re-Deployment (After Code Changes)
+# SUBSEQUENT DEPLOYMENT (Upgrade)
 
-### API Server
+Run only what changed. All steps assume resources already exist.
+
+---
+
+## Upgrade API Server
 
 ```powershell
 cd D:\demo\CrabWatch
 pnpm --filter=shared build
 pnpm --filter=server build
 
-# Ensure migration files are UTF-8 (prevents P3015/P3009 errors)
-$bytes = [System.IO.File]::ReadAllBytes("server\prisma\migrations\init\migration.sql")
-if ($bytes[0] -eq 0xFF -and $bytes[1] -eq 0xFE) {
-    $text = [System.IO.File]::ReadAllText("server\prisma\migrations\init\migration.sql")
-    $utf8 = [System.Text.Encoding]::UTF8
-    [System.IO.File]::WriteAllText("server\prisma\migrations\init\migration.sql", $text, $utf8)
-    Write-Host "Fixed UTF-16 encoding"
-}
-
+Remove-Item -ErrorAction SilentlyContinue server-deploy.zip
 Push-Location server
 tar -a -cf ..\server-deploy.zip dist package.json prisma
 Pop-Location
 
-# Verify migration files are included
-tar -tf server-deploy.zip | Select-String "migration"
-
 az webapp deployment source config-zip --resource-group VSES-CrabWatch-MY-RG --name crabwatch-api --src server-deploy.zip
 ```
 
-**Verify migration files are in the zip before deploying:**
-```powershell
-tar -tf server-deploy.zip | Select-String "migration"
-```
-
-If you changed the Prisma schema, run migrations after deploy:
+**If you changed the Prisma schema**, run migrations after deploy (Kudu SSH):
 ```bash
-# Via Kudu SSH (NOT PowerShell tab!)
+cd /home/site/wwwroot
 node /home/site/wwwroot/node_modules/prisma/build/index.js migrate deploy
 ```
 
-### Web App
+**If you added new env vars**, update app settings:
+```powershell
+az webapp config appsettings set --name crabwatch-api --resource-group VSES-CrabWatch-MY-RG --settings NEW_VAR="value"
+```
+
+## Upgrade Web App
 
 ```powershell
 cd D:\demo\CrabWatch
@@ -651,18 +598,26 @@ az webapp deployment source config-zip --resource-group VSES-CrabWatch-MY-RG --n
 az webapp restart --resource-group VSES-CrabWatch-MY-RG --name crabwatch-web
 ```
 
-### Mobile
+## Upgrade Mobile
 
 ```powershell
 cd D:\demo\CrabWatch\mobile
 npx eas-cli build --platform android --profile production
 ```
 
-> **Note:** The `eas.json` must specify `"image": "ubuntu-22.04-ndk"` for Android builds to get Node 20+ and compatible pnpm. Without it, EAS uses Node 18 + pnpm 8.x which will fail with `ERR_PNPM_UNSUPPORTED_ENGINE`.
+## Upgrade Checklist
+
+Before deploying, check if you need to:
+
+- [ ] Run `pnpm --filter=shared build` (always rebuild shared)
+- [ ] Run `prisma migrate deploy` (if schema changed)
+- [ ] Update App Service env vars (if new config added)
+- [ ] Rebuild web with clean `.next` (if routes/rewrites changed)
+- [ ] Restart web app after deploy (always restart after web deploy)
 
 ---
 
-## Troubleshooting
+# TROUBLESHOOTING
 
 ### App Service starts but returns 500
 
@@ -690,83 +645,24 @@ az webapp config appsettings list --name crabwatch-api --resource-group VSES-Cra
 az postgres flexible-server show --name crabwatch-db --resource-group VSES-CrabWatch-MY-RG --query state
 ```
 
-### Next.js build fails on Azure
-
-For this runtime zip approach, Azure should **not** run Oryx build for web. Verify app settings:
-
-```powershell
-az webapp config appsettings list --name crabwatch-web --resource-group VSES-CrabWatch-MY-RG --query "[?name=='SCM_DO_BUILD_DURING_DEPLOYMENT' || name=='ENABLE_ORYX_BUILD']"
-```
-
-Both should be `false`.
-
-If Oryx still runs and fails with:
-
-`Couldn't find any pages or app directory`
-
-it means Azure is trying to build from a runtime zip. Keep Oryx disabled and redeploy the runtime package from Step 5.4.
-
-### Web loads blank or calls a local/LAN API URL
-
-Most common cause: stale `.next` output built with a local `BACKEND_URL` (for example `http://192.168.x.x:3001`).
-
-Fix before creating `web-deploy.zip`:
-
-```powershell
-cd D:\demo\CrabWatch
-Remove-Item -Recurse -Force -ErrorAction SilentlyContinue web\.next
-$env:BACKEND_URL="https://crabwatch-api.azurewebsites.net"
-pnpm --filter=web build
-```
-
-Verify the built rewrite target (must be Azure API URL):
-
-```powershell
-Select-String -Path web\.next\required-server-files.json -Pattern '"destination"'
-```
-
-### Web startup fails with `Cannot find module 'styled-jsx/package.json'`
-
-This is caused by PNPM/symlinked `node_modules` layout mismatch in App Service Linux.
-
-Use Step 5.4 packaging exactly (`npm install --omit=dev` inside temp runtime folder) so zip contains real npm dependency tree.
-
-### EAS build fails
-
-```powershell
-# Check build logs
-npx eas-cli build:list
-
-# Rebuild with verbose output
-npx eas-cli build --platform android --profile production --non-interactive
-```
-
-### `node_modules.tar.gz` in `~/site/wwwroot`
-
-Oryx creates `node_modules.tar.gz` as a compressed backup. The working `node_modules/` is a symlink to `/node_modules` (Oryx build output). **Do NOT extract the `.tar.gz`** — it produces 0-byte binary files. The symlink is the correct, working copy.
-
-**Permanent fix:** `ORYX_NODE_COMPRESS_NODE_MODULES=""` in app settings (Step 4.2) prevents the archive from being created.
-
-### `prisma migrate deploy` fails — use `node` directly
-
-The `.bin/prisma` wrapper is a 0-byte placeholder. Run Prisma via Node:
-
-```bash
-node /home/site/wwwroot/node_modules/prisma/build/index.js migrate deploy
-```
-
-**Do NOT use `npx prisma`** — it downloads the latest Prisma CLI (7.x) which is incompatible with `@prisma/client@5.x`.
-
 ### `P3015: Could not find migration file` or `P3009: failed migrations`
 
 **Most common cause: UTF-16 encoding from Windows.**
 
-PowerShell's `tar` preserves Windows file encoding (UTF-16 LE with BOM). Prisma on Linux expects UTF-8. The file exists but Prisma can't parse it.
+PowerShell's `tar` can preserve Windows UTF-16 LE encoding. Prisma on Linux expects UTF-8.
 
-**Diagnose:**
-```bash
-# Via Kudu SSH — check first bytes (ff fe = UTF-16 LE)
-od -A x -t x1z -N 16 /home/site/wwwroot/prisma/migrations/init/migration.sql
+**Prevent on Windows (before zipping):**
+```powershell
+$files = Get-ChildItem -Path server\prisma\migrations -Recurse -Include *.sql,*.toml
+foreach ($f in $files) {
+    $bytes = [System.IO.File]::ReadAllBytes($f.FullName)
+    if ($bytes[0] -eq 0xFF -and $bytes[1] -eq 0xFE) {
+        $text = [System.IO.File]::ReadAllText($f.FullName)
+        $utf8 = [System.Text.Encoding]::UTF8
+        [System.IO.File]::WriteAllText($f.FullName, $text, $utf8)
+        Write-Host "Converted $($f.Name) to UTF-8"
+    }
+}
 ```
 
 **Fix on server (one-time):**
@@ -777,46 +673,62 @@ node /home/site/wwwroot/node_modules/prisma/build/index.js migrate reset --force
 node /home/site/wwwroot/node_modules/prisma/build/index.js migrate deploy
 ```
 
-**Prevent on Windows (before zipping):**
+**Alternative:** Use Git to ensure UTF-8 encoding:
 ```powershell
-# Check first 2 bytes — 255,254 means UTF-16 LE
-$bytes = [System.IO.File]::ReadAllBytes("server\prisma\migrations\init\migration.sql")
-if ($bytes[0] -eq 0xFF -and $bytes[1] -eq 0xFE) {
-    $text = [System.IO.File]::ReadAllText("server\prisma\migrations\init\migration.sql")
-    $utf8 = [System.Text.Encoding]::UTF8
-    [System.IO.File]::WriteAllText("server\prisma\migrations\init\migration.sql", $text, $utf8)
-}
+git add server/prisma/migrations/
+git checkout server/prisma/migrations/
 ```
 
-**Alternative fix:** Use Git to ensure UTF-8 encoding:
-```powershell
-git add server/prisma/migrations/init/migration.sql
-git checkout server/prisma/migrations/init/migration.sql
+### `prisma migrate deploy` fails — use `node` directly
+
+The `.bin/prisma` wrapper is a 0-byte placeholder. Always run:
+```bash
+node /home/site/wwwroot/node_modules/prisma/build/index.js migrate deploy
 ```
 
-If the migration files are genuinely missing from the zip, verify:
+**Do NOT use `npx prisma`** — it downloads the latest Prisma CLI (7.x) which is incompatible with `@prisma/client@5.x`.
+
+### Web loads blank or calls a local/LAN API URL
+
+Most common cause: stale `.next` output built with a local `BACKEND_URL`.
+
+Fix before creating `web-deploy.zip`:
 ```powershell
-tar -tf server-deploy.zip | Select-String "migration"
+cd D:\demo\CrabWatch
+Remove-Item -Recurse -Force -ErrorAction SilentlyContinue web\.next
+$env:BACKEND_URL="https://crabwatch-api.azurewebsites.net"
+pnpm --filter=web build
 ```
 
-Should show:
-```
-prisma/migrations/
-prisma/migrations/init/
-prisma/migrations/init/migration.sql
-prisma/migrations/init/migration_lock.toml
+Verify the built rewrite target (must be Azure API URL):
+```powershell
+Select-String -Path web\.next\required-server-files.json -Pattern '"destination"'
 ```
 
-If missing, rebuild the zip:
+### Web startup fails with `Cannot find module 'styled-jsx/package.json'`
+
+Caused by PNPM symlinked `node_modules` layout mismatch in App Service Linux.
+Use Step 5.3 packaging exactly (`npm install --omit=dev` inside temp runtime folder) so zip contains real npm dependency tree.
+
+### Next.js build fails on Azure
+
+For the runtime zip approach, Azure should **not** run Oryx build for web. Verify:
+
 ```powershell
-Push-Location server
-tar -a -cf ..\server-deploy.zip dist package.json prisma
-Pop-Location
+az webapp config appsettings list --name crabwatch-web --resource-group VSES-CrabWatch-MY-RG --query "[?name=='SCM_DO_BUILD_DURING_DEPLOYMENT' || name=='ENABLE_ORYX_BUILD']"
 ```
+
+Both should be `false`. If Oryx still runs and fails with `Couldn't find any pages or app directory`, keep Oryx disabled and redeploy the runtime package from Step 5.3.
+
+### `node_modules.tar.gz` in `~/site/wwwroot`
+
+Oryx creates `node_modules.tar.gz` as a compressed backup. The working `node_modules/` is a symlink to `/node_modules`. **Do NOT extract the `.tar.gz`** — it produces 0-byte binary files.
+
+**Permanent fix:** `ORYX_NODE_COMPRESS_NODE_MODULES=""` in app settings (Step 4.2) prevents the archive from being created.
 
 ### Kudu rsync fails with backslash path errors
 
-When deploying from Windows, PowerShell's `Compress-Archive` creates paths with backslashes that Kudu's rsync cannot parse. Always use `tar` to create the zip:
+When deploying from Windows, PowerShell's `Compress-Archive` creates paths with backslashes that Kudu's rsync cannot parse. Always use `tar`:
 
 ```powershell
 tar -a -cf server-deploy.zip dist package.json prisma
@@ -826,35 +738,42 @@ tar -a -cf server-deploy.zip dist package.json prisma
 
 Error: `ERR_PNPM_UNSUPPORTED_ENGINE` or `ERR_PNPM_NO_LOCKFILE`
 
-This happens when EAS uses Node 18 + pnpm 8.x but your project requires Node 20+ and pnpm 10+.
+EAS uses Node 18 + pnpm 8.x but your project requires Node 20+ and pnpm 10+.
 
-**Fix 1 — Set build image (recommended):** In `mobile/eas.json`, add `"image": "ubuntu-22.04-ndk"` to each build profile's `android` section:
-```json
-{
-  "build": {
-    "production": {
-      "android": {
-        "image": "ubuntu-22.04-ndk"
-      }
-    }
-  }
-}
-```
+**Fix 1 — Set build image (recommended):** In `mobile/eas.json`, add `"image": "ubuntu-22.04-ndk"` to each build profile's `android` section.
 
 **Fix 2 — Specify pnpm version:** Add `packageManager` to root `package.json`:
 ```json
-{
-  "packageManager": "pnpm@10.33.2"
-}
+{ "packageManager": "pnpm@10.33.2" }
 ```
 
-Both fixes together ensure EAS uses the correct Node and pnpm versions. Commit `package.json` and `eas.json` before triggering the build.
-
-### `Cannot find module 'babel-preset-expo'` on EAS Build
+### EAS build fails — `Cannot find module 'babel-preset-expo'`
 
 Ensure `babel-preset-expo` is in `mobile/package.json` dependencies. Run `pnpm install` and commit the updated `pnpm-lock.yaml` before triggering the build.
 
+### Engagement endpoints return 401 after login
+
+The engagement routes require `resolveUser` middleware to set `req.dbUser`. Verify `engagementRoutes.ts` has:
+```typescript
+router.use(authMiddleware)
+router.use(requireAuth)
+router.use(resolveUser)
+```
+
+### Engagement features disabled in production
+
+In `NODE_ENV=production`, engagement defaults to `false`. Set the env vars explicitly:
+```
+ENGAGEMENT_ENABLED=true
+MISSIONS_ENABLED=true
+SEASONS_ENABLED=true
+CAMPAIGNS_ENABLED=true
+ABUSE_DETECTION_ENABLED=true
+```
+
 ---
+
+# REFERENCES
 
 ## Cost Summary
 
@@ -862,7 +781,7 @@ Ensure `babel-preset-expo` is in `mobile/package.json` dependencies. Run `pnpm i
 |----------|-----|-------------|
 | PostgreSQL Flexible Server | Basic B1ms, 32 GB | ~$5 |
 | App Service Plan (shared by API + Web) | B1 | ~$13 |
-| Application Insights (optional) | Pay-per-use | ~$0-5 |
+| Application Insights (required) | Pay-per-use | ~$0-5 |
 | Storage Account (existing) | Standard LRS | ~$0.50 |
 | Azure AI Foundry | Pay-per-call | ~$1-5 |
 | Resend | Free tier | $0 (3k emails/mo) |
@@ -875,29 +794,43 @@ Ensure `babel-preset-expo` is in `mobile/package.json` dependencies. Run `pnpm i
 
 ### API (`crabwatch-api`)
 
-| Variable | Source | Set In |
-|----------|--------|--------|
-| `DATABASE_URL` | Azure PostgreSQL | App Service config |
-| `NODE_ENV` | — | `production` |
-| `JWT_SECRET` | Generated (Step 0) | App Service config |
-| `FIREBASE_*` | Firebase console | App Service config |
-| `AZURE_STORAGE_*` | Azure Portal | App Service config |
-| `FOUNDRY_*` | Azure AI Foundry | App Service config |
-| `RESEND_API_KEY` | Resend dashboard | App Service config |
-| `FRONTEND_URL` | — | `https://crabwatch-web.azurewebsites.net` |
-| `CORS_ORIGINS` | — | `https://crabwatch-web.azurewebsites.net` |
-| `FCM_VAPID_*` | Generated (Step 0) | App Service config |
-| `APPLICATIONINSIGHTS_CONNECTION_STRING` | App Insights component | App Service config (Step 8.3) |
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `DATABASE_URL` | Azure PostgreSQL conn string | `?sslmode=require` |
+| `NODE_ENV` | `production` | |
+| `JWT_SECRET` | Generated (Pre-Deploy) | |
+| `FIREBASE_*` | Firebase console | project, client email, private key |
+| `AZURE_STORAGE_CONNECTION_STRING` | Azure Portal | |
+| `AZURE_STORAGE_CONTAINER` | `crabwatch-uploads` | Photo uploads |
+| `AZURE_STORAGE_BADGE_CONTAINER` | `crabwatch-badges` | Badge images |
+| `FOUNDRY_*` | Azure AI Foundry | project endpoint, agent name/version, API key, API version |
+| `RESEND_API_KEY` | Resend dashboard | |
+| `FRONTEND_URL` | `https://crabwatch-web.azurewebsites.net` | |
+| `CORS_ORIGINS` | `https://crabwatch-web.azurewebsites.net` | |
+| `FCM_VAPID_*` | Generated (Pre-Deploy) | private + public key |
+| `ENGAGEMENT_ENABLED` | `true` | Master toggle |
+| `MISSIONS_ENABLED` | `true` | Daily/weekly missions |
+| `SEASONS_ENABLED` | `true` | Seasonal leaderboards |
+| `CAMPAIGNS_ENABLED` | `true` | Campaign system |
+| `ABUSE_DETECTION_ENABLED` | `true` | Anti-abuse detection |
+| `APPLICATIONINSIGHTS_CONNECTION_STRING` | App Insights component | Step 8.3 |
+| `SCM_DO_BUILD_DURING_DEPLOYMENT` | `1` | Oryx build for API |
+| `ORYX_NODE_COMPRESS_NODE_MODULES` | (empty) | Prevent .tar.gz |
+| `WEBSITE_NODE_DEFAULT_VERSION` | `22` | |
 
 ### Web (`crabwatch-web`)
 
-| Variable | Source | Set In |
-|----------|--------|--------|
-| `BACKEND_URL` | — | `https://crabwatch-api.azurewebsites.net` |
-| `MAPBOX_TOKEN` | Mapbox dashboard | App Service config |
-| `NEXT_PUBLIC_FIREBASE_*` | Firebase console | App Service config |
-| `NEXT_PUBLIC_FCM_VAPID_KEY` | Generated (Step 0) | App Service config |
-| `APPLICATIONINSIGHTS_CONNECTION_STRING` | App Insights component | App Service config (Step 8.3) |
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `BACKEND_URL` | `https://crabwatch-api.azurewebsites.net` | Baked into `.next` at build time |
+| `MAPBOX_TOKEN` | Mapbox dashboard | |
+| `NEXT_PUBLIC_FIREBASE_*` | Firebase console | |
+| `NEXT_PUBLIC_FCM_VAPID_KEY` | Generated (Pre-Deploy) | |
+| `NODE_ENV` | `production` | |
+| `SCM_DO_BUILD_DURING_DEPLOYMENT` | `false` | No Oryx build |
+| `ENABLE_ORYX_BUILD` | `false` | No Oryx build |
+| `APPLICATIONINSIGHTS_CONNECTION_STRING` | App Insights component | Step 8.3 |
+| `WEBSITE_NODE_DEFAULT_VERSION` | `22` | |
 
 ### Mobile (EAS Build)
 
@@ -905,3 +838,33 @@ Ensure `babel-preset-expo` is in `mobile/package.json` dependencies. Run `pnpm i
 |----------|--------|--------|
 | `EXPO_PUBLIC_API_URL` | — | `eas.json` → `build.production.env` |
 | `EXPO_PUBLIC_FIREBASE_*` | Firebase console | `eas.json` → `build.production.env` |
+
+---
+
+## Quick Commands
+
+```powershell
+# Check API logs
+az webapp log tail --name crabwatch-api --resource-group VSES-CrabWatch-MY-RG
+
+# Check Web logs
+az webapp log tail --name crabwatch-web --resource-group VSES-CrabWatch-MY-RG
+
+# List API env vars
+az webapp config appsettings list --name crabwatch-api --resource-group VSES-CrabWatch-MY-RG --output table
+
+# List Web env vars
+az webapp config appsettings list --name crabwatch-web --resource-group VSES-CrabWatch-MY-RG --output table
+
+# Restart API
+az webapp restart --resource-group VSES-CrabWatch-MY-RG --name crabwatch-api
+
+# Restart Web
+az webapp restart --resource-group VSES-CrabWatch-MY-RG --name crabwatch-web
+
+# Check PostgreSQL status
+az postgres flexible-server show --name crabwatch-db --resource-group VSES-CrabWatch-MY-RG --query state
+
+# Get App Service outbound IPs (for firewall)
+az webapp show --resource-group VSES-CrabWatch-MY-RG --name crabwatch-api --query outboundIpAddresses --output tsv
+```

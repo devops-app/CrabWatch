@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/authStore'
+import { api } from '@/lib/api'
 
 interface AuthGuardProps {
   children: React.ReactNode
@@ -11,7 +12,8 @@ interface AuthGuardProps {
 
 export default function AuthGuard({ children, requiredRole }: AuthGuardProps): React.JSX.Element {
   const router = useRouter()
-  const { user, isHydrated } = useAuthStore()
+  const { user, isHydrated, updateUser, logout } = useAuthStore()
+  const userId = user?.id
   const [isChecking, setIsChecking] = useState(true)
 
   useEffect(() => {
@@ -22,13 +24,34 @@ export default function AuthGuard({ children, requiredRole }: AuthGuardProps): R
       return
     }
 
-    if (requiredRole && user.role !== requiredRole) {
-      router.replace('/dashboard')
-      return
+    let cancelled = false
+
+    const verifySession = async () => {
+      try {
+        const profile = await api.getProfile()
+        if (cancelled) return
+
+        updateUser(profile)
+
+        if (requiredRole && profile.role !== requiredRole) {
+          router.replace('/dashboard')
+          return
+        }
+
+        setIsChecking(false)
+      } catch {
+        if (cancelled) return
+        logout()
+        router.replace('/auth/login')
+      }
     }
 
-    setIsChecking(false)
-  }, [router, user, requiredRole, isHydrated])
+    void verifySession()
+
+    return () => {
+      cancelled = true
+    }
+  }, [router, userId, requiredRole, isHydrated, updateUser, logout])
 
   if (isChecking) {
     return (

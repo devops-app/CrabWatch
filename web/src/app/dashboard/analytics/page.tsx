@@ -44,6 +44,27 @@ const STATUS_COLORS: Record<string, string> = {
 const MAP_PAGE_LIMIT = 500
 const MAP_MAX_OBS = 5000
 
+function formatMonthLabel(month: string): string {
+  const parts = month.split('-')
+  if (parts.length < 2) return month
+
+  const year = parts[0]
+  const monthIndex = Number(parts[1]) - 1
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+  if (!Number.isInteger(monthIndex) || monthIndex < 0 || monthIndex > 11 || year.length < 2) {
+    return month
+  }
+
+  return `${months[monthIndex]} '${year.slice(2)}`
+}
+
+function formatGenderRatio(value: unknown): string {
+  const ratio = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(ratio)) return 'N/A'
+  return ratio.toFixed(2)
+}
+
 type TabId = 'size' | 'gender' | 'cw50' | 'condition' | 'species' | 'trends' | 'map'
 
 export default function AnalyticsPage(): React.JSX.Element {
@@ -274,7 +295,7 @@ export default function AnalyticsPage(): React.JSX.Element {
     }
     return Object.entries(monthTotals)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([month, count]) => ({ month: formatMonth(month), count }))
+      .map(([month, count]) => ({ month: formatMonthLabel(month), count }))
   }, [trends])
 
   const tabs: { id: TabId; label: string; icon: string }[] = [
@@ -286,12 +307,6 @@ export default function AnalyticsPage(): React.JSX.Element {
     { id: 'trends', label: 'Trends', icon: '📅' },
     { id: 'map', label: 'Map', icon: '🗺️' },
   ]
-
-  const formatMonth = (month: string): string => {
-    const [y, m] = month.split('-')
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    return `${months[parseInt(m) - 1]} '${y.slice(2)}`
-  }
 
   const getSpeciesName = (id: string): string => {
     const s = species.find(sp => sp.id === id)
@@ -495,7 +510,7 @@ export default function AnalyticsPage(): React.JSX.Element {
                     {' | '}
                     <span className="text-pink-600">F: {s.female}</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Ratio: {s.ratio === Infinity ? 'N/A' : s.ratio.toFixed(2)}</p>
+                  <p className="text-xs text-gray-500 mt-1">Ratio: {formatGenderRatio(s.ratio)}</p>
                 </div>
               ))}
             </div>

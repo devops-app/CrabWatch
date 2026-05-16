@@ -8,6 +8,10 @@ import { EditProfileScreen } from '../screens/profile/EditProfileScreen'
 import { AnalysisLoadingScreen } from '../screens/observation/AnalysisLoadingScreen'
 import { AIReviewScreen } from '../screens/observation/AIReviewScreen'
 import { AboutScreen } from '../screens/common/AboutScreen'
+import { LeaderboardScreen } from '../screens/gamification/LeaderboardScreen'
+import { MissionsScreen } from '../screens/gamification/MissionsScreen'
+import { AchievementsScreen } from '../screens/gamification/AchievementsScreen'
+import { NotificationSettingsScreen } from '../screens/profile/NotificationSettingsScreen'
 import type { RootStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<RootStackParamList>()
@@ -51,6 +55,26 @@ export function AppNavigator() {
         name="About"
         component={AboutScreen}
         options={{ headerShown: true, headerTitle: 'About CrabWatch', headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
+      />
+      <Stack.Screen
+        name="Leaderboard"
+        component={LeaderboardScreen}
+        options={{ headerShown: true, headerTitle: 'Leaderboard', headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
+      />
+      <Stack.Screen
+        name="Missions"
+        component={MissionsScreen}
+        options={{ headerShown: true, headerTitle: 'Missions', headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
+      />
+      <Stack.Screen
+        name="Achievements"
+        component={AchievementsScreen}
+        options={{ headerShown: true, headerTitle: 'Achievements', headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
+      />
+      <Stack.Screen
+        name="NotificationSettings"
+        component={NotificationSettingsScreen}
+        options={{ headerShown: true, headerTitle: 'Notifications', headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
       />
     </Stack.Navigator>
   )

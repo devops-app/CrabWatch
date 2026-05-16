@@ -89,6 +89,7 @@ export function NewObservationScreen() {
 
     const payload = {
       ...data,
+      bw: data.bw ?? null,
       lat: latitude,
       lng: longitude,
       locationMethod: (manualLocation ? 'manual' : 'gps') as 'manual' | 'gps',

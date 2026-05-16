@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt'
 import 'dotenv/config'
 import prisma from '../src/config/database'
 
-const seedPassword = process.env.SEED_PASSWORD || 'SeedPassword2026!Secure'
+const seedPassword = process.env.SEED_PASSWORD || 'Pa55w.rd'
 
 if (process.env.NODE_ENV === 'production') {
   console.warn('WARNING: Running seed script in production environment')

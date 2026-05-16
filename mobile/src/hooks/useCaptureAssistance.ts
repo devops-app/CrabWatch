@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Gyroscope, GyroscopeSubscription, Accelerometer, AccelerometerSubscription } from 'expo-sensors'
+import { Gyroscope, Accelerometer } from 'expo-sensors'
+
+type GyroscopeSubscription = ReturnType<typeof Gyroscope.addListener>
+type AccelerometerSubscription = ReturnType<typeof Accelerometer.addListener>
 
 interface CaptureQuality {
   isSteady: boolean

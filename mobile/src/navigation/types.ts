@@ -25,4 +25,8 @@ export type RootStackParamList = {
   AnalysisLoading: { photos: string[]; views: PhotoView[]; coinType?: string }
   AIReview: { analysis: CrabAnalysisResult; photos: string[]; views: PhotoView[]; coinType?: string }
   About: undefined
+  Leaderboard: undefined
+  Missions: undefined
+  Achievements: undefined
+  NotificationSettings: undefined
 }

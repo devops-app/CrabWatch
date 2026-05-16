@@ -28,10 +28,32 @@ model User {
   blockReason String?
   createdAt DateTime @default(now())
 
+  // Engagement profile
+  totalXP               Int                   @default(0)
+  level                 Int                   @default(1)
+  title                 String                @default("Crab Scout")
+  currentStreak         Int                   @default(0)
+  longestStreak         Int                   @default(0)
+  lastActiveDate        DateTime?
+  approvedCount         Int                   @default(0)
+  totalSubmissions      Int                   @default(0)
+
   observations Observation[] @relation("UserObservations")
   validatedObs Observation[] @relation("ValidatedBy")
   fcmToken     FcmToken?
   passwordResets PasswordReset[]
+
+  // Engagement relations
+  xpTransactions        XPTransaction[]
+  userAchievements      UserAchievement[]
+  userMissions          UserMission[]
+  onboardingProgress    OnboardingProgress[]
+  seasonStats           UserSeasonStat[]
+  insights              UserInsight[]
+  notificationPrefs     NotificationPreference[]
+  sentNotifications     NotificationDelivery[] @relation("NotificationRecipient")
+  adminAuditLogs        AuditLog[]            @relation("AuditActor")
+  abuseSignals          AbuseSignal[]
 
   @@index([deletedAt])
   @@index([blockedAt])
@@ -51,6 +73,75 @@ enum UserRole {
   USER
   RESEARCHER
   ADMIN
+}
+
+enum RewardActionType {
+  OBSERVATION_SUBMIT
+  OBSERVATION_APPROVED
+  FIRST_OBSERVATION
+  NEW_SPECIES
+  VALIDATION
+  STREAK_BONUS
+  MISSION_COMPLETE
+  ACHIEVEMENT_UNLOCK
+  ADMIN_ADJUSTMENT
+  ADMIN_REVERSAL
+}
+
+enum LeaderboardScope {
+  ALL_TIME
+  SEASONAL
+}
+
+enum MissionCadence {
+  DAILY
+  WEEKLY
+}
+
+enum MissionStatus {
+  ASSIGNED
+  COMPLETED
+  CLAIMED
+  EXPIRED
+}
+
+enum ChallengeType {
+  INDIVIDUAL
+  TEAM
+}
+
+enum NotificationChannel {
+  PUSH
+  EMAIL
+  IN_APP
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum InsightType {
+  QUALITY_HINT
+  NEXT_ACTION
+  STREAK_RISK
+  MISSION_NUDGE
+}
+
+enum AuditActorType {
+  USER
+  ADMIN
+  SYSTEM
+}
+
+enum AbuseSignalType {
+  VELOCITY
+  DUPLICATE_CONTENT
+  DEVICE_FARM
+  IP_CLUSTER
+  SUSPICIOUS_PATTERN
 }
 
 model Species {
@@ -151,4 +242,337 @@ model PasswordReset {
 
   @@index([token])
   @@index([userId])
+}
+
+// ==================== ENGAGEMENT: GAMIFICATION ====================
+
+model GamificationRule {
+  id                    String           @id @default(uuid())
+  actionType            RewardActionType
+  name                  String
+  description           String
+  xpReward              Int
+  active                Boolean          @default(true)
+  startsAt              DateTime?
+  endsAt                DateTime?
+  maxPerDay             Int?
+  maxPerUserPerDay      Int?
+  cooldownHours         Int?
+  roleScope             Json?
+  platformScope         Json?
+  metadata              Json?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  @@unique([actionType, name])
+  @@index([active, actionType])
+}
+
+model LevelConfig {
+  id                    String           @id @default(uuid())
+  level                 Int              @unique
+  xpThreshold           Int
+  title                 String
+  description           String?
+  active                Boolean          @default(true)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  @@index([active, xpThreshold])
+}
+
+model XPTransaction {
+  id                    String           @id @default(uuid())
+  userId                String           @db.Uuid
+  actionType            RewardActionType
+  deltaXP               Int
+  sourceType            String
+  sourceId              String?
+  idempotencyKey        String           @unique
+  reason                String?
+  metadata              Json?
+  createdAt             DateTime         @default(now())
+
+  user                  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([actionType, createdAt])
+}
+
+// ==================== ENGAGEMENT: PROGRESSION ====================
+
+model Achievement {
+  id                    String            @id @default(uuid())
+  code                  String            @unique
+  name                  String
+  description           String
+  category              String
+  rarity                String
+  iconUrl               String?
+  requirements          Json
+  xpReward              Int               @default(0)
+  isHidden              Boolean           @default(false)
+  isActive              Boolean           @default(true)
+  startsAt              DateTime?
+  endsAt                DateTime?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  userAchievements      UserAchievement[]
+
+  @@index([isActive, category])
+}
+
+model UserAchievement {
+  id                    String            @id @default(uuid())
+  userId                String            @db.Uuid
+  achievementId         String
+  earnedAt              DateTime          @default(now())
+  awardedByAdminId      String?           @db.Uuid
+  isPublic              Boolean           @default(true)
+  metadata              Json?
+
+  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement           Achievement       @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId, earnedAt])
+}
+
+model OnboardingFlow {
+  id                    String            @id @default(uuid())
+  code                  String            @unique
+  version               Int
+  name                  String
+  active                Boolean           @default(true)
+  steps                 Json
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  @@unique([code, version])
+  @@index([active])
+}
+
+model OnboardingProgress {
+  id                    String            @id @default(uuid())
+  userId                String            @db.Uuid
+  flowCode              String
+  flowVersion           Int
+  stepKey               String
+  status                String
+  completedAt           DateTime?
+  metadata              Json?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, flowCode, flowVersion, stepKey])
+  @@index([userId, flowCode, flowVersion])
+}
+
+model MissionDefinition {
+  id                    String            @id @default(uuid())
+  code                  String            @unique
+  name                  String
+  description           String
+  cadence               MissionCadence
+  criteria              Json
+  xpReward              Int
+  maxClaimsPerUser      Int               @default(1)
+  active                Boolean           @default(true)
+  startsAt              DateTime?
+  endsAt                DateTime?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  userMissions          UserMission[]
+
+  @@index([active, cadence])
+}
+
+model UserMission {
+  id                    String            @id @default(uuid())
+  userId                String            @db.Uuid
+  missionId             String
+  assignmentDate        DateTime
+  progressValue         Float             @default(0)
+  targetValue           Float             @default(1)
+  status                MissionStatus     @default(ASSIGNED)
+  completedAt           DateTime?
+  claimedAt             DateTime?
+  sourceSnapshot        Json?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mission               MissionDefinition @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, missionId, assignmentDate])
+  @@index([userId, assignmentDate, status])
+}
+
+// ==================== ENGAGEMENT: SEASONS & CAMPAIGNS ====================
+
+model Season {
+  id                    String            @id @default(uuid())
+  code                  String            @unique
+  name                  String
+  startsAt              DateTime
+  endsAt                DateTime
+  isActive              Boolean           @default(false)
+  description           String?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  seasonStats           UserSeasonStat[]
+
+  @@index([isActive, startsAt, endsAt])
+}
+
+model UserSeasonStat {
+  id                    String            @id @default(uuid())
+  seasonId              String
+  userId                String            @db.Uuid
+  totalXP               Int               @default(0)
+  approvedCount         Int               @default(0)
+  totalSubmissions      Int               @default(0)
+  currentStreak         Int               @default(0)
+  updatedAt             DateTime          @updatedAt
+
+  season                Season            @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([seasonId, userId])
+  @@index([seasonId, totalXP])
+}
+
+model Challenge {
+  id                    String            @id @default(uuid())
+  code                  String            @unique
+  name                  String
+  description           String
+  type                  ChallengeType
+  criteria              Json
+  reward                Json
+  startsAt              DateTime
+  endsAt                DateTime
+  active                Boolean           @default(true)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+}
+
+model UserInsight {
+  id                    String            @id @default(uuid())
+  userId                String            @db.Uuid
+  type                  InsightType
+  title                 String
+  body                  String
+  priority              Int               @default(50)
+  payload               Json?
+  expiresAt             DateTime?
+  seenAt                DateTime?
+  actedAt               DateTime?
+  createdAt             DateTime          @default(now())
+
+  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, priority, createdAt])
+}
+
+model NotificationPreference {
+  id                    String            @id @default(uuid())
+  userId                String            @db.Uuid
+  channel               NotificationChannel
+  category              String
+  enabled               Boolean           @default(true)
+  quietHoursStart       String?
+  quietHoursEnd         String?
+  timezone              String?
+  updatedAt             DateTime          @updatedAt
+
+  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channel, category])
+}
+
+model Campaign {
+  id                    String             @id @default(uuid())
+  code                  String             @unique
+  name                  String
+  channel               NotificationChannel
+  status                String
+  audienceFilter        Json
+  content               Json
+  scheduleAt            DateTime?
+  startedAt             DateTime?
+  completedAt           DateTime?
+  createdByAdminId      String?            @db.Uuid
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  deliveries            NotificationDelivery[]
+}
+
+model NotificationDelivery {
+  id                    String             @id @default(uuid())
+  campaignId            String?
+  userId                String             @db.Uuid
+  channel               NotificationChannel
+  category              String
+  title                 String
+  body                  String
+  payload               Json?
+  status                NotificationStatus @default(QUEUED)
+  sentAt                DateTime?
+  failedAt              DateTime?
+  failureReason         String?
+  createdAt             DateTime           @default(now())
+
+  campaign              Campaign?          @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  user                  User               @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([campaignId, status])
+}
+
+// ==================== ENGAGEMENT: GOVERNANCE ====================
+
+model AuditLog {
+  id                    String            @id @default(uuid())
+  actorType             AuditActorType
+  actorId               String?           @db.Uuid
+  action                String
+  resourceType          String
+  resourceId            String?
+  beforeState           Json?
+  afterState            Json?
+  reason                String?
+  ipAddress             String?
+  userAgent             String?
+  createdAt             DateTime          @default(now())
+
+  actor                 User?             @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([resourceType, resourceId])
+}
+
+model AbuseSignal {
+  id                    String            @id @default(uuid())
+  userId                String            @db.Uuid
+  type                  AbuseSignalType
+  riskScore             Int
+  source                String
+  summary               String
+  metadata              Json?
+  resolved              Boolean           @default(false)
+  resolvedByAdminId     String?           @db.Uuid
+  resolvedAt            DateTime?
+  createdAt             DateTime          @default(now())
+
+  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([resolved, riskScore, createdAt])
+  @@index([userId, createdAt])
 }

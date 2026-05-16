@@ -3,6 +3,7 @@ import {
   createUser,
   getUserProfile,
   updateUserProfile,
+  changeUserPassword,
   listUsers,
   updateUserRole,
   softDeleteUser,
@@ -11,7 +12,7 @@ import {
   unblockUser,
 } from '../controllers/userController'
 import { authMiddleware, requireAuth, resolveUser, requireRole } from '../middleware/auth'
-import { registerSchema, updateUserSchema, updateRoleSchema, blockUserSchema, restoreUserSchema } from '../utils/schemas'
+import { registerSchema, updateUserSchema, changePasswordSchema, updateRoleSchema, blockUserSchema, restoreUserSchema } from '../utils/schemas'
 import { validate } from '../middleware/validation'
 
 const router: Router = Router()
@@ -106,6 +107,7 @@ router.get('/me', requireAuth, resolveUser, getUserProfile)
  *         description: Authentication required
  */
 router.patch('/me', requireAuth, resolveUser, validate(updateUserSchema), updateUserProfile)
+router.patch('/me/password', requireAuth, resolveUser, validate(changePasswordSchema), changeUserPassword)
 
 /**
  * @openapi

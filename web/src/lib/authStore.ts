@@ -16,13 +16,22 @@ interface User {
   country?: string | null
   role: UserRole
   avatar?: string | null
+  // Engagement fields
+  totalXP?: number
+  level?: number
+  title?: string
+  currentStreak?: number
+  longestStreak?: number
+  approvedCount?: number
+  totalSubmissions?: number
 }
 
 interface AuthState {
   user: User | null
+  token: string | null
   isLoading: boolean
   isHydrated: boolean
-  login: (user: User) => void
+  login: (user: User, token?: string) => void
   logout: () => void
   updateUser: (user: User) => void
 }
@@ -31,12 +40,13 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, _get) => ({
       user: null,
+      token: null,
       isLoading: false,
       isHydrated: false,
-      login: (user) => {
-        set({ user, isLoading: false })
+      login: (user, token) => {
+        set({ user, token: token ?? null, isLoading: false })
       },
-      logout: () => set({ user: null }),
+      logout: () => set({ user: null, token: null }),
       updateUser: (user) => set({ user }),
     }),
     {

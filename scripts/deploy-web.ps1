@@ -16,6 +16,7 @@ if ([string]::IsNullOrWhiteSpace($ZipPath)) {
 $runtimeDir = Join-Path $env:TEMP "crabwatch-web-runtime"
 $webDir = Join-Path $repoRoot "web"
 $nextDir = Join-Path $webDir ".next"
+$standaloneDir = Join-Path $nextDir "standalone"
 $publicDir = Join-Path $webDir "public"
 $packageJsonPath = Join-Path $webDir "package.json"
 $nextConfigPath = Join-Path $webDir "next.config.mjs"
@@ -37,6 +38,38 @@ try {
 
   if (-not (Test-Path -LiteralPath $nextDir)) {
     throw "Missing Next.js build output at $nextDir"
+  }
+
+  if (Test-Path -LiteralPath $standaloneDir) {
+    $brokenLinks = Get-ChildItem -LiteralPath $standaloneDir -Recurse -Force |
+      Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint } |
+      Where-Object {
+        $link = $_
+        $targets = @($link.Target) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+        if ($targets.Count -eq 0) {
+          return $false
+        }
+
+        foreach ($target in $targets) {
+          $resolvedTarget = $target
+          if (-not [IO.Path]::IsPathRooted($resolvedTarget)) {
+            $resolvedTarget = Join-Path $link.DirectoryName $resolvedTarget
+          }
+
+          if (Test-Path -LiteralPath $resolvedTarget) {
+            return $false
+          }
+        }
+
+        return $true
+      }
+
+    if ($brokenLinks.Count -gt 0) {
+      foreach ($brokenLink in $brokenLinks) {
+        Remove-Item -LiteralPath $brokenLink.FullName -Force
+      }
+      Write-Host "Removed $($brokenLinks.Count) broken symlink(s) from standalone output."
+    }
   }
 
   New-Item -ItemType Directory -Path $runtimeDir -Force | Out-Null
@@ -81,10 +114,11 @@ try {
     --name $WebAppName `
     --startup-file "npm start"
 
-  az webapp deployment source config-zip `
+  az webapp deploy `
     --resource-group $ResourceGroup `
     --name $WebAppName `
-    --src $ZipPath
+    --src-path $ZipPath `
+    --type zip
 
   az webapp restart `
     --resource-group $ResourceGroup `

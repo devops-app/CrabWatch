@@ -37,6 +37,16 @@ export const config = {
     apiKey: process.env.RESEND_API_KEY,
   },
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+  azureBadgeStorage: {
+    containerName: process.env.AZURE_STORAGE_BADGE_CONTAINER || 'crabwatch-badges',
+  },
+  engagement: {
+    enabled: process.env.ENGAGEMENT_ENABLED === 'true' || process.env.NODE_ENV !== 'production',
+    missionsEnabled: process.env.MISSIONS_ENABLED === 'true' || process.env.NODE_ENV !== 'production',
+    seasonsEnabled: process.env.SEASONS_ENABLED === 'true' || process.env.NODE_ENV !== 'production',
+    campaignsEnabled: process.env.CAMPAIGNS_ENABLED === 'true' || process.env.NODE_ENV !== 'production',
+    abuseDetectionEnabled: process.env.ABUSE_DETECTION_ENABLED === 'true' || process.env.NODE_ENV !== 'production',
+  },
 }
 
 if (!config.databaseUrl) {

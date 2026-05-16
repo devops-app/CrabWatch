@@ -111,6 +111,26 @@ export const api = {
     })
   },
 
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
+    return apiRequest('/users/me/password', {
+      method: 'PATCH',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    })
+  },
+
+  async registerFcmToken(fcmToken: string): Promise<{ registered: boolean }> {
+    return apiRequest('/fcm/register', {
+      method: 'POST',
+      body: JSON.stringify({ fcmToken }),
+    })
+  },
+
+  async unregisterFcmToken(): Promise<{ unregistered: boolean }> {
+    return apiRequest('/fcm/register', {
+      method: 'DELETE',
+    })
+  },
+
   async listSpecies(): Promise<SpeciesResponse[]> {
     return apiRequest('/species')
   },
@@ -320,6 +340,159 @@ export const api = {
     })
   },
 
+  // Admin Engagement - XP Rules
+  async listGamificationRules(): Promise<any[]> {
+    return apiRequest('/admin/gamification/rules')
+  },
+
+  async createGamificationRule(payload: {
+    actionType: string
+    name: string
+    description?: string | null
+    xpReward: number
+    active?: boolean
+  }): Promise<any> {
+    return apiRequest('/admin/gamification/rules', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  async updateGamificationRule(id: string, payload: {
+    actionType?: string
+    name?: string
+    description?: string | null
+    xpReward?: number
+    active?: boolean
+  }): Promise<any> {
+    return apiRequest(`/admin/gamification/rules/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  async deleteGamificationRule(id: string): Promise<void> {
+    await apiRequest(`/admin/gamification/rules/${id}`, {
+      method: 'DELETE',
+    })
+  },
+
+  // Admin Engagement - Level Configs
+  async listLevelConfigs(): Promise<any[]> {
+    return apiRequest('/admin/gamification/levels')
+  },
+
+  async createLevelConfig(payload: {
+    level: number
+    xpThreshold: number
+    title: string
+    description?: string | null
+    active?: boolean
+  }): Promise<any> {
+    return apiRequest('/admin/gamification/levels', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  async updateLevelConfig(id: string, payload: {
+    level?: number
+    xpThreshold?: number
+    title?: string
+    description?: string | null
+    active?: boolean
+  }): Promise<any> {
+    return apiRequest(`/admin/gamification/levels/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  async deleteLevelConfig(id: string): Promise<void> {
+    await apiRequest(`/admin/gamification/levels/${id}`, {
+      method: 'DELETE',
+    })
+  },
+
+  async adjustXP(payload: { userId: string; deltaXP: number; reason: string }): Promise<any> {
+    return apiRequest('/admin/gamification/adjust-xp', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  async recalculateXP(payload: { mode: 'dry-run' | 'execute'; userId?: string; reason?: string }): Promise<any> {
+    return apiRequest('/admin/gamification/recalculate', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  async getRecalculationJobStatus(jobId: string): Promise<any> {
+    return apiRequest(`/admin/gamification/recalculate/${jobId}`)
+  },
+
+  async listCampaigns(status?: string): Promise<any[]> {
+    const p = new URLSearchParams()
+    if (status) p.set('status', status)
+    const query = p.toString()
+    return apiRequest(`/admin/campaigns${query ? `?${query}` : ''}`)
+  },
+
+  async createCampaign(payload: Record<string, any>): Promise<any> {
+    return apiRequest('/admin/campaigns', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  async launchCampaign(id: string): Promise<any> {
+    return apiRequest(`/admin/campaigns/${id}/launch`, {
+      method: 'POST',
+    })
+  },
+
+  async sendTestCampaign(id: string, userId: string): Promise<any> {
+    return apiRequest(`/admin/campaigns/${id}/send-test`, {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    })
+  },
+
+  async deleteCampaign(id: string): Promise<void> {
+    await apiRequest(`/admin/campaigns/${id}`, {
+      method: 'DELETE',
+    })
+  },
+
+  async getAuditLogs(params?: { action?: string; resourceType?: string; limit?: number }): Promise<any> {
+    const p = new URLSearchParams()
+    if (params?.action) p.set('action', params.action)
+    if (params?.resourceType) p.set('resourceType', params.resourceType)
+    if (params?.limit) p.set('limit', String(params.limit))
+    const query = p.toString()
+    return apiRequest(`/admin/audit-logs${query ? `?${query}` : ''}`)
+  },
+
+  async getAuditLogStats(): Promise<any> {
+    return apiRequest('/admin/audit-logs/stats')
+  },
+
+  async getAbuseSignals(): Promise<any[]> {
+    return apiRequest('/admin/abuse-signals')
+  },
+
+  async resolveAbuseSignal(id: string, note?: string): Promise<any> {
+    return apiRequest(`/admin/abuse-signals/${id}/resolve`, {
+      method: 'PATCH',
+      body: JSON.stringify({ note }),
+    })
+  },
+
+  async getEngagementMetrics(): Promise<any> {
+    return apiRequest('/admin/metrics')
+  },
+
   async analyzeCrab(request: CrabAnalysisRequest): Promise<CrabAnalysisResult> {
     return apiRequest('/analyze/crab', {
       method: 'POST',
@@ -429,5 +602,101 @@ export const api = {
     }
 
     return data.data!
+  },
+
+  // Gamification
+  async getMyStats(): Promise<{ stats: { totalXP: number; level: number; title: string; currentStreak: number; longestStreak: number; approvedCount: number; totalSubmissions: number; xpToNextLevel: number } }> {
+    return apiRequest('/gamification/stats/me')
+  },
+
+  async getXPHistory(params?: { page?: number; limit?: number }): Promise<any> {
+    const p = new URLSearchParams()
+    if (params?.page) p.set('page', String(params.page))
+    if (params?.limit) p.set('limit', String(params.limit))
+    const query = p.toString()
+    return apiRequest(`/gamification/xp-history${query ? `?${query}` : ''}`)
+  },
+
+  async getLeaderboard(params?: { scope?: string; seasonId?: string; page?: number; limit?: number }): Promise<any> {
+    const p = new URLSearchParams()
+    if (params?.scope) p.set('scope', params.scope)
+    if (params?.seasonId) p.set('seasonId', params.seasonId)
+    if (params?.page) p.set('page', String(params.page))
+    if (params?.limit) p.set('limit', String(params.limit))
+    const query = p.toString()
+    return apiRequest(`/gamification/leaderboard${query ? `?${query}` : ''}`)
+  },
+
+  // Engagement - Missions
+  async getActiveMissions(): Promise<any> {
+    return apiRequest('/engagement/missions/today')
+  },
+
+  async claimMission(body: { missionKey: string }): Promise<any> {
+    return apiRequest('/engagement/missions/claim', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  },
+
+  async updateMissionProgress(body: { missionKey: string; increment?: number }): Promise<any> {
+    return apiRequest('/engagement/missions/progress', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  },
+
+  // Engagement - Onboarding
+  async getOnboardingStatus(): Promise<any> {
+    return apiRequest('/engagement/onboarding/me')
+  },
+
+  async completeOnboardingStep(body: { step: string }): Promise<any> {
+    return apiRequest('/engagement/onboarding/steps/complete', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  },
+
+  // Engagement - Achievements
+  async getAchievements(): Promise<any> {
+    return apiRequest('/engagement/achievements')
+  },
+
+  async getUnlockedAchievements(): Promise<any> {
+    return apiRequest('/engagement/achievements/unlocked')
+  },
+
+  async checkAchievements(): Promise<any> {
+    return apiRequest('/engagement/achievements/check')
+  },
+
+  async getAchievementProgress(id: string): Promise<any> {
+    return apiRequest(`/engagement/achievements/${id}/progress`)
+  },
+
+  // Engagement - Social
+  async getInsights(): Promise<any> {
+    return apiRequest('/engagement/insights/me')
+  },
+
+  async getTopContributors(): Promise<any> {
+    return apiRequest('/engagement/social/contributors')
+  },
+
+  async getCommunityStats(): Promise<any> {
+    return apiRequest('/engagement/social/stats')
+  },
+
+  // Engagement - Notifications
+  async getNotificationPreferences(): Promise<any> {
+    return apiRequest('/engagement/notification-preferences')
+  },
+
+  async updateNotificationPreferences(body: any): Promise<any> {
+    return apiRequest('/engagement/notification-preferences', {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    })
   },
 }

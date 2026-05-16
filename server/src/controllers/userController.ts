@@ -245,6 +245,55 @@ export async function updateUserProfile(req: AuthRequest, res: Response): Promis
   }
 }
 
+export async function changeUserPassword(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const dbUser = req.dbUser
+    if (!dbUser) {
+      res.status(404).json({ success: false, error: 'User not found' })
+      return
+    }
+
+    const { currentPassword, newPassword } = req.body as {
+      currentPassword: string
+      newPassword: string
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: dbUser.id },
+      select: { id: true, password: true },
+    })
+
+    if (!user || !user.password) {
+      res.status(400).json({ success: false, error: 'Password login is not configured for this account' })
+      return
+    }
+
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password)
+    if (!isCurrentPasswordValid) {
+      res.status(400).json({ success: false, error: 'Current password is incorrect' })
+      return
+    }
+
+    const isSameAsCurrent = await bcrypt.compare(newPassword, user.password)
+    if (isSameAsCurrent) {
+      res.status(400).json({ success: false, error: 'New password must be different from current password' })
+      return
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12)
+
+    await prisma.user.update({
+      where: { id: dbUser.id },
+      data: { password: hashedPassword },
+    })
+
+    res.json({ success: true, data: { message: 'Password updated successfully' } })
+  } catch (error: unknown) {
+    console.error('Change password error:', error)
+    res.status(500).json({ success: false, error: 'Failed to change password' })
+  }
+}
+
 export async function listUsers(req: AuthRequest, res: Response): Promise<void> {
   try {
     const page = parseInt(req.query.page as string) || 1

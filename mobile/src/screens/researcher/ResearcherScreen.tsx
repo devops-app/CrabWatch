@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   card: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
   infoValue: {
     fontSize: 13,
     fontWeight: '600',
-    color: COLORS.textPrimary,
+    color: COLORS.text,
     marginTop: 2,
   },
   cardFooter: {
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: COLORS.text,
     marginBottom: 8,
   },
   emptyText: {
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '90%',
@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
   },
   detailValue: {
     fontSize: 13,
-    color: COLORS.textPrimary,
+    color: COLORS.text,
     fontWeight: '600',
     flex: 1,
     textAlign: 'right',
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 14,
-    color: COLORS.textPrimary,
+    color: COLORS.text,
     minHeight: 80,
   },
   modalActions: {

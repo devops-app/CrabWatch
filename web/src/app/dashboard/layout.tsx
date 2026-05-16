@@ -1,6 +1,7 @@
 import DashboardLayout from '@/components/DashboardLayout'
 import AuthGuard from '@/components/AuthGuard'
 import ErrorBoundary from '@/components/ErrorBoundary'
+import { ToastProvider } from '@/lib/ToastProvider'
 
 export default function DashboardRouteLayout({
   children,
@@ -10,7 +11,9 @@ export default function DashboardRouteLayout({
   return (
     <AuthGuard>
       <ErrorBoundary>
-        <DashboardLayout>{children}</DashboardLayout>
+        <ToastProvider>
+          <DashboardLayout>{children}</DashboardLayout>
+        </ToastProvider>
       </ErrorBoundary>
     </AuthGuard>
   )

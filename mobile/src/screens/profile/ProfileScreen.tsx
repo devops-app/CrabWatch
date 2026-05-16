@@ -19,7 +19,7 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { COLORS, STATUS_COLORS } from '../../utils/constants'
 import { formatDate, formatStatus } from '../../utils/formatters'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import type { ObservationResponse } from '@crabwatch/shared'
+import type { ObservationResponse, UserStatsDto } from '@crabwatch/shared'
 import type { RootStackParamList } from '../../navigation/types'
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>
@@ -28,18 +28,24 @@ export function ProfileScreen() {
   const navigation = useNavigation<NavigationProp>()
   const { user, logout } = useAuth()
   const [observations, setObservations] = useState<ObservationResponse[]>([])
+  const [stats, setStats] = useState<UserStatsDto | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadObservations()
+    loadData()
   }, [])
 
-  const loadObservations = async () => {
+  const loadData = async () => {
     try {
-      const data = await api.listObservations({ limit: 20 })
-      setObservations(data.observations || [])
+      const [obsData, statsData] = await Promise.all([
+        api.listObservations({ limit: 20 }).catch(() => ({ observations: [] })),
+        api.getMyStats().catch(() => null),
+      ])
+      setObservations(Array.isArray(obsData.observations) ? obsData.observations : [])
+      setStats(statsData?.stats || null)
     } catch {
       setObservations([])
+      setStats(null)
     } finally {
       setLoading(false)
     }
@@ -117,6 +123,62 @@ export function ProfileScreen() {
           </View>
         </View>
 
+        {stats && (
+          <Card padding={16} style={styles.xpCard}>
+            <View style={styles.xpHeader}>
+              <View style={styles.xpInfo}>
+                <Text style={styles.xpLevel}>Level {stats.level}</Text>
+                <Text style={styles.xpTitle}>{stats.title}</Text>
+              </View>
+              <View style={styles.xpValue}>
+                <Ionicons name="sparkles" size={16} color={COLORS.accent} />
+                <Text style={styles.xpNumber}>{stats.totalXP.toLocaleString()}</Text>
+              </View>
+            </View>
+
+            {stats.xpToNextLevel > 0 && (
+              <View style={styles.xpProgress}>
+                <View style={styles.xpProgressHeader}>
+                  <Text style={styles.xpProgressText}>
+                    XP Progress
+                  </Text>
+                  <Text style={styles.xpProgressText}>
+                    {stats.totalXP % (stats.xpToNextLevel + (stats.level > 0 ? 0 : 0))}/{stats.xpToNextLevel}
+                  </Text>
+                </View>
+                <View style={styles.xpBar}>
+                  <View
+                    style={[
+                      styles.xpFill,
+                      { width: `${Math.min(100, ((stats.totalXP % stats.xpToNextLevel) / stats.xpToNextLevel) * 100)}%` },
+                    ]}
+                  />
+                </View>
+              </View>
+            )}
+
+            <View style={styles.xpStats}>
+              <View style={styles.xpStat}>
+                <Ionicons name="flame" size={16} color={COLORS.accent} />
+                <Text style={styles.xpStatValue}>{stats.currentStreak}</Text>
+                <Text style={styles.xpStatLabel}>Streak</Text>
+              </View>
+              <View style={styles.xpStatDivider} />
+              <View style={styles.xpStat}>
+                <Ionicons name="trophy" size={16} color={COLORS.accent} />
+                <Text style={styles.xpStatValue}>{stats.longestStreak}</Text>
+                <Text style={styles.xpStatLabel}>Best</Text>
+              </View>
+              <View style={styles.xpStatDivider} />
+              <View style={styles.xpStat}>
+                <Ionicons name="checkmark-done" size={16} color={COLORS.success} />
+                <Text style={styles.xpStatValue}>{stats.approvedCount}</Text>
+                <Text style={styles.xpStatLabel}>Approved</Text>
+              </View>
+            </View>
+          </Card>
+        )}
+
         <View style={styles.actionsRow}>
           <Button
             title="Edit Profile"
@@ -124,6 +186,15 @@ export function ProfileScreen() {
             onPress={() => navigation.navigate('EditProfile')}
             style={styles.actionBtn}
           />
+          <Button
+            title="Notifications"
+            variant="secondary"
+            onPress={() => navigation.navigate('NotificationSettings')}
+            style={styles.actionBtn}
+          />
+        </View>
+
+        <View style={styles.actionsRow}>
           <Button
             title="About"
             variant="secondary"
@@ -136,6 +207,44 @@ export function ProfileScreen() {
             onPress={handleLogout}
             style={styles.actionBtn}
           />
+        </View>
+
+        <View style={styles.engagementSection}>
+          <Text style={styles.sectionTitle}>Gamification</Text>
+          <View style={styles.engagementGrid}>
+            <TouchableOpacity
+              style={styles.engagementCard}
+              onPress={() => navigation.navigate('Leaderboard')}
+            >
+              <View style={[styles.engagementIcon, { backgroundColor: COLORS.warningLight }]}>
+                <Ionicons name="trophy" size={22} color={COLORS.accent} />
+              </View>
+              <Text style={styles.engagementTitle}>Leaderboard</Text>
+              <Text style={styles.engagementDesc}>See top contributors</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.engagementCard}
+              onPress={() => navigation.navigate('Missions')}
+            >
+              <View style={[styles.engagementIcon, { backgroundColor: COLORS.successLight }]}>
+                <Ionicons name="shield-checkmark" size={22} color={COLORS.success} />
+              </View>
+              <Text style={styles.engagementTitle}>Missions</Text>
+              <Text style={styles.engagementDesc}>Daily challenges</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.engagementCard}
+              onPress={() => navigation.navigate('Achievements')}
+            >
+              <View style={[styles.engagementIcon, { backgroundColor: COLORS.primaryLight }]}>
+                <Ionicons name="ribbon" size={22} color={COLORS.primary} />
+              </View>
+              <Text style={styles.engagementTitle}>Achievements</Text>
+              <Text style={styles.engagementDesc}>Your badges</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <Text style={styles.sectionTitle}>Recent Submissions</Text>
@@ -275,6 +384,120 @@ const styles = StyleSheet.create({
     width: 1,
     backgroundColor: COLORS.border,
     marginHorizontal: 4,
+  },
+  xpCard: {
+    marginBottom: 16,
+  },
+  xpHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  xpInfo: {
+    flex: 1,
+  },
+  xpLevel: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  xpTitle: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  xpValue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  xpNumber: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.accent,
+  },
+  xpProgress: {
+    marginBottom: 12,
+  },
+  xpProgressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  xpProgressText: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+  },
+  xpBar: {
+    height: 6,
+    backgroundColor: COLORS.background,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  xpFill: {
+    height: '100%',
+    backgroundColor: COLORS.primary,
+    borderRadius: 3,
+  },
+  xpStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  xpStat: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+  },
+  xpStatValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  xpStatLabel: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+  },
+  xpStatDivider: {
+    width: 1,
+    backgroundColor: COLORS.border,
+  },
+  engagementSection: {
+    marginBottom: 16,
+  },
+  engagementGrid: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  engagementCard: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  engagementIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  engagementTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  engagementDesc: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
   actionsRow: {
     flexDirection: 'row',

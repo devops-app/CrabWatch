@@ -25,3 +25,4 @@ web/test-results/
 web/playwright-report/
 *.tsbuildinfo
 docker-compose.env
+azurite-data/

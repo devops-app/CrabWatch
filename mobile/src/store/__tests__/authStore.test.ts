@@ -1,9 +1,30 @@
 import { useAuthStore, initAuth } from '../../store/authStore'
 import * as SecureStore from 'expo-secure-store'
+import type { UserResponse } from '@crabwatch/shared'
 
 jest.mock('expo-secure-store')
 
 describe('authStore', () => {
+  const baseMockUser: UserResponse = {
+    id: 'user-1',
+    name: 'John Doe',
+    email: 'john@example.com',
+    phoneCode: null,
+    phoneNumber: null,
+    addressLine1: null,
+    addressLine2: null,
+    addressLine3: null,
+    state: null,
+    postcode: null,
+    country: null,
+    role: 'user',
+    avatar: null,
+    deletedAt: null,
+    blockedAt: null,
+    blockReason: null,
+    createdAt: '2024-01-01',
+  }
+
   beforeEach(() => {
     jest.clearAllMocks()
     useAuthStore.getState().logout().catch(() => {})
@@ -25,14 +46,7 @@ describe('authStore', () => {
 
   describe('login', () => {
     it('stores user and token', async () => {
-      const mockUser = {
-        id: 'user-1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        role: 'user' as const,
-        avatar: null,
-        createdAt: '2024-01-01',
-      }
+      const mockUser = { ...baseMockUser }
       const mockToken = 'test-token'
 
       await useAuthStore.getState().login(mockUser, mockToken)
@@ -43,14 +57,7 @@ describe('authStore', () => {
     })
 
     it('saves token to SecureStore', async () => {
-      const mockUser = {
-        id: 'user-1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        role: 'user' as const,
-        avatar: null,
-        createdAt: '2024-01-01',
-      }
+      const mockUser = { ...baseMockUser }
       const mockToken = 'test-token'
 
       await useAuthStore.getState().login(mockUser, mockToken)
@@ -61,14 +68,7 @@ describe('authStore', () => {
 
   describe('logout', () => {
     it('clears user and token', async () => {
-      const mockUser = {
-        id: 'user-1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        role: 'user' as const,
-        avatar: null,
-        createdAt: '2024-01-01',
-      }
+      const mockUser = { ...baseMockUser }
       const mockToken = 'test-token'
 
       await useAuthStore.getState().login(mockUser, mockToken)
@@ -87,14 +87,7 @@ describe('authStore', () => {
 
   describe('updateUser', () => {
     it('updates the user object', () => {
-      const mockUser = {
-        id: 'user-1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        role: 'user' as const,
-        avatar: null,
-        createdAt: '2024-01-01',
-      }
+      const mockUser = { ...baseMockUser }
 
       useAuthStore.getState().updateUser(mockUser)
 
@@ -103,14 +96,7 @@ describe('authStore', () => {
 
     it('preserves existing token', () => {
       useAuthStore.getState().setToken('existing-token')
-      const mockUser = {
-        id: 'user-1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        role: 'user' as const,
-        avatar: null,
-        createdAt: '2024-01-01',
-      }
+      const mockUser = { ...baseMockUser }
 
       useAuthStore.getState().updateUser(mockUser)
 

@@ -109,7 +109,7 @@ curl http://localhost:3001/health
 # Login
 curl -X POST http://localhost:3001/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@crabwatch.my","password":"SeedPassword2026!Secure"}'
+  -d '{"email":"admin@crabwatch.my","password":"Pa55w.rd"}'
 
 # Get species (public endpoint)
 curl http://localhost:3001/api/v1/species
@@ -142,7 +142,7 @@ curl -X POST http://localhost:3001/api/v1/analyze/crab \
 
 ### Seed Credentials
 
-All users share the same seed password (set via `SEED_PASSWORD` env var, default: `SeedPassword2026!Secure`):
+All users share the same seed password (set via `SEED_PASSWORD` env var, default: `Pa55w.rd`):
 
 | Email                      | Role        |
 | -------------------------- | ----------- |

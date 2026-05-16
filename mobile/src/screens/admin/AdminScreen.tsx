@@ -16,8 +16,9 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { COLORS } from '../../utils/constants'
 import type { UserResponse, SpeciesResponse } from '@crabwatch/shared'
 
-type Tab = 'users' | 'species' | 'backup'
+type Tab = 'users' | 'species' | 'backup' | 'engagement'
 type UserSubTab = 'active' | 'deleted' | 'invites'
+type EngagementSubTab = 'xp-rules' | 'levels' | 'xp-adjust' | 'campaigns' | 'audit' | 'abuse' | 'metrics'
 
 export function AdminScreen() {
   const [activeTab, setActiveTab] = useState<Tab>('users')
@@ -27,8 +28,40 @@ export function AdminScreen() {
   const [species, setSpecies] = useState<SpeciesResponse[]>([])
   const [backups, setBackups] = useState<any[]>([])
   const [invites, setInvites] = useState<any[]>([])
+  const [rules, setRules] = useState<any[]>([])
+  const [levels, setLevels] = useState<any[]>([])
+  const [campaigns, setCampaigns] = useState<any[]>([])
+  const [auditLogs, setAuditLogs] = useState<any[]>([])
+  const [auditStats, setAuditStats] = useState<any | null>(null)
+  const [abuseSignals, setAbuseSignals] = useState<any[]>([])
+  const [metrics, setMetrics] = useState<any | null>(null)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState('researcher')
+  const [engagementSubTab, setEngagementSubTab] = useState<EngagementSubTab>('xp-rules')
+  const [speciesDraft, setSpeciesDraft] = useState({ commonName: '', scientificName: '', description: '' })
+  const [editingSpeciesId, setEditingSpeciesId] = useState<string | null>(null)
+  const [ruleDraft, setRuleDraft] = useState({ actionType: '', name: '', description: '', xpReward: 0, active: true })
+  const [editingRuleId, setEditingRuleId] = useState<string | null>(null)
+  const [levelDraft, setLevelDraft] = useState({ level: 1, xpThreshold: 0, title: '', description: '', active: true })
+  const [editingLevelId, setEditingLevelId] = useState<string | null>(null)
+  const [adjUserId, setAdjUserId] = useState('')
+  const [adjDeltaXP, setAdjDeltaXP] = useState(0)
+  const [adjReason, setAdjReason] = useState('')
+  const [recalcMode, setRecalcMode] = useState<'dry-run' | 'execute'>('dry-run')
+  const [recalcUserId, setRecalcUserId] = useState('')
+  const [recalcReason, setRecalcReason] = useState('')
+  const [recalcResults, setRecalcResults] = useState<any | null>(null)
+  const [recalcJobIdInput, setRecalcJobIdInput] = useState('')
+  const [recalcJobStatus, setRecalcJobStatus] = useState<any | null>(null)
+  const [campaignDraft, setCampaignDraft] = useState({
+    code: '',
+    name: '',
+    channel: 'PUSH',
+    title: '',
+    body: '',
+    minLevel: 1,
+  })
+  const [campaignTestUserId, setCampaignTestUserId] = useState('')
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
@@ -71,6 +104,26 @@ export function AdminScreen() {
         case 'backup': {
           const data = await api.listBackups()
           setBackups(data)
+          break
+        }
+        case 'engagement': {
+          const [rulesData, levelsData, metricsData, campaignsData, logsData, statsData, abuseData] = await Promise.all([
+            api.listGamificationRules(),
+            api.listLevelConfigs(),
+            api.getEngagementMetrics().catch(() => null),
+            api.listCampaigns().catch(() => []),
+            api.getAuditLogs({ limit: 20 }).catch(() => []),
+            api.getAuditLogStats().catch(() => null),
+            api.getAbuseSignals().catch(() => []),
+          ])
+          setRules(rulesData)
+          setLevels(levelsData)
+          setMetrics(metricsData)
+          const normalizedLogs = Array.isArray(logsData) ? logsData : (logsData?.items ?? [])
+          setCampaigns(Array.isArray(campaignsData) ? campaignsData : [])
+          setAuditLogs(normalizedLogs)
+          setAuditStats(statsData)
+          setAbuseSignals(Array.isArray(abuseData) ? abuseData : [])
           break
         }
       }
@@ -321,6 +374,361 @@ export function AdminScreen() {
     )
   }
 
+  const resetSpeciesDraft = () => {
+    setSpeciesDraft({ commonName: '', scientificName: '', description: '' })
+    setEditingSpeciesId(null)
+  }
+
+  const handleEditSpecies = (s: SpeciesResponse) => {
+    setEditingSpeciesId(s.id)
+    setSpeciesDraft({
+      commonName: s.commonName || '',
+      scientificName: s.scientificName || '',
+      description: s.description || '',
+    })
+  }
+
+  const handleSaveSpecies = async () => {
+    if (!speciesDraft.commonName.trim() || !speciesDraft.scientificName.trim()) {
+      flash('Common and scientific names are required', 'error')
+      return
+    }
+
+    setActionLoading(true)
+    try {
+      const payload = {
+        commonName: speciesDraft.commonName.trim(),
+        scientificName: speciesDraft.scientificName.trim(),
+        description: speciesDraft.description.trim() || undefined,
+      }
+
+      if (editingSpeciesId) {
+        await api.updateSpecies(editingSpeciesId, payload)
+        flash('Species updated', 'success')
+      } else {
+        await api.createSpecies(payload)
+        flash('Species created', 'success')
+      }
+
+      resetSpeciesDraft()
+      loadTabData('species')
+    } catch (err) {
+      flash(err instanceof Error ? err.message : 'Failed to save species', 'error')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const resetRuleDraft = () => {
+    setRuleDraft({ actionType: '', name: '', description: '', xpReward: 0, active: true })
+    setEditingRuleId(null)
+  }
+
+  const handleEditRule = (rule: any) => {
+    setEditingRuleId(rule.id)
+    setRuleDraft({
+      actionType: rule.actionType || '',
+      name: rule.name || '',
+      description: rule.description || '',
+      xpReward: Number(rule.xpReward) || 0,
+      active: rule.active !== false,
+    })
+  }
+
+  const handleSaveRule = async () => {
+    if (!ruleDraft.actionType.trim() || !ruleDraft.name.trim()) {
+      flash('Action type and name are required', 'error')
+      return
+    }
+
+    setActionLoading(true)
+    try {
+      const payload = {
+        actionType: ruleDraft.actionType.trim(),
+        name: ruleDraft.name.trim(),
+        description: ruleDraft.description.trim() || null,
+        xpReward: ruleDraft.xpReward,
+        active: ruleDraft.active,
+      }
+
+      if (editingRuleId) {
+        await api.updateGamificationRule(editingRuleId, payload)
+        flash('XP rule updated', 'success')
+      } else {
+        await api.createGamificationRule(payload)
+        flash('XP rule created', 'success')
+      }
+
+      resetRuleDraft()
+      loadTabData('engagement')
+    } catch (err) {
+      flash(err instanceof Error ? err.message : 'Failed to save XP rule', 'error')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleDeleteRule = (rule: any) => {
+    Alert.alert('Delete XP Rule', `Delete "${rule.name}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          setActionLoading(true)
+          try {
+            await api.deleteGamificationRule(rule.id)
+            flash('XP rule deleted', 'success')
+            loadTabData('engagement')
+          } catch (err) {
+            flash(err instanceof Error ? err.message : 'Failed to delete XP rule', 'error')
+          } finally {
+            setActionLoading(false)
+          }
+        },
+      },
+    ])
+  }
+
+  const handleToggleRule = async (rule: any) => {
+    setActionLoading(true)
+    try {
+      await api.updateGamificationRule(rule.id, { active: !rule.active })
+      flash(rule.active ? 'Rule disabled' : 'Rule enabled', 'success')
+      loadTabData('engagement')
+    } catch (err) {
+      flash(err instanceof Error ? err.message : 'Failed to update rule', 'error')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const resetLevelDraft = () => {
+    setLevelDraft({ level: 1, xpThreshold: 0, title: '', description: '', active: true })
+    setEditingLevelId(null)
+  }
+
+  const handleEditLevel = (level: any) => {
+    setEditingLevelId(level.id)
+    setLevelDraft({
+      level: Number(level.level) || 1,
+      xpThreshold: Number(level.xpThreshold) || 0,
+      title: level.title || '',
+      description: level.description || '',
+      active: level.active !== false,
+    })
+  }
+
+  const handleSaveLevel = async () => {
+    if (!levelDraft.title.trim()) {
+      flash('Level title is required', 'error')
+      return
+    }
+
+    setActionLoading(true)
+    try {
+      const payload = {
+        level: levelDraft.level,
+        xpThreshold: levelDraft.xpThreshold,
+        title: levelDraft.title.trim(),
+        description: levelDraft.description.trim() || null,
+        active: levelDraft.active,
+      }
+
+      if (editingLevelId) {
+        await api.updateLevelConfig(editingLevelId, payload)
+        flash('Level updated', 'success')
+      } else {
+        await api.createLevelConfig(payload)
+        flash('Level created', 'success')
+      }
+
+      resetLevelDraft()
+      loadTabData('engagement')
+    } catch (err) {
+      flash(err instanceof Error ? err.message : 'Failed to save level', 'error')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleDeleteLevel = (level: any) => {
+    Alert.alert('Delete Level', `Delete level ${level.level} (${level.title})?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          setActionLoading(true)
+          try {
+            await api.deleteLevelConfig(level.id)
+            flash('Level deleted', 'success')
+            loadTabData('engagement')
+          } catch (err) {
+            flash(err instanceof Error ? err.message : 'Failed to delete level', 'error')
+          } finally {
+            setActionLoading(false)
+          }
+        },
+      },
+    ])
+  }
+
+  const handleAdjustXP = async () => {
+    if (!adjUserId.trim() || !adjReason.trim() || adjDeltaXP === 0) {
+      flash('User ID, non-zero delta XP, and reason are required', 'error')
+      return
+    }
+    setActionLoading(true)
+    try {
+      await api.adjustXP({ userId: adjUserId.trim(), deltaXP: adjDeltaXP, reason: adjReason.trim() })
+      flash('XP adjusted successfully', 'success')
+      setAdjReason('')
+      setAdjDeltaXP(0)
+      loadTabData('engagement')
+    } catch (err) {
+      flash(err instanceof Error ? err.message : 'Failed to adjust XP', 'error')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleRecalculate = async () => {
+    setActionLoading(true)
+    try {
+      const result = await api.recalculateXP({
+        mode: recalcMode,
+        userId: recalcUserId.trim() || undefined,
+        reason: recalcReason.trim() || undefined,
+      })
+      setRecalcResults(result)
+      if (result?.jobId) {
+        setRecalcJobStatus(result)
+        setRecalcJobIdInput(result.jobId)
+      }
+      flash('Recalculation completed', 'success')
+      loadTabData('engagement')
+    } catch (err) {
+      flash(err instanceof Error ? err.message : 'Failed to recalculate', 'error')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleCheckRecalcJob = async () => {
+    if (!recalcJobIdInput.trim()) {
+      flash('Enter a job ID', 'error')
+      return
+    }
+    setActionLoading(true)
+    try {
+      const status = await api.getRecalculationJobStatus(recalcJobIdInput.trim())
+      setRecalcJobStatus(status)
+      flash('Job status updated', 'success')
+    } catch (err) {
+      flash(err instanceof Error ? err.message : 'Failed to check job status', 'error')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleCreateCampaign = async () => {
+    if (!campaignDraft.code.trim() || !campaignDraft.name.trim() || !campaignDraft.title.trim() || !campaignDraft.body.trim()) {
+      flash('Code, name, title and body are required', 'error')
+      return
+    }
+    setActionLoading(true)
+    try {
+      await api.createCampaign({
+        code: campaignDraft.code.trim(),
+        name: campaignDraft.name.trim(),
+        channel: campaignDraft.channel,
+        audienceFilter: { minLevel: campaignDraft.minLevel },
+        content: { title: campaignDraft.title.trim(), body: campaignDraft.body.trim() },
+      })
+      flash('Campaign created', 'success')
+      setCampaignDraft({ code: '', name: '', channel: 'PUSH', title: '', body: '', minLevel: 1 })
+      loadTabData('engagement')
+    } catch (err) {
+      flash(err instanceof Error ? err.message : 'Failed to create campaign', 'error')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleLaunchCampaign = (campaign: any) => {
+    Alert.alert('Launch Campaign', `Launch ${campaign.name}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Launch',
+        onPress: async () => {
+          setActionLoading(true)
+          try {
+            const result = await api.launchCampaign(campaign.id)
+            flash(`Campaign launched (${result?.sent ?? 0} sent)`, 'success')
+            loadTabData('engagement')
+          } catch (err) {
+            flash(err instanceof Error ? err.message : 'Failed to launch campaign', 'error')
+          } finally {
+            setActionLoading(false)
+          }
+        },
+      },
+    ])
+  }
+
+  const handleSendTestCampaign = async (campaignId: string) => {
+    if (!campaignTestUserId.trim()) {
+      flash('Test user ID is required', 'error')
+      return
+    }
+    setActionLoading(true)
+    try {
+      await api.sendTestCampaign(campaignId, campaignTestUserId.trim())
+      flash('Test campaign sent', 'success')
+      setCampaignTestUserId('')
+    } catch (err) {
+      flash(err instanceof Error ? err.message : 'Failed to send test campaign', 'error')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleDeleteCampaign = (campaign: any) => {
+    Alert.alert('Delete Campaign', `Delete ${campaign.name}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          setActionLoading(true)
+          try {
+            await api.deleteCampaign(campaign.id)
+            flash('Campaign deleted', 'success')
+            loadTabData('engagement')
+          } catch (err) {
+            flash(err instanceof Error ? err.message : 'Failed to delete campaign', 'error')
+          } finally {
+            setActionLoading(false)
+          }
+        },
+      },
+    ])
+  }
+
+  const handleResolveAbuseSignal = async (signal: any) => {
+    setActionLoading(true)
+    try {
+      await api.resolveAbuseSignal(signal.id, 'Resolved via mobile admin panel')
+      flash('Abuse signal resolved', 'success')
+      loadTabData('engagement')
+    } catch (err) {
+      flash(err instanceof Error ? err.message : 'Failed to resolve signal', 'error')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   const formatDate = (dateStr: string) => {
     try {
       return new Date(dateStr).toLocaleDateString('en-MY', {
@@ -353,7 +761,16 @@ export function AdminScreen() {
                 <Text style={styles.userName}>{item.name}</Text>
                 <Text style={styles.userEmail}>{item.email}</Text>
               </View>
-              <View style={[styles.roleBadge, styles[`role${item.role}` as keyof typeof styles]]}>
+              <View
+                style={[
+                  styles.roleBadge,
+                  item.role === 'admin'
+                    ? styles.roleadmin
+                    : item.role === 'researcher'
+                      ? styles.roleresearcher
+                      : styles.roleuser,
+                ]}
+              >
                 <Text style={styles.roleText}>{item.role}</Text>
               </View>
             </View>
@@ -548,33 +965,521 @@ export function AdminScreen() {
   )
 
   const renderSpecies = () => (
-    <FlatList
-      data={species}
-      keyExtractor={(item) => item.id}
-      renderItem={({ item }) => (
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View>
-              <Text style={styles.speciesName}>{item.commonName}</Text>
-              <Text style={styles.speciesScientific}>{item.scientificName}</Text>
+    <View style={{ flex: 1 }}>
+      <View style={styles.formCard}>
+        <Text style={styles.formTitle}>{editingSpeciesId ? 'Edit Species' : 'Add Species'}</Text>
+        <RNTextInput
+          style={styles.input}
+          placeholder="Common name"
+          value={speciesDraft.commonName}
+          onChangeText={(v) => setSpeciesDraft((prev) => ({ ...prev, commonName: v }))}
+          placeholderTextColor={COLORS.textLight}
+        />
+        <RNTextInput
+          style={styles.input}
+          placeholder="Scientific name"
+          value={speciesDraft.scientificName}
+          onChangeText={(v) => setSpeciesDraft((prev) => ({ ...prev, scientificName: v }))}
+          placeholderTextColor={COLORS.textLight}
+        />
+        <RNTextInput
+          style={styles.input}
+          placeholder="Description (optional)"
+          value={speciesDraft.description}
+          onChangeText={(v) => setSpeciesDraft((prev) => ({ ...prev, description: v }))}
+          placeholderTextColor={COLORS.textLight}
+        />
+        <View style={styles.inlineActions}>
+          <Button
+            title={editingSpeciesId ? 'Save Species' : 'Add Species'}
+            onPress={handleSaveSpecies}
+            loading={actionLoading}
+          />
+          {editingSpeciesId ? (
+            <Button title="Cancel" onPress={resetSpeciesDraft} variant="secondary" />
+          ) : null}
+        </View>
+      </View>
+
+      <FlatList
+        data={species}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View>
+                <Text style={styles.speciesName}>{item.commonName}</Text>
+                <Text style={styles.speciesScientific}>{item.scientificName}</Text>
+              </View>
+              <View style={styles.inlineActions}>
+                <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => handleEditSpecies(item)}>
+                  <Text style={styles.actionBtnText}>Edit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionBtn, styles.deleteBtn]}
+                  onPress={() => handleDeleteSpecies(item)}
+                >
+                  <Text style={styles.actionBtnText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            <TouchableOpacity
-              style={[styles.actionBtn, styles.deleteBtn]}
-              onPress={() => handleDeleteSpecies(item)}
-            >
+            {item.description && (
+              <Text style={styles.description} numberOfLines={2}>
+                {item.description}
+              </Text>
+            )}
+          </View>
+        )}
+        contentContainerStyle={styles.listContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      />
+    </View>
+  )
+
+  const renderRules = () => (
+    <ScrollView contentContainerStyle={styles.listContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <View style={styles.formCardInScroll}>
+        <Text style={styles.formTitle}>{editingRuleId ? 'Edit XP Rule' : 'Add XP Rule'}</Text>
+        <RNTextInput
+          style={styles.input}
+          placeholder="Action type"
+          value={ruleDraft.actionType}
+          onChangeText={(v) => setRuleDraft((prev) => ({ ...prev, actionType: v }))}
+          placeholderTextColor={COLORS.textLight}
+        />
+        <RNTextInput
+          style={styles.input}
+          placeholder="Name"
+          value={ruleDraft.name}
+          onChangeText={(v) => setRuleDraft((prev) => ({ ...prev, name: v }))}
+          placeholderTextColor={COLORS.textLight}
+        />
+        <RNTextInput
+          style={styles.input}
+          placeholder="Description (optional)"
+          value={ruleDraft.description}
+          onChangeText={(v) => setRuleDraft((prev) => ({ ...prev, description: v }))}
+          placeholderTextColor={COLORS.textLight}
+        />
+        <RNTextInput
+          style={styles.input}
+          placeholder="XP reward"
+          keyboardType="numeric"
+          value={String(ruleDraft.xpReward)}
+          onChangeText={(v) => setRuleDraft((prev) => ({ ...prev, xpReward: parseInt(v, 10) || 0 }))}
+          placeholderTextColor={COLORS.textLight}
+        />
+        <View style={styles.inlineActions}>
+          <Button title={editingRuleId ? 'Save Rule' : 'Add Rule'} onPress={handleSaveRule} loading={actionLoading} />
+          {editingRuleId ? (
+            <Button title="Cancel" onPress={resetRuleDraft} variant="secondary" />
+          ) : null}
+        </View>
+      </View>
+
+      {rules.map((item) => (
+        <View key={item.id} style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={{ flex: 1, paddingRight: 8 }}>
+              <Text style={styles.userName}>{item.name}</Text>
+              <Text style={styles.userEmail}>{item.actionType} • {item.xpReward} XP</Text>
+            </View>
+            <View style={[styles.statusBadge, item.active ? styles.activeBadge : styles.inactiveBadge]}>
+              <Text style={styles.statusText}>{item.active ? 'ACTIVE' : 'INACTIVE'}</Text>
+            </View>
+          </View>
+          {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
+          <View style={styles.cardActions}>
+            <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => handleEditRule(item)}>
+              <Text style={styles.actionBtnText}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionBtn, styles.roleChangeBtn]} onPress={() => handleToggleRule(item)}>
+              <Text style={styles.actionBtnText}>{item.active ? 'Disable' : 'Enable'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => handleDeleteRule(item)}>
               <Text style={styles.actionBtnText}>Delete</Text>
             </TouchableOpacity>
           </View>
-          {item.description && (
-            <Text style={styles.description} numberOfLines={2}>
-              {item.description}
-            </Text>
-          )}
+        </View>
+      ))}
+    </ScrollView>
+  )
+
+  const renderLevels = () => (
+    <ScrollView contentContainerStyle={styles.listContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <View style={styles.formCardInScroll}>
+        <Text style={styles.formTitle}>{editingLevelId ? 'Edit Level' : 'Add Level'}</Text>
+        <RNTextInput
+          style={styles.input}
+          placeholder="Level"
+          keyboardType="numeric"
+          value={String(levelDraft.level)}
+          onChangeText={(v) => setLevelDraft((prev) => ({ ...prev, level: parseInt(v, 10) || 1 }))}
+          placeholderTextColor={COLORS.textLight}
+        />
+        <RNTextInput
+          style={styles.input}
+          placeholder="XP threshold"
+          keyboardType="numeric"
+          value={String(levelDraft.xpThreshold)}
+          onChangeText={(v) => setLevelDraft((prev) => ({ ...prev, xpThreshold: parseInt(v, 10) || 0 }))}
+          placeholderTextColor={COLORS.textLight}
+        />
+        <RNTextInput
+          style={styles.input}
+          placeholder="Title"
+          value={levelDraft.title}
+          onChangeText={(v) => setLevelDraft((prev) => ({ ...prev, title: v }))}
+          placeholderTextColor={COLORS.textLight}
+        />
+        <RNTextInput
+          style={styles.input}
+          placeholder="Description (optional)"
+          value={levelDraft.description}
+          onChangeText={(v) => setLevelDraft((prev) => ({ ...prev, description: v }))}
+          placeholderTextColor={COLORS.textLight}
+        />
+        <View style={styles.inlineActions}>
+          <Button title={editingLevelId ? 'Save Level' : 'Add Level'} onPress={handleSaveLevel} loading={actionLoading} />
+          {editingLevelId ? (
+            <Button title="Cancel" onPress={resetLevelDraft} variant="secondary" />
+          ) : null}
+        </View>
+      </View>
+
+      {levels.map((item) => (
+        <View key={item.id} style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View>
+              <Text style={styles.userName}>Level {item.level} - {item.title}</Text>
+              <Text style={styles.userEmail}>{item.xpThreshold} XP threshold</Text>
+            </View>
+            <View style={[styles.statusBadge, item.active ? styles.activeBadge : styles.inactiveBadge]}>
+              <Text style={styles.statusText}>{item.active ? 'ACTIVE' : 'INACTIVE'}</Text>
+            </View>
+          </View>
+          {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
+          <View style={styles.cardActions}>
+            <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => handleEditLevel(item)}>
+              <Text style={styles.actionBtnText}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => handleDeleteLevel(item)}>
+              <Text style={styles.actionBtnText}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ))}
+    </ScrollView>
+  )
+
+  const renderMetrics = () => (
+    <ScrollView contentContainerStyle={styles.listContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      {!metrics ? (
+        <Text style={styles.userEmail}>Metrics unavailable</Text>
+      ) : (
+        <View style={styles.card}>
+          <Text style={styles.formTitle}>Engagement Metrics</Text>
+          <Text style={styles.description}>Daily active users: {metrics.dailyActiveUsers ?? 'N/A'}</Text>
+          <Text style={styles.description}>Weekly active users: {metrics.weeklyActiveUsers ?? 'N/A'}</Text>
+          <Text style={styles.description}>Monthly active users: {metrics.monthlyActiveUsers ?? 'N/A'}</Text>
+          <Text style={styles.description}>Avg XP per user: {metrics.avgXPPerUser ?? 'N/A'}</Text>
+          <Text style={styles.description}>Active streak users: {metrics.activeStreakUsers ?? 'N/A'}</Text>
         </View>
       )}
-      contentContainerStyle={styles.listContent}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    />
+    </ScrollView>
+  )
+
+  const renderXPAdjust = () => (
+    <ScrollView contentContainerStyle={styles.listContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <View style={styles.formCardInScroll}>
+        <Text style={styles.formTitle}>Manual XP Adjustment</Text>
+        <RNTextInput
+          style={styles.input}
+          placeholder="User ID"
+          value={adjUserId}
+          onChangeText={setAdjUserId}
+          placeholderTextColor={COLORS.textLight}
+        />
+        <RNTextInput
+          style={styles.input}
+          placeholder="Delta XP (+/-)"
+          keyboardType="numeric"
+          value={String(adjDeltaXP)}
+          onChangeText={(v) => setAdjDeltaXP(parseInt(v, 10) || 0)}
+          placeholderTextColor={COLORS.textLight}
+        />
+        <RNTextInput
+          style={styles.input}
+          placeholder="Reason"
+          value={adjReason}
+          onChangeText={setAdjReason}
+          placeholderTextColor={COLORS.textLight}
+        />
+        <Button title="Adjust XP" onPress={handleAdjustXP} loading={actionLoading} />
+      </View>
+
+      <View style={styles.formCardInScroll}>
+        <Text style={styles.formTitle}>XP Recalculation</Text>
+        <View style={styles.roleSelector}>
+          <TouchableOpacity
+            style={[styles.roleOption, recalcMode === 'dry-run' && styles.roleOptionActive]}
+            onPress={() => setRecalcMode('dry-run')}
+          >
+            <Text style={[styles.roleOptionText, recalcMode === 'dry-run' && styles.roleOptionTextActive]}>Dry Run</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.roleOption, recalcMode === 'execute' && styles.roleOptionActive]}
+            onPress={() => setRecalcMode('execute')}
+          >
+            <Text style={[styles.roleOptionText, recalcMode === 'execute' && styles.roleOptionTextActive]}>Execute</Text>
+          </TouchableOpacity>
+        </View>
+        <RNTextInput
+          style={styles.input}
+          placeholder="User ID (optional)"
+          value={recalcUserId}
+          onChangeText={setRecalcUserId}
+          placeholderTextColor={COLORS.textLight}
+        />
+        <RNTextInput
+          style={styles.input}
+          placeholder="Reason"
+          value={recalcReason}
+          onChangeText={setRecalcReason}
+          placeholderTextColor={COLORS.textLight}
+        />
+        <Button title="Run Recalculation" onPress={handleRecalculate} loading={actionLoading} />
+
+        {recalcResults ? (
+          <View style={styles.mutedBox}>
+            <Text style={styles.userEmail}>Mode: {String(recalcResults.mode ?? 'N/A')}</Text>
+            <Text style={styles.userEmail}>Users: {String(recalcResults.totalUsers ?? 'N/A')}</Text>
+          </View>
+        ) : null}
+
+        <RNTextInput
+          style={styles.input}
+          placeholder="Job ID"
+          value={recalcJobIdInput}
+          onChangeText={setRecalcJobIdInput}
+          placeholderTextColor={COLORS.textLight}
+        />
+        <Button title="Check Job Status" onPress={handleCheckRecalcJob} loading={actionLoading} variant="secondary" />
+
+        {recalcJobStatus ? (
+          <View style={styles.mutedBox}>
+            <Text style={styles.userEmail}>Status: {String(recalcJobStatus.status ?? 'unknown')}</Text>
+            <Text style={styles.userEmail}>Processed: {String(recalcJobStatus.processed ?? 0)}</Text>
+            <Text style={styles.userEmail}>Updated: {recalcJobStatus.updatedAt ? formatDate(recalcJobStatus.updatedAt) : 'N/A'}</Text>
+          </View>
+        ) : null}
+      </View>
+    </ScrollView>
+  )
+
+  const renderCampaigns = () => (
+    <ScrollView contentContainerStyle={styles.listContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <View style={styles.formCardInScroll}>
+        <Text style={styles.formTitle}>Create Campaign</Text>
+        <RNTextInput
+          style={styles.input}
+          placeholder="Code"
+          value={campaignDraft.code}
+          onChangeText={(v) => setCampaignDraft((prev) => ({ ...prev, code: v }))}
+          placeholderTextColor={COLORS.textLight}
+        />
+        <RNTextInput
+          style={styles.input}
+          placeholder="Name"
+          value={campaignDraft.name}
+          onChangeText={(v) => setCampaignDraft((prev) => ({ ...prev, name: v }))}
+          placeholderTextColor={COLORS.textLight}
+        />
+        <View style={styles.roleSelector}>
+          {['PUSH', 'EMAIL', 'IN_APP'].map((channel) => (
+            <TouchableOpacity
+              key={channel}
+              style={[styles.roleOption, campaignDraft.channel === channel && styles.roleOptionActive]}
+              onPress={() => setCampaignDraft((prev) => ({ ...prev, channel }))}
+            >
+              <Text style={[styles.roleOptionText, campaignDraft.channel === channel && styles.roleOptionTextActive]}>{channel}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <RNTextInput
+          style={styles.input}
+          placeholder="Title"
+          value={campaignDraft.title}
+          onChangeText={(v) => setCampaignDraft((prev) => ({ ...prev, title: v }))}
+          placeholderTextColor={COLORS.textLight}
+        />
+        <RNTextInput
+          style={styles.input}
+          placeholder="Body"
+          value={campaignDraft.body}
+          onChangeText={(v) => setCampaignDraft((prev) => ({ ...prev, body: v }))}
+          placeholderTextColor={COLORS.textLight}
+        />
+        <RNTextInput
+          style={styles.input}
+          placeholder="Minimum level"
+          keyboardType="numeric"
+          value={String(campaignDraft.minLevel)}
+          onChangeText={(v) => setCampaignDraft((prev) => ({ ...prev, minLevel: parseInt(v, 10) || 1 }))}
+          placeholderTextColor={COLORS.textLight}
+        />
+        <Button title="Create Campaign" onPress={handleCreateCampaign} loading={actionLoading} />
+      </View>
+
+      {campaigns.map((campaign) => (
+        <View key={campaign.id} style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={{ flex: 1, paddingRight: 8 }}>
+              <Text style={styles.userName}>{campaign.name}</Text>
+              <Text style={styles.userEmail}>{campaign.code} • {campaign.channel}</Text>
+            </View>
+            <View style={styles.statusBadge}>
+              <Text style={styles.statusText}>{campaign.status}</Text>
+            </View>
+          </View>
+          <View style={styles.cardActions}>
+            {campaign.status === 'DRAFT' ? (
+              <TouchableOpacity style={[styles.actionBtn, styles.roleChangeBtn]} onPress={() => handleLaunchCampaign(campaign)}>
+                <Text style={styles.actionBtnText}>Launch</Text>
+              </TouchableOpacity>
+            ) : null}
+            <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => handleSendTestCampaign(campaign.id)}>
+              <Text style={styles.actionBtnText}>Send Test</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => handleDeleteCampaign(campaign)}>
+              <Text style={styles.actionBtnText}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+          <RNTextInput
+            style={[styles.input, { marginTop: 8 }]}
+            placeholder="Test User ID"
+            value={campaignTestUserId}
+            onChangeText={setCampaignTestUserId}
+            placeholderTextColor={COLORS.textLight}
+          />
+        </View>
+      ))}
+    </ScrollView>
+  )
+
+  const renderAuditLogs = () => (
+    <ScrollView contentContainerStyle={styles.listContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      {auditStats ? (
+        <View style={styles.card}>
+          <Text style={styles.formTitle}>Audit Stats</Text>
+          <Text style={styles.description}>Total: {auditStats.totalEntries ?? 0}</Text>
+          <Text style={styles.description}>XP adjustments: {auditStats.xpAdjustments ?? 0}</Text>
+          <Text style={styles.description}>Campaign launches: {auditStats.campaignLaunches ?? 0}</Text>
+          <Text style={styles.description}>Abuse resolutions: {auditStats.abuseResolutions ?? 0}</Text>
+        </View>
+      ) : null}
+
+      {auditLogs.map((log, idx) => (
+        <View key={log.id || idx} style={styles.card}>
+          <Text style={styles.userName}>{log.action || 'Unknown Action'}</Text>
+          <Text style={styles.userEmail}>{log.actorType || 'SYSTEM'} • {log.actorId || 'N/A'}</Text>
+          <Text style={styles.description}>{log.resourceType || '-'} {log.resourceId ? `(${log.resourceId})` : ''}</Text>
+          <Text style={styles.description}>{log.reason || log.details || 'No details'}</Text>
+          <Text style={styles.userEmail}>{log.createdAt ? new Date(log.createdAt).toLocaleString('en-MY') : 'N/A'}</Text>
+        </View>
+      ))}
+    </ScrollView>
+  )
+
+  const renderAbuseSignals = () => (
+    <ScrollView contentContainerStyle={styles.listContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      {abuseSignals.length === 0 ? (
+        <Text style={styles.userEmail}>No open abuse signals</Text>
+      ) : (
+        abuseSignals.map((signal) => (
+          <View key={signal.id} style={styles.card}>
+            <Text style={styles.userName}>{signal.signalType || 'Signal'}</Text>
+            <Text style={styles.userEmail}>User: {signal.userId || signal.user?.id || 'N/A'}</Text>
+            <Text style={styles.description}>Risk: {signal.riskScore ?? signal.compositeScore ?? 0}</Text>
+            <Text style={styles.description}>{signal.details || 'No details'}</Text>
+            {!signal.resolved ? (
+              <View style={styles.cardActions}>
+                <TouchableOpacity style={[styles.actionBtn, styles.restoreBtn]} onPress={() => handleResolveAbuseSignal(signal)}>
+                  <Text style={styles.actionBtnText}>Resolve</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={[styles.statusBadge, styles.activeBadge]}>
+                <Text style={styles.statusText}>RESOLVED</Text>
+              </View>
+            )}
+          </View>
+        ))
+      )}
+    </ScrollView>
+  )
+
+  const renderEngagement = () => (
+    <View style={{ flex: 1, width: '100%' }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.subTabBar, { width: '100%' }]}>
+        <TouchableOpacity
+          style={[styles.subTab, { flex: 0, paddingHorizontal: 12 }, engagementSubTab === 'xp-rules' && styles.subTabActive]}
+          onPress={() => setEngagementSubTab('xp-rules')}
+        >
+          <Text style={[styles.subTabText, engagementSubTab === 'xp-rules' && styles.subTabTextActive]}>XP Rules</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.subTab, { flex: 0, paddingHorizontal: 12 }, engagementSubTab === 'levels' && styles.subTabActive]}
+          onPress={() => setEngagementSubTab('levels')}
+        >
+          <Text style={[styles.subTabText, engagementSubTab === 'levels' && styles.subTabTextActive]}>Levels</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.subTab, { flex: 0, paddingHorizontal: 12 }, engagementSubTab === 'xp-adjust' && styles.subTabActive]}
+          onPress={() => setEngagementSubTab('xp-adjust')}
+        >
+          <Text style={[styles.subTabText, engagementSubTab === 'xp-adjust' && styles.subTabTextActive]}>XP Ops</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.subTab, { flex: 0, paddingHorizontal: 12 }, engagementSubTab === 'campaigns' && styles.subTabActive]}
+          onPress={() => setEngagementSubTab('campaigns')}
+        >
+          <Text style={[styles.subTabText, engagementSubTab === 'campaigns' && styles.subTabTextActive]}>Campaigns</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.subTab, { flex: 0, paddingHorizontal: 12 }, engagementSubTab === 'audit' && styles.subTabActive]}
+          onPress={() => setEngagementSubTab('audit')}
+        >
+          <Text style={[styles.subTabText, engagementSubTab === 'audit' && styles.subTabTextActive]}>Audit</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.subTab, { flex: 0, paddingHorizontal: 12 }, engagementSubTab === 'abuse' && styles.subTabActive]}
+          onPress={() => setEngagementSubTab('abuse')}
+        >
+          <Text style={[styles.subTabText, engagementSubTab === 'abuse' && styles.subTabTextActive]}>Abuse</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.subTab, { flex: 0, paddingHorizontal: 12 }, engagementSubTab === 'metrics' && styles.subTabActive]}
+          onPress={() => setEngagementSubTab('metrics')}
+        >
+          <Text style={[styles.subTabText, engagementSubTab === 'metrics' && styles.subTabTextActive]}>Metrics</Text>
+        </TouchableOpacity>
+      </ScrollView>
+
+      {engagementSubTab === 'xp-rules'
+        ? renderRules()
+        : engagementSubTab === 'levels'
+          ? renderLevels()
+          : engagementSubTab === 'xp-adjust'
+            ? renderXPAdjust()
+            : engagementSubTab === 'campaigns'
+              ? renderCampaigns()
+              : engagementSubTab === 'audit'
+                ? renderAuditLogs()
+                : engagementSubTab === 'abuse'
+                  ? renderAbuseSignals()
+                  : renderMetrics()}
+    </View>
   )
 
   const renderBackup = () => (
@@ -611,6 +1516,7 @@ export function AdminScreen() {
     { key: 'users', label: 'Users' },
     { key: 'species', label: 'Species' },
     { key: 'backup', label: 'Backup' },
+    { key: 'engagement', label: 'Engagement' },
   ]
 
   if (loading) {
@@ -650,6 +1556,7 @@ export function AdminScreen() {
         {activeTab === 'users' && renderUsers()}
         {activeTab === 'species' && renderSpecies()}
         {activeTab === 'backup' && renderBackup()}
+        {activeTab === 'engagement' && renderEngagement()}
       </View>
     </View>
   )
@@ -665,7 +1572,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   card: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
@@ -680,7 +1587,7 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: COLORS.text,
   },
   userEmail: {
     fontSize: 12,
@@ -704,7 +1611,7 @@ const styles = StyleSheet.create({
   roleText: {
     fontSize: 10,
     fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: COLORS.text,
     textTransform: 'uppercase',
   },
   cardActions: {
@@ -743,6 +1650,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#dcfce7',
     borderColor: '#bbf7d0',
   },
+  editBtn: {
+    backgroundColor: '#e0f2fe',
+    borderColor: '#bae6fd',
+  },
   deletedBadge: {
     backgroundColor: '#fef2f2',
     paddingHorizontal: 8,
@@ -769,10 +1680,47 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 4,
   },
+  formCard: {
+    margin: 16,
+    marginBottom: 0,
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 16,
+    gap: 10,
+  },
+  formCardInScroll: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 16,
+    gap: 10,
+  },
+  formTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  inlineActions: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  mutedBox: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    backgroundColor: '#f8fafc',
+    padding: 10,
+    gap: 4,
+  },
   fileName: {
     fontSize: 14,
     fontWeight: '600',
-    color: COLORS.textPrimary,
+    color: COLORS.text,
   },
   fileMeta: {
     fontSize: 12,
@@ -789,8 +1737,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 14,
-    color: COLORS.textPrimary,
-    backgroundColor: COLORS.white,
+    color: COLORS.text,
+    backgroundColor: COLORS.surface,
   },
   roleSelector: {
     flexDirection: 'row',
@@ -803,7 +1751,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
   },
   roleOptionActive: {
     borderColor: COLORS.primary,
@@ -820,7 +1768,7 @@ const styles = StyleSheet.create({
   inviteEmail: {
     fontSize: 14,
     fontWeight: '600',
-    color: COLORS.textPrimary,
+    color: COLORS.text,
   },
   inviteMeta: {
     fontSize: 12,
@@ -838,13 +1786,19 @@ const styles = StyleSheet.create({
   pendingBadge: {
     backgroundColor: '#fef3c7',
   },
+  activeBadge: {
+    backgroundColor: '#dcfce7',
+  },
+  inactiveBadge: {
+    backgroundColor: '#f1f5f9',
+  },
   statusText: {
     fontSize: 10,
     fontWeight: '700',
     color: COLORS.textSecondary,
   },
   tabBar: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
@@ -872,7 +1826,7 @@ const styles = StyleSheet.create({
   },
   subTabBar: {
     flexDirection: 'row',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
     paddingHorizontal: 16,

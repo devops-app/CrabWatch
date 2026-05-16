@@ -17,6 +17,57 @@ export interface AuthRequest extends Request {
   }
 }
 
+// Granular admin permissions
+export const AdminPermission = {
+  // Engagement read/write
+  ENGAGEMENT_READ: 'engagement.read',
+  ENGAGEMENT_WRITE: 'engagement.write',
+  ENGAGEMENT_RECALCULATE: 'engagement.recalculate',
+  // Campaigns
+  CAMPAIGNS_WRITE: 'campaigns.write',
+  // Security & moderation
+  SECURITY_MODERATE: 'security.moderate',
+  // Audit
+  AUDIT_READ: 'audit.read',
+} as const
+
+export type AdminPermissionKey = (typeof AdminPermission)[keyof typeof AdminPermission]
+
+// Permission matrix: role -> set of permissions
+const RolePermissions: Record<UserRole, Set<AdminPermissionKey>> = {
+  [UserRole.ADMIN]: new Set<AdminPermissionKey>(Object.values(AdminPermission)),
+  [UserRole.RESEARCHER]: new Set<AdminPermissionKey>([]),
+  [UserRole.USER]: new Set<AdminPermissionKey>([]),
+}
+
+// Check if a role has the required permission
+export function hasPermission(role: UserRole, permission: AdminPermissionKey): boolean {
+  return RolePermissions[role]?.has(permission) ?? false
+}
+
+// Middleware factory: require specific permission(s)
+export function requirePermission(...permissions: AdminPermissionKey[]) {
+  return (req: AuthRequest, res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      res.status(401).json({ success: false, error: 'Authentication required' })
+      return
+    }
+
+    const dbRole = req.dbUser?.role as UserRole | undefined
+    if (!dbRole) {
+      res.status(403).json({ success: false, error: 'Insufficient permissions' })
+      return
+    }
+
+    const hasAny = permissions.some(p => hasPermission(dbRole, p))
+    if (!hasAny) {
+      res.status(403).json({ success: false, error: 'Insufficient permissions' })
+      return
+    }
+    next()
+  }
+}
+
 export async function authMiddleware(
   req: AuthRequest,
   _res: Response,

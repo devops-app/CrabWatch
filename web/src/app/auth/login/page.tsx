@@ -36,7 +36,7 @@ export default function LoginPage(): React.JSX.Element {
       setError('')
       const result = await api.login(data)
 
-      login({ ...result.user, role: result.user.role as UserRole })
+      login({ ...result.user, role: result.user.role as UserRole }, result.token)
       router.push('/dashboard')
     } catch {
       setError('Invalid email or password')
