@@ -1,21 +1,42 @@
 {
   "cli": {
-    "version": ">= 18.13.0",
+    "version": ">= 14.0.0",
     "appVersionSource": "remote"
   },
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "android": {
+        "image": "ubuntu-24.04-jdk-17-ndk-r27b"
+      },
+      "env": {}
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk",
+        "image": "ubuntu-24.04-jdk-17-ndk-r27b"
+      },
+      "env": {}
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {},
+      "android": {
+        "image": "ubuntu-24.04-jdk-17-ndk-r27b"
+      }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./play-store-key.json",
+        "track": "internal"
+      },
+      "ios": {
+        "ascAppId": "your-app-store-id"
+      }
+    }
   }
 }

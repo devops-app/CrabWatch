@@ -38,10 +38,10 @@ winget install Microsoft.AzureCLI
 
 ```powershell
 # JWT Secret (copy the output)
--pnp "system"; [guid]::NewGuid().ToString() + "-" + [guid]::NewGuid().ToString()
+[guid]::NewGuid().ToString() + "-" + [guid]::NewGuid().ToString()
 
 # Database password (copy the output)
--pnp "system"; [guid]::NewGuid().ToString()
+[guid]::NewGuid().ToString()
 
 # FCM VAPID Keys (for push notifications)
 cd D:\demo\CrabWatch
@@ -204,7 +204,8 @@ The server `tsconfig.json` compiles `src/` + `../shared/src` into `dist/`. Packa
 - `dist/` — compiled JavaScript
 - `package.json` — dependencies + start command
 - `prisma/` — schema + migrations
-- `.env` — local env fallback (Azure app settings take precedence)
+
+> Do **not** include `.env` in `server-deploy.zip`. Keep all secrets in App Service settings.
 
 **⚠️ CRITICAL: Ensure UTF-8 encoding for migration files!**
 
@@ -229,7 +230,7 @@ Remove-Item -ErrorAction SilentlyContinue server-deploy.zip
 
 # Create zip using tar (POSIX paths, avoids Kudu rsync backslash errors)
 Push-Location server
-tar -a -cf ..\server-deploy.zip dist package.json prisma .env
+tar -a -cf ..\server-deploy.zip dist package.json prisma
 Pop-Location
 
 # Verify zip contents before deploying
@@ -317,8 +318,15 @@ az webapp config appsettings set --name crabwatch-web --resource-group VSES-Crab
   NEXT_PUBLIC_FIREBASE_APP_ID="1:591932463898:web:f1e1959828958d849daaa3" `
   NEXT_PUBLIC_FCM_VAPID_KEY="YOUR-VAPID-PUBLIC-KEY" `
   NODE_ENV="production" `
-  SCM_DO_BUILD_DURING_DEPLOYMENT="1" `
+  SCM_DO_BUILD_DURING_DEPLOYMENT="false" `
+  ENABLE_ORYX_BUILD="false" `
   WEBSITE_NODE_DEFAULT_VERSION="22"
+```
+
+Set startup command once:
+
+```powershell
+az webapp config set --name crabwatch-web --resource-group VSES-CrabWatch-MY-RG --startup-file "npm start"
 ```
 
 ### 5.3 Build locally
@@ -329,32 +337,54 @@ cd D:\demo\CrabWatch
 # Build shared first (web depends on it)
 pnpm --filter=shared build
 
-# Build web (produces .next/ output)
+# Force clean Next.js build output
+Remove-Item -Recurse -Force -ErrorAction SilentlyContinue web\.next
+
+# IMPORTANT: Set production backend URL before build (rewrites are baked into .next)
+$env:BACKEND_URL="https://crabwatch-api.azurewebsites.net"
+
+# Build web
 pnpm --filter=web build
 ```
 
-### 5.4 Create deployment package
+### 5.4 Create deployment package (runtime + real npm node_modules)
 
-Package the built output and config. Azure will run `npm install --production` automatically.
+Build the runtime folder in a temp directory and install production dependencies with `npm`.
+This avoids PNPM symlink issues (`styled-jsx` not found) on Linux App Service.
 
 ```powershell
-Remove-Item -ErrorAction SilentlyContinue web-deploy.zip
+$runtime = "C:\Users\Wilson\AppData\Local\Temp\opencode\web-runtime"
+Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $runtime
+New-Item -ItemType Directory -Path $runtime | Out-Null
 
-Push-Location web
-tar -a -cf ..\web-deploy.zip .next package.json public next.config.mjs
+Copy-Item -Recurse -Force web\.next "$runtime\.next"
+Copy-Item -Recurse -Force web\public "$runtime\public"
+Copy-Item -Force web\package.json "$runtime\package.json"
+Copy-Item -Force web\next.config.mjs "$runtime\next.config.mjs"
+
+Push-Location $runtime
+npm install --omit=dev
+Pop-Location
+
+Remove-Item -ErrorAction SilentlyContinue web-deploy.zip
+Push-Location $runtime
+tar -a -cf D:\demo\CrabWatch\web-deploy.zip *
 Pop-Location
 
 # Verify zip contents
 tar -tf web-deploy.zip | Select-Object -First 10
 ```
 
-### 5.5 Deploy to Azure (Perform at Azure Portal as size is over 100MB limit for CloudShell)
+### 5.5 Deploy to Azure
 
 ```powershell
+# Azure CLI compatibility: use config-zip
 az webapp deployment source config-zip `
   --resource-group VSES-CrabWatch-MY-RG `
   --name crabwatch-web `
-  --src web-deploy.zip
+  --src "D:\demo\CrabWatch\web-deploy.zip"
+
+az webapp restart --resource-group VSES-CrabWatch-MY-RG --name crabwatch-web
 ```
 
 ### 5.6 Verify Web
@@ -364,6 +394,16 @@ curl https://crabwatch-web.azurewebsites.net/auth/login
 ```
 
 Expected: HTML response with login page content.
+
+Also verify web runtime files exist in App Service `wwwroot` (Kudu SSH):
+
+```bash
+cd /home/site/wwwroot
+ls -la
+[ -f package.json ] && echo "package.json exists" || echo "package.json missing"
+[ -d .next ] && echo ".next exists" || echo ".next missing"
+[ -d node_modules ] && echo "node_modules exists" || echo "node_modules missing"
+```
 
 Open in browser: **https://crabwatch-web.azurewebsites.net**
 
@@ -501,10 +541,10 @@ az monitor app-insights component create `
   --resource-group VSES-CrabWatch-MY-RG
 
 # Get the connection string
-$INSIGHTS_CS=$(az monitor app-insights component show `
+$INSIGHTS_CS = az monitor app-insights component show `
   --app crabwatch-insights `
   --resource-group VSES-CrabWatch-MY-RG `
-  --query connectionString --output tsv)
+  --query connectionString --output tsv
 
 # Enable on API app
 az webapp application-insights set `
@@ -564,7 +604,7 @@ if ($bytes[0] -eq 0xFF -and $bytes[1] -eq 0xFE) {
 }
 
 Push-Location server
-tar -a -cf ..\server-deploy.zip dist package.json prisma .env
+tar -a -cf ..\server-deploy.zip dist package.json prisma
 Pop-Location
 
 # Verify migration files are included
@@ -589,13 +629,26 @@ node /home/site/wwwroot/node_modules/prisma/build/index.js migrate deploy
 ```powershell
 cd D:\demo\CrabWatch
 pnpm --filter=shared build
+Remove-Item -Recurse -Force -ErrorAction SilentlyContinue web\.next
+$env:BACKEND_URL="https://crabwatch-api.azurewebsites.net"
 pnpm --filter=web build
 
-Push-Location web
-tar -a -cf ..\web-deploy.zip .next package.json public next.config.mjs
+$runtime = "C:\Users\Wilson\AppData\Local\Temp\opencode\web-runtime"
+Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $runtime
+New-Item -ItemType Directory -Path $runtime | Out-Null
+
+Copy-Item -Recurse -Force web\.next "$runtime\.next"
+Copy-Item -Recurse -Force web\public "$runtime\public"
+Copy-Item -Force web\package.json "$runtime\package.json"
+Copy-Item -Force web\next.config.mjs "$runtime\next.config.mjs"
+
+Push-Location $runtime
+npm install --omit=dev
+tar -a -cf D:\demo\CrabWatch\web-deploy.zip *
 Pop-Location
 
-az webapp deployment source config-zip --resource-group VSES-CrabWatch-MY-RG --name crabwatch-web --src web-deploy.zip
+az webapp deployment source config-zip --resource-group VSES-CrabWatch-MY-RG --name crabwatch-web --src "D:\demo\CrabWatch\web-deploy.zip"
+az webapp restart --resource-group VSES-CrabWatch-MY-RG --name crabwatch-web
 ```
 
 ### Mobile
@@ -639,7 +692,44 @@ az postgres flexible-server show --name crabwatch-db --resource-group VSES-CrabW
 
 ### Next.js build fails on Azure
 
-The web app is built **locally** before zip deploy. Azure only runs `next start`. If you see "Cannot find module", verify the `.next/` folder is included in the zip.
+For this runtime zip approach, Azure should **not** run Oryx build for web. Verify app settings:
+
+```powershell
+az webapp config appsettings list --name crabwatch-web --resource-group VSES-CrabWatch-MY-RG --query "[?name=='SCM_DO_BUILD_DURING_DEPLOYMENT' || name=='ENABLE_ORYX_BUILD']"
+```
+
+Both should be `false`.
+
+If Oryx still runs and fails with:
+
+`Couldn't find any pages or app directory`
+
+it means Azure is trying to build from a runtime zip. Keep Oryx disabled and redeploy the runtime package from Step 5.4.
+
+### Web loads blank or calls a local/LAN API URL
+
+Most common cause: stale `.next` output built with a local `BACKEND_URL` (for example `http://192.168.x.x:3001`).
+
+Fix before creating `web-deploy.zip`:
+
+```powershell
+cd D:\demo\CrabWatch
+Remove-Item -Recurse -Force -ErrorAction SilentlyContinue web\.next
+$env:BACKEND_URL="https://crabwatch-api.azurewebsites.net"
+pnpm --filter=web build
+```
+
+Verify the built rewrite target (must be Azure API URL):
+
+```powershell
+Select-String -Path web\.next\required-server-files.json -Pattern '"destination"'
+```
+
+### Web startup fails with `Cannot find module 'styled-jsx/package.json'`
+
+This is caused by PNPM/symlinked `node_modules` layout mismatch in App Service Linux.
+
+Use Step 5.4 packaging exactly (`npm install --omit=dev` inside temp runtime folder) so zip contains real npm dependency tree.
 
 ### EAS build fails
 
@@ -720,7 +810,7 @@ prisma/migrations/init/migration_lock.toml
 If missing, rebuild the zip:
 ```powershell
 Push-Location server
-tar -a -cf ..\server-deploy.zip dist package.json prisma .env
+tar -a -cf ..\server-deploy.zip dist package.json prisma
 Pop-Location
 ```
 
@@ -729,7 +819,7 @@ Pop-Location
 When deploying from Windows, PowerShell's `Compress-Archive` creates paths with backslashes that Kudu's rsync cannot parse. Always use `tar` to create the zip:
 
 ```powershell
-tar -a -cf server-deploy.zip dist package.json prisma .env
+tar -a -cf server-deploy.zip dist package.json prisma
 ```
 
 ### EAS build fails — pnpm lockfile version mismatch or engine error

@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "node -e \"require('fs').existsSync('dist') || require('child_process').execSync('npx tsc', {stdio:'inherit'})\"",
-    "start": "node dist/src/index.js",
+    "start": "node dist/server/src/index.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
