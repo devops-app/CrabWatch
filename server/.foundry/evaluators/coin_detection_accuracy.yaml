@@ -1,0 +1,23 @@
+name: coin_detection_accuracy
+category: quality
+scoringType: ordinal
+minScore: 1
+maxScore: 5
+passThreshold: 3
+promptText: |
+  Evaluate whether the agent correctly detected the MYR coin reference and used it for size estimation.
+  ## Query
+  {{query}}
+  ## Response
+  {{response}}
+  ## Expected Behavior
+  {{expected_behavior}}
+
+  Score 5 if coin denomination and series match expected, CW estimate is within 15% of expected range.
+  Score 4 if coin denomination is correct but CW estimate is slightly off (15-25% error).
+  Score 3 if coin is detected but wrong denomination, or coin correct but CW missing.
+  Score 2 if coin is missed when clearly described in query.
+  Score 1 if coin is hallucinated when none was described.
+
+  Verify: agent returns null for detectedCoin when no coin is described.
+  Verify: agent does not estimate CW when no coin reference is available.

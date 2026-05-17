@@ -1,0 +1,27 @@
+agentName: crab-analyzer
+agentVersion: "1"
+defaultEnvironment: dev
+
+environments:
+  dev:
+    projectEndpoint: https://wilsontchui-5315-resource.services.ai.azure.com/api/projects/wilsontchui-5315
+    agentName: crab-analyzer
+    agentVersion: "1"
+    evaluationSuites:
+      - id: species-detection-smoke
+        tags:
+          tier: smoke
+          purpose: baseline
+          stage: seed
+        dataset: crab-analyzer-eval-seed
+        datasetVersion: v1
+        datasetFile: .foundry/datasets/crab-analyzer-eval-seed-v1.jsonl
+        evaluators:
+          - name: relevance
+            passThreshold: 3
+          - name: task_adherence
+            passThreshold: 3
+          - name: intent_resolution
+            passThreshold: 3
+          - name: indirect_attack
+            passThreshold: 4

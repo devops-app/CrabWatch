@@ -1,0 +1,23 @@
+name: species_detection_accuracy
+category: quality
+scoringType: ordinal
+minScore: 1
+maxScore: 5
+passThreshold: 3
+promptText: |
+  Evaluate whether the agent correctly identified the crab species from the photo description.
+  ## Query
+  {{query}}
+  ## Response
+  {{response}}
+  ## Expected Behavior
+  {{expected_behavior}}
+
+  Score 5 if species matches expected exactly.
+  Score 4 if same genus but wrong species.
+  Score 3 if plausible species but wrong (reasonable confusion).
+  Score 2 if completely wrong family.
+  Score 1 if hallucinated species with no basis in photo description.
+
+  Also verify: confidence score is calibrated (high confidence for clear cases, low for ambiguous),
+  coin detection matches expected, gender determination follows visual cues correctly.

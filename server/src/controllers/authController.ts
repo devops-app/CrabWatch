@@ -158,7 +158,7 @@ export async function requestPasswordReset(req: AuthRequest, res: Response): Pro
     if (resend) {
       try {
         await resend.emails.send({
-          from: 'CrabWatch <onboarding@resend.dev>',
+          from: 'CrabWatch <noreply@crabwatch.dsigncodehub.com>',
           to: email,
           subject: 'Reset Your CrabWatch Password',
           html: `

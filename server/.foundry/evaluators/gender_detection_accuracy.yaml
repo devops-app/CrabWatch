@@ -1,0 +1,23 @@
+name: gender_detection_accuracy
+category: quality
+scoringType: ordinal
+minScore: 1
+maxScore: 5
+passThreshold: 3
+promptText: |
+  Evaluate whether the agent correctly determined the crab's gender from the photo description.
+  ## Query
+  {{query}}
+  ## Response
+  {{response}}
+  ## Expected Behavior
+  {{expected_behavior}}
+
+  Score 5 if gender matches expected exactly with correct reasoning.
+  Score 4 if gender is correct but reasoning is weak.
+  Score 3 if gender is unknown when expected was specific (acceptable for dorsal-only views).
+  Score 2 if gender is wrong but photo description was ambiguous.
+  Score 1 if gender is confidently wrong despite clear visual cues in description.
+
+  Verify: agent returns "unknown" when only dorsal view is available.
+  Verify: agent does not guess gender from dorsal view alone.

@@ -27,7 +27,6 @@ const communityHubItems = [
 const secondaryNavItems = [
   { href: '/dashboard/researcher', label: 'Researcher', icon: '🔬', roles: ['researcher', 'admin'] },
   { href: '/dashboard/admin', label: 'Admin', icon: '⚙️', roles: ['admin'] },
-  { href: '/dashboard/settings', label: 'Settings', icon: '🔔' },
   { href: '/dashboard/about', label: 'About', icon: 'ℹ️' },
 ]
 

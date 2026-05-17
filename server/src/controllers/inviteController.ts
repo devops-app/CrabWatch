@@ -46,7 +46,7 @@ export async function createInvite(req: AuthRequest, res: Response): Promise<voi
     if (resend) {
       try {
         await resend.emails.send({
-          from: 'CrabWatch <onboarding@resend.dev>',
+          from: 'CrabWatch <noreply@crabwatch.dsigncodehub.com>',
           to: email,
           subject: 'You have been invited to CrabWatch',
           html: `
