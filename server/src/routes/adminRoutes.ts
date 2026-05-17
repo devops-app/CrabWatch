@@ -9,11 +9,13 @@ import {
 } from '../controllers/adminController'
 import { createInvite, listInvites, validateInvite } from '../controllers/inviteController'
 import { authMiddleware, requireAuth, resolveUser, requireRole } from '../middleware/auth'
+import { createInviteSchema, validateInviteSchema } from '../utils/schemas'
+import { validate } from '../middleware/validation'
 
 const router: Router = Router()
 
 /** Public — validate invite token (no auth required, used by registration page) */
-router.post('/invite/validate', validateInvite)
+router.post('/invite/validate', validate(validateInviteSchema), validateInvite)
 
 router.use(authMiddleware)
 
@@ -165,7 +167,7 @@ router.get('/deleted-users', requireAuth, resolveUser, requireRole('ADMIN'), lis
  *       201:
  *         description: Invite created
  */
-router.post('/invite', requireAuth, resolveUser, requireRole('ADMIN'), createInvite)
+router.post('/invite', requireAuth, resolveUser, requireRole('ADMIN'), validate(createInviteSchema), createInvite)
 
 /**
  * @openapi

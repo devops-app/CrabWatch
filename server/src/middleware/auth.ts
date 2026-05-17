@@ -3,6 +3,9 @@ import { UserRole } from '@prisma/client'
 import jwt from 'jsonwebtoken'
 import admin, { isFirebaseEnabled } from '../config/firebase'
 import { getAuthCookie } from './cookieAuth'
+import { config } from '../config'
+import prisma from '../config/database'
+import logger from '../utils/logger'
 
 export interface AuthRequest extends Request {
   user?: {
@@ -99,7 +102,6 @@ export async function authMiddleware(
     }
 
     if (!verified) {
-      const { config } = await import('../config')
       if (!config.jwtSecret) {
         _res.status(401).json({ success: false, error: 'Server misconfigured: JWT_SECRET not set' })
         return
@@ -153,7 +155,6 @@ export async function resolveUser(
     return
   }
 
-  const prisma = (await import('../config/database')).default
   let user: { id: string; role: string; email: string; blockedAt: Date | null; deletedAt: Date | null } | null = null
 
   try {
@@ -171,7 +172,7 @@ export async function resolveUser(
       select: { id: true, role: true, email: true, blockedAt: true, deletedAt: true },
     })
   } catch (err) {
-    console.error('resolveUser: UUID lookup failed:', err)
+    logger.error({ err, msg: 'resolveUser: UUID lookup failed', requestId: (req as any).requestId })
   }
 
   if (!user && req.user.email) {
@@ -181,7 +182,7 @@ export async function resolveUser(
         select: { id: true, role: true, email: true, blockedAt: true, deletedAt: true },
       })
     } catch (err) {
-      console.error('resolveUser: email lookup failed:', err)
+      logger.error({ err, msg: 'resolveUser: email lookup failed', requestId: (req as any).requestId })
     }
   }
 

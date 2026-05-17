@@ -18,10 +18,6 @@ export function clearAuthCookie(res: Response): void {
   })
 }
 
-export function getAuthCookie(req: { headers: { cookie?: string } }): string | undefined {
-  const cookie = req.headers.cookie
-  if (!cookie) return undefined
-
-  const match = cookie.match(new RegExp(`(^| )${COOKIE_NAME}=([^;]+)`))
-  return match ? decodeURIComponent(match[2]) : undefined
+export function getAuthCookie(req: { cookies: Record<string, string> }): string | undefined {
+  return req.cookies[COOKIE_NAME]
 }

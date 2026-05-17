@@ -104,3 +104,32 @@ export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1),
   newPassword: z.string().min(8),
 })
+
+export const uploadUrlSchema = z.object({
+  fileName: z.string().min(1).max(200),
+  contentType: z.string().min(1).max(50),
+})
+
+export const registerFcmTokenSchema = z.object({
+  fcmToken: z.string().min(1),
+})
+
+export const notifyFcmSchema = z.object({
+  userId: z.string().uuid(),
+  observationId: z.string().uuid().optional(),
+  message: z.string().max(1000).optional(),
+})
+
+export const completeOnboardingStepSchema = z.object({
+  flowCode: z.string().min(1),
+  stepKey: z.string().min(1),
+})
+
+export const claimMissionSchema = z.object({
+  missionId: z.string().uuid(),
+})
+
+export const updateMissionProgressSchema = z.object({
+  missionId: z.string().uuid(),
+  progress: z.number().min(0),
+})

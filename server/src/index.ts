@@ -5,6 +5,7 @@ useAzureMonitor()
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
+import compression from 'compression'
 import rateLimit from 'express-rate-limit'
 import swaggerUi from 'swagger-ui-express'
 import cookieParser from 'cookie-parser'
@@ -13,6 +14,8 @@ import { swaggerSpec } from './config/swagger'
 import { errorHandler, notFoundHandler } from './middleware/error'
 import { docsAuthMiddleware } from './middleware/docsAuth'
 import { performanceMiddleware, getPerformanceMetrics } from './middleware/performance'
+import { requestIdMiddleware } from './middleware/requestId'
+import { requestLogger } from './middleware/requestLogger'
 import authRoutes from './routes/authRoutes'
 import userRoutes from './routes/userRoutes'
 import adminRoutes from './routes/adminRoutes'
@@ -29,6 +32,9 @@ import prisma from './config/database'
 
 const app = express()
 
+app.use(requestIdMiddleware)
+app.use(compression())
+app.use(requestLogger)
 app.use(helmet({
   contentSecurityPolicy: config.nodeEnv === 'production' ? {
     directives: {

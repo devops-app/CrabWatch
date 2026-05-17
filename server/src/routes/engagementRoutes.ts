@@ -9,6 +9,8 @@ import {
   claimMission,
   updateMissionProgress,
 } from '../controllers/engagementController'
+import { completeOnboardingStepSchema, claimMissionSchema, updateMissionProgressSchema } from '../utils/schemas'
+import { validate } from '../middleware/validation'
 
 const router = Router()
 
@@ -18,12 +20,12 @@ router.use(resolveUser)
 
 // Onboarding
 router.get('/onboarding/me', getOnboardingStatus)
-router.post('/onboarding/steps/complete', completeOnboardingStep)
+router.post('/onboarding/steps/complete', validate(completeOnboardingStepSchema), completeOnboardingStep)
 
 // Missions
 router.get('/missions/today', getActiveMissions)
-router.post('/missions/claim', claimMission)
-router.post('/missions/progress', updateMissionProgress)
+router.post('/missions/claim', validate(claimMissionSchema), claimMission)
+router.post('/missions/progress', validate(updateMissionProgressSchema), updateMissionProgress)
 
 // Achievements (Phase 3)
 router.get('/achievements', async (req: AuthRequest, res: Response, next: NextFunction) => {

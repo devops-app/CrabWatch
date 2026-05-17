@@ -2,6 +2,8 @@ import { Router } from 'express'
 import multer from 'multer'
 import { uploadPhoto, getUploadUrlHandler, MAX_UPLOAD_SIZE } from '../controllers/uploadController'
 import { authMiddleware, requireAuth, resolveUser } from '../middleware/auth'
+import { uploadUrlSchema } from '../utils/schemas'
+import { validate } from '../middleware/validation'
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -55,7 +57,7 @@ router.use(resolveUser)
  *       400:
  *         description: Validation failed
  */
-router.post('/url', getUploadUrlHandler)
+router.post('/url', validate(uploadUrlSchema), getUploadUrlHandler)
 
 /**
  * @openapi
