@@ -75,9 +75,11 @@ pnpm dev:android
 ### Step 5: Test the App
 
 1. **Login** — Use seed credentials:
-    - `admin@crabwatch.my` / `SeedPassword2026!Secure`
-    - `researcher@crabwatch.my` / `SeedPassword2026!Secure`
-    - `citizen@crabwatch.my` / `SeedPassword2026!Secure`
+    - `admin@crabwatch.my` / `Pa55w.rd`
+    - `researcher@crabwatch.my` / `Pa55w.rd`
+    - `citizen@crabwatch.my` / `Pa55w.rd`
+
+> Password is controlled by `SEED_PASSWORD` env var (default: `Pa55w.rd`).
 
 > **Note:** All API calls go through `/api/v1/` endpoints. The mobile app's `.env` should have `EXPO_PUBLIC_API_URL` pointing to your server (e.g., `http://192.168.1.x:3001` for physical devices).
 
@@ -163,72 +165,28 @@ npx expo start -c
 
 ## Publishing to App Stores
 
-### Apple App Store
+### Prerequisites
+- **Android**: Google Play Developer account ($25 one-time fee)
+- **iOS**: Apple Developer Program ($99/year)
 
-**Requirements:**
-- Apple Developer Program membership ($99/year)
-- Mac computer (or use EAS Build cloud)
+### Build with EAS
 
-**Option A: EAS Build (Recommended — no Mac needed)**
 ```powershell
-# 1. Install EAS CLI
-npm install -g eas-cli
+cd mobile
 
-# 2. Login to Expo
-eas login
+# Login and init (first time only)
+npx eas-cli login
+npx eas-cli init
 
-# 3. Configure EAS
-npx eas build:configure
+# Build for stores
+npx eas-cli build --platform android --profile production
+npx eas-cli build --platform ios --profile production
 
-# 4. Build for iOS
-npx eas build --platform ios
-
-# 5. Submit to App Store Connect
-npx eas submit --platform ios
+# Build for internal testing (APK, no store required)
+npx eas-cli build --platform android --profile preview
 ```
 
-**Option B: Local Build (requires Mac + Xcode)**
-```powershell
-# 1. Build iOS archive
-npx expo run:ios --configuration Release
-
-# 2. Open Xcode > Archive > Distribute App > App Store Connect
-```
-
-**App Store Connect Setup:**
-1. Create app record at https://appstoreconnect.apple.com
-2. Fill in app name, description, screenshots, privacy policy URL
-3. Upload build via EAS or Xcode
-4. Submit for review (takes 24-48 hours)
-
-### Google Play Store
-
-**Requirements:**
-- Google Play Developer account ($25 one-time fee)
-- Android SDK (or use EAS Build cloud)
-
-**Option A: EAS Build (Recommended)**
-```powershell
-# 1. Build for Android
-npx eas build --platform android
-
-# 2. Submit to Google Play Console
-npx eas submit --platform android
-```
-
-**Option B: Local Build (requires Android Studio)**
-```powershell
-# 1. Build Android app bundle
-npx expo run:android --configuration Release
-
-# 2. Upload app.aab to Google Play Console
-```
-
-**Google Play Console Setup:**
-1. Create app record at https://play.google.com/console
-2. Fill in app details, screenshots, privacy policy
-3. Upload build via EAS or Play Console
-4. Submit for review (takes 1-7 days)
+See `mobile/eas.json` for build profiles (development, preview, production).
 
 ---
 
@@ -236,9 +194,4 @@ npx expo run:android --configuration Release
 
 - **Hot reload:** Changes to JS/TS files reload automatically in Expo Go
 - **React DevTools:** Install React DevTools extension for debugging
-- **Expo Dev Client:** For more control, build a dev client:
-  ```powershell
-  npx expo run:ios --dev-client
-  npx expo run:android --dev-client
-  ```
-- **Environment-specific config:** Use `app.config.js` for different configs per environment
+- **Clear Metro cache** after dependency/config changes: `pnpm --filter=@crabwatch/mobile exec expo start --clear`

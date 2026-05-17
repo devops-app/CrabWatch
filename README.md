@@ -10,7 +10,7 @@ CrabWatch/
 ├── server/          # Express.js API server with Prisma ORM
 ├── web/             # Next.js web application (App Router)
 ├── mobile/          # React Native mobile app (Expo)
-└── infrastructure/  # Legacy scaffolding (not used in current deployment)
+└── scripts/         # Deployment automation (PowerShell)
 ```
 
 ## Tech Stack
@@ -341,6 +341,72 @@ pnpm test:e2e:headed  # Run with visible browser
 | POST   | `/api/v1/upload/url`          | Bearer   | Get Azure SAS upload URL          |
 | POST   | `/api/v1/upload`              | Bearer   | Upload image to server            |
 
+### Gamification
+
+| Method | Endpoint                                  | Auth     | Description                       |
+| ------ | ----------------------------------------- | -------- | --------------------------------- |
+| GET    | `/api/v1/gamification/stats/me`           | Bearer   | User XP, level, streak stats      |
+| GET    | `/api/v1/gamification/xp-history`         | Bearer   | Paginated XP transaction history  |
+| GET    | `/api/v1/gamification/leaderboard`        | Bearer   | Leaderboard (all-time/seasonal)   |
+
+### Engagement
+
+| Method | Endpoint                                          | Auth     | Description                       |
+| ------ | ------------------------------------------------- | -------- | --------------------------------- |
+| GET    | `/api/v1/engagement/onboarding/me`                | Bearer   | Current onboarding progress       |
+| POST   | `/api/v1/engagement/onboarding/steps/complete`    | Bearer   | Complete onboarding step          |
+| GET    | `/api/v1/engagement/missions/today`               | Bearer   | Today's missions                  |
+| POST   | `/api/v1/engagement/missions/claim`               | Bearer   | Claim mission XP reward           |
+| GET    | `/api/v1/engagement/achievements`                 | Bearer   | All available achievements        |
+| GET    | `/api/v1/engagement/achievements/unlocked`        | Bearer   | User's unlocked achievements      |
+| GET    | `/api/v1/engagement/achievements/:id/progress`    | Bearer   | Progress for specific achievement |
+| GET    | `/api/v1/engagement/achievements/check`           | Bearer   | Bulk achievement progress check   |
+| GET    | `/api/v1/engagement/insights/me`                  | Bearer   | AI-generated insights             |
+| POST   | `/api/v1/engagement/insights/:id/act`             | Bearer   | Mark insight as acted             |
+| GET    | `/api/v1/engagement/notification-preferences`     | Bearer   | User notification preferences     |
+| PATCH  | `/api/v1/engagement/notification-preferences`     | Bearer   | Update notification preferences   |
+
+### Admin Engagement
+
+| Method | Endpoint                                          | Auth     | Description                       |
+| ------ | ------------------------------------------------- | -------- | --------------------------------- |
+| GET    | `/api/v1/admin/engagement/rules`                  | ADMIN    | List XP rules                     |
+| POST   | `/api/v1/admin/engagement/rules`                  | ADMIN    | Create XP rule                    |
+| PATCH  | `/api/v1/admin/engagement/rules/:id`              | ADMIN    | Update XP rule                    |
+| DELETE | `/api/v1/admin/engagement/rules/:id`              | ADMIN    | Delete XP rule                    |
+| GET    | `/api/v1/admin/engagement/levels`                 | ADMIN    | List level configs                |
+| POST   | `/api/v1/admin/engagement/levels`                 | ADMIN    | Create level config               |
+| PATCH  | `/api/v1/admin/engagement/levels/:id`             | ADMIN    | Update level config               |
+| DELETE | `/api/v1/admin/engagement/levels/:id`             | ADMIN    | Delete level config               |
+| POST   | `/api/v1/admin/engagement/adjust-xp`              | ADMIN    | Manual XP adjustment              |
+| POST   | `/api/v1/admin/engagement/recalculate`            | ADMIN    | XP recalculation (dry-run/execute)|
+| GET    | `/api/v1/admin/engagement/recalculate/:jobId`     | ADMIN    | Recalculation job status          |
+| GET    | `/api/v1/admin/engagement/achievements`           | ADMIN    | List achievements                 |
+| POST   | `/api/v1/admin/engagement/achievements`           | ADMIN    | Create achievement                |
+| PATCH  | `/api/v1/admin/engagement/achievements/:id`       | ADMIN    | Update achievement                |
+| DELETE | `/api/v1/admin/engagement/achievements/:id`       | ADMIN    | Delete achievement                |
+| POST   | `/api/v1/admin/engagement/achievements/:id/award` | ADMIN    | Award achievement to user         |
+| GET    | `/api/v1/admin/engagement/missions`               | ADMIN    | List mission definitions          |
+| POST   | `/api/v1/admin/engagement/missions`               | ADMIN    | Create mission definition         |
+| PATCH  | `/api/v1/admin/engagement/missions/:id`           | ADMIN    | Update mission definition         |
+| DELETE | `/api/v1/admin/engagement/missions/:id`           | ADMIN    | Delete mission definition         |
+| GET    | `/api/v1/admin/engagement/seasons`                | ADMIN    | List seasons                      |
+| POST   | `/api/v1/admin/engagement/seasons`                | ADMIN    | Create season                     |
+| PATCH  | `/api/v1/admin/engagement/seasons/:id`            | ADMIN    | Update season                     |
+| DELETE | `/api/v1/admin/engagement/seasons/:id`            | ADMIN    | Delete season                     |
+| POST   | `/api/v1/admin/engagement/seasons/:id/activate`   | ADMIN    | Activate season                   |
+| GET    | `/api/v1/admin/engagement/campaigns`              | ADMIN    | List campaigns                    |
+| POST   | `/api/v1/admin/engagement/campaigns`              | ADMIN    | Create campaign                   |
+| PATCH  | `/api/v1/admin/engagement/campaigns/:id/status`   | ADMIN    | Update campaign status            |
+| POST   | `/api/v1/admin/engagement/campaigns/:id/launch`   | ADMIN    | Launch campaign                   |
+| POST   | `/api/v1/admin/engagement/campaigns/:id/send-test`| ADMIN    | Send test campaign                |
+| DELETE | `/api/v1/admin/engagement/campaigns/:id`          | ADMIN    | Delete campaign                   |
+| GET    | `/api/v1/admin/engagement/abuse-signals`          | ADMIN    | List abuse signals                |
+| PATCH  | `/api/v1/admin/engagement/abuse-signals/:id/resolve` | ADMIN | Resolve abuse signal          |
+| GET    | `/api/v1/admin/engagement/audit-logs`             | ADMIN    | List audit logs                   |
+| GET    | `/api/v1/admin/engagement/audit-logs/stats`       | ADMIN    | Audit log summary stats           |
+| GET    | `/api/v1/admin/engagement/metrics`                | ADMIN    | Engagement health metrics         |
+
 ### FCM (Push Notifications)
 
 | Method | Endpoint                              | Auth          | Description                       |
@@ -365,12 +431,15 @@ pnpm test:e2e:headed  # Run with visible browser
 
 ```
 User (id, name, email, phoneCode, phoneNumber, addressLine1-3, state, postcode, country,
-      role, avatar, password, firebaseUid, deletedAt, blockedAt, blockReason, createdAt)
+      role, avatar, password, firebaseUid, deletedAt, blockedAt, blockReason, createdAt,
+      totalXP, level, title, currentStreak, longestStreak, lastActiveDate, approvedCount, totalSubmissions)
   ├── role: USER | RESEARCHER | ADMIN
   ├── observations[] → Observation
   ├── validatedObs[] → Observation (as validator)
   ├── fcmToken → FcmToken
-  └── passwordResets[] → PasswordReset
+  ├── passwordResets[] → PasswordReset
+  └── Engagement: xpTransactions[], userAchievements[], userMissions[], onboardingProgress[],
+      seasonStats[], insights[], notificationPrefs[], sentNotifications[], adminAuditLogs[], abuseSignals[]
 
 Species (id, scientificName, commonName, description, keyFeatures, images, distributionZones)
   └── observations[] → Observation
@@ -394,6 +463,21 @@ PasswordReset (id, userId, token, expiresAt, used, createdAt)
 
 FcmToken (id, userId, token, createdAt, updatedAt)
   └── Push notification device token
+
+### Engagement Models (24 models, 11 enums)
+
+GamificationRule — XP reward rules per action type
+LevelConfig — XP thresholds, titles per level
+XPTransaction — Immutable audit ledger for every XP change
+Achievement / UserAchievement — Achievement definitions and user unlocks
+Season / UserSeasonStat — Seasonal leaderboard tracking
+OnboardingFlow / OnboardingProgress — Guided onboarding steps
+MissionDefinition / UserMission — Daily/weekly missions and user assignments
+Campaign / NotificationDelivery — Campaign orchestration and delivery tracking
+UserInsight — AI-generated personalized insights
+NotificationPreference — Per-user notification settings
+AuditLog — Immutable admin action audit trail
+AbuseSignal — Automated abuse detection signals
 ```
 
 ## Role Permissions
@@ -404,12 +488,17 @@ FcmToken (id, userId, token, createdAt, updatedAt)
 | View own observations     | ✅   | ✅         | ✅    |
 | View all observations     | ❌   | ✅         | ✅    |
 | Validate observations     | ❌   | ✅         | ✅    |
+| View analytics            | ✅   | ✅         | ✅    |
+| View leaderboard          | ✅   | ✅         | ✅    |
+| Complete missions         | ✅   | ✅         | ✅    |
+| Earn achievements         | ✅   | ✅         | ✅    |
 | Manage species            | ❌   | ❌         | ✅    |
 | Manage users              | ❌   | ❌         | ✅    |
-| View analytics            | ✅   | ✅         | ✅    |
-| Access admin panel        | ❌   | ❌         | ✅    |
 | Create invites            | ❌   | ❌         | ✅    |
 | Database backup           | ❌   | ❌         | ✅    |
+| Manage engagement config  | ❌   | ❌         | ✅    |
+| Campaign orchestration    | ❌   | ❌         | ✅    |
+| Abuse detection queue     | ❌   | ❌         | ✅    |
 
 ## Project Structure
 
@@ -427,7 +516,7 @@ CrabWatch/
 │   │   ├── controllers/    # Request handlers
 │   │   ├── middleware/     # Auth, error handling
 │   │   ├── routes/         # Express routers
-│   │   ├── services/       # Business logic
+│   │   ├── services/       # Business logic (analytics, AI, gamification, etc.)
 │   │   └── utils/          # Zod schemas, helpers
 │   ├── prisma/
 │   │   ├── schema.prisma   # Database schema
@@ -448,10 +537,9 @@ CrabWatch/
 │   │   ├── navigation/     # React Navigation config
 │   │   └── store/          # Zustand state
 │   └── package.json
-└── infrastructure/
-    ├── terraform/          # Legacy scaffolding (not used)
-    ├── azure-functions/    # Legacy scaffolding (not used)
-    └── azure-static-webapps/
+└── scripts/
+    ├── deploy-server.ps1   # Server deployment automation
+    └── deploy-web.ps1      # Web deployment automation
 ```
 
 ## Environment Variables
@@ -479,6 +567,11 @@ CrabWatch/
 | `CORS_ORIGINS`                     | No       | Allowed CORS origins               |
 | `TRUSTED_IPS`                      | No       | IP whitelist for Swagger docs      |
 | `APPLICATIONINSIGHTS_CONNECTION_STRING` | No*  | Application Insights connection string |
+| `ENGAGEMENT_ENABLED`              | No       | Master toggle (default: true in dev, false in prod) |
+| `MISSIONS_ENABLED`                | No       | Daily/weekly missions |
+| `SEASONS_ENABLED`                 | No       | Seasonal leaderboards |
+| `CAMPAIGNS_ENABLED`               | No       | Campaign system |
+| `ABUSE_DETECTION_ENABLED`         | No       | Anti-abuse detection |
 | `NODE_ENV`                         | No       | Environment (development/production)|
 
 > *Optional for local dev with JWT fallback. Required for production.
@@ -509,18 +602,15 @@ Full step-by-step deployment guide: see [`Azure-Deployment-Plan.md`](./Azure-Dep
 
 ### Re-Deployment (After Code Changes)
 
-```bash
-# Build all packages
-pnpm build
+```powershell
+# Deploy server (builds, packages, uploads, installs deps, seeds engagement)
+.\scripts\deploy-server.ps1
 
-# Deploy server
-pnpm --filter=server build
-# Upload dist/ to Azure App Service (see Azure-Deployment-Plan.md)
-
-# Deploy web
-pnpm --filter=web build
-# Upload .next/ to Azure App Service (see Azure-Deployment-Plan.md)
+# Deploy web (builds, packages, uploads)
+.\scripts\deploy-web.ps1
 ```
+
+For first-time Azure setup or troubleshooting, see [`Azure-Deployment-Plan.md`](./Azure-Deployment-Plan.md).
 
 ## Troubleshooting
 
@@ -577,42 +667,17 @@ CORS_ORIGINS="http://localhost:3000,http://localhost:19006,https://yourdomain.co
 | `pnpm test:e2e`                   | Run E2E tests                 |
 | `pnpm test:e2e:headed`            | Run E2E tests with visible browser |
 
-## Status
+## Features
 
-- [x] TypeScript compilation (all 4 packages)
-- [x] ESLint (all packages, 0 errors)
-- [x] Database schema & seed script
-- [x] Authentication (Firebase ID tokens + JWT fallback for local dev)
-- [x] API endpoints with versioning (`/api/v1/`)
-- [x] Web dashboard (admin, researcher, user views)
-- [x] Web profile edit, observation detail, species browse pages
-- [x] Web password reset flow (forgot/reset pages)
-- [x] Mobile app (Expo SDK 54, React 19)
-- [x] Mobile analytics, researcher, admin screens
-- [x] Mobile password reset flow (forgot/reset screens)
-- [x] Full-screen modal camera with guided capture
-- [x] Production Firebase configuration
-- [x] API versioning (v1)
-- [x] Response caching
-- [x] Rate limiting per endpoint type
-- [x] Security hardening (Helmet, CSP, COEP, CORP)
-- [x] Mapbox integration (GeoJSON circle layers, manual location picker)
-- [x] Push notifications (FCM)
-- [x] Application Insights monitoring (auto-instrumentation)
-- [x] AI-Guided Crab Capture (GPT-4o Vision analysis)
-- [x] Dynamic species detection (mud crabs + swimming crabs)
-- [x] Azure Blob Storage (photo upload for analysis)
-- [x] Dual MYR coin series (Third + Second Series 1989-2011)
-- [x] Full-screen modal camera capture
-- [x] Real-time capture assistance (gyroscope, accelerometer, focus tracking)
-- [x] Portrait orientation lock with tilt warning
-- [x] Post-capture view validation (dorsal/ventral detection)
-- [x] Invite system (token-based, email dispatch via Resend)
-- [x] Password reset by email (Resend)
-- [x] Admin panel (user management, species CRUD, backup, invites)
-- [x] User soft-delete with 30-day retention
-- [x] User block/unblock with auth rejection
-- [x] Swagger API docs (development only, IP-whitelisted)
+| Area | Capabilities |
+|------|-------------|
+| **AI Capture** | GPT-4o Vision analysis, dynamic species detection, dual MYR coin reference, real-time capture assistance (gyroscope, accelerometer, focus tracking), portrait lock, post-capture view validation |
+| **Web** | Next.js 15 dashboard, role-based views (admin/researcher/user), Mapbox location picker, profile edit, observation detail, species browse, password reset, admin panel |
+| **Mobile** | Expo SDK 54, guided photo capture, analytics charts, researcher validation, admin management, password reset |
+| **Gamification** | XP + levels + achievements, daily missions, onboarding quests, leaderboard (all-time/seasonal), campaigns, abuse detection, audit logging |
+| **Admin** | User management (block/unblock/soft-delete/restore), species CRUD, invites, database backup, engagement config, campaign orchestration |
+| **Security** | Firebase Auth + JWT fallback, rate limiting, Helmet/CSP, soft-delete with 30-day retention, invite-based registration |
+| **Monitoring** | Application Insights auto-instrumentation, frontend error telemetry, performance metrics |
 
 ## License
 

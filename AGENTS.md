@@ -20,145 +20,47 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Invite link must pre-fill the email and lock the assigned role (RESEARCHER/ADMIN) on the registration form.
 
 ## Progress
-### Done
-- [x] Removed hardcoded LAN IP from `web/next.config.mjs` fallback (`BACKEND_URL` env var only)
-- [x] Removed hardcoded LAN IP from `mobile/app.json` `extra.apiUrl` (replaced with Azure placeholder)
-- [x] Created `mobile/eas.json` with development, preview, and production build profiles
-- [x] Created `Azure-Deployment-Plan.md` with step-by-step manual deployment instructions
-- [x] Updated `README.md` with current API endpoints, DB schema, features, and deployment info
-- [x] Updated `mobile/src/navigation/README.md` with current param lists
-- [x] Deleted obsolete docs: `PLAN_AI_CAPTURE.md`, `PROJECT.md`, `OPTIMIZATION_PLAN.md`
-- [x] AI-Guided Capture flow: GuidedCaptureScreen → AnalysisLoadingScreen → AIReviewScreen
-- [x] GPT-4o Vision agent integration via Azure AI Foundry
-- [x] Dynamic species detection: AI identifies any crab, server auto-creates unknown species
-- [x] Removed hardcoded `MUD_CRAB_SPECIES` constraint — species fetched from API
-- [x] Guided photo capture: dorsal, ventral, optional carapace close-up
-- [x] MYR coin reference system for size estimation
-- [x] Azure Blob Storage for temporary analysis photo storage
-- [x] Image quality assessment and blur detection
-- [x] Offline fallback: manual form on analysis failure
-- [x] Gender terminology update: `sex` → `gender` across all packages
-- [x] Prisma mapping: `gender Gender @map("sex")` preserves DB column
-- [x] API endpoint rename: `/analytics/sex-ratio` → `/analytics/gender-ratio`
-- [x] Foundry Agent system prompt updated with gender terminology
-- [x] All packages pass `tsc --noEmit` with strict type safety
-- [x] Dual MYR coin series support: Third Series (current) + Second Series (1989-2011)
-- [x] Expanded AI species detection: added swimming crabs (Portunus, Charybdis)
-- [x] AI body weight estimation formula (BW = CW² x 15 mud crabs, CW² x 10 swimming)
-- [x] Full-screen modal camera capture experience
-- [x] AIReviewScreen: coin mismatch indicator, photo strip, species auto-match
-- [x] Fixed `expo-file-system` deprecation → switched to `/legacy` import
-- [x] Fixed Expo Go crash on "Analyze" → removed `fetch('data:base64,...')` + `blob()`, pass local URIs directly
-- [x] Removed AI weight estimation from prompt; made `bw` optional/nullable across entire stack
-- [x] Fixed `toFixed()` crash in `ProfileScreen.tsx` for null `bw`
-- [x] Server analytics skips null `bw` in condition factor calculation
-- [x] Web capture page: removed AI `estimatedBW` pre-fill, adjusted validation for nullable `bw`
-- [x] Web researcher/map pages: null-safe `bw` rendering with `?? 'N/A'` fallback
-- [x] Mobile `AboutScreen` + web `dashboard/about` page with "Made By DsignCodeHub" branding
-- [x] Fullscreen image viewing for observations: mobile `ObservationDetailScreen`, web researcher modal, web map popup
-- [x] Coin reference persistence: `detectedCoin` field tracked through DB → server → shared types → mobile/web submission → detail views
-- [x] Map-based location picking: web capture page (Mapbox), mobile GPSCapture manual mode (`react-native-maps`)
-- [x] Real-time capture assistance: motion detection (gyroscope), brightness (accelerometer), focus tracking, frame overlay
-- [x] Portrait orientation lock: camera enforces vertical capture with tilt warning overlay
-- [x] View validation: post-capture analysis detects wrong dorsal/ventral orientation with warning card
-- [x] Web capture map marker: switched from DOM `Marker` to native `Source` + `Layer` (GeoJSON circle layers) for reliable rendering
-- [x] Web capture AI species auto-pick: `findSpeciesMatch` with UUID, exact text, and partial/fuzzy matching
-- [x] Web capture strict species validation: `isUuid` helper ensures only valid species IDs are submitted
-- [x] Web capture species text normalization: `normalizeSpeciesText` for case/punctuation-insensitive AI matching
-- [x] Web capture AI badge: updated to trigger on `analysis.speciesName` (not just `speciesId`)
-- [x] User registration: added `phone` and `address` fields for future SMS MFA
-- [x] Admin panel: manual database backup with `POST /api/v1/admin/backup`
-- [x] Admin panel: user soft-delete with 30-day retention period (`DELETE /api/v1/users/:id`)
-- [x] Admin panel: user restore within retention window (`POST /api/v1/users/:id/restore`)
-- [x] Admin panel: user block/unblock with optional reason (`POST /api/v1/users/:id/block`, `/unblock`)
-- [x] Admin panel: cleanup expired users past 30-day retention (`POST /api/v1/admin/cleanup-users`)
-- [x] Admin panel: list soft-deleted users with expiry dates (`GET /api/v1/admin/deleted-users`)
-- [x] Auth middleware: blocked and deleted users rejected with 403 on all requests
-- [x] Admin UI: double confirmation modal for destructive actions (type-to-confirm for block/delete)
-- [x] Web profile edit page: `/dashboard/profile` with avatar upload, all profile fields, read-only email
-- [x] Web observation detail page: `/dashboard/observation/[id]` with photos, measurements, biological data, location, validation history
-- [x] Web species browse page: `/dashboard/species` with searchable grid, detail modal, fullscreen images
-- [x] Sidebar nav updated: added Species (🦀) and Profile (👤) items
-- [x] Dashboard home page: added "Recent Submissions" table showing latest 5 observations
-- [x] Password reset by email: `POST /api/v1/auth/password-reset/request` sends reset link via Resend
-- [x] Password reset confirm: `POST /api/v1/auth/password-reset/reset` validates token, updates password
-- [x] Web forgot password page: `/auth/forgot-password` with email form and success state
-- [x] Web reset password page: `/auth/reset-password?token=<token>` with new password form
-- [x] Web login page: added "Forgot password?" link
-- [x] Mobile forgot password screen: email form with success state
-- [x] Mobile reset password screen: new password form with token from route params
-- [x] Mobile login screen: added "Forgot password?" link
-- [x] Prisma `PasswordReset` model with token, expiry, cascade delete on user
-- [x] Invite system: `Invite` model in Prisma, `createInvite`/`validateInvite`/`listInvites` controllers
-- [x] Invite email dispatch via Resend with expiry/usage tracking
-- [x] Public `/invite/validate` route for unauthenticated registration page validation
-- [x] Invite redemption in `userController.ts` assigns invited role on registration
-- [x] Web registration page parses `?invite=<token>`, validates, pre-fills/locks email+role
-- [x] Web admin "Invites" tab with send form and history table
-- [x] Fixed `server/prisma/schema.prisma` (removed duplicate `Invite` model blocks)
-- [x] Fixed Prisma unique constraint error on `firebaseUid` with pre-checks
-- [x] Fixed soft-deleted user re-registration: clears `firebaseUid`, reassignes email to `deleted-{id}@deleted.local`
-- [x] Fixed "Converting circular structure to JSON" error in `admin/page.tsx` catch blocks
-- [x] Added duplicate invite popup in `admin/page.tsx` with `infoOnly` confirm modal
-- [x] Fixed `inviteEmail` undefined error in `handleSendInvite` using `String(...)` fallback
-- [x] Moved profile/logout to top-right header dropdown; removed Profile from sidebar
-- [x] Fixed "Phone Code" -> "Country Code" label across web/mobile
-- [x] Widened mobile country code picker width from 80 to 100
-- [x] Added `label` prop to `PhoneCodePicker` component
-- [x] Replaced web profile country code & country inputs with `<select>` dropdowns from shared `COUNTRIES`
-- [x] Updated web profile country code dropdown to show only phone code without country name
-- [x] Replaced mobile "Species" tab with "Analytics" tab in `MainTabs.tsx` and `types.ts`
-- [x] Created `mobile/src/screens/analytics/AnalyticsScreen.tsx` with Gender Ratio, Size Frequency, Temporal Trends
-- [x] Fixed broken `loadAll` callback in `web/src/app/dashboard/analytics/page.tsx` (added missing `Promise.all` destructuring and 6 analytics API calls)
-- [x] Wired up Admin Panel Species Guide CRUD: Add/Edit modal form, Delete confirmation, handlers
-- [x] Updated `HomeScreen.tsx` quick actions to navigate to `Analytics` and `New` tabs
-- [x] Fixed web React version mismatch (`react: 19.1.0` vs `react-dom: 19.2.6`) by pinning both to `19.2.6`
-- [x] Fixed mobile analytics crash (`data.map is not a function`) with `.catch(() => [])` and `Array.isArray()` guards
-- [x] Created `mobile/src/screens/researcher/ResearcherScreen.tsx` for researcher observation approval/rejection
-- [x] Added comprehensive admin API methods to `mobile/src/services/api.ts`
-- [x] Created `mobile/src/screens/admin/AdminScreen.tsx` with role-based admin tasks
-- [x] Updated `MainTabs.tsx` and `types.ts` to conditionally render Researcher and Admin tabs based on user role
-- [x] Fixed mobile `ResearcherScreen.tsx` TextInput import (`RNTextInput`) and rejection confirmation flow
-- [x] Restructured mobile Admin Panel: merged "User Management" into single "Users" tab with sub-tabs (Active, Deleted, Invites)
-- [x] Restructured web Admin Panel to match mobile: "Users" tab with Active/Deleted/Invites sub-tabs
-- [x] Fixed mobile Admin Invites crash: lifted `useState` hooks out of `renderInvites` render function
-- [x] Fixed `server/src/controllers/observationController.ts` `refreshPhotoUrls` to correctly parse blob paths from both absolute and relative SAS URLs
-- [x] Fixed `AdminScreen.tsx` syntax error (`'return' outside of function`) by removing stray closing brace
-- [x] Fixed mobile admin users management layout: subTabBar now anchors at top with proper flex layout
-- [x] Fixed `generateSasUrl` returning full URL (not just query string) — reverted doubled URL fix
-- [x] Application Insights monitoring: `@azure/monitor-opentelemetry` auto-instrumentation for server and web
-- [x] Server: `useAzureMonitor()` init at top of `server/src/index.ts`
-- [x] Web: `useAzureMonitor()` init at top of `web/src/app/layout.tsx`
-- [x] Enhanced `server/src/middleware/error.ts` with `req.method`/`req.path` context in error logs
-- [x] Added `console.warn` for 404s in `notFoundHandler`
-- [x] Added 4xx/5xx request logging to `server/src/middleware/performance.ts`
-- [x] Added `POST /api/v1/telemetry/error` endpoint in `server/src/index.ts` to capture frontend errors
-- [x] Updated `web/src/components/ErrorBoundary.tsx` to POST errors to backend in production
-- [x] Updated `Azure-Deployment-Plan.md`: promoted App Insights from optional to required step
-- [x] Full documentation update: analyzed entire codebase, updated README, AGENTS, Azure-Deployment-Plan, MOBILE_DEPLOYMENT
-- [x] Engagement system Phase 0-4: Schema (24 models, 11 enums), 8 services, 3 controllers, 3 route files
-- [x] Engagement system Phase 5: Extracted `recalculationService.ts` with dry-run/execute modes
-- [x] Engagement system Phase 5: Leaderboard caching with TTL (60s default, 120s all-time) + invalidation on XP changes
-- [x] Engagement system Phase 5: `metricsService.ts` with comprehensive engagement health metrics
-- [x] Engagement system Phase 5: `GET /api/v1/admin/engagement/metrics` endpoint wired
-- [x] Engagement system Phase 5: Cache invalidation in `rewardEngine.ts` on XP award, in `adminEngagementController.ts` on XP adjustment
-- [x] Mobile gamification: `LeaderboardScreen.tsx` with scope toggle (All Time/Seasonal), pagination, medals, "You" badge, pull-to-refresh
-- [x] Mobile gamification: `MissionsScreen.tsx` with Daily Missions/Onboarding tabs, claim/complete actions, progress bars, XP badges
-- [x] Mobile gamification: `AchievementsScreen.tsx` with rarity colors, category/status filters, progress tracking, check-achievements action
-- [x] Mobile navigation: `RootStackParamList` extended with `Leaderboard`, `Missions`, `Achievements` screens
-- [x] Mobile navigation: `AppNavigator.tsx` registered gamification stack screens with header styling
-- [x] Mobile API: `api.ts` extended with all gamification/engagement endpoints (stats, XP history, leaderboard, missions, onboarding, achievements, social, notifications)
-- [x] Mobile ProfileScreen: XP stats card with level, title, XP progress bar, streak/best/approved stats
-- [x] Mobile ProfileScreen: Gamification section with Leaderboard/Missions/Achievements quick-link cards
-- [x] Mobile HomeScreen: Gamification quick-actions card with Leaderboard/Missions/Achievements navigation
-- [x] Mobile HomeScreen: Refactored to use `useNavigation` hook with parent stack navigation for gamification screens
-- [x] Azure CLI installed as portable ZIP (`$env:LOCALAPPDATA\AzureCLI\bin\az.cmd`)
-- [x] Azure deployment: logged in as `Wilson.tchui@gmail.com`, confirmed all resources in `VSES-CrabWatch-MY-RG`
-- [x] Azure deployment: added env vars `ENGAGEMENT_ENABLED`, `MISSIONS_ENABLED`, `SEASONS_ENABLED`, `CAMPAIGNS_ENABLED`, `ABUSE_DETECTION_ENABLED`, `AZURE_STORAGE_BADGE_CONTAINER`
-- [x] Azure deployment: built server, created deployment zip, deployed to `crabwatch-api` App Service
-- [x] Azure deployment: ran `npm install --production` on Kudu SSH to fix empty `node_modules`
-- [x] Azure deployment: applied engagement migration (`20260516082759_add_engagement_system`) via Kudu SSH
-- [x] Azure deployment: API health check passing at `https://crabwatch-api.azurewebsites.net/health`
+
+### Completed Areas
+
+**Core Capture & AI**
+- AI-Guided Capture flow: GuidedCaptureScreen → AnalysisLoadingScreen → AIReviewScreen
+- GPT-4o Vision agent via Azure AI Foundry, dynamic species detection with auto-upsert
+- Guided photo capture (dorsal, ventral, optional close-up), MYR coin reference, quality gates
+- Real-time capture assistance: gyroscope shake detection, brightness estimation, focus tracking, portrait lock, view validation
+- Map-based location picking: Mapbox (web), `react-native-maps` (mobile)
+- `bw` is nullable — never AI-estimated. `detectedCoin` persisted through full stack.
+
+**Web App**
+- Dashboard, capture (with GeoJSON map markers), researcher validation, profile edit, observation detail, species browse
+- Password reset flow, invite system with email dispatch
+- Admin panel: Species CRUD, Users (Active/Deleted/Invites sub-tabs), Backup, Engagement config
+- Gamification: Leaderboard, Missions, Achievements, Community pages
+- Application Insights auto-instrumentation, error boundary with backend POST
+
+**Mobile App**
+- Full capture flow, Analytics charts, Researcher validation, Admin management
+- Gamification: Leaderboard (scope toggle, pagination), Missions (daily/onboarding), Achievements (filters, progress)
+- Password reset, role-based conditional tabs (Researcher/Admin)
+
+**Server**
+- Express + Prisma, 8 analytics endpoints, AI analysis, blob storage, email (Resend)
+- User management: soft-delete (30-day retention), block/unblock, invite system, password reset
+- Admin: backup, cleanup, deleted user listing
+- Engagement system: 24 models, 11 enums, 8 services, XP ledger with idempotency, leaderboard caching, recalculation, metrics
+- Application Insights auto-instrumentation, telemetry endpoint
+
+**Deployment**
+- Azure: PostgreSQL Flexible Server, App Service (API + Web), Application Insights
+- Server deployed to `crabwatch-api.azurewebsites.net`, health check passing
+- Engagement migration applied, env vars configured
+- Deploy scripts: `scripts/deploy-server.ps1`, `scripts/deploy-web.ps1`
+
+### In Progress
+- (none)
+
+### Blocked
+- (none)
 
 ### In Progress
 - (none)
@@ -167,7 +69,8 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - (none)
 
 ## Next Steps
-- Execute Azure deployment steps from `Azure-Deployment-Plan.md`
+- Deploy web app to Azure App Service (`scripts/deploy-web.ps1`)
+- Build and publish mobile via EAS Build
 - Implement mobile deep linking for password reset URLs (`crabwatch://reset-password?token=<token>`)
 - Test researcher observation approval/rejection flow end-to-end on mobile
 - Test admin user management, backup, and invite flows on mobile
@@ -175,6 +78,54 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - End-to-end testing of full engagement flow (submission -> XP -> level up -> achievements -> notifications)
 
 ## Key Decisions
+- **Dynamic species**: AI identifies any crab species; server auto-creates via `upsert` on `speciesName`
+- **Gender mapping**: `gender` in app layer, `sex` DB column preserved via Prisma `@map`
+- **Photo flow**: Guided multi-shot (dorsal → ventral → optional close-up) with quality gates
+- **Coin reference**: Dual MYR coin series — Third Series (current) and Second Series (1989-2011), each with 5/10/20/50 sen denominations. AI auto-detects from image, researcher can select exact series. Coin info persisted in `detectedCoin` field for researcher validation.
+- **Body weight**: `bw` is `number | null` — never auto-filled by AI. Researcher must measure manually. Analytics gracefully skips null values.
+- **Photo upload**: React Native `fetch` handles local URIs in `FormData` natively; no base64-to-blob conversion needed.
+- **Fullscreen images**: Mobile uses `Modal` + `Image`; web uses fixed overlay with `z-[60]`. Consistent UX across platforms.
+- **Location picking**: Web uses Mapbox (`react-map-gl`), mobile uses `react-native-maps` (Apple/Google tiles). Both fallback to manual coordinate input.
+- **Map markers (Web)**: Use native `Source` + `Layer` (GeoJSON) instead of DOM `Marker` component to avoid rendering/z-index issues in `react-map-gl`.
+- **AI Species Matching (Web)**: `findSpeciesMatch` tries UUID -> exact text match -> partial/fuzzy match (normalized names, genus fallback). `isUuid` enforces strict validation before submission.
+- **Offline support**: Analysis failure falls back to manual observation form with photos
+- **Blob cleanup**: Analysis photos deleted from Azure Storage 60s after analysis completes
+- **Capture assistance**: Gyroscope detects hand shake (std dev > 6 = slight, > 15 = heavy). Accelerometer Z-axis estimates lighting. Tap-to-focus triggers autofocus with visual indicator.
+- **Portrait lock**: `expo-screen-orientation` locks camera to portrait mode. Accelerometer X/Y detects landscape tilt, shows "Rotate to portrait" overlay.
+- **View validation**: Post-capture analysis checks brightness/aspect ratio to detect wrong view (e.g., ventral when dorsal expected). Shows warning card with specific issues.
+- **User registration**: `phone` and `address` are optional fields collected at registration for future SMS MFA. Both are nullable throughout the stack. Phone validated with min 7 chars, address max 500 chars.
+- **Admin backup**: Server uses Prisma to export all data (observations, species, users, FCM tokens) as a gzip-compressed JSON file. Backup files stored in `./backups` directory (configurable via `BACKUP_DIR` env var). Cross-platform — no `pg_dump` dependency.
+- **User soft-delete**: Users are soft-deleted by setting `deletedAt` timestamp. Auth middleware rejects login for deleted users (403). Soft-deleted users excluded from normal user list. Retention period is 30 days before permanent deletion.
+- **User block/unblock**: Blocked users have `blockedAt` set and optional `blockReason`. Auth middleware rejects all requests from blocked users (403). Unblock clears both fields.
+- **Double confirmation**: Destructive admin actions (block, delete, cleanup) require typing a confirmation word ("block", "delete", "cleanup") in a modal input field before action proceeds.
+- **Cleanup expired users**: `POST /api/v1/admin/cleanup-users` permanently deletes users past 30-day retention, including their observations, FCM tokens, and clears `validatedBy` references.
+- **Resend emails**: Zero SMTP infra. Using `onboarding@resend.dev` for immediate testing.
+- **DB-stored invite tokens**: With expiry/usage flags instead of JWTs for easy auditing/revocation.
+- **Public `/invite/validate` route**: Placed before `authMiddleware` to allow unauthenticated registration page validation.
+- **Invite redemption**: Handled in `userController.ts` (`createUser`) rather than `authController.ts`.
+- **Soft-deleted user constraints**: Unique constraints (`email`, `firebaseUid`) cleared to allow seamless re-registration.
+- **User menu**: Moved to header dropdown for cleaner sidebar navigation.
+- **Analytics tab**: Replaces Species tab in mobile navigation to prioritize data insights over static species lists.
+- **Password reset tokens**: Stored in `PasswordReset` model with 1-hour expiry and `used` flag; cascade delete on user.
+- **Password reset emails**: Sent via Resend; reset link format: `${FRONTEND_URL}/auth/reset-password?token=<token>`.
+- **Mobile reset password**: Accepts token via route params (`AuthStackParamList['ResetPassword'] = { token: string }`).
+- **Mobile navigation**: Conditionally renders Researcher/Admin tabs based on `useAuthStore` role to keep UI clean for standard users.
+- **Admin panel navigation**: Simplified to 3 top-level tabs (Species, Users, Backup) with sub-navigation for user management to reduce clutter.
+- **Deployment stack**: Azure all-in-one — PostgreSQL Flexible Server (DB), App Service (API + Web), EAS Build (mobile). No Vercel, no Terraform, no Docker.
+- **Azure `generateSasUrl`**: Returns full URL (not just query string). Use `refreshed.push(sasUrl)` directly — do NOT prepend `blobClient.url`.
+- **App Insights monitoring**: `@azure/monitor-opentelemetry` auto-instrumentation captures Express routes, outgoing HTTP calls (Foundry, Blob, Resend, Firebase, PostgreSQL), unhandled exceptions, and host metrics with zero extra code. Frontend React errors POSTed to `/api/v1/telemetry/error` to unify logs in a single App Insights resource.
+- **Engagement system**: XP-based gamification with 24 models, 11 enums, 8 services. Split XP award (submission + approval). Global permanent leaderboard (no resets).
+- **XPTransaction ledger**: Immutable audit trail for every XP change with deterministic idempotency keys.
+- **Leaderboard caching**: In-memory TTL cache (60s default, 120s all-time). Invalidated on any XP change via `invalidateLeaderboardCache()`.
+- **XP recalculation**: `recalculationService.ts` with dry-run/execute modes. Compares sum of XPTransaction ledger against stored totalXP. Creates adjustment transactions for discrepancies.
+- **Engagement metrics**: `metricsService.ts` with comprehensive health monitoring (user activity, XP distribution, streaks, missions, abuse signals).
+- **Feature flags**: Safe on/off control for each subsystem via `config.engagement.*`; defaults to `true` in dev.
+- **501 responses in routes**: Feature-flag guards (`config.engagement.enabled`), NOT stubs. Implementations behind them are fully wired.
+- **Admin auth**: Uses `requireRole(UserRole.ADMIN)` middleware.
+- **Schema redesign**: OnboardingFlow stores steps as JSON (`steps` field), MissionDefinition stores criteria as JSON (`criteria` field).
+- **Prisma `count()`**: Does not support `distinct` parameter; replaced with `groupBy().length`.
+- **Prisma JSON fields**: Reject `null`; use `?? undefined` or omit.
+- **Admin engagement components**: Extracted to `components.tsx` to avoid JSX escaping issues.
 - **Dynamic species**: AI identifies any crab species; server auto-creates via `upsert` on `speciesName`
 - **Gender mapping**: `gender` in app layer, `sex` DB column preserved via Prisma `@map`
 - **Photo flow**: Guided multi-shot (dorsal → ventral → optional close-up) with quality gates
@@ -355,6 +306,8 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 
 ### Deployment
 - `Azure-Deployment-Plan.md` — Step-by-step manual Azure deployment (PostgreSQL, App Service API, App Service Web, EAS Build)
+- `scripts/deploy-server.ps1` — Automated server deployment (build, package, upload, install deps, seed)
+- `scripts/deploy-web.ps1` — Automated web deployment (build, package, upload)
 - `mobile/eas.json` — EAS build profiles: development, preview, production
-- `web/next.config.mjs` — Removed hardcoded LAN IP; `BACKEND_URL` env var only
+- `web/next.config.mjs` — `BACKEND_URL` env var only (no hardcoded IP)
 - `mobile/app.json` — `extra.apiUrl` set to Azure placeholder; `eas.projectId` empty (set by `eas-cli init`)

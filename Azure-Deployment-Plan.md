@@ -294,11 +294,7 @@ az webapp config appsettings set --name crabwatch-web --resource-group VSES-Crab
   WEBSITE_NODE_DEFAULT_VERSION="22"
 ```
 
-Set startup command once:
-
-```powershell
-az webapp config set --name crabwatch-web --resource-group VSES-CrabWatch-MY-RG --startup-file "npm start"
-```
+> **Note:** Startup is set by `deploy-web.ps1` via `--startup-file "npm start"` (Next.js). Do NOT set `WEBSITE_STARTUP_COMMAND` as an env var — it shadows `--startup-file` and adds unnecessary indirection.
 
 ### 5.3 Build + package web
 
