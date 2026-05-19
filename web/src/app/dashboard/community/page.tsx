@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
+import { logger } from '@/lib/logger'
+import { InsightDto, ContributorDto, CommunityStatsDto, MonthlyActivityEntry } from '@crabwatch/shared'
 
 interface Insight {
   id: string
@@ -14,22 +16,11 @@ interface Insight {
   expiresAt: string
 }
 
-interface Contributor {
-  id: string
-  name: string
-  avatar: string | null
-  approvedCount: number
-  totalSubmissions: number
-  level: number
-  title: string
-  totalXP: number
-}
-
 export default function CommunityPage(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<'insights' | 'contributors' | 'stats'>('insights')
   const [insights, setInsights] = useState<Insight[]>([])
-  const [contributors, setContributors] = useState<Contributor[]>([])
-  const [communityStats, setCommunityStats] = useState<any>(null)
+  const [contributors, setContributors] = useState<ContributorDto[]>([])
+  const [communityStats, setCommunityStats] = useState<CommunityStatsDto | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -40,17 +31,24 @@ export default function CommunityPage(): React.JSX.Element {
     setLoading(true)
     try {
       if (activeTab === 'insights') {
-        const data: any = await api.getInsights()
-        setInsights(data || [])
+        const data = await api.getInsights() as InsightDto[]
+        setInsights(Array.isArray(data) ? data.map((d: InsightDto) => ({
+          id: d.id,
+          type: d.type,
+          title: d.title,
+          description: d.body,
+          priority: 'medium',
+          expiresAt: d.expiresAt || '',
+        })) : [])
       } else if (activeTab === 'contributors') {
-        const data: any = await api.getTopContributors()
-        setContributors(data || [])
+        const data = await api.getTopContributors() as ContributorDto[]
+        setContributors(Array.isArray(data) ? data : [])
       } else {
-        const data: any = await api.getCommunityStats()
+        const data = await api.getCommunityStats() as CommunityStatsDto
         setCommunityStats(data)
       }
-    } catch {
-      console.error('Failed to load data')
+    } catch (error) {
+      logger.error('Failed to load community data', error)
     } finally {
       setLoading(false)
     }
@@ -218,14 +216,14 @@ export default function CommunityPage(): React.JSX.Element {
           <div className="card">
             <h2 className="text-lg font-semibold text-ocean-800 mb-4">Monthly Activity</h2>
             <div className="space-y-2">
-              {communityStats?.monthlyActivity?.map((month: any) => (
+              {communityStats?.monthlyActivity?.map(month => (
                 <div key={month.month} className="flex items-center gap-3">
                   <span className="text-sm text-gray-500 w-20">{month.month}</span>
                   <div className="flex-1 bg-gray-200 rounded-full h-4">
                     <div
                       className="bg-ocean-500 h-4 rounded-full flex items-center justify-end pr-2"
                       style={{
-                        width: `${Math.max(10, (month.count / Math.max(...(communityStats?.monthlyActivity || []).map((m: any) => m.count))) * 100)}%`,
+                        width: `${Math.max(10, (month.count / Math.max(...(communityStats?.monthlyActivity || []).map((m) => m.count))) * 100)}%`,
                       }}
                     >
                       <span className="text-xs text-white font-medium">{month.count}</span>

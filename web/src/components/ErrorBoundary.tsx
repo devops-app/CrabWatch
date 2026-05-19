@@ -1,6 +1,7 @@
-'use client'
+﻿'use client'
 
 import React, { Component, ErrorInfo, ReactNode } from 'react'
+import { api } from '@/lib/api'
 
 interface ErrorBoundaryProps {
   children: ReactNode
@@ -23,19 +24,21 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('ErrorBoundary caught:', error, errorInfo)
-
-    if (process.env.NODE_ENV === 'production') {
-      fetch('/api/v1/telemetry/error', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: error.message,
-          stack: error.stack,
-          componentStack: errorInfo.componentStack,
-        }),
-      }).catch(() => {})
+    if (process.env.NODE_ENV === 'development') {
+      console.error('ErrorBoundary caught:', error, errorInfo)
     }
+
+    fetch('/api/v1/telemetry/error', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: error.message,
+        stack: error.stack,
+        componentStack: errorInfo.componentStack,
+      }),
+    }).catch((err) => {
+      console.error('ErrorBoundary telemetry POST failed:', err)
+    })
   }
 
   render(): ReactNode {

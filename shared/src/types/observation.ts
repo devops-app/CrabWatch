@@ -16,6 +16,7 @@ export interface Observation {
   lng: number
   locationMethod: LocationMethod
   photos: string[]
+  uploadSessionId: string | null
   detectedCoin: string | null
   notes: string | null
   status: ObservationStatus
@@ -35,6 +36,7 @@ export interface CreateObservationInput {
   lng: number
   locationMethod: LocationMethod
   photos: string[]
+  uploadSessionId?: string | null
   detectedCoin?: string | null
   notes?: string
 }
@@ -66,6 +68,7 @@ export interface ObservationResponse {
   lng: number
   locationMethod: LocationMethod
   photos: string[]
+  uploadSessionId: string | null
   detectedCoin: string | null
   notes: string | null
   status: ObservationStatus

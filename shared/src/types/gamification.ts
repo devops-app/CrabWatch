@@ -70,4 +70,20 @@ export interface GamificationRuleDto {
   metadata: Record<string, unknown> | null
 }
 
+export interface CreateGamificationRuleInput {
+  actionType: RewardActionType
+  name: string
+  description: string | null
+  xpReward: number
+  active: boolean
+}
+
+export interface CreateLevelConfigInput {
+  level: number
+  title: string
+  xpThreshold: number
+  description: string | null
+  active: boolean
+}
+
 export type LeaderboardScope = 'ALL_TIME' | 'SEASONAL'

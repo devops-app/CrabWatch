@@ -77,6 +77,7 @@ export function LoginScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
+                textContentType="emailAddress"
                 value={value}
                 onBlur={onBlur}
                 onChangeText={onChange}
@@ -94,6 +95,7 @@ export function LoginScreen() {
                 label="Password"
                 placeholder="Enter your password"
                 secureTextEntry
+                textContentType="password"
                 value={value}
                 onBlur={onBlur}
                 onChangeText={onChange}

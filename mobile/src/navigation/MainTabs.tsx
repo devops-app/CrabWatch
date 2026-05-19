@@ -1,3 +1,5 @@
+import { Platform } from 'react-native'
+import * as Haptics from 'expo-haptics'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { Ionicons } from '@expo/vector-icons'
 import { HomeScreen } from '../screens/home/HomeScreen'
@@ -34,12 +36,17 @@ export function MainTabs() {
         tabBarStyle: {
           backgroundColor: TAB_COLORS.tabBar,
           borderTopColor: '#e2e8f0',
-          paddingBottom: 8,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 8,
           paddingTop: 8,
-          height: 60,
+          height: Platform.OS === 'ios' ? 82 : 60,
         },
         tabBarIconStyle: { marginTop: 2 },
         tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+      }}
+      screenListeners={{
+        tabPress: () => {
+          Haptics.selectionAsync()
+        },
       }}
     >
       <Tab.Screen
@@ -47,6 +54,7 @@ export function MainTabs() {
         component={HomeScreen}
         options={{
           title: 'Home',
+          tabBarAccessibilityLabel: 'Home',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),
@@ -57,6 +65,7 @@ export function MainTabs() {
         component={GuidedCaptureScreen}
         options={{
           title: 'New',
+          tabBarAccessibilityLabel: 'New Observation',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="add-circle" size={size} color={color} />
           ),
@@ -67,6 +76,7 @@ export function MainTabs() {
         component={AnalyticsScreen}
         options={{
           title: 'Analytics',
+          tabBarAccessibilityLabel: 'Analytics',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="analytics" size={size} color={color} />
           ),
@@ -78,6 +88,7 @@ export function MainTabs() {
           component={ResearcherScreen}
           options={{
             title: 'Review',
+            tabBarAccessibilityLabel: 'Review Observations',
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="checkmark-circle" size={size} color={color} />
             ),
@@ -90,6 +101,7 @@ export function MainTabs() {
           component={AdminScreen}
           options={{
             title: 'Admin',
+            tabBarAccessibilityLabel: 'Admin Panel',
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="settings" size={size} color={color} />
             ),
@@ -101,6 +113,7 @@ export function MainTabs() {
         component={ProfileScreen}
         options={{
           title: 'Profile',
+          tabBarAccessibilityLabel: 'Profile',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" size={size} color={color} />
           ),

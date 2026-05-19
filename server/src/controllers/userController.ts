@@ -1,6 +1,6 @@
 import { Response } from 'express'
 import { Prisma, UserRole as PrismaUserRole } from '@prisma/client'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 import { isFirebaseEnabled } from '../config/firebase'
 import { AuthRequest } from '../middleware/auth'
 import prisma from '../config/database'

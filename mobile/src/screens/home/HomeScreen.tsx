@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
+  RefreshControl,
   TouchableOpacity,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -49,13 +50,23 @@ export function HomeScreen() {
     }
   }
 
+  const onRefresh = useCallback(() => {
+    setLoading(true)
+    loadStats()
+  }, [])
+
   if (loading) {
     return <LoadingSpinner fullScreen />
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={onRefresh} tintColor={COLORS.primary} />
+        }
+      >
         <View style={styles.header}>
           <Text style={styles.greeting}>
             Welcome, {user?.name?.split(' ')[0] || 'Contributor'}

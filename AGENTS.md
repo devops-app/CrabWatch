@@ -1,7 +1,7 @@
 # CrabWatch — Work Progress Tracker
 
-> **Last Updated**: 2026-05-16
-> **Current Focus**: Mobile gamification complete — Azure deployment next
+> **Last Updated**: 2026-05-18
+> **Current Focus**: Web analytics lazy-loading complete — Azure web deployment next
 
 ## Goal
 Build an AI-guided crab observation capture flow with fully dynamic species detection. The AI identifies any crab species in photos, and unknown species are auto-created in the database.
@@ -56,19 +56,53 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Engagement migration applied, env vars configured
 - Deploy scripts: `scripts/deploy-server.ps1`, `scripts/deploy-web.ps1`
 
-### In Progress
-- (none)
+### Completed (Web Security + Resilience — Week 2)
+- Completed: Fix #6 — Added `AbortController` signal support to `api.ts` `request()` function
+- Completed: Fix #10 — Added retry logic with exponential backoff (2 retries, 1s/2s delays) for 502/503/504 in `api.ts`
+- Completed: Fix #13 — Added JWT token expiry check to `AuthGuard.tsx` before calling `getProfile()`
+- Completed: Added `console.error` fallback to silent catch in `logger.ts`
 
-### Blocked
-- (none)
+### In Progress (Web Type Safety)
+- Completed: Applied strict types to admin components, replacing all `any` with proper DTOs
+- Completed: Updated `EngagementMetricsDto` in shared types to match server's `EngagementMetrics` interface
+- Completed: Added `_count` field to `SeasonDto` for Prisma compatibility
+- Completed: Fixed empty catch block lint error in admin components
+- Completed: C-5: Replaced `any` types in `missions/page.tsx` and `achievements/page.tsx` with shared DTOs (`ActiveMissionDto`, `OnboardingStatusDto`, `UserAchievementListDto`, `CheckAchievementsResponseDto`)
+- Completed: C-6: Replaced `as any` casts in `admin/components.tsx` with `as const` tuple and proper union types
+- Completed: C-7: Pre-fetched missions/onboarding data on mount in `missions/page.tsx` to prevent tab-switch re-fetches
+- Completed: C-8: Added `logger.error()`/`logger.warn()` to silent catch blocks in `admin/components.tsx`
+- Completed: Typed API methods `getActiveMissions`, `getOnboardingStatus`, `getAchievements`, `checkAchievements` in `api.ts`
+- Completed: Added `UserAchievementListDto` and `CheckAchievementsResponseDto` to shared types
+- Remaining: ~28 `any` warnings across web app (non-blocking, follow-up cleanup)
 
-### In Progress
-- (none)
+### In Progress (Web Performance)
+- Completed: Extracted map and chart components from `analytics/page.tsx` into `map-tab.tsx` and `chart-tabs.tsx`
+- Completed: Rewrote analytics page as a lightweight shell with `next/dynamic()` lazy-loading
+- Verified: Analytics shell is 5.82 kB; heavy `react-map-gl` (1,705 kB) and `recharts` (403 kB) in separate lazy chunks
+- Completed: Extracted `capture/page.tsx` into `utils.ts`, `coin-selector.tsx`, `camera-section.tsx`, `map-picker.tsx`, `map-section.tsx`, `review-section.tsx`
+- Completed: Rewrote `capture/page.tsx` as lightweight orchestrator shell
+- Completed: Extracted `admin/page.tsx` (937 lines) into `species-tab.tsx`, `users-tab.tsx`, `backup-tab.tsx` + lightweight shell (~160 lines)
+- Verified: `next build` passes cleanly for all extracted pages
+
+### Completed (Mobile iOS/MD3 Compliance)
+- Completed: Mobile Fix #4 (I1) — Installed `expo-haptics`, added `Haptics.selectionAsync()` to `MainTabs.tsx` via `screenListeners`
+- Completed: Mobile Fix #8 (C4) — Installed `expo-status-bar`, added `<StatusBar style={...}>` to `mobile/App.tsx`
+- Completed: Mobile Fix #13 (X2) — Updated `MainTabs.tsx` tab bar height/padding for iOS (`82`/`28`) vs Android (`60`/`8`)
+- Completed: Mobile Fix #2 (A1+A2) — Added `tabBarAccessibilityLabel` to all tab screens in `MainTabs.tsx`
+- Completed: Mobile Fix #5 (S1) — Applied MD3 border radius to `Button.tsx` with platform-specific values
+- Completed: Mobile Fix #7 (I3) — Added `RefreshControl` to `AnalyticsScreen.tsx` and `HomeScreen.tsx`
+- Completed: Mobile Fix #12 (F2) — Added `textContentType` for autofill to all auth screen inputs
+- Completed: Mobile Fix #11 (A6) — Added `accessibilityLiveRegion`, `accessibilityLabel`, and `role="alert"` to `Input.tsx`
+- Completed: Mobile Fix #3 (T1) — Added `allowFontScaling` to `Input.tsx`, created `fonts.ts` with dynamic font scaling utility
 
 ### Blocked
 - (none)
 
 ## Next Steps
+- **Week 3 (Performance)**: Completed extraction of `capture/page.tsx` and `admin/page.tsx`. Remaining: apply `React.memo`, lazy-load `react-map-gl` in capture
+- **Week 4 (Modernization)**: Add `useTransition` for non-urgent state updates, convert at least one page to Server Component
+- Mobile Fix #9 (C2): Add dark mode support with `useColorScheme()`
+- Mobile Fix #1 (L1+L2): Refine tab bar safe area handling
 - Deploy web app to Azure App Service (`scripts/deploy-web.ps1`)
 - Build and publish mobile via EAS Build
 - Implement mobile deep linking for password reset URLs (`crabwatch://reset-password?token=<token>`)
@@ -126,6 +160,7 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - **Prisma `count()`**: Does not support `distinct` parameter; replaced with `groupBy().length`.
 - **Prisma JSON fields**: Reject `null`; use `?? undefined` or omit.
 - **Admin engagement components**: Extracted to `components.tsx` to avoid JSX escaping issues.
+- **Web type safety**: Replaced `any` types in admin components with strict DTOs from `@crabwatch/shared`. Updated `EngagementMetricsDto` to match server's `EngagementMetrics` interface with all 30+ fields. Added `_count` to `SeasonDto` for Prisma compatibility.
 - **Dynamic species**: AI identifies any crab species; server auto-creates via `upsert` on `speciesName`
 - **Gender mapping**: `gender` in app layer, `sex` DB column preserved via Prisma `@map`
 - **Photo flow**: Guided multi-shot (dorsal → ventral → optional close-up) with quality gates
@@ -174,6 +209,13 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - **Prisma `count()`**: Does not support `distinct` parameter; replaced with `groupBy().length`.
 - **Prisma JSON fields**: Reject `null`; use `?? undefined` or omit.
 - **Admin engagement components**: Extracted to `components.tsx` to avoid JSX escaping issues.
+- **Web type safety**: Replaced `any` types in admin components with strict DTOs from `@crabwatch/shared`. Updated `EngagementMetricsDto` to match server's `EngagementMetrics` interface with all 30+ fields. Added `_count` to `SeasonDto` for Prisma compatibility.
+- **Analytics lazy-loading**: 833-line monolithic page split into lightweight shell (5.82 kB) + 2 lazy-loaded chunks: `map-tab.tsx` (1,705 kB, react-map-gl) and `chart-tabs.tsx` (403 kB, recharts). Heavy bundles defer until tab selection, reducing initial LCP.
+- **Admin page extraction**: 937-line monolithic page split into lightweight shell (~160 lines) + 3 tab components: `species-tab.tsx` (~300 lines), `users-tab.tsx` (~340 lines), `backup-tab.tsx` (~160 lines). Shared confirm modal and flash messages remain at page level.
+- **API retry logic**: `request()` in `api.ts` retries 502/503/504 responses with exponential backoff (2 retries, 1s/2s delays). `AbortError` is re-thrown immediately without retry.
+- **AbortController support**: `request()` accepts optional `signal` in options; callers can cancel in-flight requests on unmount.
+- **Token expiry guard**: `AuthGuard.tsx` decodes JWT `exp` claim before calling `getProfile()`, redirecting immediately if expired.
+- **Telemetry fallback**: `logger.ts` catches silent telemetry POST failures with `console.error` for debugging.
 
 ## Critical Context
 - **Stack**: Expo SDK 54, React 19, RN 0.81.5, Zustand, React Navigation, Express, Prisma, Azure Storage, Azure AI Foundry
@@ -190,6 +232,7 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - **Web admin panel**: Uses `userSubTab` state and conditional rendering for Active/Deleted/Invites within the Users tab
 - **Backend observation photos**: `refreshPhotoUrls` regenerates Azure Blob SAS URLs on every observation fetch. Handles varying SAS URL formats with `slice(1).join('/')` after container name split.
 - **Azure SDK `generateSasUrl`**: Returns full URL already. Do NOT prepend `blobClient.url` — this causes doubled URLs.
+- **Analytics lazy-loading**: `next/dynamic()` with `ssr: false` for both `map-tab.tsx` and `chart-tabs.tsx`. Mapbox token must be available in browser env for the map chunk to render. Chart data is pre-fetched by the shell; lazy components receive data as props.
 
 ## Relevant Files
 ### AI Analysis
@@ -258,9 +301,14 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - `web/src/app/dashboard/observation/[id]/page.tsx` — Observation detail with photos, measurements, biological data, location, validation
 - `web/src/app/dashboard/species/page.tsx` — Species browse with search, detail modal, fullscreen images
 - `web/src/app/dashboard/page.tsx` — Dashboard home with stats cards and recent submissions table
-- `web/src/app/dashboard/admin/page.tsx` — Admin panel UI with tabs (Species, Users with sub-tabs, Backup, Engagement)
+- `web/src/app/dashboard/admin/page.tsx` — Lightweight shell (~160 lines) with tab navigation, confirm modal, and flash messages
+- `web/src/app/dashboard/admin/species-tab.tsx` — Species CRUD with form modal
+- `web/src/app/dashboard/admin/users-tab.tsx` — Users with Active/Deleted/Invites sub-tabs
+- `web/src/app/dashboard/admin/backup-tab.tsx` — Database backup management
 - `web/src/app/dashboard/admin/components.tsx` — Engagement admin tab with XP Rules, Levels, Adjustments, Recalculation, Campaigns, Audit Log, Abuse Detection
-- `web/src/app/dashboard/analytics/page.tsx` — Fixed `loadAll` callback with proper `Promise.all` and API calls
+- `web/src/app/dashboard/analytics/page.tsx` — Lightweight shell (5.82 kB) with `next/dynamic()` lazy-loading for map/chart tabs
+- `web/src/app/dashboard/analytics/map-tab.tsx` — Extracted map component (lazy-loaded, 1,705 kB chunk with react-map-gl)
+- `web/src/app/dashboard/analytics/chart-tabs.tsx` — Extracted chart components (lazy-loaded, 403 kB chunk with recharts)
 - `web/src/app/auth/register/page.tsx` — Registration form with phone/address, invite token parsing & pre-filling
 - `web/src/app/auth/login/page.tsx` — Login form with "Forgot password?" link
 - `web/src/app/auth/forgot-password/page.tsx` — Forgot password email form
@@ -281,22 +329,25 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - `mobile/src/screens/gamification/MissionsScreen.tsx` — Daily missions + onboarding tabs, claim/complete actions, progress bars, XP badges
 - `mobile/src/screens/gamification/AchievementsScreen.tsx` — Rarity colors, category/status filters, progress tracking, check-achievements action
 - `mobile/src/screens/profile/ProfileScreen.tsx` — XP stats card with level/title/XP/streak/progress; gamification quick-link cards
-- `mobile/src/screens/analytics/AnalyticsScreen.tsx` — Fixed `data.map` crash with array guards
+- `mobile/src/screens/analytics/AnalyticsScreen.tsx` — Fixed `data.map` crash with array guards; added `RefreshControl` pull-to-refresh
 - `mobile/src/screens/researcher/ResearcherScreen.tsx` — Researcher validation screen for approving/rejecting pending observations
 - `mobile/src/screens/admin/AdminScreen.tsx` — Admin panel with Users (Active/Deleted/Invites sub-tabs), Species, Backup tabs; fixed syntax error and layout
-- `mobile/src/screens/auth/RegisterScreen.tsx` — Registration form with phone/address fields
-- `mobile/src/screens/auth/LoginScreen.tsx` — Login form with "Forgot password?" link
-- `mobile/src/screens/auth/ForgotPasswordScreen.tsx` — Forgot password email form
-- `mobile/src/screens/auth/ResetPasswordScreen.tsx` — Reset password form with token from route params
+- `mobile/src/screens/auth/RegisterScreen.tsx` — Registration form with phone/address fields; `textContentType` for autofill
+- `mobile/src/screens/auth/LoginScreen.tsx` — Login form with "Forgot password?" link; `textContentType` for autofill
+- `mobile/src/screens/auth/ForgotPasswordScreen.tsx` — Forgot password email form; `textContentType` for autofill
+- `mobile/src/screens/auth/ResetPasswordScreen.tsx` — Reset password form with token from route params; `textContentType` for autofill
 - `mobile/src/screens/profile/EditProfileScreen.tsx` — Edit profile with phone/address
 - `mobile/src/screens/profile/ProfileScreen.tsx` — Displays phone/address
 - `mobile/src/screens/common/AboutScreen.tsx` — Mobile about screen
 - `mobile/src/components/common/PhoneCodePicker.tsx` — Added `label` prop and styling
+- `mobile/src/components/common/Button.tsx` — MD3 border radius with platform-specific values; haptic feedback on press
+- `mobile/src/components/common/Input.tsx` — `allowFontScaling`, `accessibilityLiveRegion`, `accessibilityLabel`, `role="alert"` for errors
 - `mobile/src/services/api.ts` — API calls for register/login/profile, password reset, comprehensive admin methods
 - `mobile/src/services/authService.ts` — Auth orchestration
 - `mobile/src/navigation/MainTabs.tsx` — Swapped Species for Analytics tab, conditionally renders Researcher and Admin tabs based on user role
 - `mobile/src/navigation/AuthStack.tsx` — Wired `ForgotPassword` and `ResetPassword` screens
 - `mobile/src/navigation/types.ts` — Updated `MainTabParamList` and `AuthStackParamList`
+- `mobile/src/utils/fonts.ts` — Dynamic font scaling utility with `PixelRatio.getFontScale()` and clamped scale
 
 ### Shared
 - `shared/src/types/user.ts` — User, CreateUserInput, UpdateUserProfileInput, UserResponse types; Invite, PasswordResetRequest, PasswordResetConfirm types

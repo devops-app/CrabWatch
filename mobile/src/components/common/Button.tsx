@@ -4,8 +4,10 @@ import {
   Text,
   ActivityIndicator,
   StyleSheet,
+  Platform,
   type TouchableOpacityProps,
 } from 'react-native'
+import * as Haptics from 'expo-haptics'
 import { COLORS } from '../../utils/constants'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost'
@@ -16,11 +18,11 @@ interface ButtonProps extends TouchableOpacityProps {
   title: string
 }
 
-const VARIANT_STYLES: Record<ButtonVariant, { bg: string; color: string; border?: string }> = {
-  primary: { bg: COLORS.primary, color: '#ffffff' },
-  secondary: { bg: COLORS.secondary, color: '#ffffff' },
-  danger: { bg: COLORS.error, color: '#ffffff' },
-  ghost: { bg: 'transparent', color: COLORS.primary, border: COLORS.primary },
+const VARIANT_STYLES: Record<ButtonVariant, { bg: string; color: string; border?: string; radius: number }> = {
+  primary: { bg: COLORS.primary, color: '#ffffff', radius: Platform.OS === 'android' ? 4 : 12 },
+  secondary: { bg: COLORS.secondary, color: '#ffffff', radius: Platform.OS === 'android' ? 16 : 12 },
+  danger: { bg: COLORS.error, color: '#ffffff', radius: Platform.OS === 'android' ? 4 : 12 },
+  ghost: { bg: 'transparent', color: COLORS.primary, border: COLORS.primary, radius: Platform.OS === 'android' ? 100 : 12 },
 }
 
 export function Button({
@@ -29,20 +31,29 @@ export function Button({
   title,
   disabled,
   style,
+  onPress,
   ...props
 }: ButtonProps) {
   const variantStyle = VARIANT_STYLES[variant]
+
+  const handlePress = (e: any) => {
+    if (!disabled && !loading) {
+      Haptics.selectionAsync()
+    }
+    onPress?.(e)
+  }
 
   return (
     <TouchableOpacity
       style={[
         styles.container,
-        { backgroundColor: variantStyle.bg, borderColor: variantStyle.border },
+        { backgroundColor: variantStyle.bg, borderColor: variantStyle.border, borderRadius: variantStyle.radius },
         disabled && styles.disabled,
         style,
       ]}
       disabled={disabled || loading}
       activeOpacity={0.7}
+      onPress={handlePress}
       {...props}
     >
       {loading ? (
@@ -61,7 +72,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 14,
     paddingHorizontal: 24,
-    borderRadius: 12,
     borderWidth: 0,
     minWidth: 120,
   },

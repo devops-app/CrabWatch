@@ -15,6 +15,8 @@ interface MulterFile {
   size: number
 }
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
 export async function uploadAnalysisPhotosHandler(
   req: AuthRequest & { files?: MulterFile[] | { [key: string]: MulterFile[] } },
   res: Response
@@ -32,7 +34,15 @@ export async function uploadAnalysisPhotosHandler(
       return
     }
 
-    const blobUrls = await uploadAnalysisPhotos(files)
+    const sessionId = typeof req.body?.sessionId === 'string' ? req.body.sessionId : undefined
+    if (sessionId && !UUID_PATTERN.test(sessionId)) {
+      res.status(400).json({ success: false, error: 'sessionId must be a valid UUID' })
+      return
+    }
+    const blobUrls = await uploadAnalysisPhotos(files, {
+      userId: req.dbUser?.id || 'anon',
+      sessionId,
+    })
 
     res.json({
       success: true,
@@ -121,7 +131,10 @@ export async function analyzeCrabHandler(
     const cleanupDelayMs = cleanupDelayRaw != null ? Number(cleanupDelayRaw) : null
 
     if (cleanupDelayMs != null && Number.isFinite(cleanupDelayMs) && cleanupDelayMs > 0) {
-      const blobUrlsToCleanup = [...photoUrls]
+      const blobUrlsToCleanup = photoUrls.filter((url) => !url.includes('/observations/'))
+      if (blobUrlsToCleanup.length === 0) {
+        return
+      }
       setTimeout(() => {
         cleanupAnalysisBlobs(blobUrlsToCleanup).catch(() => {})
       }, cleanupDelayMs)
@@ -135,7 +148,7 @@ export async function analyzeCrabHandler(
       return
     }
 
-    if (message.includes('not configured')) {
+    if (message.includes('not configured') || message.includes('must be configured')) {
       res.status(503).json({ success: false, error: 'AI analysis service not configured' })
       return
     }
@@ -161,15 +174,8 @@ export async function detectViewHandler(
       return
     }
 
-    const blobUrls = await uploadAnalysisPhotos([req.file])
-    const blobUrl = blobUrls[0]
-
-    try {
-      const result = await detectViewAgent(blobUrl, expectedView)
-      res.json({ success: true, data: result })
-    } finally {
-      cleanupAnalysisBlobs(blobUrls).catch(() => {})
-    }
+    const result = await detectViewAgent(req.file.buffer, req.file.mimetype, expectedView)
+    res.json({ success: true, data: result })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'View detection failed'
     console.error('View detection error:', error)
@@ -179,7 +185,7 @@ export async function detectViewHandler(
       return
     }
 
-    if (message.includes('not configured')) {
+    if (message.includes('not configured') || message.includes('must be configured')) {
       res.status(503).json({ success: false, error: 'AI analysis service not configured' })
       return
     }

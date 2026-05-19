@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
+  RefreshControl,
   TouchableOpacity,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -43,13 +44,24 @@ export function AnalyticsScreen() {
     }
   }
 
+  const onRefresh = useCallback(() => {
+    setLoading(true)
+    setError('')
+    loadAnalytics()
+  }, [])
+
   if (loading) {
     return <LoadingSpinner fullScreen />
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={onRefresh} tintColor={COLORS.primary} />
+        }
+      >
         <Text style={styles.headerTitle}>Analytics</Text>
         <Text style={styles.headerSub}>Population insights from observations</Text>
 
@@ -131,9 +143,15 @@ function GenderSection({ data }: { data: GenderRatioData[] }) {
   return (
     <View style={styles.section}>
       {data.map((item, index) => {
-        const total = item.male + item.female + item.unknown
-        const malePct = total > 0 ? (item.male / total) * 100 : 0
-        const femalePct = total > 0 ? (item.female / total) * 100 : 0
+        const maleCount = Number((item as { male?: number | null }).male ?? 0)
+        const femaleCount = Number((item as { female?: number | null }).female ?? 0)
+        const unknownCount = Number((item as { unknown?: number | null }).unknown ?? 0)
+        const ratioRaw = (item as { ratio?: number | null }).ratio
+        const total = maleCount + femaleCount + unknownCount
+        const malePct = total > 0 ? (maleCount / total) * 100 : 0
+        const femalePct = total > 0 ? (femaleCount / total) * 100 : 0
+        const ratioLabel =
+          ratioRaw == null ? 'N/A' : Number.isFinite(Number(ratioRaw)) ? Number(ratioRaw).toFixed(2) : '∞'
 
         return (
           <Card key={index} padding={16}>
@@ -162,20 +180,20 @@ function GenderSection({ data }: { data: GenderRatioData[] }) {
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: COLORS.primary }]} />
                 <Text style={styles.legendText}>
-                  Male ({item.male}) — {malePct.toFixed(1)}%
+                  Male ({maleCount}) — {malePct.toFixed(1)}%
                 </Text>
               </View>
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: COLORS.accent }]} />
                 <Text style={styles.legendText}>
-                  Female ({item.female}) — {femalePct.toFixed(1)}%
+                  Female ({femaleCount}) — {femalePct.toFixed(1)}%
                 </Text>
               </View>
             </View>
-            {item.unknown > 0 && (
-              <Text style={styles.unknownText}>Unknown: {item.unknown}</Text>
+            {unknownCount > 0 && (
+              <Text style={styles.unknownText}>Unknown: {unknownCount}</Text>
             )}
-            <Text style={styles.ratioText}>M:F Ratio = {item.ratio.toFixed(2)}</Text>
+            <Text style={styles.ratioText}>M:F Ratio = {ratioLabel}</Text>
           </Card>
         )
       })}

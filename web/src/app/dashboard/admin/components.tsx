@@ -1,7 +1,9 @@
-'use client'
+﻿'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { api } from '@/lib/api'
+import { logger } from '@/lib/logger'
+import { GamificationRuleDto, LevelConfigDto, CampaignDto, AdminAuditLogDto, AbuseSignalDto, AchievementDto, MissionDto, SeasonDto, EngagementMetricsDto, RecalculationResultDto, RecalculationJobDto, RecalculationUserResult, AchievementCondition, RewardActionType } from '@crabwatch/shared'
 
 interface EngagementAdminTabProps {
   flash: (msg: string, type: 'error' | 'success') => void
@@ -9,8 +11,8 @@ interface EngagementAdminTabProps {
 
 export function EngagementAdminTab({ flash }: EngagementAdminTabProps): React.JSX.Element {
   const [subTab, setSubTab] = useState<'xp-rules' | 'levels' | 'xp-adjust' | 'achievements' | 'missions' | 'seasons' | 'campaigns' | 'audit' | 'abuse' | 'metrics'>('xp-rules')
-  const [rules, setRules] = useState<any[]>([])
-  const [levels, setLevels] = useState<any[]>([])
+  const [rules, setRules] = useState<GamificationRuleDto[]>([])
+  const [levels, setLevels] = useState<LevelConfigDto[]>([])
   const [loading, setLoading] = useState(true)
   const [ruleDraft, setRuleDraft] = useState({
     actionType: '',
@@ -40,9 +42,9 @@ export function EngagementAdminTab({ flash }: EngagementAdminTabProps): React.JS
   const [recalcUserId, setRecalcUserId] = useState('')
   const [recalcReason, setRecalcReason] = useState('')
   const [recalcLoading, setRecalcLoading] = useState(false)
-  const [recalcResults, setRecalcResults] = useState<any>(null)
+  const [recalcResults, setRecalcResults] = useState<RecalculationResultDto | null>(null)
   const [recalcJobId, setRecalcJobId] = useState<string | null>(null)
-  const [recalcJobStatus, setRecalcJobStatus] = useState<any>(null)
+  const [recalcJobStatus, setRecalcJobStatus] = useState<{ status: string; processed?: number; updatedAt?: Date } | null>(null)
 
   useEffect(() => {
     Promise.all([loadRules(), loadLevels()])
@@ -52,15 +54,20 @@ export function EngagementAdminTab({ flash }: EngagementAdminTabProps): React.JS
     try {
       const data = await api.listGamificationRules()
       setRules(Array.isArray(data) ? data : [])
-    } catch { console.error('Failed to load rules') }
-    finally { setLoading(false) }
+    } catch (err) {
+      logger.error('Failed to load rules', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const loadLevels = async () => {
     try {
       const data = await api.listLevelConfigs()
       setLevels(Array.isArray(data) ? data : [])
-    } catch { console.error('Failed to load levels') }
+    } catch (err) {
+      logger.error('Failed to load levels', err)
+    }
   }
 
   const handleAdjustXP = async () => {
@@ -70,14 +77,14 @@ export function EngagementAdminTab({ flash }: EngagementAdminTabProps): React.JS
       await api.adjustXP({ userId: adjUserId, deltaXP: adjDeltaXP, reason: adjReason })
       flash('XP adjusted', 'success')
       setAdjUserId(''); setAdjDeltaXP(0); setAdjReason('')
-    } catch (err: any) { flash(err.message || 'Failed', 'error') }
+    } catch (err: unknown) { flash(err instanceof Error ? err.message : 'Failed', 'error') }
     finally { setAdjLoading(false) }
   }
 
   const handleRecalculate = async () => {
     setRecalcLoading(true)
     try {
-      const data: any = await api.recalculateXP({ mode: recalcMode, userId: recalcUserId || undefined, reason: recalcReason || undefined })
+      const data = await api.recalculateXP({ mode: recalcMode, userId: recalcUserId || undefined, reason: recalcReason || undefined }) as RecalculationResultDto
       setRecalcResults(data)
       if (data.jobId) {
         setRecalcJobId(data.jobId)
@@ -85,22 +92,28 @@ export function EngagementAdminTab({ flash }: EngagementAdminTabProps): React.JS
         pollJobStatus(data.jobId)
       }
       flash('Recalc done', 'success')
-    } catch (err: any) { flash(err.message || 'Failed', 'error') }
+    } catch (err: unknown) { flash(err instanceof Error ? err.message : 'Failed', 'error') }
     finally { setRecalcLoading(false) }
   }
 
+  const pollingRef = useRef(false)
+
   const pollJobStatus = async (jobId: string) => {
+    pollingRef.current = true
     const poll = async () => {
+      if (!pollingRef.current) return
       try {
-        const status: any = await api.getRecalculationJobStatus(jobId)
+    const status = await api.getRecalculationJobStatus(jobId) as RecalculationJobDto
         setRecalcJobStatus(status)
         if (status.status !== 'running') {
-          flash(`Job ${status.status}: ${status.processed || 0} users processed`, 'success')
+          flash(`Job ${status.status}: ${status.processedUsers || 0} users processed`, 'success')
           return
         }
         setTimeout(poll, 2000)
-      } catch {
+      } catch (err) {
+        pollingRef.current = false
         // Job may have been cleared
+        logger.warn('Recalculation poll ended', err)
       }
     }
     setTimeout(poll, 2000)
@@ -108,24 +121,24 @@ export function EngagementAdminTab({ flash }: EngagementAdminTabProps): React.JS
 
   const checkJobStatus = async (jobId: string) => {
     try {
-      const status: any = await api.getRecalculationJobStatus(jobId)
+      const status = await api.getRecalculationJobStatus(jobId) as RecalculationJobDto
       setRecalcJobId(jobId)
-      setRecalcJobStatus(status)
+      setRecalcJobStatus({ status: status.status, processed: status.processedUsers, updatedAt: new Date(status.createdAt) })
       if (status.status === 'running') pollJobStatus(jobId)
-    } catch (err: any) { flash(err.message || 'Job not found', 'error') }
+    } catch (err: unknown) { flash(err instanceof Error ? err.message : 'Job not found', 'error') }
   }
 
-  const handleToggleRule = async (rule: any) => {
+  const handleToggleRule = async (rule: GamificationRuleDto) => {
     try {
       await api.updateGamificationRule(rule.id, { active: !rule.active })
       flash('Rule toggled', 'success')
       loadRules()
-    } catch (err: any) { flash(err.message || 'Failed', 'error') }
+    } catch (err: unknown) { flash(err instanceof Error ? err.message : 'Failed', 'error') }
   }
 
-  const handleDeleteRule = async (rule: any) => {
+  const handleDeleteRule = async (rule: GamificationRuleDto) => {
     try { await api.deleteGamificationRule(rule.id); flash('Rule deleted', 'success'); loadRules() }
-    catch (err: any) { flash(err.message || 'Failed', 'error') }
+    catch (err: unknown) { flash(err instanceof Error ? err.message : 'Failed', 'error') }
   }
 
   const resetRuleDraft = () => {
@@ -133,7 +146,7 @@ export function EngagementAdminTab({ flash }: EngagementAdminTabProps): React.JS
     setEditingRuleId(null)
   }
 
-  const handleEditRule = (rule: any) => {
+  const handleEditRule = (rule: GamificationRuleDto) => {
     setEditingRuleId(rule.id)
     setRuleDraft({
       actionType: rule.actionType || '',
@@ -153,7 +166,7 @@ export function EngagementAdminTab({ flash }: EngagementAdminTabProps): React.JS
     setSavingRule(true)
     try {
       const payload = {
-        actionType: ruleDraft.actionType.trim(),
+        actionType: ruleDraft.actionType.trim() as RewardActionType,
         name: ruleDraft.name.trim(),
         description: ruleDraft.description.trim() || null,
         xpReward: ruleDraft.xpReward,
@@ -170,16 +183,16 @@ export function EngagementAdminTab({ flash }: EngagementAdminTabProps): React.JS
 
       resetRuleDraft()
       await loadRules()
-    } catch (err: any) {
-      flash(err.message || 'Failed', 'error')
+    } catch (err: unknown) {
+      flash(err instanceof Error ? err.message : 'Failed', 'error')
     } finally {
       setSavingRule(false)
     }
   }
 
-  const handleDeleteLevel = async (level: any) => {
+  const handleDeleteLevel = async (level: LevelConfigDto) => {
     try { await api.deleteLevelConfig(level.id); flash('Level deleted', 'success'); loadLevels() }
-    catch (err: any) { flash(err.message || 'Failed', 'error') }
+    catch (err: unknown) { flash(err instanceof Error ? err.message : 'Failed', 'error') }
   }
 
   const resetLevelDraft = () => {
@@ -187,7 +200,7 @@ export function EngagementAdminTab({ flash }: EngagementAdminTabProps): React.JS
     setEditingLevelId(null)
   }
 
-  const handleEditLevel = (level: any) => {
+  const handleEditLevel = (level: LevelConfigDto) => {
     setEditingLevelId(level.id)
     setLevelDraft({
       level: Number(level.level) || 1,
@@ -232,8 +245,8 @@ export function EngagementAdminTab({ flash }: EngagementAdminTabProps): React.JS
 
       resetLevelDraft()
       await loadLevels()
-    } catch (err: any) {
-      flash(err.message || 'Failed', 'error')
+    } catch (err: unknown) {
+      flash(err instanceof Error ? err.message : 'Failed', 'error')
     } finally {
       setSavingLevel(false)
     }
@@ -250,14 +263,14 @@ export function EngagementAdminTab({ flash }: EngagementAdminTabProps): React.JS
     { key: 'audit', label: 'Audit Log' },
     { key: 'abuse', label: 'Abuse Detection' },
     { key: 'metrics', label: 'Metrics' },
-  ]
+  ] as const
 
   return (
     <div className="card">
       <h2 className="text-xl font-semibold text-ocean-800 mb-4">Engagement Management</h2>
       <div className="flex gap-2 mb-6 border-b overflow-x-auto">
         {subTabs.map((sub) => (
-          <button key={sub.key} onClick={() => setSubTab(sub.key as any)}
+          <button key={sub.key} onClick={() => setSubTab(sub.key)}
             className={'px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ' +
               (subTab === sub.key ? 'text-ocean-700 border-b-2 border-ocean-700' : 'text-gray-500 hover:text-gray-700')}>
             {sub.label}
@@ -330,16 +343,16 @@ function XPRulesTab({
   onToggle,
   onDelete,
 }: {
-  rules: any[]
+  rules: GamificationRuleDto[]
   draft: { actionType: string; name: string; description: string; xpReward: number; active: boolean }
   saving: boolean
   isEditing: boolean
   onDraftChange: (value: { actionType: string; name: string; description: string; xpReward: number; active: boolean }) => void
   onSave: () => void
-  onEdit: (r: any) => void
+  onEdit: (r: GamificationRuleDto) => void
   onCancel: () => void
-  onToggle: (r: any) => void
-  onDelete: (r: any) => void
+  onToggle: (r: GamificationRuleDto) => void
+  onDelete: (r: GamificationRuleDto) => void
 }) {
   return (
     <div>
@@ -453,15 +466,15 @@ function LevelsTab({
   onCancel,
   onDelete,
 }: {
-  levels: any[]
+  levels: LevelConfigDto[]
   draft: { level: number; title: string; xpThreshold: number; description: string; active: boolean }
   saving: boolean
   isEditing: boolean
   onDraftChange: (value: { level: number; title: string; xpThreshold: number; description: string; active: boolean }) => void
   onSave: () => void
-  onEdit: (l: any) => void
+  onEdit: (l: LevelConfigDto) => void
   onCancel: () => void
-  onDelete: (l: any) => void
+  onDelete: (l: LevelConfigDto) => void
 }) {
   return (
     <div>
@@ -565,7 +578,15 @@ function LevelsTab({
   )
 }
 
-function XPAdjustTab(props: any) {
+function XPAdjustTab(props: {
+  adjUserId: string; setAdjUserId: (v: string) => void; adjDeltaXP: number; setAdjDeltaXP: (v: number) => void;
+  adjReason: string; setAdjReason: (v: string) => void; adjLoading: boolean;
+  recalcMode: 'dry-run' | 'execute'; setRecalcMode: (v: 'dry-run' | 'execute') => void;
+  recalcUserId: string; setRecalcUserId: (v: string) => void; recalcReason: string; setRecalcReason: (v: string) => void;
+  recalcLoading: boolean; recalcResults: RecalculationResultDto | null;
+  recalcJobId: string | null; recalcJobStatus: { status: string; processed?: number; updatedAt?: Date } | null;
+  onAdjust: () => void; onRecalculate: () => void; onCheckJob: (jobId: string) => void;
+}) {
   const { adjUserId, setAdjUserId, adjDeltaXP, setAdjDeltaXP, adjReason, setAdjReason, adjLoading,
     recalcMode, setRecalcMode, recalcUserId, setRecalcUserId, recalcReason, setRecalcReason,
     recalcLoading, recalcResults, recalcJobId, recalcJobStatus, onAdjust, onRecalculate, onCheckJob } = props
@@ -601,7 +622,7 @@ function XPAdjustTab(props: any) {
         <div className="space-y-3">
           <div>
             <label className="block text-sm text-gray-600 mb-1">Mode</label>
-            <select value={recalcMode} onChange={(e) => setRecalcMode(e.target.value)}
+            <select value={recalcMode} onChange={(e) => setRecalcMode(e.target.value as 'dry-run' | 'execute')}
               className="w-full border rounded px-3 py-2 text-sm">
               <option value="dry-run">Dry Run (preview)</option>
               <option value="execute">Execute (apply changes)</option>
@@ -626,7 +647,7 @@ function XPAdjustTab(props: any) {
             <div className="mt-4 p-3 bg-gray-50 rounded text-sm">
               <div className="font-medium mb-2">Results:</div>
               <div className="text-gray-600">Mode: {recalcResults.mode} | Users: {recalcResults.totalUsers}</div>
-              {recalcResults.results?.slice(0, 5).map((r: any) => {
+              {recalcResults.results?.slice(0, 5).map((r: RecalculationUserResult) => {
                 const diffStr = r.diff >= 0 ? '+' + r.diff : String(r.diff)
                 const arrow = ' \u2192 '
                 return (
@@ -659,9 +680,9 @@ function XPAdjustTab(props: any) {
                 {recalcJobId && (
                   <div className="text-xs text-gray-400 font-mono truncate">ID: {recalcJobId}</div>
                 )}
-                <div className="text-xs text-gray-400">
-                  Updated: {new Date(recalcJobStatus.updatedAt).toLocaleTimeString()}
-                </div>
+               <div className="text-xs text-gray-400">
+                    Updated: {recalcJobStatus.updatedAt ? new Date(recalcJobStatus.updatedAt).toLocaleTimeString() : '—'}
+                  </div>
               </div>
             )}
           </div>
@@ -671,7 +692,7 @@ function XPAdjustTab(props: any) {
 }
 
 function CampaignAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Element {
-  const [campaigns, setCampaigns] = useState<any[]>([])
+  const [campaigns, setCampaigns] = useState<CampaignDto[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [formCode, setFormCode] = useState('')
@@ -682,7 +703,7 @@ function CampaignAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Elem
   const [formMinLevel, setFormMinLevel] = useState(1)
 
   const loadCampaigns = async () => {
-    try { const data = await api.listCampaigns(); setCampaigns(Array.isArray(data) ? data : []) } catch (_e) {} finally { setLoading(false) }
+    try { const data = await api.listCampaigns(); setCampaigns(Array.isArray(data) ? data : []) } catch (err) { logger.error('Failed to load campaigns', err) } finally { setLoading(false) }
   }
   useEffect(() => { loadCampaigns() }, [])
 
@@ -694,12 +715,12 @@ function CampaignAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Elem
       flash('Campaign created', 'success')
       setShowForm(false); setFormCode(''); setFormName(''); setFormTitle(''); setFormBody('')
       loadCampaigns()
-    } catch (err: any) { flash(err.message || 'Failed to create', 'error') }
+    } catch (err: unknown) { flash(err instanceof Error ? err.message : 'Failed to create', 'error') }
   }
 
   const handleLaunch = async (id: string) => {
-    try { const data: any = await api.launchCampaign(id); flash('Launched: ' + (data.sent || 0) + ' sent', 'success'); loadCampaigns() }
-    catch (err: any) { flash(err.message || 'Failed', 'error') }
+    try { const data = await api.launchCampaign(id) as { sent?: number }; flash('Launched: ' + (data.sent || 0) + ' sent', 'success'); loadCampaigns() }
+    catch (err: unknown) { flash(err instanceof Error ? err.message : 'Failed', 'error') }
   }
 
   const [testUserId, setTestUserId] = useState('')
@@ -712,13 +733,13 @@ function CampaignAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Elem
       await api.sendTestCampaign(id, testUserId)
       flash('Test sent successfully', 'success')
       setTestingCampaignId(null)
-    } catch (err: any) { flash(err.message || 'Failed', 'error') }
+    } catch (err: unknown) { flash(err instanceof Error ? err.message : 'Failed', 'error') }
     finally { setTestingCampaignId(null) }
   }
 
   const handleDelete = async (id: string) => {
     try { await api.deleteCampaign(id); flash('Campaign deleted', 'success'); loadCampaigns() }
-    catch (err: any) { flash(err.message || 'Failed', 'error') }
+    catch (err: unknown) { flash(err instanceof Error ? err.message : 'Failed', 'error') }
   }
 
   const statusColor = (s: string) => {
@@ -827,8 +848,8 @@ function CampaignAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Elem
 }
 
 function AuditAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Element {
-  const [logs, setLogs] = useState<any[]>([])
-  const [stats, setStats] = useState<any>(null)
+  const [logs, setLogs] = useState<AdminAuditLogDto[]>([])
+  const [stats, setStats] = useState<{ totalEntries: number; xpAdjustments: number; campaignLaunches: number; abuseResolutions: number } | null>(null)
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
@@ -840,11 +861,11 @@ function AuditAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Element
         api.getAuditLogs({ limit: 20 }),
         api.getAuditLogStats(),
       ])
-      const logsData: any = logData
+      const logsData = logData as AdminAuditLogDto[] | { items: AdminAuditLogDto[]; totalPages: number }
       setLogs(Array.isArray(logsData) ? logsData : (logsData.items || []))
-      setStats(statsData)
-      setTotalPages(logsData.totalPages || 1)
-    } catch { console.error('Failed to load audit logs') }
+      setStats(statsData as typeof stats)
+      setTotalPages((logsData as { totalPages?: number })?.totalPages || 1)
+    } catch { logger.error('Failed to load audit logs') }
     finally { setLoading(false) }
   }
   useEffect(() => { loadLogs() }, [page])
@@ -882,12 +903,12 @@ function AuditAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Element
               <th className="text-left py-2 px-3 text-gray-500">Action</th>
               <th className="text-left py-2 px-3 text-gray-500">Details</th>
             </tr></thead>
-            <tbody>{logs.map((log: any, i: number) => (
-              <tr key={i} className="border-b">
+            <tbody>{logs.map(log => (
+              <tr key={log.id} className="border-b">
                 <td className="py-2 px-3 text-gray-500 text-xs">{new Date(log.createdAt).toLocaleString()}</td>
                 <td className="py-2 px-3 font-mono text-xs">{log.actorType}: {log.actorId?.slice(0, 8)}</td>
                 <td className="py-2 px-3 font-medium">{log.action}</td>
-                <td className="py-2 px-3 text-gray-500 text-xs">{log.details || '-'}</td>
+                <td className="py-2 px-3 text-gray-500 text-xs">{log.reason || '-'}</td>
               </tr>))}</tbody>
           </table>
           <div className="flex justify-center gap-2 mt-4">
@@ -904,22 +925,22 @@ function AuditAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Element
 }
 
 function AbuseAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Element {
-  const [signals, setSignals] = useState<any[]>([])
+  const [signals, setSignals] = useState<AbuseSignalDto[]>([])
   const [loading, setLoading] = useState(true)
 
   const loadSignals = async () => {
     try { const data = await api.getAbuseSignals(); setSignals(Array.isArray(data) ? data : []) }
-    catch { console.error('Failed to load abuse signals') }
+    catch { logger.error('Failed to load abuse signals') }
     finally { setLoading(false) }
   }
   useEffect(() => { loadSignals() }, [])
 
-  const handleResolve = async (signal: any) => {
+  const handleResolve = async (signal: AbuseSignalDto) => {
     try {
       await api.resolveAbuseSignal(signal.id, 'Admin reviewed')
       flash('Signal resolved', 'success')
       loadSignals()
-    } catch (err: any) { flash(err.message || 'Failed', 'error') }
+    } catch (err: unknown) { flash(err instanceof Error ? err.message : 'Failed', 'error') }
   }
 
   const scoreColor = (score: number) => {
@@ -945,22 +966,22 @@ function AbuseAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Element
             <th className="text-left py-2 px-3 text-gray-500">Status</th>
             <th className="text-left py-2 px-3 text-gray-500">Actions</th>
           </tr></thead>
-          <tbody>{signals.map((signal: any) => (
+          <tbody>{signals.map(signal => (
             <tr key={signal.id} className="border-b">
               <td className="py-2 px-3 font-mono text-xs">{signal.userId?.slice(0, 8)}</td>
-              <td className="py-2 px-3 text-xs">{signal.signalType}</td>
-              <td className={'py-2 px-3 font-bold ' + scoreColor(signal.compositeScore || 0)}>
-                {((signal.compositeScore || 0) * 100).toFixed(0)}%
+              <td className="py-2 px-3 text-xs">{signal.type}</td>
+              <td className={'py-2 px-3 font-bold ' + scoreColor(signal.riskScore || 0)}>
+                {((signal.riskScore || 0) * 100).toFixed(0)}%
               </td>
-              <td className="py-2 px-3 text-gray-500 text-xs">{signal.details || '-'}</td>
+              <td className="py-2 px-3 text-gray-500 text-xs">{signal.summary || '-'}</td>
               <td className="py-2 px-3">
                 <span className={'px-2 py-0.5 rounded-full text-xs ' +
-                  (signal.isResolved ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700')}>
-                  {signal.isResolved ? 'Resolved' : 'Open'}
+                  (signal.resolved ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700')}>
+                  {signal.resolved ? 'Resolved' : 'Open'}
                 </span>
               </td>
               <td className="py-2 px-3">
-                {!signal.isResolved && (
+                {!signal.resolved && (
                   <button onClick={() => handleResolve(signal)} className="text-xs text-ocean-600 hover:underline">
                     Resolve
                   </button>
@@ -976,7 +997,7 @@ function AbuseAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Element
 // ==================== ACHIEVEMENTS ADMIN ====================
 
 function AchievementsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Element {
-  const [achievements, setAchievements] = useState<any[]>([])
+  const [achievements, setAchievements] = useState<AchievementDto[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -1014,7 +1035,7 @@ function AchievementsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.
       await api.createAchievement({ code: formCode, name: formName, description: formDesc, category: formCategory, rarity: formRarity, xpReward: formXpReward, isHidden: formHidden, isActive: formActive })
       flash('Achievement created', 'success')
       resetForm(); setShowForm(false); loadAchievements()
-    } catch (err: any) { flash(err.message || 'Failed', 'error') }
+    } catch (err: unknown) { flash(err instanceof Error ? err.message : 'Failed', 'error') }
   }
 
   const handleUpdate = async () => {
@@ -1023,19 +1044,19 @@ function AchievementsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.
       await api.updateAchievement(editingId, { code: formCode, name: formName, description: formDesc, category: formCategory, rarity: formRarity, xpReward: formXpReward, isHidden: formHidden, isActive: formActive })
       flash('Achievement updated', 'success')
       resetForm(); setShowForm(false); loadAchievements()
-    } catch (err: any) { flash(err.message || 'Failed', 'error') }
+    } catch (err: unknown) { flash(err instanceof Error ? err.message : 'Failed', 'error') }
   }
 
-  const handleEdit = (a: any) => {
+  const handleEdit = (a: AchievementDto) => {
     setFormCode(a.code); setFormName(a.name); setFormDesc(a.description)
     setFormCategory(a.category); setFormRarity(a.rarity || 'COMMON')
     setFormXpReward(a.xpReward || 0); setFormHidden(a.isHidden || false); setFormActive(a.isActive ?? true)
     setEditingId(a.id); setShowForm(true)
   }
 
-  const handleDelete = async (a: any) => {
+  const handleDelete = async (a: AchievementDto) => {
     try { await api.deleteAchievement(a.id); flash('Achievement deleted', 'success'); loadAchievements() }
-    catch (err: any) { flash(err.message || 'Failed', 'error') }
+    catch (err: unknown) { flash(err instanceof Error ? err.message : 'Failed', 'error') }
   }
 
   const handleAward = async (id: string) => {
@@ -1044,7 +1065,7 @@ function AchievementsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.
       await api.awardAchievement(id, awardUserId, awardReason)
       flash('Achievement awarded', 'success')
       setAwardUserId(''); setAwardReason(''); setAwardingId(null)
-    } catch (err: any) { flash(err.message || 'Failed', 'error') }
+    } catch (err: unknown) { flash(err instanceof Error ? err.message : 'Failed', 'error') }
   }
 
   const rarityColor = (r: string) => {
@@ -1183,7 +1204,7 @@ function AchievementsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.
 // ==================== MISSIONS ADMIN ====================
 
 function MissionsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Element {
-  const [missions, setMissions] = useState<any[]>([])
+  const [missions, setMissions] = useState<MissionDto[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -1200,8 +1221,11 @@ function MissionsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Elem
     try {
       const data = await api.listAdminMissions()
       setMissions(Array.isArray(data) ? data : [])
-    } catch { /* 501 is fine */ }
-    finally { setLoading(false) }
+    } catch (err) {
+      logger.warn('Missions load failed (feature may be disabled)', err)
+    } finally {
+      setLoading(false)
+    }
   }
   useEffect(() => { loadMissions() }, [])
 
@@ -1214,26 +1238,26 @@ function MissionsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Elem
   const handleCreate = async () => {
     if (!formCode || !formName || !formDesc || !formCriteria) { flash('All fields required', 'error'); return }
     try {
-      let criteria: any
+      let criteria: AchievementCondition[]
       try { criteria = JSON.parse(formCriteria) } catch { flash('Criteria must be valid JSON', 'error'); return }
       await api.createMission({ code: formCode, name: formName, description: formDesc, cadence: formCadence, criteria, xpReward: formXpReward, maxClaimsPerUser: formMaxClaims, active: formActive })
       flash('Mission created', 'success')
       resetForm(); setShowForm(false); loadMissions()
-    } catch (err: any) { flash(err.message || 'Failed', 'error') }
+    } catch (err: unknown) { flash(err instanceof Error ? err.message : 'Failed', 'error') }
   }
 
   const handleUpdate = async () => {
     if (!editingId) return
     try {
-      let criteria: any
+      let criteria: AchievementCondition[]
       try { criteria = JSON.parse(formCriteria) } catch { flash('Criteria must be valid JSON', 'error'); return }
       await api.updateMission(editingId, { code: formCode, name: formName, description: formDesc, cadence: formCadence, criteria, xpReward: formXpReward, maxClaimsPerUser: formMaxClaims, active: formActive })
       flash('Mission updated', 'success')
       resetForm(); setShowForm(false); loadMissions()
-    } catch (err: any) { flash(err.message || 'Failed', 'error') }
+    } catch (err: unknown) { flash(err instanceof Error ? err.message : 'Failed', 'error') }
   }
 
-  const handleEdit = (m: any) => {
+  const handleEdit = (m: MissionDto) => {
     setFormCode(m.code); setFormName(m.name); setFormDesc(m.description)
     setFormCadence(m.cadence || 'DAILY'); setFormXpReward(m.xpReward || 0)
     setFormMaxClaims(m.maxClaimsPerUser || 1); setFormActive(m.active ?? true)
@@ -1241,17 +1265,17 @@ function MissionsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Elem
     setEditingId(m.id); setShowForm(true)
   }
 
-  const handleDelete = async (m: any) => {
+  const handleDelete = async (m: MissionDto) => {
     try { await api.deleteMission(m.id); flash('Mission deleted', 'success'); loadMissions() }
-    catch (err: any) { flash(err.message || 'Failed', 'error') }
+    catch (err: unknown) { flash(err instanceof Error ? err.message : 'Failed', 'error') }
   }
 
-  const handleToggle = async (m: any) => {
+  const handleToggle = async (m: MissionDto) => {
     try {
       await api.updateMission(m.id, { active: !m.active })
       flash('Mission toggled', 'success')
       loadMissions()
-    } catch (err: any) { flash(err.message || 'Failed', 'error') }
+    } catch (err: unknown) { flash(err instanceof Error ? err.message : 'Failed', 'error') }
   }
 
   if (loading) return <div className="animate-pulse"><div className="h-4 w-40 bg-gray-200 rounded" /></div>
@@ -1280,7 +1304,7 @@ function MissionsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Elem
             </div>
             <div>
               <label className="block text-xs text-gray-600 mb-1">Cadence</label>
-              <select value={formCadence} onChange={(e) => setFormCadence(e.target.value as any)}
+              <select value={formCadence} onChange={(e) => setFormCadence(e.target.value as 'DAILY' | 'WEEKLY')}
                 className="w-full border rounded px-3 py-2 text-sm">
                 <option value="DAILY">Daily</option>
                 <option value="WEEKLY">Weekly</option>
@@ -1370,15 +1394,15 @@ function MissionsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Elem
 // ==================== SEASONS ADMIN ====================
 
 function MetricsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Element {
-  const [metrics, setMetrics] = useState<any>(null)
+  const [metrics, setMetrics] = useState<EngagementMetricsDto | null>(null)
   const [loading, setLoading] = useState(true)
 
   const loadMetrics = async () => {
     setLoading(true)
     try {
       const data = await api.getEngagementMetrics()
-      setMetrics(data)
-    } catch { console.error('Failed to load metrics') }
+      setMetrics(data as EngagementMetricsDto)
+    } catch { logger.error('Failed to load metrics') }
     finally { setLoading(false) }
   }
   useEffect(() => { loadMetrics() }, [])
@@ -1474,7 +1498,7 @@ function MetricsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Eleme
                 <th className="text-left py-1 px-2 text-gray-500">Title</th>
                 <th className="text-right py-1 px-2 text-gray-500">Users</th>
               </tr></thead>
-              <tbody>{m.xpDistribution.map((d: any) => (
+              <tbody>{m.xpDistribution.map((d: { level: number; title: string; count: number }) => (
                 <tr key={d.level} className="border-b">
                   <td className="py-1 px-2 font-bold">{d.level}</td>
                   <td className="py-1 px-2">{d.title}</td>
@@ -1505,7 +1529,7 @@ function MetricsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Eleme
                 <th className="text-left py-1 px-2 text-gray-500">Range</th>
                 <th className="text-right py-1 px-2 text-gray-500">Users</th>
               </tr></thead>
-              <tbody>{m.streakDistribution.map((d: any, i: number) => (
+              <tbody>{m.streakDistribution.map((d: { bucket: string; count: number }, i: number) => (
                 <tr key={i} className="border-b">
                   <td className="py-1 px-2">{d.bucket}</td>
                   <td className="py-1 px-2 text-right">{d.count}</td>
@@ -1591,7 +1615,7 @@ function MetricsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Eleme
 }
 
 function SeasonsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Element {
-  const [seasons, setSeasons] = useState<any[]>([])
+  const [seasons, setSeasons] = useState<SeasonDto[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -1621,7 +1645,7 @@ function SeasonsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Eleme
       await api.createSeason({ code: formCode, name: formName, description: formDesc || undefined, startsAt: formStartsAt, endsAt: formEndsAt })
       flash('Season created', 'success')
       resetForm(); setShowForm(false); loadSeasons()
-    } catch (err: any) { flash(err.message || 'Failed', 'error') }
+    } catch (err: unknown) { flash(err instanceof Error ? err.message : 'Failed', 'error') }
   }
 
   const handleUpdate = async () => {
@@ -1630,27 +1654,27 @@ function SeasonsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Eleme
       await api.updateSeason(editingId, { code: formCode, name: formName, description: formDesc || undefined, startsAt: formStartsAt, endsAt: formEndsAt })
       flash('Season updated', 'success')
       resetForm(); setShowForm(false); loadSeasons()
-    } catch (err: any) { flash(err.message || 'Failed', 'error') }
+    } catch (err: unknown) { flash(err instanceof Error ? err.message : 'Failed', 'error') }
   }
 
-  const handleEdit = (s: any) => {
+  const handleEdit = (s: SeasonDto) => {
     setFormCode(s.code); setFormName(s.name); setFormDesc(s.description || '')
     setFormStartsAt(s.startsAt ? new Date(s.startsAt).toISOString().slice(0, 16) : '')
     setFormEndsAt(s.endsAt ? new Date(s.endsAt).toISOString().slice(0, 16) : '')
     setEditingId(s.id); setShowForm(true)
   }
 
-  const handleDelete = async (s: any) => {
+  const handleDelete = async (s: SeasonDto) => {
     try { await api.deleteSeason(s.id); flash('Season deleted', 'success'); loadSeasons() }
-    catch (err: any) { flash(err.message || 'Failed', 'error') }
+    catch (err: unknown) { flash(err instanceof Error ? err.message : 'Failed', 'error') }
   }
 
-  const handleActivate = async (s: any) => {
+  const handleActivate = async (s: SeasonDto) => {
     try {
       await api.activateSeason(s.id)
       flash('Season activated', 'success')
       loadSeasons()
-    } catch (err: any) { flash(err.message || 'Failed', 'error') }
+    } catch (err: unknown) { flash(err instanceof Error ? err.message : 'Failed', 'error') }
   }
 
   if (loading) return <div className="animate-pulse"><div className="h-4 w-40 bg-gray-200 rounded" /></div>

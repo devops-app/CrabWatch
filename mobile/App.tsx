@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { NavigationContainer } from '@react-navigation/native'
-import { View, Text, ActivityIndicator } from 'react-native'
+import { View, Text, ActivityIndicator, Platform } from 'react-native'
+import { StatusBar } from 'expo-status-bar'
 import { AppNavigator } from './src/navigation/AppNavigator'
 import { initAuth } from './src/store/authStore'
 import { usePendingObservationSync } from './src/hooks/usePendingObservationSync'
@@ -39,8 +40,11 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      <AppNavigator />
-    </NavigationContainer>
+    <>
+      <StatusBar style={Platform.OS === 'ios' ? 'dark' : 'auto'} />
+      <NavigationContainer>
+        <AppNavigator />
+      </NavigationContainer>
+    </>
   )
 }

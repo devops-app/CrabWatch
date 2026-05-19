@@ -135,3 +135,35 @@ export interface PasswordResetConfirm {
   token: string
   password: string
 }
+
+export interface DeletedUserResponse {
+  id: string
+  name: string
+  email: string
+  role: UserRole
+  deletedAt: string
+  expiresAt: string
+}
+
+export interface DeletedUserListResponse {
+  users: DeletedUserResponse[]
+  total: number
+  page: number
+  limit: number
+}
+
+// Recalculation result
+export interface RecalculationResultDto {
+  mode: 'dry-run' | 'execute'
+  totalUsers: number
+  processedUsers: number
+  jobId: string | null
+  results: RecalculationUserResult[]
+}
+
+export interface RecalculationUserResult {
+  userId: string
+  currentXP: number
+  correctXP: number
+  diff: number
+}

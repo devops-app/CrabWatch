@@ -22,8 +22,8 @@ export type RootStackParamList = {
   SpeciesDetail: { speciesId: string }
   ObservationDetail: { observation: ObservationResponse }
   EditProfile: undefined
-  AnalysisLoading: { photos: string[]; views: PhotoView[]; coinType?: string }
-  AIReview: { analysis: CrabAnalysisResult; photos: string[]; views: PhotoView[]; coinType?: string }
+  AnalysisLoading: { photos: string[]; views: PhotoView[]; sessionId: string; coinType?: string }
+  AIReview: { analysis: CrabAnalysisResult; photos: string[]; views: PhotoView[]; sessionId: string; coinType?: string }
   About: undefined
   Leaderboard: undefined
   Missions: undefined

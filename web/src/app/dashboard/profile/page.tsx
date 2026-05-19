@@ -27,7 +27,7 @@ export default function ProfilePage(): React.JSX.Element {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const [myStats, setMyStats] = useState<any>(null)
+  const [myStats, setMyStats] = useState<{ level: number; title: string; totalXP: number; currentStreak: number; longestStreak: number; approvedCount: number; totalSubmissions: number } | null>(null)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -65,7 +65,9 @@ export default function ProfilePage(): React.JSX.Element {
       setAvatarUrl(user.avatar || null)
 
       // Load engagement stats
-      api.getMyStats().then((data: any) => setMyStats(data.stats)).catch(() => {})
+      api.getMyStats().then((data) => setMyStats(data.stats)).catch((err) => {
+        console.error('Failed to load engagement stats:', err)
+      })
     }
   }, [user, setValue])
 

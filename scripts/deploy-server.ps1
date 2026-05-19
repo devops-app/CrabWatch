@@ -3,7 +3,9 @@ param(
   [string]$ApiAppName = "crabwatch-api",
   [string]$ZipPath = "",
   [switch]$SkipInstall,
-  [switch]$SkipSeed
+  [switch]$GeneratePrisma,
+  [switch]$Migrate,
+  [switch]$Seed
 )
 
 $ErrorActionPreference = 'Stop'
@@ -22,14 +24,27 @@ function Invoke-Checked {
 }
 
 function Get-AzCommand {
-  $az = Get-Command az -ErrorAction SilentlyContinue
-  if ($az) {
-    return $az.Source
+  # Prefer az.exe to avoid cmd.exe re-parsing arguments (pipe in NODE|22-lts gets interpreted)
+  $azExe = Get-Command az -ErrorAction SilentlyContinue
+  if ($azExe) {
+    $source = $azExe.Source
+    if ($source -match '\.exe$') {
+      return $source
+    }
+    $exePath = $source -replace '\.cmd$', '.exe'
+    if (Test-Path -LiteralPath $exePath) {
+      return $exePath
+    }
+    return $source
   }
 
-  $localAz = Join-Path $env:LOCALAPPDATA "AzureCLI\\bin\\az.cmd"
+  $localAz = Join-Path $env:LOCALAPPDATA "AzureCLI\\bin\\az.exe"
   if (Test-Path -LiteralPath $localAz) {
     return $localAz
+  }
+  $localAzCmd = Join-Path $env:LOCALAPPDATA "AzureCLI\\bin\\az.cmd"
+  if (Test-Path -LiteralPath $localAzCmd) {
+    return $localAzCmd
   }
 
   throw "Azure CLI (az) not found. Install Azure CLI and run az login."
@@ -80,6 +95,51 @@ function Invoke-KuduCommandWithRetry {
       Start-Sleep -Seconds $SleepSeconds
     }
   }
+}
+
+function Install-ProductionDependencies {
+  param(
+    [string]$ApiName,
+    [hashtable]$Headers,
+    [int]$TimeoutSeconds = 900,
+    [int]$PollSeconds = 8
+  )
+
+  Invoke-KuduCommandWithRetry -ApiName $ApiName -Headers $Headers -Command 'bash -lc "rm -f /home/site/install-deps.exitcode /home/LogFiles/install-deps.log"' | Out-Null
+
+  $startResult = Invoke-KuduCommandWithRetry -ApiName $ApiName -Headers $Headers -Command 'bash -lc "nohup sh -c ''cd /home/site/wwwroot && npm install --omit=dev --no-audit --no-fund > /home/LogFiles/install-deps.log 2>&1; echo $? > /home/site/install-deps.exitcode'' >/dev/null 2>&1 & echo INSTALL_STARTED"'
+  if ($startResult.ExitCode -ne 0) {
+    throw "Failed to start production dependency install: $($startResult.Error)"
+  }
+
+  $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+  while ((Get-Date) -lt $deadline) {
+    $status = Invoke-KuduCommandWithRetry -ApiName $ApiName -Headers $Headers -Command 'bash -lc "if [ -f /home/site/install-deps.exitcode ]; then echo DONE:$(cat /home/site/install-deps.exitcode); else echo RUNNING; fi"'
+    if ($status.ExitCode -ne 0) {
+      throw "Failed while checking dependency install status: $($status.Error)"
+    }
+
+    $output = ($status.Output | Out-String).Trim()
+    if ($output -like 'DONE:*') {
+      $exitCodeText = $output.Substring(5).Trim()
+      $exitCode = 1
+      if (-not [int]::TryParse($exitCodeText, [ref]$exitCode)) {
+        throw "Dependency install status returned invalid exit code: $output"
+      }
+
+      if ($exitCode -ne 0) {
+        $logTail = Invoke-KuduCommandWithRetry -ApiName $ApiName -Headers $Headers -Command 'bash -lc "tail -n 200 /home/LogFiles/install-deps.log 2>/dev/null || echo install log not found"'
+        throw "Production dependency install failed with exit code $exitCode. Tail log:`n$($logTail.Output)"
+      }
+
+      return
+    }
+
+    Start-Sleep -Seconds $PollSeconds
+  }
+
+  $finalLogTail = Invoke-KuduCommandWithRetry -ApiName $ApiName -Headers $Headers -Command 'bash -lc "tail -n 120 /home/LogFiles/install-deps.log 2>/dev/null || echo install log not found"'
+  throw "Timed out waiting for production dependency install after $TimeoutSeconds seconds. Tail log:`n$($finalLogTail.Output)"
 }
 
 function Wait-ForHealthySite {
@@ -134,9 +194,13 @@ try {
     throw "shared build failed"
   }
 
-  pnpm --filter=server exec prisma generate
-  if ($LASTEXITCODE -ne 0) {
-    throw "prisma generate failed"
+  if ($GeneratePrisma) {
+    pnpm --filter=server exec prisma generate
+    if ($LASTEXITCODE -ne 0) {
+      throw "prisma generate failed. If another local process is locking Prisma engine files, stop it and rerun deployment."
+    }
+  } else {
+    Write-Host "Skipping local prisma generate. Use -GeneratePrisma when schema/client regeneration is required."
   }
 
   pnpm --filter=server exec tsc
@@ -164,11 +228,14 @@ try {
     'WEBSITE_NODE_DEFAULT_VERSION=22'
   ) -ErrorMessage "Failed to set deployment app settings"
 
+  # Must use NODE|<version> for Linux code stack so Azure Portal detects Node runtime correctly.
+  # Keep surrounding quotes in the argument so az.cmd (cmd.exe wrapper) doesn't treat | as a pipe.
+  $linuxFxVersion = '"NODE|22-lts"'
   Invoke-Checked -FilePath $azPath -Arguments @(
     'webapp', 'config', 'set',
     '--resource-group', $ResourceGroup,
     '--name', $ApiAppName,
-    '--generic-configurations', '{"linuxFxVersion":"NODE|22-lts"}',
+    '--linux-fx-version', $linuxFxVersion,
     '--startup-file', 'node dist/server/src/index.js'
   ) -ErrorMessage "Failed to set runtime/startup configuration"
 
@@ -180,7 +247,9 @@ try {
       '--name', $ApiAppName,
       '--src-path', $ZipPath,
       '--type', 'zip',
-      '--clean', 'false'
+      '--clean', 'true',
+      '--restart', 'false',
+      '--track-status', 'false'
     ) -ErrorMessage "az webapp deploy failed"
     $deployed = $true
   } catch {
@@ -203,21 +272,36 @@ try {
     }
   }
 
-  $installResult = Invoke-KuduCommandWithRetry -ApiName $ApiAppName -Headers $kuduHeaders -Command 'bash -lc "cd /home/site/wwwroot && rm -rf node_modules package-lock.json && npm install --omit=dev"'
-  if ($installResult.ExitCode -ne 0) {
-    throw "Production dependency install failed: $($installResult.Error)"
+  Install-ProductionDependencies -ApiName $ApiAppName -Headers $kuduHeaders
+
+  if ($Migrate) {
+    Write-Host "Applying Prisma migrations with migrate deploy..."
+    $migrateResult = Invoke-KuduCommandWithRetry -ApiName $ApiAppName -Headers $kuduHeaders -Command 'bash -lc "cd /home/site/wwwroot && npx prisma migrate deploy"'
+    if ($migrateResult.ExitCode -ne 0) {
+      throw "Prisma migrate deploy failed: $($migrateResult.Error)"
+    }
+    Write-Host $migrateResult.Output
+  } else {
+    Write-Host "Skipping Prisma migrations. Use -Migrate to run prisma migrate deploy after deploy."
+  }
+
+  $verifyDepsResult = Invoke-KuduCommandWithRetry -ApiName $ApiAppName -Headers $kuduHeaders -Command 'bash -lc "cd /home/site/wwwroot && node -e \"require.resolve(\\\"compression\\\"); require.resolve(\\\"bcryptjs\\\"); require.resolve(\\\"@azure/monitor-opentelemetry\\\"); console.log(\\\"Dependency verification passed\\\")\""'
+  if ($verifyDepsResult.ExitCode -ne 0) {
+    throw "Production dependency verification failed: $($verifyDepsResult.Error)"
   }
 
   Invoke-Checked -FilePath $azPath -Arguments @('webapp', 'restart', '--resource-group', $ResourceGroup, '--name', $ApiAppName) -ErrorMessage "Failed to restart app service"
 
   $health = Wait-ForHealthySite -ApiName $ApiAppName
 
-  if (-not $SkipSeed) {
+  if ($Seed) {
     $seedResult = Invoke-KuduCommandWithRetry -ApiName $ApiAppName -Headers $kuduHeaders -Command 'node /home/site/wwwroot/dist/server/src/services/seedEngagement.js'
     if ($seedResult.ExitCode -ne 0) {
       throw "Engagement seed failed: $($seedResult.Error)"
     }
     Write-Host $seedResult.Output
+  } else {
+    Write-Host "Skipping engagement seed. Use -Seed to run seedEngagement after deploy."
   }
 
   Write-Host "Server deployment complete: https://$ApiAppName.azurewebsites.net"

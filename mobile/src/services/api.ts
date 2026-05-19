@@ -33,6 +33,44 @@ const API_URL =
   expoExtra?.apiUrl ??
   'http://localhost:3001/api/v1'
 
+const HTTP_URL_PATTERN = /^https?:\/\//i
+const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1'])
+
+function isHttpUrl(value: string): boolean {
+  return HTTP_URL_PATTERN.test(value)
+}
+
+function normalizePhotoUrlForDevice(url: string): string {
+  if (!isHttpUrl(url)) return url
+
+  try {
+    const parsed = new URL(url)
+    if (!LOOPBACK_HOSTS.has(parsed.hostname)) {
+      return url
+    }
+
+    const apiParsed = new URL(API_URL)
+    parsed.hostname = apiParsed.hostname
+    return parsed.toString()
+  } catch {
+    return url
+  }
+}
+
+function normalizeObservationPhotos(observation: ObservationResponse): ObservationResponse {
+  return {
+    ...observation,
+    photos: observation.photos.map(normalizePhotoUrlForDevice),
+  }
+}
+
+function normalizeObservationListPhotos(list: ObservationListResponse): ObservationListResponse {
+  return {
+    ...list,
+    observations: list.observations.map(normalizeObservationPhotos),
+  }
+}
+
 async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = await SecureStore.getItemAsync('auth_token')
 
@@ -140,10 +178,37 @@ export const api = {
   },
 
   async createObservation(input: CreateObservationInput): Promise<ObservationResponse> {
-    return apiRequest('/observations', {
-      method: 'POST',
-      body: JSON.stringify(input),
+    const localPhotos = input.photos.filter((photo) => !isHttpUrl(photo))
+    let uploadedLocalPhotoUrls: string[] = []
+
+    if (localPhotos.length > 0) {
+      const { blobUrls } = await api.uploadAnalysisPhotos(localPhotos, input.uploadSessionId || undefined)
+      uploadedLocalPhotoUrls = blobUrls
+    }
+
+    let uploadedLocalPhotoIndex = 0
+    const normalizedPhotos = input.photos.map((photo) => {
+      if (isHttpUrl(photo)) return photo
+
+      const uploaded = uploadedLocalPhotoUrls[uploadedLocalPhotoIndex]
+      uploadedLocalPhotoIndex += 1
+
+      if (!uploaded) {
+        throw new Error('Failed to upload one or more photos before submission.')
+      }
+
+      return uploaded
     })
+
+    const created = await apiRequest<ObservationResponse>('/observations', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...input,
+        photos: normalizedPhotos,
+      }),
+    })
+
+    return normalizeObservationPhotos(created)
   },
 
   async listObservations(filters?: ObservationFilters): Promise<ObservationListResponse> {
@@ -157,27 +222,32 @@ export const api = {
     if (filters?.limit) params.set('limit', String(filters.limit))
 
     const query = params.toString()
-    return apiRequest(`/observations${query ? `?${query}` : ''}`)
+    const data = await apiRequest<ObservationListResponse>(`/observations${query ? `?${query}` : ''}`)
+    return normalizeObservationListPhotos(data)
   },
 
   async getObservation(id: string): Promise<ObservationResponse> {
-    return apiRequest(`/observations/${id}`)
+    const data = await apiRequest<ObservationResponse>(`/observations/${id}`)
+    return normalizeObservationPhotos(data)
   },
 
   async getPendingObservations(page?: number): Promise<ObservationListResponse> {
     const params = new URLSearchParams({ status: 'pending' })
     if (page) params.set('page', String(page))
-    return apiRequest(`/observations?${params}`)
+    const data = await apiRequest<ObservationListResponse>(`/observations?${params}`)
+    return normalizeObservationListPhotos(data)
   },
 
   async validateObservation(
     id: string,
     input: ValidateObservationInput
   ): Promise<ObservationResponse> {
-    return apiRequest(`/observations/${id}/validate`, {
+    const data = await apiRequest<ObservationResponse>(`/observations/${id}/validate`, {
       method: 'PATCH',
       body: JSON.stringify(input),
     })
+
+    return normalizeObservationPhotos(data)
   },
 
   async getDashboardStats(): Promise<DashboardStats> {
@@ -228,10 +298,10 @@ export const api = {
     return apiRequest(`/analytics/temporal-trends${query ? `?${query}` : ''}`)
   },
 
-  async getUploadUrl(fileName: string, contentType: string): Promise<UploadResponse> {
+  async getUploadUrl(fileName: string, contentType: string, sessionId?: string, photoIndex?: number): Promise<UploadResponse> {
     return apiRequest('/upload/url', {
       method: 'POST',
-      body: JSON.stringify({ fileName, contentType }),
+      body: JSON.stringify({ fileName, contentType, sessionId, photoIndex }),
     })
   },
 
@@ -500,7 +570,7 @@ export const api = {
     })
   },
 
-  async uploadAnalysisPhotos(photoUris: string[]): Promise<{ blobUrls: string[]; count: number }> {
+  async uploadAnalysisPhotos(photoUris: string[], sessionId?: string): Promise<{ blobUrls: string[]; count: number }> {
     const token = await SecureStore.getItemAsync('auth_token')
     const formData = new FormData()
 
@@ -518,6 +588,10 @@ export const api = {
         type: mimeType,
       } as any)
     })
+
+    if (sessionId) {
+      formData.append('sessionId', sessionId)
+    }
 
     const headers: Record<string, string> = {}
     if (token) {

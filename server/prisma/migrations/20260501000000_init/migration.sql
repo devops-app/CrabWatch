@@ -188,4 +188,3 @@ ALTER TABLE "observations" ADD CONSTRAINT "observations_speciesId_fkey" FOREIGN 
 
 -- AddForeignKey
 ALTER TABLE "PasswordReset" ADD CONSTRAINT "PasswordReset_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-

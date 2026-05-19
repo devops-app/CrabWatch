@@ -26,6 +26,7 @@ const STEPS = [
 interface AnalysisLoadingRouteParams {
   photos: string[]
   views: PhotoView[]
+  sessionId: string
   coinType?: string
 }
 
@@ -38,7 +39,7 @@ function formatElapsed(seconds: number): string {
 export function AnalysisLoadingScreen() {
   const navigation = useNavigation<any>()
   const route = useRoute<any>()
-  const { photos, views, coinType } = route.params as AnalysisLoadingRouteParams
+  const { photos, views, sessionId, coinType } = route.params as AnalysisLoadingRouteParams
 
   const [progress, setProgress] = useState<AnalysisProgress>({
     status: 'uploading',
@@ -75,6 +76,7 @@ export function AnalysisLoadingScreen() {
         const result = await analysisService.analyzeCrab(
           photos,
           views,
+          sessionId,
           coinType,
           (p) => {
             if (!cancelled) handleProgress(p)
@@ -87,6 +89,7 @@ export function AnalysisLoadingScreen() {
             analysis: result,
             photos,
             views,
+            sessionId,
             coinType,
           })
         }
@@ -103,7 +106,7 @@ export function AnalysisLoadingScreen() {
     return () => {
       cancelled = true
     }
-  }, [photos, views, coinType, navigation, handleProgress])
+  }, [photos, views, sessionId, coinType, navigation, handleProgress])
 
   const handleCancel = () => {
     if (timerRef.current) clearInterval(timerRef.current)
@@ -120,6 +123,7 @@ export function AnalysisLoadingScreen() {
         const result = await analysisService.retryAnalysis(
           photos,
           views,
+          sessionId,
           coinType,
           handleProgress
         )
@@ -129,6 +133,7 @@ export function AnalysisLoadingScreen() {
           analysis: result,
           photos,
           views,
+          sessionId,
           coinType,
         })
       } catch (error: unknown) {
@@ -158,6 +163,7 @@ export function AnalysisLoadingScreen() {
       },
       photos,
       views,
+      sessionId,
       coinType,
       isManualFallback: true,
     })

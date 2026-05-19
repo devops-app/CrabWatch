@@ -1,21 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { UserRole } from '@crabwatch/shared'
+import { User as SharedUser, UserRole } from '@crabwatch/shared'
 
-interface User {
-  id: string
-  name: string
-  email: string
-  phoneCode?: string | null
-  phoneNumber?: string | null
-  addressLine1?: string | null
-  addressLine2?: string | null
-  addressLine3?: string | null
-  state?: string | null
-  postcode?: string | null
-  country?: string | null
-  role: UserRole
-  avatar?: string | null
+interface User extends SharedUser {
   // Engagement fields
   totalXP?: number
   level?: number

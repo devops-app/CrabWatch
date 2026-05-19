@@ -3,30 +3,34 @@
 import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/lib/authStore'
-import { DashboardStats, ObservationResponse } from '@crabwatch/shared'
+import { logger } from '@/lib/logger'
+import { DashboardStats, ObservationResponse, UserStatsDto, ActiveMissionDto, OnboardingStatusDto, DashboardInsightDto, XPTransactionDto } from '@crabwatch/shared'
 import Link from 'next/link'
 
 export default function DashboardPage(): React.JSX.Element {
   const { user } = useAuthStore()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recent, setRecent] = useState<ObservationResponse[]>([])
-  const [myStats, setMyStats] = useState<any>(null)
-  const [missions, setMissions] = useState<any[]>([])
-  const [onboarding, setOnboarding] = useState<any>(null)
-  const [insights, setInsights] = useState<any[]>([])
-  const [xpFeed, setXpFeed] = useState<any[]>([])
+  const [myStats, setMyStats] = useState<UserStatsDto | null>(null)
+  const [missions, setMissions] = useState<ActiveMissionDto[]>([])
+  const [onboarding, setOnboarding] = useState<OnboardingStatusDto | null>(null)
+  const [insights, setInsights] = useState<DashboardInsightDto[]>([])
+  const [xpFeed, setXpFeed] = useState<XPTransactionDto[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([loadStats(), loadRecent(), loadMyStats(), loadMissions(), loadOnboarding(), loadInsights(), loadXpFeed()])
+    Promise.allSettled([
+      loadStats(), loadRecent(), loadMyStats(),
+      loadMissions(), loadOnboarding(), loadInsights(), loadXpFeed()
+    ]).finally(() => setLoading(false))
   }, [])
 
   const loadStats = async () => {
     try {
       const data = await api.getDashboardStats()
       setStats(data)
-    } catch {
-      console.error('Failed to load stats')
+    } catch (error) {
+      logger.error('Failed to load dashboard stats', error)
     }
   }
 
@@ -34,8 +38,8 @@ export default function DashboardPage(): React.JSX.Element {
     try {
       const data = await api.listObservations({ limit: 5 })
       setRecent(data.observations)
-    } catch {
-      console.error('Failed to load recent observations')
+    } catch (error) {
+      logger.error('Failed to load recent observations', error)
     }
   }
 
@@ -50,7 +54,7 @@ export default function DashboardPage(): React.JSX.Element {
 
   const loadMissions = async () => {
     try {
-      const data: any = await api.getActiveMissions()
+      const data = await api.getActiveMissions()
       setMissions(Array.isArray(data) ? data : [])
     } catch {
       // Gamification may not be enabled
@@ -59,7 +63,7 @@ export default function DashboardPage(): React.JSX.Element {
 
   const loadOnboarding = async () => {
     try {
-      const data: any = await api.getOnboardingStatus()
+      const data = await api.getOnboardingStatus() as OnboardingStatusDto
       setOnboarding(data)
     } catch {
       // Gamification may not be enabled
@@ -68,7 +72,7 @@ export default function DashboardPage(): React.JSX.Element {
 
   const loadInsights = async () => {
     try {
-      const data: any = await api.getInsights()
+      const data = await api.getInsights()
       setInsights(Array.isArray(data) ? data : [])
     } catch {
       // Gamification may not be enabled
@@ -77,12 +81,10 @@ export default function DashboardPage(): React.JSX.Element {
 
   const loadXpFeed = async () => {
     try {
-      const data: any = await api.getXPHistory({ limit: 10 })
+      const data = await api.getXPHistory({ limit: 10 })
       setXpFeed(Array.isArray(data) ? data : [])
     } catch {
       // Gamification may not be enabled
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -257,7 +259,7 @@ export default function DashboardPage(): React.JSX.Element {
               </div>
             </div>
             <div className="space-y-2">
-              {onboarding.steps.filter((s: any) => !s.completed).slice(0, 3).map((step: any, idx: number) => (
+              {onboarding.steps.filter(s => !s.completed).slice(0, 3).map((step, idx) => (
                 <div key={step.step} className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-ocean-100 text-ocean-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
                     {idx + 1}
@@ -280,7 +282,7 @@ export default function DashboardPage(): React.JSX.Element {
               </Link>
             </div>
             <div className="space-y-3">
-              {insights.slice(0, 3).map((insight: any, idx: number) => {
+              {insights.slice(0, 3).map((insight, idx) => {
                 const icon = insight.type === 'streak_warning' ? '⚠️' : insight.type === 'milestone' ? '🎉' : insight.type === 'diversity' ? '🌊' : '💡'
                 return (
                   <div key={idx} className="flex items-start gap-2">
@@ -306,7 +308,7 @@ export default function DashboardPage(): React.JSX.Element {
               </Link>
             </div>
             <div className="space-y-2">
-              {xpFeed.map((tx: any) => (
+              {xpFeed.map(tx => (
                 <div key={tx.id} className="flex items-center gap-3 py-1">
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0 ${tx.deltaXP > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                     {tx.deltaXP > 0 ? '+' : '−'}

@@ -40,6 +40,7 @@ interface AIReviewRouteParams {
   analysis: CrabAnalysisResult
   photos: string[]
   views: PhotoView[]
+  sessionId: string
   coinType?: string
   isManualFallback?: boolean
 }
@@ -68,7 +69,7 @@ function AIBadge({ label }: { label: string }) {
 export function AIReviewScreen() {
   const navigation = useNavigation<any>()
   const route = useRoute<any>()
-  const { analysis, photos, coinType, isManualFallback } = route.params as AIReviewRouteParams
+  const { analysis, photos, sessionId, coinType, isManualFallback } = route.params as AIReviewRouteParams
 
   const { submitObservation, submitting, error: submitError } = useObservation()
   const { species, loadSpecies, getSpeciesById } = useSpeciesStore()
@@ -147,6 +148,7 @@ export function AIReviewScreen() {
       lng: longitude,
       locationMethod: (manualLocation ? 'manual' : 'gps') as 'manual' | 'gps',
       photos: photos,
+      uploadSessionId: sessionId,
       detectedCoin: coinType || analysis.detectedCoin || null,
     }
 

@@ -10,9 +10,18 @@ interface AuthGuardProps {
   requiredRole?: string
 }
 
+function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return payload.exp !== undefined && payload.exp * 1000 < Date.now()
+  } catch {
+    return true
+  }
+}
+
 export default function AuthGuard({ children, requiredRole }: AuthGuardProps): React.JSX.Element {
   const router = useRouter()
-  const { user, isHydrated, updateUser, logout } = useAuthStore()
+  const { user, token, isHydrated, updateUser, logout } = useAuthStore()
   const userId = user?.id
   const [isChecking, setIsChecking] = useState(true)
 
@@ -20,6 +29,12 @@ export default function AuthGuard({ children, requiredRole }: AuthGuardProps): R
     if (!isHydrated) return
 
     if (!user) {
+      router.replace('/auth/login')
+      return
+    }
+
+    if (token && isTokenExpired(token)) {
+      logout()
       router.replace('/auth/login')
       return
     }
@@ -51,7 +66,7 @@ export default function AuthGuard({ children, requiredRole }: AuthGuardProps): R
     return () => {
       cancelled = true
     }
-  }, [router, userId, requiredRole, isHydrated, updateUser, logout])
+  }, [router, userId, token, requiredRole, isHydrated, updateUser, logout])
 
   if (isChecking) {
     return (

@@ -105,7 +105,12 @@ export default function ObservationDetailPage(): React.JSX.Element {
           <div className="bg-ocean-50 rounded-lg p-4">
             <p className="text-xs text-gray-500 mb-1">Body Weight</p>
             <p className="text-2xl font-bold text-ocean-900">
-              {observation.bw != null ? `${observation.bw.toFixed(1)}<span className="text-sm font-normal text-gray-500 ml-1">g</span>` : 'N/A'}
+              {observation.bw != null ? (
+                <>
+                  {observation.bw.toFixed(1)}
+                  <span className="text-sm font-normal text-gray-500 ml-1">g</span>
+                </>
+              ) : 'N/A'}
             </p>
           </div>
           {observation.bw && observation.cw > 0 && (

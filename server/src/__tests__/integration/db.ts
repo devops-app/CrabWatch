@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 import prisma from '../../config/database'
 
 export interface TestUser {

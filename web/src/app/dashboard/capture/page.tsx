@@ -1,197 +1,38 @@
-'use client'
+﻿'use client'
 
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
-import Map, { Layer, Source } from 'react-map-gl'
-import type { CrabAnalysisResult, PhotoView, SpeciesResponse, ViewDetectionResult } from '@crabwatch/shared'
+import type { CrabAnalysisResult, PhotoView, SpeciesResponse } from '@crabwatch/shared'
 import { api } from '@/lib/api'
 import { MALAYSIA_BOUNDS } from '@crabwatch/shared'
+import {
+  CAPTURE_STEPS,
+  isUuid,
+  findSpeciesMatch,
+  dataUrlToFile,
+  normalizeGender,
+  normalizeMaturation,
+  formatElapsed,
+  analyzeView,
+  detectViewAI,
+  getConfidenceTone,
+} from './utils'
+import type { ReviewFormState, FlashMessage, AnalysisStage, PhotoMap } from './utils'
+import { CoinSelector } from './coin-selector'
+import { CameraSection } from './camera-section'
+import { MapSection } from './map-section'
+import { ReviewSection } from './review-section'
 
-const COIN_SERIES = {
-  'Third Series (Current)': [
-    { label: '5 sen (17.78mm)', value: '5 sen (Third Series, 17.78 mm)' },
-    { label: '10 sen (18.80mm)', value: '10 sen (Third Series, 18.80 mm)' },
-    { label: '20 sen (20.60mm)', value: '20 sen (Third Series, 20.60 mm)' },
-    { label: '50 sen (22.65mm)', value: '50 sen (Third Series, 22.65 mm)' },
-  ],
-  'Second Series (1989-2011)': [
-    { label: '5 sen (16.20mm)', value: '5 sen (Second Series, 16.20 mm)' },
-    { label: '10 sen (19.40mm)', value: '10 sen (Second Series, 19.40 mm)' },
-    { label: '20 sen (23.59mm)', value: '20 sen (Second Series, 23.59 mm)' },
-    { label: '50 sen (27.76mm)', value: '50 sen (Second Series, 27.76 mm)' },
-  ],
-}
+function createUploadSessionId(): string {
+  const randomUuid = globalThis.crypto?.randomUUID?.()
+  if (randomUuid) return randomUuid
 
-const CAPTURE_STEPS: Array<{ key: PhotoView; label: string; hint: string; required: boolean }> = [
-  { key: 'dorsal', label: 'Dorsal View', hint: 'Capture top shell with coin beside crab.', required: true },
-  { key: 'ventral', label: 'Ventral View', hint: 'Capture underside for gender ID.', required: true },
-  { key: 'carapace-closeup', label: 'Shell Close-up', hint: 'Optional close-up for species details.', required: false },
-]
-
-type PhotoMap = Record<PhotoView, string | null>
-
-interface ReviewFormState {
-  speciesId: string
-  cw: string
-  bw: string
-  gender: 'male' | 'female' | 'unknown'
-  maturationStatus: 'mature' | 'immature' | 'unknown'
-  lat: string
-  lng: string
-  locationMethod: 'gps' | 'manual'
-  notes: string
-}
-
-interface FlashMessage {
-  tone: 'success' | 'error' | 'info'
-  text: string
-}
-
-type AnalysisStage = 'idle' | 'uploading' | 'identifying' | 'estimating' | 'complete' | 'reviewing'
-
-function isUuid(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
-}
-
-function normalizeSpeciesText(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
-}
-
-function findSpeciesMatch(result: CrabAnalysisResult, options: SpeciesResponse[]): SpeciesResponse | null {
-  if (isUuid(result.speciesId)) {
-    const byId = options.find((item) => item.id === result.speciesId)
-    if (byId) return byId
-  }
-
-  const aiCandidates = [result.speciesName, result.speciesId]
-    .map((value) => normalizeSpeciesText(value))
-    .filter((value) => value && value !== 'unknown' && value !== 'unknown species')
-
-  if (aiCandidates.length === 0) return null
-
-  const exact = options.find((item) => {
-    const scientific = normalizeSpeciesText(item.scientificName)
-    const common = normalizeSpeciesText(item.commonName)
-    return aiCandidates.some((candidate) => candidate === scientific || candidate === common)
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+    const random = Math.floor(Math.random() * 16)
+    const value = char === 'x' ? random : (random & 0x3) | 0x8
+    return value.toString(16)
   })
-  if (exact) return exact
-
-  const partial = options.find((item) => {
-    const scientific = normalizeSpeciesText(item.scientificName)
-    const common = normalizeSpeciesText(item.commonName)
-    return aiCandidates.some((candidate) => {
-      const candidateWords = candidate.split(' ').filter(Boolean)
-      const genus = candidateWords[0]
-      return scientific.includes(candidate) || common.includes(candidate)
-        || candidate.includes(scientific) || candidate.includes(common)
-        || (genus ? scientific.includes(genus) : false)
-    })
-  })
-
-  return partial ?? null
-}
-
-function dataUrlToFile(dataUrl: string, filename: string): File {
-  const [header, base64] = dataUrl.split(',')
-  const mimeMatch = /data:(.*?);base64/.exec(header)
-  const mime = mimeMatch?.[1] || 'image/jpeg'
-  const binary = atob(base64)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.charCodeAt(i)
-  }
-  return new File([bytes], filename, { type: mime })
-}
-
-function normalizeGender(value: string): 'male' | 'female' | 'unknown' {
-  const lowered = value.toLowerCase()
-  if (lowered === 'male') return 'male'
-  if (lowered === 'female') return 'female'
-  return 'unknown'
-}
-
-function normalizeMaturation(value: string): 'mature' | 'immature' | 'unknown' {
-  const lowered = value.toLowerCase()
-  if (lowered === 'mature') return 'mature'
-  if (lowered === 'immature') return 'immature'
-  return 'unknown'
-}
-
-function getConfidenceTone(confidence: number): { label: string; className: string } {
-  if (confidence >= 0.8) {
-    return { label: 'High', className: 'bg-green-100 text-green-700' }
-  }
-  if (confidence >= 0.5) {
-    return { label: 'Medium', className: 'bg-amber-100 text-amber-700' }
-  }
-  return { label: 'Low', className: 'bg-red-100 text-red-700' }
-}
-
-async function analyzeView(
-  dataUrl: string,
-  expectedView: PhotoView
-): Promise<string[]> {
-  try {
-    const img = document.createElement('img')
-    img.src = dataUrl
-    await new Promise((resolve) => { img.onload = resolve })
-    const aspectRatio = img.width / img.height
-    const warnings: string[] = []
-
-    if (expectedView === 'dorsal' || expectedView === 'ventral') {
-      if (aspectRatio < 0.6 || aspectRatio > 1.5) {
-        warnings.push('Frame too narrow/wide — crab may not be centered')
-      }
-    }
-
-    if (expectedView === 'carapace-closeup') {
-      if (aspectRatio > 1.3) {
-        warnings.push('Frame too wide — zoom in closer on the shell')
-      }
-    }
-
-    return warnings
-  } catch {
-    return []
-  }
-}
-
-async function detectViewAI(
-  file: File,
-  expectedView: string
-): Promise<ViewDetectionResult> {
-  const formData = new FormData()
-  formData.append('photo', file, `photo-${Date.now()}.jpg`)
-
-  const response = await fetch('/api/v1/analyze/detect-view', {
-    method: 'POST',
-    credentials: 'include',
-    body: formData,
-  })
-
-  const data = (await response.json()) as { success: boolean; data?: ViewDetectionResult; error?: string }
-  if (!response.ok || !data.success) {
-    throw new Error(data.error || 'View detection failed')
-  }
-  return data.data!
-}
-
-function formatElapsed(seconds: number): string {
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return m > 0 ? `${m}m ${s}s` : `${s}s`
-}
-
-function AIBadge({ label }: { label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1 ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-200">
-      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-      </svg>
-      {label}
-    </span>
-  )
 }
 
 export default function WebGuidedCapturePage(): React.JSX.Element {
@@ -213,6 +54,7 @@ export default function WebGuidedCapturePage(): React.JSX.Element {
   const [analysis, setAnalysis] = useState<CrabAnalysisResult | null>(null)
   const [species, setSpecies] = useState<SpeciesResponse[]>([])
   const [uploadedPhotoUrls, setUploadedPhotoUrls] = useState<string[]>([])
+  const [uploadSessionId, setUploadSessionId] = useState<string>(() => createUploadSessionId())
   const [photos, setPhotos] = useState<PhotoMap>({ dorsal: null, ventral: null, 'carapace-closeup': null })
   const [showFullscreen, setShowFullscreen] = useState(false)
   const [fullscreenPhoto, setFullscreenPhoto] = useState<string | null>(null)
@@ -240,6 +82,7 @@ export default function WebGuidedCapturePage(): React.JSX.Element {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [, startTransition] = useTransition()
 
   const current = CAPTURE_STEPS[currentStep]
   const currentView = current.key
@@ -266,6 +109,7 @@ export default function WebGuidedCapturePage(): React.JSX.Element {
     setElapsed(0)
     setAnalysis(null)
     setUploadedPhotoUrls([])
+    setUploadSessionId(createUploadSessionId())
     setPhotos({ dorsal: null, ventral: null, 'carapace-closeup': null })
     setShowFullscreen(false)
     setFullscreenPhoto(null)
@@ -298,24 +142,6 @@ export default function WebGuidedCapturePage(): React.JSX.Element {
     () => CAPTURE_STEPS.map((step) => ({ ...step, uri: photos[step.key] })).filter((step) => Boolean(step.uri)),
     [photos]
   )
-
-  const markerLat = Number.parseFloat(review.lat)
-  const markerLng = Number.parseFloat(review.lng)
-  const hasMapMarker = Number.isFinite(markerLat) && Number.isFinite(markerLng) && markerLat >= -90 && markerLat <= 90 && markerLng >= -180 && markerLng <= 180
-  const selectedPointGeoJson = useMemo(() => {
-    if (!hasMapMarker) return null
-    return {
-      type: 'FeatureCollection',
-      features: [{
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: [markerLng, markerLat],
-        },
-        properties: {},
-      }],
-    } as const
-  }, [hasMapMarker, markerLat, markerLng])
 
   useEffect(() => {
     const loadSpecies = async () => {
@@ -476,8 +302,14 @@ export default function WebGuidedCapturePage(): React.JSX.Element {
   }
 
   const handleNext = () => {
-    if (current.required && !photos[currentView]) return
-    if (!coinSelected && currentStep < 2) return
+    if (!coinSelected && currentStep === 0) {
+      setFlash({ tone: 'error', text: 'Please select a coin reference (or choose AI detect) before continuing.' })
+      return
+    }
+    if (current.required && !photos[currentView]) {
+      setFlash({ tone: 'error', text: `Please capture or upload the ${current.label.toLowerCase()} before continuing.` })
+      return
+    }
     if (!isLastStep) {
       setCurrentStep((prev) => prev + 1)
     }
@@ -531,7 +363,7 @@ export default function WebGuidedCapturePage(): React.JSX.Element {
       )
       const views: PhotoView[] = capturedEntries.map((entry) => entry.key)
 
-      const upload = await api.uploadAnalysisPhotos(files)
+      const upload = await api.uploadAnalysisPhotos(files, uploadSessionId)
       setUploadedPhotoUrls(upload.blobUrls)
 
       setAnalysisStage('identifying')
@@ -594,6 +426,7 @@ export default function WebGuidedCapturePage(): React.JSX.Element {
         lng,
         locationMethod: review.locationMethod,
         photos: uploadedPhotoUrls,
+        uploadSessionId,
         detectedCoin: coinType || analysis?.detectedCoin || null,
         notes: review.notes || undefined,
       })
@@ -611,6 +444,18 @@ export default function WebGuidedCapturePage(): React.JSX.Element {
   const handlePhotoFullscreen = (uri: string) => {
     setFullscreenPhoto(uri)
     setShowFullscreen(true)
+  }
+
+  const onMapClick = (lat: number, lng: number) => {
+    setReview((prev) => ({ ...prev, lat: lat.toFixed(6), lng: lng.toFixed(6), locationMethod: 'manual' }))
+    setMapViewport((prev) => ({ ...prev, latitude: lat, longitude: lng, zoom: Math.max(prev.zoom, 10) }))
+  }
+
+  const onBackToCapture = () => {
+    setAnalysis(null)
+    setUploadedPhotoUrls([])
+    setAnalysisStage('idle')
+    setSubmitError(null)
   }
 
   if (submitted) {
@@ -660,213 +505,68 @@ export default function WebGuidedCapturePage(): React.JSX.Element {
       </div>
 
       {(analysisStage !== 'idle' || inReview) && (
-        <section className="card space-y-4">
-          <div className="flex flex-wrap gap-2 justify-center">
-            {capturedEntries.map((entry, i) => (
-              <img key={i} src={entry.uri as string} alt={`${entry.label} thumbnail`} className="w-20 h-20 rounded-lg object-cover" />
-            ))}
-          </div>
-          <div className="flex items-center gap-3">
-            {([{ key: 'uploading', label: 'Uploading photos' }, { key: 'identifying', label: 'Identifying species' }, { key: 'estimating', label: 'Estimating size' }, { key: 'complete', label: 'Analysis complete' }] as Array<{ key: 'uploading' | 'identifying' | 'estimating' | 'complete'; label: string }>).map((step, index) => {
-              const order: Record<'uploading' | 'identifying' | 'estimating' | 'complete', number> = { uploading: 1, identifying: 2, estimating: 3, complete: 4 }
-              const currentOrder = order[analysisStage === 'idle' ? 'uploading' : (analysisStage === 'reviewing' ? 'complete' : analysisStage)]
-              const stepOrder = order[step.key]
-              const isDone = currentOrder > stepOrder
-              const isActive = currentOrder === stepOrder
-              return (
-                <div key={step.key} className="flex items-center gap-3 flex-1">
-                  <div className={`w-8 h-8 rounded-full text-xs font-semibold flex items-center justify-center border ${
-                    isDone ? 'bg-green-100 border-green-300 text-green-700'
-                      : isActive ? 'bg-ocean-100 border-ocean-300 text-ocean-700'
-                      : 'bg-gray-100 border-gray-300 text-gray-500'
-                  }`}>
-                    {isDone ? (
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    ) : index + 1}
-                  </div>
-                  <p className={`text-sm font-medium ${isDone || isActive ? 'text-ocean-800' : 'text-gray-500'}`}>{step.label}</p>
-                  {index < 3 && <div className={`h-[2px] flex-1 ${currentOrder > stepOrder ? 'bg-green-300' : 'bg-gray-200'}`} />}
-                </div>
-              )
-            })}
-          </div>
-          {analysisStage === 'uploading' || analysisStage === 'identifying' || analysisStage === 'estimating' && (
-            <p className="text-xs text-gray-500 mt-2 text-center">Elapsed: {formatElapsed(elapsed)}</p>
-          )}
-        </section>
+        <AnalysisProgress analysisStage={analysisStage} capturedEntries={capturedEntries} elapsed={elapsed} />
       )}
 
       {analysisError && (
-        <section className="card bg-red-50 border border-red-200">
-          <div className="flex items-start gap-3">
-            <svg className="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-            <div className="flex-1">
-              <h3 className="text-sm font-semibold text-red-800">Analysis Failed</h3>
-              <p className="text-sm text-red-600 mt-1">{analysisError}</p>
-              <div className="flex flex-wrap gap-2 mt-3">
-                <button type="button" className="btn-primary text-sm py-1.5 px-4" onClick={runAnalysis} disabled={Boolean(busyMessage)} aria-label="Retry AI analysis">Retry</button>
-                <button type="button" className="btn-secondary text-sm py-1.5 px-4" onClick={handleSubmitManually} aria-label="Submit observation manually without AI analysis">Submit Manually</button>
-              </div>
-            </div>
-          </div>
-        </section>
+        <AnalysisErrorCard analysisError={analysisError} busyMessage={busyMessage} onRetry={runAnalysis} onSubmitManually={handleSubmitManually} />
       )}
 
       {!inReview && !analysisError && (
         <>
           {!coinSelected && currentStep === 0 && (
-            <section className="card">
-              <h2 className="text-lg font-semibold text-ocean-800 mb-3">Coin Reference</h2>
-              <p className="text-gray-600 mb-4">Select a coin for scale, or let AI detect.</p>
-
-              <button
-                type="button"
-                className="w-full mb-3 px-4 py-3 rounded-lg border-2 border-amber-300 bg-amber-50 text-left hover:border-amber-400 transition-colors flex items-center gap-2"
-                onClick={() => { setCoinType(''); setCoinSelected(true) }}
-                aria-label="Let AI detect coin automatically"
-              >
-                <svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-                <span className="font-semibold text-amber-700">Let AI detect</span>
-              </button>
-
-              {Object.entries(COIN_SERIES).map(([series, options]) => (
-                <div key={series} className="mb-2">
-                  <button
-                    type="button"
-                    className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg border border-gray-200 hover:border-ocean-300 text-left transition-colors"
-                    onClick={() => setExpandedSeries(expandedSeries === series ? null : series)}
-                    aria-label={`Toggle ${series} coin options`}
-                  >
-                    <span className="text-sm font-semibold text-ocean-800">{series}</span>
-                    <svg className={`w-4 h-4 text-gray-500 transition-transform ${expandedSeries === series ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                  {expandedSeries === series && (
-                    <div className="grid grid-cols-2 gap-2 mt-2 ml-4">
-                      {options.map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => { setCoinType(option.value); setCoinSelected(true); setExpandedSeries(null) }}
-                          className="px-3 py-2 rounded-lg border border-gray-200 hover:border-ocean-400 text-left text-sm transition-colors"
-                          aria-label={`Select ${option.label}`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </section>
+            <CoinSelector
+              coinType={coinType}
+              coinSelected={coinSelected}
+              expandedSeries={expandedSeries}
+              onCoinSelect={(value) => { setCoinType(value); setCoinSelected(true); setExpandedSeries(null) }}
+              onAIDetect={() => { setCoinType(''); setCoinSelected(true) }}
+              onExpandSeries={(series) => setExpandedSeries(expandedSeries === series ? null : series)}
+              onChangeCoin={() => { setCoinSelected(false); setExpandedSeries(null) }}
+            />
           )}
 
           {coinSelected && currentStep === 0 && (
-            <section className="card flex items-center justify-between gap-4">
-              <p className="text-sm text-gray-700">Coin: <span className="font-semibold">{coinType || 'AI detect'}</span></p>
-              <button type="button" className="text-ocean-700 text-sm" onClick={() => { setCoinSelected(false); setExpandedSeries(null); }} aria-label="Change coin selection">Change</button>
-            </section>
+            <CoinSelector
+              coinType={coinType}
+              coinSelected={coinSelected}
+              expandedSeries={expandedSeries}
+              onCoinSelect={(value) => { setCoinType(value); setCoinSelected(true); setExpandedSeries(null) }}
+              onAIDetect={() => { setCoinType(''); setCoinSelected(true) }}
+              onExpandSeries={(series) => setExpandedSeries(expandedSeries === series ? null : series)}
+              onChangeCoin={() => { setCoinSelected(false); setExpandedSeries(null) }}
+            />
           )}
 
-          <section className="card space-y-4">
-            <div>
-              <h2 className="text-xl font-semibold text-ocean-800">{current.label}</h2>
-              <p className="text-sm text-gray-600">{current.hint}</p>
-            </div>
+          <CameraSection
+            currentStep={currentStep}
+            currentView={currentView}
+            photos={photos}
+            cameraActive={cameraActive}
+            cameraError={cameraError}
+            analyzingView={analyzingView}
+            viewWarnings={viewWarnings}
+            videoRef={videoRef}
+            canvasRef={canvasRef}
+            fileInputRef={fileInputRef}
+            isLastStep={isLastStep}
+            onCapture={capturePhoto}
+            onStartCamera={startCamera}
+            onStopCamera={stopCamera}
+            onFileSelected={onFileSelected}
+            onRetake={() => { setPhotos((prev) => ({ ...prev, [currentView]: null })); setViewWarnings([]); setAnalyzingView(false) }}
+            onNext={handleNext}
+            onPhotoFullscreen={handlePhotoFullscreen}
+          />
 
-            {currentView !== 'carapace-closeup' && (
-              <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                <p className="text-sm font-semibold text-ocean-800 mb-1">Photo Tips</p>
-                <ul className="text-xs text-gray-600 space-y-0.5">
-                  <li>Place the coin flat next to the crab</li>
-                  <li>Ensure the entire crab fits in the frame</li>
-                  <li>Use natural light when possible</li>
-                  <li>Hold your device steady before shooting</li>
-                </ul>
-              </div>
-            )}
-
-            {photos[currentView] ? (
-              <div className="space-y-3">
-                <div className="relative w-full h-[420px] rounded-lg bg-black/5 overflow-hidden">
-                  <Image
-                    src={photos[currentView] as string}
-                    alt={`${current.label} preview`}
-                    fill
-                    unoptimized
-                    className="object-contain cursor-pointer hover:opacity-90 transition-opacity"
-                    onClick={() => handlePhotoFullscreen(photos[currentView]!)}
-                  />
-                  {analyzingView && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center gap-2 rounded-lg">
-                      <svg className="animate-spin w-5 h-5 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                      <span className="text-white text-sm font-medium">Checking view...</span>
-                    </div>
-                  )}
-                </div>
-                {viewWarnings.length > 0 && (
-                  <div className="bg-amber-50 border border-amber-300 rounded-lg p-3">
-                    <p className="text-sm font-semibold text-amber-800 mb-1">⚠️ Possible Issue</p>
-                    {viewWarnings.map((warning, i) => (
-                      <p key={i} className="text-sm text-amber-700">• {warning}</p>
-                    ))}
-                    <p className="text-xs text-amber-600 mt-2 italic">AI will verify the view during analysis. Retake if unsure.</p>
-                  </div>
-                )}
-                <div className="flex gap-2">
-                  <button type="button" className="btn-secondary" onClick={() => { setPhotos((prev) => ({ ...prev, [currentView]: null })); setViewWarnings([]); setAnalyzingView(false); }} aria-label="Retake photo">Retake</button>
-                  {!isLastStep && <button type="button" className="btn-primary" onClick={handleNext} aria-label="Confirm photo and continue to next step">Confirm & Continue</button>}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {cameraActive ? (
-                  <>
-                    <video ref={videoRef} className="w-full max-h-[420px] rounded-lg bg-black object-cover" playsInline muted autoPlay />
-                    <div className="flex flex-wrap gap-2">
-                      <button type="button" className="btn-primary" onClick={capturePhoto} aria-label="Take photo">Capture</button>
-                      <button type="button" className="btn-secondary" onClick={stopCamera} aria-label="Cancel camera and return">Cancel Camera</button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    <button type="button" className="btn-primary" onClick={startCamera} aria-label="Open camera to take photo">Open Camera</button>
-                    <button type="button" className="btn-secondary" onClick={() => fileInputRef.current?.click()} aria-label="Upload photo from file">Upload Photo</button>
-                  </div>
-                )}
-                {cameraError && <p className="text-sm text-red-600">{cameraError}</p>}
-              </div>
-            )}
-
-            <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFileSelected} />
-            <canvas ref={canvasRef} className="hidden" />
-          </section>
-
-          <section className="card">
-            <h3 className="text-sm font-semibold text-ocean-800 mb-2">Progress</h3>
-            <ul className="text-sm text-gray-700 space-y-1">
-              <li>Dorsal: {photos.dorsal ? 'Captured' : 'Missing'}</li>
-              <li>Ventral: {photos.ventral ? 'Captured' : 'Missing'}</li>
-              <li>Close-up: {photos['carapace-closeup'] ? 'Captured' : 'Optional'}</li>
-            </ul>
-          </section>
+          <CaptureProgress photos={photos} />
 
           {busyMessage && <p className="text-sm text-ocean-700">{busyMessage}</p>}
 
           <div className="flex flex-wrap gap-2">
-            <button type="button" className="btn-secondary" onClick={() => setCurrentStep((prev) => Math.max(0, prev - 1))} disabled={currentStep === 0 || Boolean(busyMessage)} aria-label="Go back to previous step">Back</button>
+            <button type="button" className="btn-secondary" onClick={() => startTransition(() => setCurrentStep((prev) => Math.max(0, prev - 1)))} disabled={currentStep === 0 || Boolean(busyMessage)} aria-label="Go back to previous step">Back</button>
             {!isLastStep ? (
-              <button type="button" className="btn-primary" disabled={(current.required && !photos[currentView]) || (!coinSelected && currentStep < 2) || Boolean(busyMessage)} onClick={handleNext} aria-label="Proceed to next capture step">Next Step</button>
+              <button type="button" className="btn-primary" disabled={Boolean(busyMessage)} onClick={() => startTransition(handleNext)} aria-label="Proceed to next capture step">Next Step</button>
             ) : requiredComplete ? (
               <button type="button" className="btn-primary" disabled={Boolean(busyMessage)} onClick={runAnalysis} aria-label="Proceed to AI analysis with captured photos">Analyze with AI</button>
             ) : undefined}
@@ -875,194 +575,25 @@ export default function WebGuidedCapturePage(): React.JSX.Element {
       )}
 
       {inReview && analysis && (
-        <>
-          {photos.dorsal && (
-            <section className="flex gap-2 overflow-x-auto pb-1">
-              {CAPTURE_STEPS.map((step) => photos[step.key] && (
-                <img
-                  key={step.key}
-                  src={photos[step.key]!}
-                  alt={`${step.label} thumbnail`}
-                  className="w-[70px] h-[70px] rounded-lg object-cover flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
-                  onClick={() => handlePhotoFullscreen(photos[step.key]!)}
-                />
-              ))}
-            </section>
-          )}
-
-          {!analysis.speciesId || analysis.speciesId === 'unknown' || analysis.confidence === 0 ? (
-            <section className="card bg-amber-50 border border-amber-200 flex items-center gap-3">
-              <svg className="w-5 h-5 text-amber-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              <p className="text-sm text-amber-800">AI analysis unavailable. Please fill in all fields manually.</p>
-            </section>
-          ) : null}
-
-          <section className="card space-y-2">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-xl font-semibold text-ocean-800">AI Results</h2>
-              <span className={`text-xs font-semibold px-2 py-1 rounded-full ${getConfidenceTone(analysis.confidence).className}`}>
-                {getConfidenceTone(analysis.confidence).label} confidence
-              </span>
-            </div>
-            <p className="text-gray-700"><span className="font-semibold">Species:</span> {analysis.speciesName}</p>
-            <p className="text-gray-700"><span className="font-semibold">Confidence:</span> {(analysis.confidence * 100).toFixed(1)}%</p>
-            {analysis.detectedCoin && (
-              <p className="text-gray-700"><span className="font-semibold">Detected coin:</span> {analysis.detectedCoin} ({(analysis.coinConfidence * 100).toFixed(0)}%)</p>
-            )}
-            {analysis.rawAnalysis && (
-              <p className="text-sm text-gray-500 italic">{analysis.rawAnalysis}</p>
-            )}
-            {analysis.suggestions.length > 0 && (
-              <div className="pt-2">
-                <p className="text-sm font-semibold text-ocean-800 mb-1">AI suggestions</p>
-                <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
-                  {analysis.suggestions.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}
-                </ul>
-              </div>
-            )}
-          </section>
-
-          {coinType && analysis.detectedCoin && coinType !== analysis.detectedCoin && (
-            <section className="card bg-amber-50 border border-amber-200">
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                <div>
-                  <p className="text-sm font-semibold text-amber-800">Coin Mismatch</p>
-                  <p className="text-sm text-amber-700">You selected <strong>{coinType}</strong> but AI detected <strong>{analysis.detectedCoin}</strong>.</p>
-                  <p className="text-xs text-amber-600 mt-1">Verify your coin selection before submitting.</p>
-                </div>
-              </div>
-            </section>
-          )}
-
-          <section className="card grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Species{analysis.speciesName && normalizeSpeciesText(analysis.speciesName) !== 'unknown species' && <AIBadge label="AI" />}
-              </label>
-              <select className="input-field" value={review.speciesId} onChange={(e) => setReview((prev) => ({ ...prev, speciesId: e.target.value }))}>
-                <option value="">Select species</option>
-                {species.map((s) => <option key={s.id} value={s.id}>{s.commonName} ({s.scientificName})</option>)}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Carapace Width (cm){analysis.estimatedCW && <AIBadge label={`AI: ${analysis.estimatedCW}`} />}
-              </label>
-              <input className="input-field" value={review.cw} onChange={(e) => setReview((prev) => ({ ...prev, cw: e.target.value }))} placeholder="e.g. 8.5" />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Body Weight (g)</label>
-              <input className="input-field" value={review.bw} onChange={(e) => setReview((prev) => ({ ...prev, bw: e.target.value }))} placeholder="Optional - weigh manually" />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Gender{analysis.gender && analysis.gender !== 'unknown' && <AIBadge label={`AI: ${analysis.gender}`} />}
-              </label>
-              <select className="input-field" value={review.gender} onChange={(e) => setReview((prev) => ({ ...prev, gender: e.target.value as ReviewFormState['gender'] }))}>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="unknown">Unknown</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Maturation{analysis.maturationStatus && analysis.maturationStatus !== 'unknown' && <AIBadge label={`AI: ${analysis.maturationStatus}`} />}
-              </label>
-              <select className="input-field" value={review.maturationStatus} onChange={(e) => setReview((prev) => ({ ...prev, maturationStatus: e.target.value as ReviewFormState['maturationStatus'] }))}>
-                <option value="mature">Mature</option>
-                <option value="immature">Immature</option>
-                <option value="unknown">Unknown</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Location Method</label>
-              <select className="input-field" value={review.locationMethod} onChange={(e) => setReview((prev) => ({ ...prev, locationMethod: e.target.value as 'gps' | 'manual' }))}>
-                <option value="manual">Manual</option>
-                <option value="gps">GPS</option>
-              </select>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Pick Location on Map</label>
-              <div className="relative w-full h-[300px] rounded-lg overflow-hidden border">
-                <Map
-                  {...mapViewport}
-                  onMove={(e) => setMapViewport(e.viewState)}
-                  mapStyle="mapbox://styles/mapbox/light-v11"
-                  mapboxAccessToken={process.env.MAPBOX_TOKEN}
-                  interactive={true}
-                  onClick={(e) => {
-                    const { lat, lng } = e.lngLat
-                    setReview((prev) => ({ ...prev, lat: lat.toFixed(6), lng: lng.toFixed(6), locationMethod: 'manual' }))
-                    setMapViewport((prev) => ({ ...prev, latitude: lat, longitude: lng, zoom: Math.max(prev.zoom, 10) }))
-                  }}
-                  attributionControl={false}
-                >
-                  {selectedPointGeoJson && (
-                    <Source id="capture-selected-point" type="geojson" data={selectedPointGeoJson}>
-                      <Layer
-                        id="capture-selected-point-core"
-                        type="circle"
-                        paint={{
-                          'circle-radius': 7,
-                          'circle-color': '#ef4444',
-                          'circle-stroke-width': 2,
-                          'circle-stroke-color': '#ffffff',
-                        }}
-                      />
-                      <Layer
-                        id="capture-selected-point-ring"
-                        type="circle"
-                        paint={{
-                          'circle-radius': 14,
-                          'circle-color': '#ef4444',
-                          'circle-opacity': 0.25,
-                        }}
-                      />
-                    </Source>
-                  )}
-                </Map>
-               </div>
-               {hasMapMarker && (
-                 <p className="mt-2 text-xs text-gray-500">Selected: {markerLat.toFixed(6)}, {markerLng.toFixed(6)}</p>
-               )}
-              </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Latitude</label>
-              <input className="input-field" value={review.lat} onChange={(e) => setReview((prev) => ({ ...prev, lat: e.target.value }))} placeholder="e.g. 5.4141" />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Longitude</label>
-              <input className="input-field" value={review.lng} onChange={(e) => setReview((prev) => ({ ...prev, lng: e.target.value }))} placeholder="e.g. 100.3288" />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
-              <textarea className="input-field min-h-[110px]" value={review.notes} onChange={(e) => setReview((prev) => ({ ...prev, notes: e.target.value }))} />
-            </div>
-          </section>
-
-          {submitError && <p className="text-sm text-red-600">{submitError}</p>}
-          {busyMessage && <p className="text-sm text-ocean-700">{busyMessage}</p>}
-
-          <div className="flex flex-wrap gap-2">
-            <button type="button" className="btn-secondary" onClick={requestBrowserLocation} disabled={Boolean(busyMessage)} aria-label="Use browser GPS to get current location">Use Browser GPS</button>
-            <button type="button" className="btn-secondary" onClick={() => { setAnalysis(null); setUploadedPhotoUrls([]); setAnalysisStage('idle'); setSubmitError(null) }} disabled={Boolean(busyMessage)} aria-label="Go back and retake photos">Back to Capture</button>
-            <button type="button" className="btn-primary" onClick={submitObservation} disabled={Boolean(busyMessage)} aria-label="Submit observation to server">Submit Observation</button>
-          </div>
-        </>
+        <ReviewSection
+          analysis={analysis}
+          species={species}
+          photos={photos}
+          review={review}
+          coinType={coinType}
+          busyMessage={busyMessage}
+          submitError={submitError}
+          onReviewChange={setReview}
+          onRequestGPS={requestBrowserLocation}
+          onBackToCapture={onBackToCapture}
+          onSubmit={submitObservation}
+          onPhotoFullscreen={handlePhotoFullscreen}
+          lat={review.lat}
+          lng={review.lng}
+          mapViewport={mapViewport}
+          onMapClick={onMapClick}
+          onViewportChange={setMapViewport}
+        />
       )}
 
       {showFullscreen && fullscreenPhoto && (
@@ -1076,5 +607,90 @@ export default function WebGuidedCapturePage(): React.JSX.Element {
         </div>
       )}
     </div>
+  )
+}
+
+function AnalysisProgress({ analysisStage, capturedEntries, elapsed }: {
+  analysisStage: AnalysisStage
+  capturedEntries: Array<{ key: string; label: string; uri: string | null }>
+  elapsed: number
+}) {
+  const stages = [{ key: 'uploading', label: 'Uploading photos' }, { key: 'identifying', label: 'Identifying species' }, { key: 'estimating', label: 'Estimating size' }, { key: 'complete', label: 'Analysis complete' }] as const
+  const order: Record<string, number> = { uploading: 1, identifying: 2, estimating: 3, complete: 4 }
+  const currentOrder = order[analysisStage === 'idle' ? 'uploading' : analysisStage === 'reviewing' ? 'complete' : analysisStage] ?? 1
+
+  return (
+    <section className="card space-y-4">
+      <div className="flex flex-wrap gap-2 justify-center">
+        {capturedEntries.map((entry, i) => (
+          <img key={i} src={entry.uri as string} alt={`${entry.label} thumbnail`} className="w-20 h-20 rounded-lg object-cover" />
+        ))}
+      </div>
+      <div className="flex items-center gap-3">
+        {stages.map((step, index) => {
+          const stepOrder = order[step.key]
+          const isDone = currentOrder > stepOrder
+          const isActive = currentOrder === stepOrder
+          return (
+            <div key={step.key} className="flex items-center gap-3 flex-1">
+              <div className={`w-8 h-8 rounded-full text-xs font-semibold flex items-center justify-center border ${
+                isDone ? 'bg-green-100 border-green-300 text-green-700'
+                  : isActive ? 'bg-ocean-100 border-ocean-300 text-ocean-700'
+                  : 'bg-gray-100 border-gray-300 text-gray-500'
+              }`}>
+                {isDone ? (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                ) : index + 1}
+              </div>
+              <p className={`text-sm font-medium ${isDone || isActive ? 'text-ocean-800' : 'text-gray-500'}`}>{step.label}</p>
+              {index < 3 && <div className={`h-[2px] flex-1 ${currentOrder > stepOrder ? 'bg-green-300' : 'bg-gray-200'}`} />}
+            </div>
+          )
+        })}
+      </div>
+      {analysisStage === 'uploading' || analysisStage === 'identifying' || analysisStage === 'estimating' ? (
+        <p className="text-xs text-gray-500 mt-2 text-center">Elapsed: {formatElapsed(elapsed)}</p>
+      ) : null}
+    </section>
+  )
+}
+
+function AnalysisErrorCard({ analysisError, busyMessage, onRetry, onSubmitManually }: {
+  analysisError: string
+  busyMessage: string | null
+  onRetry: () => void
+  onSubmitManually: () => void
+}) {
+  return (
+    <section className="card bg-red-50 border border-red-200">
+      <div className="flex items-start gap-3">
+        <svg className="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+        </svg>
+        <div className="flex-1">
+          <h3 className="text-sm font-semibold text-red-800">Analysis Failed</h3>
+          <p className="text-sm text-red-600 mt-1">{analysisError}</p>
+          <div className="flex flex-wrap gap-2 mt-3">
+            <button type="button" className="btn-primary text-sm py-1.5 px-4" onClick={onRetry} disabled={Boolean(busyMessage)} aria-label="Retry AI analysis">Retry</button>
+            <button type="button" className="btn-secondary text-sm py-1.5 px-4" onClick={onSubmitManually} aria-label="Submit observation manually without AI analysis">Submit Manually</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function CaptureProgress({ photos }: { photos: PhotoMap }) {
+  return (
+    <section className="card">
+      <h3 className="text-sm font-semibold text-ocean-800 mb-2">Progress</h3>
+      <ul className="text-sm text-gray-700 space-y-1">
+        <li>Dorsal: {photos.dorsal ? 'Captured' : 'Missing'}</li>
+        <li>Ventral: {photos.ventral ? 'Captured' : 'Missing'}</li>
+        <li>Close-up: {photos['carapace-closeup'] ? 'Captured' : 'Optional'}</li>
+      </ul>
+    </section>
   )
 }

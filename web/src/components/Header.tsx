@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/authStore'
 import { api } from '@/lib/api'
+import { logger } from '@/lib/logger'
 import { useNotifications } from '@/hooks/useNotifications'
+import { useClickOutside } from '@/hooks/useClickOutside'
 
 interface HeaderProps {
   onSidebarToggle: () => void
@@ -18,15 +20,8 @@ export default function Header({ onSidebarToggle }: HeaderProps): React.JSX.Elem
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  const closeMenu = useCallback(() => setMenuOpen(false), [])
+  useClickOutside(menuRef, closeMenu)
 
   const handleNotificationClick = async () => {
     if (permission === 'default') {
@@ -43,8 +38,8 @@ export default function Header({ onSidebarToggle }: HeaderProps): React.JSX.Elem
     setMenuOpen(false)
     try {
       await api.logout()
-    } catch {
-      // ignore server logout errors
+    } catch (error) {
+      logger.error('Server logout failed', error)
     }
     logout()
     router.push('/auth/login')

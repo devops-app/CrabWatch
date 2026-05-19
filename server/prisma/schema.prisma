@@ -170,6 +170,7 @@ model Observation {
   lng               Float
   locationMethod    LocationMethod
   photos            Json
+  uploadSessionId   String?
   detectedCoin      String?
   notes             String?
   status            ObservationStatus   @default(PENDING)

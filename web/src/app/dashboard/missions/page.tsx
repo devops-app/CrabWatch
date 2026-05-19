@@ -2,58 +2,29 @@
 
 import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
-import Link from 'next/link'
-
-interface Mission {
-  key: string
-  title: string
-  description: string
-  actionType: string
-  targetCount: number
-  xpReward: number
-  claimed: boolean
-  completed: boolean
-  progress: number
-}
-
-interface OnboardingStep {
-  step: string
-  title: string
-  description: string
-  actionType: string
-  xpReward: number
-  completed: boolean
-  completedAt: string | null
-}
+import { logger } from '@/lib/logger'
+import type { ActiveMissionDto, OnboardingStatusDto } from '@crabwatch/shared'
 
 export default function MissionsPage(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<'missions' | 'onboarding'>('missions')
-  const [missions, setMissions] = useState<Mission[]>([])
-  const [onboarding, setOnboarding] = useState<{ steps: OnboardingStep[]; completedCount: number; totalCount: number; progress: number }>({
-    steps: [],
-    completedCount: 0,
-    totalCount: 0,
-    progress: 0,
-  })
+  const [missions, setMissions] = useState<ActiveMissionDto[]>([])
+  const [onboarding, setOnboarding] = useState<OnboardingStatusDto | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
   useEffect(() => {
     loadData()
-  }, [activeTab])
+  }, [])
 
   const loadData = async () => {
     setLoading(true)
     try {
-      if (activeTab === 'missions') {
-        const data: any = await api.getActiveMissions()
-        setMissions(data || [])
-      } else {
-        const data: any = await api.getOnboardingStatus()
-        setOnboarding(data || { steps: [], completedCount: 0, totalCount: 0, progress: 0 })
-      }
-    } catch {
-      console.error('Failed to load data')
+      const missionsData: ActiveMissionDto[] = await api.getActiveMissions().catch(() => [])
+     const onboardingData: OnboardingStatusDto | null = await api.getOnboardingStatus().catch(() => null)
+      setMissions(missionsData)
+      setOnboarding(onboardingData)
+    } catch (err) {
+      logger.error('Failed to load missions/onboarding data', err)
     } finally {
       setLoading(false)
     }
@@ -64,8 +35,8 @@ export default function MissionsPage(): React.JSX.Element {
     try {
       await api.claimMission({ missionKey })
       loadData()
-    } catch (err: any) {
-      console.error('Failed to claim mission:', err.message)
+    } catch (err: unknown) {
+      logger.error('Failed to claim mission', err)
     } finally {
       setActionLoading(null)
     }
@@ -76,8 +47,8 @@ export default function MissionsPage(): React.JSX.Element {
     try {
       await api.completeOnboardingStep({ step })
       loadData()
-    } catch (err: any) {
-      console.error('Failed to complete step:', err.message)
+    } catch (err: unknown) {
+      logger.error('Failed to complete onboarding step', err)
     } finally {
       setActionLoading(null)
     }
@@ -159,7 +130,6 @@ export default function MissionsPage(): React.JSX.Element {
                         +{mission.xpReward} XP
                       </span>
                     </div>
-                    <p className="text-sm text-gray-500 mt-1">{mission.description}</p>
                     <div className="mt-2">
                       <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
                         <span>Progress: {mission.progress}/{mission.targetCount}</span>
@@ -196,7 +166,7 @@ export default function MissionsPage(): React.JSX.Element {
             ))
           )}
         </div>
-      ) : (
+      ) : onboarding ? (
         <div className="card">
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
@@ -236,7 +206,6 @@ export default function MissionsPage(): React.JSX.Element {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-ocean-800">{step.title}</h3>
-                  <p className="text-sm text-gray-500 mt-1">{step.description}</p>
                 </div>
                 <span className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full text-xs font-medium">
                   +{step.xpReward} XP
@@ -256,6 +225,10 @@ export default function MissionsPage(): React.JSX.Element {
               </div>
             ))}
           </div>
+        </div>
+      ) : (
+        <div className="card text-center py-12">
+          <p className="text-gray-400 text-lg">Onboarding not available</p>
         </div>
       )}
     </>

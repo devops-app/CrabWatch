@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto'
 import { BlobSASPermissions } from '@azure/storage-blob'
 import { getBlobService } from '../services/upload'
-import { sanitizeInput } from '../utils/sanitize'
+import { buildObservationBlobPath } from '../utils/blobPath'
 import { config } from '../config'
 import { CrabAnalysisRequest, CrabAnalysisResult } from '@crabwatch/shared'
 
@@ -156,8 +156,39 @@ async function parseAgentResponse(body: any): Promise<string> {
   throw new Error(`Unexpected agent response format: ${JSON.stringify(body).slice(0, 300)}`)
 }
 
+async function toDataUrl(imageUrl: string): Promise<string> {
+  if (imageUrl.startsWith('data:')) {
+    return imageUrl
+  }
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 12000)
+
+  try {
+    const response = await fetch(imageUrl, { signal: controller.signal })
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.status}`)
+    }
+
+    const contentType = response.headers.get('content-type') || 'image/jpeg'
+    const buffer = Buffer.from(await response.arrayBuffer())
+    return `data:${contentType};base64,${buffer.toString('base64')}`
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Analysis image fetch timed out')
+    }
+    throw error
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
 export async function uploadAnalysisPhotos(
-  files: MulterFile[]
+  files: MulterFile[],
+  options?: {
+    userId?: string
+    sessionId?: string
+  }
 ): Promise<string[]> {
   if (!files || files.length === 0) {
     throw new Error('No files provided')
@@ -169,14 +200,16 @@ export async function uploadAnalysisPhotos(
   )
 
   const blobUrls: string[] = []
+  const userId = options?.userId || 'anon'
+  const sessionId = options?.sessionId || randomUUID()
 
-  for (const file of files) {
+  for (const [index, file] of files.entries()) {
     if (!ALLOWED_CONTENT_TYPES.includes(file.mimetype)) {
       throw new Error(`Invalid file type: ${file.mimetype}`)
     }
 
-    const safeFileName = `analysis/${randomUUID()}-${sanitizeInput(file.originalname, 100).replace(/[^a-zA-Z0-9._-]/g, '')}`
-    const blobClient = containerClient.getBlockBlobClient(safeFileName)
+    const blobPath = buildObservationBlobPath(userId, sessionId, index, file.originalname, file.mimetype)
+    const blobClient = containerClient.getBlockBlobClient(blobPath)
 
     await blobClient.upload(file.buffer, file.buffer.length, {
       blobHTTPHeaders: { blobContentType: file.mimetype },
@@ -223,9 +256,10 @@ export async function analyzeCrabWithAgent(
   const timeoutId = setTimeout(() => controller.abort(), 45000)
 
   try {
+    const imageDataUrls = await Promise.all(request.photoUrls.map((url) => toDataUrl(url)))
     const userContent: Array<{ type: 'input_text' | 'input_image'; text?: string; image_url?: string }> = [
       { type: 'input_text', text: `${SYSTEM_INSTRUCTIONS}\n\n${promptText}` },
-      ...request.photoUrls.map((url) => ({ type: 'input_image' as const, image_url: url })),
+      ...imageDataUrls.map((url) => ({ type: 'input_image' as const, image_url: url })),
     ]
 
     const response = await fetch(responsesUrl.toString(), {
@@ -283,11 +317,13 @@ export async function analyzeCrabWithAgent(
 }
 
 export async function detectView(
-  photoUrl: string,
+  photoBuffer: Buffer,
+  photoMimeType: string,
   expectedView: string
 ): Promise<{ detectedView: string; confidence: number; mismatch: boolean; message: string }> {
   const projectEndpoint = config.foundry?.projectEndpoint
   const agentName = config.foundry?.agentName
+  const agentVersion = config.foundry?.agentVersion
   const apiKey = config.foundry?.apiKey
   const apiVersion = config.foundry?.apiVersion
 
@@ -301,9 +337,10 @@ export async function detectView(
   }
 
   const promptText = `Expected view: ${expectedView}. Determine the actual view of this crab photo.`
+  const imageDataUrl = `data:${photoMimeType};base64,${photoBuffer.toString('base64')}`
 
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 15000)
+  const timeoutId = setTimeout(() => controller.abort(), 12000)
 
   try {
     const response = await fetch(responsesUrl.toString(), {
@@ -318,13 +355,14 @@ export async function detectView(
             role: 'user',
             content: [
               { type: 'input_text', text: `${VIEW_DETECTION_INSTRUCTIONS}\n\n${promptText}` },
-              { type: 'input_image', image_url: photoUrl },
+              { type: 'input_image', image_url: imageDataUrl },
             ],
           },
         ],
         agent: {
           type: 'agent_reference',
           name: agentName,
+          ...(agentVersion ? { version: agentVersion } : {}),
         },
       }),
       signal: controller.signal,
@@ -333,8 +371,12 @@ export async function detectView(
     clearTimeout(timeoutId)
 
     if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`View detection failed: ${response.status} ${errorText}`)
+      return {
+        detectedView: 'unknown',
+        confidence: 0,
+        mismatch: false,
+        message: 'AI view check unavailable; using local validation only.',
+      }
     }
 
     const body: any = await response.json()
@@ -352,12 +394,27 @@ export async function detectView(
   } catch (error: unknown) {
     clearTimeout(timeoutId)
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('View detection timed out')
+      return {
+        detectedView: 'unknown',
+        confidence: 0,
+        mismatch: false,
+        message: 'AI view check timed out; using local validation only.',
+      }
     }
     if (error instanceof SyntaxError) {
-      throw new Error(`Agent returned invalid JSON: ${error.message}`)
+      return {
+        detectedView: 'unknown',
+        confidence: 0,
+        mismatch: false,
+        message: 'AI view check returned invalid response; using local validation only.',
+      }
     }
-    throw error
+    return {
+      detectedView: 'unknown',
+      confidence: 0,
+      mismatch: false,
+      message: 'AI view check failed; using local validation only.',
+    }
   }
 }
 

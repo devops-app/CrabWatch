@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
+import { NotificationPreferenceDto } from '@crabwatch/shared'
 
 const CHANNELS = ['PUSH', 'EMAIL', 'IN_APP'] as const
 const CATEGORIES = [
@@ -11,14 +12,9 @@ const CATEGORIES = [
   { key: 'community_updates', label: 'Community Updates' },
 ] as const
 
-interface Preference {
-  channel: string
-  category: string
-  enabled: boolean
-}
 
 export default function SettingsPage(): React.JSX.Element {
-  const [prefs, setPrefs] = useState<Preference[]>([])
+  const [prefs, setPrefs] = useState<NotificationPreferenceDto[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -31,7 +27,7 @@ export default function SettingsPage(): React.JSX.Element {
   const loadPrefs = async () => {
     try {
       const data = await api.getNotificationPreferences()
-      setPrefs(Array.isArray(data) ? data.map((p: any) => ({ channel: p.channel, category: p.category, enabled: p.enabled })) : [])
+      setPrefs(Array.isArray(data) ? data : [])
       setErrorMessage('')
     } catch {
       setErrorMessage('Failed to load preferences. Please refresh and try again.')

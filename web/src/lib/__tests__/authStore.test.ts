@@ -1,5 +1,24 @@
 import { useAuthStore } from '../authStore'
 
+const mockUser = (overrides = {}) => ({
+  id: '1',
+  name: 'Test User',
+  email: 'test@example.com',
+  phoneCode: null,
+  phoneNumber: null,
+  addressLine1: null,
+  addressLine2: null,
+  addressLine3: null,
+  state: null,
+  postcode: null,
+  country: null,
+  role: 'user' as const,
+  avatar: null,
+  firebaseUid: '',
+  createdAt: new Date(),
+  ...overrides,
+})
+
 describe('authStore', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -16,13 +35,7 @@ describe('authStore', () => {
 
   describe('login', () => {
     it('should set user', () => {
-      const user = {
-        id: '1',
-        name: 'Test User',
-        email: 'test@example.com',
-        role: 'user' as const,
-        avatar: null,
-      }
+      const user = mockUser()
 
       useAuthStore.getState().login(user)
 
@@ -34,13 +47,7 @@ describe('authStore', () => {
 
   describe('logout', () => {
     it('should clear user', () => {
-      useAuthStore.getState().login({
-        id: '1',
-        name: 'Test',
-        email: 'test@example.com',
-        role: 'user' as const,
-        avatar: null,
-      })
+      useAuthStore.getState().login(mockUser({ name: 'Test' }))
 
       useAuthStore.getState().logout()
 
@@ -51,21 +58,12 @@ describe('authStore', () => {
 
   describe('updateUser', () => {
     it('should update user data', () => {
-      useAuthStore.getState().login({
-        id: '1',
-        name: 'Old Name',
-        email: 'test@example.com',
-        role: 'user' as const,
-        avatar: null,
-      })
+      useAuthStore.getState().login(mockUser({ name: 'Old Name' }))
 
-      useAuthStore.getState().updateUser({
-        id: '1',
+      useAuthStore.getState().updateUser(mockUser({
         name: 'New Name',
-        email: 'test@example.com',
-        role: 'user' as const,
         avatar: 'https://example.com/avatar.png',
-      })
+      }))
 
       const state = useAuthStore.getState()
       expect(state.user?.name).toBe('New Name')
@@ -75,13 +73,7 @@ describe('authStore', () => {
 
   describe('persistence', () => {
     it('should persist auth state to localStorage', () => {
-      useAuthStore.getState().login({
-        id: '1',
-        name: 'Test',
-        email: 'test@example.com',
-        role: 'user' as const,
-        avatar: null,
-      })
+      useAuthStore.getState().login(mockUser({ name: 'Test' }))
 
       const stored = localStorage.getItem('crabwatch-auth')
       expect(stored).toBeTruthy()

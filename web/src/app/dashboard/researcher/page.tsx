@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { api } from '@/lib/api'
+import { logger } from '@/lib/logger'
 import { ObservationResponse } from '@crabwatch/shared'
 
 export default function ResearcherPage(): React.JSX.Element {
@@ -73,7 +74,7 @@ export default function ResearcherPage(): React.JSX.Element {
       setObservations(data.observations)
       setTotal(data.total)
     } catch (err) {
-      console.error('Failed to load pending observations:', err)
+      logger.error('Failed to load pending observations', err)
     } finally {
       setLoading(false)
     }
@@ -95,7 +96,7 @@ export default function ResearcherPage(): React.JSX.Element {
       setRejectionReason('')
       loadPending()
     } catch (err) {
-      console.error('Validation failed:', err)
+      logger.error('Validation failed', err)
     } finally {
       setActionLoading(false)
     }

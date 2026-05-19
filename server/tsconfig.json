@@ -11,7 +11,7 @@
     "resolveJsonModule": true,
     "outDir": "dist",
     "baseUrl": ".",
-    "types": ["node", "express", "jest", "bcrypt", "cors", "jsonwebtoken", "multer", "supertest", "swagger-jsdoc", "swagger-ui-express", "cookie-parser"],
+    "types": ["node", "express", "jest", "bcryptjs", "cors", "jsonwebtoken", "multer", "supertest", "swagger-jsdoc", "swagger-ui-express", "cookie-parser"],
     "paths": {
       "@crabwatch/shared": ["../shared/src"]
     }

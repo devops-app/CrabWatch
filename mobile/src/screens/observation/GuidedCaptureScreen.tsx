@@ -46,6 +46,17 @@ const CAPTURE_STEPS: { key: PhotoView; label: string; icon: keyof typeof Ionicon
   { key: 'carapace-closeup', label: 'Shell Close-up', icon: 'expand' },
 ]
 
+function createUploadSessionId(): string {
+  const randomUuid = globalThis.crypto?.randomUUID?.()
+  if (randomUuid) return randomUuid
+
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+    const random = Math.floor(Math.random() * 16)
+    const value = char === 'x' ? random : (random & 0x3) | 0x8
+    return value.toString(16)
+  })
+}
+
 export function GuidedCaptureScreen() {
   const navigation = useNavigation<any>()
   const cameraRef = useRef<CameraView | null>(null)
@@ -234,6 +245,7 @@ export function GuidedCaptureScreen() {
     navigation.navigate('AnalysisLoading', {
       photos: photoList,
       views: viewList,
+      sessionId: createUploadSessionId(),
       coinType: coinType || undefined,
     })
   }

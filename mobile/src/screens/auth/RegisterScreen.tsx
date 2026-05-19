@@ -111,6 +111,7 @@ export function RegisterScreen() {
                   label="Full Name"
                   placeholder="Your name"
                   autoCapitalize="words"
+                  textContentType="name"
                   value={value}
                   onBlur={onBlur}
                   onChangeText={onChange}
@@ -130,6 +131,7 @@ export function RegisterScreen() {
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoComplete="email"
+                  textContentType="emailAddress"
                   value={value}
                   onBlur={onBlur}
                   onChangeText={onChange}
@@ -177,6 +179,7 @@ export function RegisterScreen() {
                       placeholder="123456789"
                       keyboardType="phone-pad"
                       autoCapitalize="none"
+                      textContentType="telephoneNumber"
                       value={value}
                       onBlur={onBlur}
                       onChangeText={onChange}
@@ -192,16 +195,17 @@ export function RegisterScreen() {
               control={control}
               name="addressLine1"
               render={({ field: { onChange, onBlur, value } }) => (
-                <Input
-                  label="Address Line 1"
-                  placeholder="Street address"
-                  autoCapitalize="words"
-                  value={value}
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  error={errors.addressLine1?.message}
-                  returnKeyType="next"
-                />
+               <Input
+                    label="Address Line 1"
+                    placeholder="Street address"
+                    autoCapitalize="words"
+                    textContentType="streetAddressLine1"
+                    value={value}
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    error={errors.addressLine1?.message}
+                    returnKeyType="next"
+                  />
               )}
             />
 
@@ -209,16 +213,17 @@ export function RegisterScreen() {
               control={control}
               name="addressLine2"
               render={({ field: { onChange, onBlur, value } }) => (
-                <Input
-                  label="Address Line 2 (optional)"
-                  placeholder="Apartment, suite, etc."
-                  autoCapitalize="words"
-                  value={value}
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  error={errors.addressLine2?.message}
-                  returnKeyType="next"
-                />
+              <Input
+                    label="Address Line 2 (optional)"
+                    placeholder="Apartment, suite, etc."
+                    autoCapitalize="words"
+                    textContentType="streetAddressLine2"
+                    value={value}
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    error={errors.addressLine2?.message}
+                    returnKeyType="next"
+                  />
               )}
             />
 
@@ -226,16 +231,17 @@ export function RegisterScreen() {
               control={control}
               name="addressLine3"
               render={({ field: { onChange, onBlur, value } }) => (
-                <Input
-                  label="Address Line 3 (optional)"
-                  placeholder="Additional address info"
-                  autoCapitalize="words"
-                  value={value}
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  error={errors.addressLine3?.message}
-                  returnKeyType="next"
-                />
+             <Input
+                    label="Address Line 3 (optional)"
+                    placeholder="Additional address info"
+                    autoCapitalize="words"
+                    textContentType="streetAddressLine1"
+                    value={value}
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    error={errors.addressLine3?.message}
+                    returnKeyType="next"
+                  />
               )}
             />
 
@@ -249,6 +255,7 @@ export function RegisterScreen() {
                       label="State"
                       placeholder="State"
                       autoCapitalize="words"
+                      textContentType="addressState"
                       value={value}
                       onBlur={onBlur}
                       onChangeText={onChange}
@@ -267,6 +274,7 @@ export function RegisterScreen() {
                       label="Postcode"
                       placeholder="Postcode"
                       keyboardType="number-pad"
+                      textContentType="postalCode"
                       value={value}
                       onBlur={onBlur}
                       onChangeText={onChange}
@@ -286,6 +294,7 @@ export function RegisterScreen() {
                   label="Password"
                   placeholder="At least 8 characters"
                   secureTextEntry
+                  textContentType="newPassword"
                   value={value}
                   onBlur={onBlur}
                   onChangeText={onChange}
@@ -303,6 +312,7 @@ export function RegisterScreen() {
                   label="Confirm Password"
                   placeholder="Re-enter your password"
                   secureTextEntry
+                  textContentType="newPassword"
                   value={value}
                   onBlur={onBlur}
                   onChangeText={onChange}

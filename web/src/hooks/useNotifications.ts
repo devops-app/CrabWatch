@@ -1,4 +1,5 @@
-import { useEffect, useCallback, useRef } from 'react'
+﻿import { useEffect, useCallback, useRef, useState } from 'react'
+import { api } from '@/lib/api'
 
 export function useNotifications(): {
   isSupported: boolean
@@ -15,16 +16,14 @@ export function useNotifications(): {
     return Notification.permission
   }
 
-  const permissionRef = useRef<NotificationPermission>(getPermission())
+  const [permission, setPermission] = useState<NotificationPermission>(getPermission())
   const isRegisteredRef = useRef(false)
-
-  const permission = permissionRef.current
 
   const requestPermission = useCallback(async (): Promise<boolean> => {
     if (!isSupported || typeof Notification === 'undefined') return false
 
     const perm = await Notification.requestPermission()
-    permissionRef.current = perm
+    setPermission(perm)
     return perm === 'granted'
   }, [isSupported])
 
@@ -39,17 +38,9 @@ export function useNotifications(): {
 
         if (subscription) {
           const token = btoa(JSON.stringify(subscription))
-          const response = await fetch('/api/v1/fcm/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ fcmToken: token }),
-          })
-
-          if (response.ok) {
-            isRegisteredRef.current = true
-            return true
-          }
+          await api.registerFcmToken(token)
+          isRegisteredRef.current = true
+          return true
         }
       }
     } catch (error) {

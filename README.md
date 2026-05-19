@@ -73,6 +73,26 @@ JWT_SECRET="development-secret-change-in-production"
 
 > **Firebase & Azure**: Firebase is configured for project `crabwatch-495303`. Leave Azure placeholders for local dev. The server uses JWT fallback when Firebase credentials are not configured.
 
+### 3b. Local Azure Storage (Optional, for photo upload/analysis)
+
+Install and run Azurite to emulate Azure Blob Storage locally:
+
+```bash
+npm install -g azurite
+
+# Start Azurite (blob + queue, data persisted in ./azurite-data)
+azurite --location ./azurite-data --skipApiVersionCheck --blobHost 0.0.0.0
+```
+
+Then set the connection string in `server/.env`:
+
+```env
+AZURE_STORAGE_CONNECTION_STRING="DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
+AZURE_STORAGE_CONTAINER="crabwatch"
+```
+
+> Azurite runs on port `10000` (blob) by default. The `--skipApiVersionCheck` flag avoids version mismatch warnings. Data persists across restarts in the `./azurite-data` directory.
+
 ### 4. Generate Prisma client & seed database
 
 ```bash
@@ -603,12 +623,72 @@ Full step-by-step deployment guide: see [`Azure-Deployment-Plan.md`](./Azure-Dep
 ### Re-Deployment (After Code Changes)
 
 ```powershell
-# Deploy server (builds, packages, uploads, installs deps, seeds engagement)
+# Deploy server (builds, packages, uploads, installs deps)
 .\scripts\deploy-server.ps1
 
 # Deploy web (builds, packages, uploads)
 .\scripts\deploy-web.ps1
 ```
+
+### Deployment Script Usage
+
+#### `scripts/deploy-server.ps1`
+
+Run from repo root (PowerShell):
+
+```powershell
+.\scripts\deploy-server.ps1 [-ResourceGroup <name>] [-ApiAppName <name>] [-ZipPath <path>] [-SkipInstall] [-GeneratePrisma] [-Seed]
+```
+
+Common examples:
+
+```powershell
+# Standard deploy (recommended)
+.\scripts\deploy-server.ps1
+
+# Deploy and run engagement seed explicitly
+.\scripts\deploy-server.ps1 -Seed
+
+# Deploy without local pnpm install
+.\scripts\deploy-server.ps1 -SkipInstall
+
+# Deploy with local prisma client generation
+.\scripts\deploy-server.ps1 -GeneratePrisma
+```
+
+Parameter notes:
+
+- `-Seed`: opt-in seeding (default: no seed)
+- `-GeneratePrisma`: runs local `prisma generate` before build (use only when needed)
+- `-SkipInstall`: skips local workspace `pnpm install --frozen-lockfile`
+- `-ResourceGroup`, `-ApiAppName`, `-ZipPath`: override Azure target/zip path
+
+#### `scripts/deploy-web.ps1`
+
+Run from repo root (PowerShell):
+
+```powershell
+.\scripts\deploy-web.ps1 [-ResourceGroup <name>] [-WebAppName <name>] [-BackendUrl <url>] [-ZipPath <path>] [-SkipDeploy]
+```
+
+Common examples:
+
+```powershell
+# Standard web deploy
+.\scripts\deploy-web.ps1
+
+# Deploy to a different backend API URL
+.\scripts\deploy-web.ps1 -BackendUrl "https://your-api.azurewebsites.net"
+
+# Build web deploy zip only (no upload)
+.\scripts\deploy-web.ps1 -SkipDeploy
+```
+
+Parameter notes:
+
+- `-SkipDeploy`: packages build output into `web-deploy.zip` only
+- `-BackendUrl`: sets `BACKEND_URL` for build/runtime
+- `-ResourceGroup`, `-WebAppName`, `-ZipPath`: override Azure target/zip path
 
 For first-time Azure setup or troubleshooting, see [`Azure-Deployment-Plan.md`](./Azure-Deployment-Plan.md).
 
@@ -620,10 +700,13 @@ For first-time Azure setup or troubleshooting, see [`Azure-Deployment-Plan.md`](
 node server/node_modules/prisma/build/index.js generate --schema=server/prisma/schema.prisma
 ```
 
-### bcrypt native module errors
+### Production deployment starts but API crashes
+
+If App Service shows module resolution errors after deploy, open Kudu SSH and run:
 
 ```bash
-npm rebuild bcrypt
+cd /home/site/wwwroot
+npm install --omit=dev --no-audit --no-fund
 ```
 
 ### TypeScript path resolution errors

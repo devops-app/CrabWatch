@@ -125,6 +125,7 @@ export function ResetPasswordScreen() {
                     label="New Password"
                     placeholder="At least 8 characters"
                     secureTextEntry
+                    textContentType="newPassword"
                     value={value}
                     onBlur={onBlur}
                     onChangeText={onChange}
@@ -142,6 +143,7 @@ export function ResetPasswordScreen() {
                     label="Confirm Password"
                     placeholder="Re-enter your password"
                     secureTextEntry
+                    textContentType="newPassword"
                     value={value}
                     onBlur={onBlur}
                     onChangeText={onChange}

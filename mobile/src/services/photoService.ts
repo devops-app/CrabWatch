@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker'
 import * as ImageManipulator from 'expo-image-manipulator'
-import * as FileSystem from 'expo-file-system/legacy'
+import * as FileSystem from 'expo-file-system'
 
 export const photoService = {
   async takePhoto(): Promise<string | null> {

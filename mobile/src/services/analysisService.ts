@@ -11,6 +11,7 @@ export const analysisService = {
   async analyzeCrab(
     photoUris: string[],
     views: PhotoView[],
+    sessionId: string,
     coinType?: string,
     onProgress?: (progress: AnalysisProgress) => void
   ): Promise<CrabAnalysisResult> {
@@ -25,7 +26,7 @@ export const analysisService = {
     try {
       onProgress?.({ status: 'uploading', message: 'Uploading photos...', percentage: 10 })
 
-      const { blobUrls } = await api.uploadAnalysisPhotos(photoUris)
+      const { blobUrls } = await api.uploadAnalysisPhotos(photoUris, sessionId)
 
       onProgress?.({ status: 'uploading', message: 'Photos uploaded', percentage: 30 })
 
@@ -55,6 +56,7 @@ export const analysisService = {
   async retryAnalysis(
     photoUris: string[],
     views: PhotoView[],
+    sessionId: string,
     coinType?: string,
     onProgress?: (progress: AnalysisProgress) => void
   ): Promise<CrabAnalysisResult> {
@@ -63,7 +65,7 @@ export const analysisService = {
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         onProgress?.({ status: 'uploading', message: `Attempt ${attempt}/3...`, percentage: (attempt - 1) * 5 })
-        return await this.analyzeCrab(photoUris, views, coinType, (progress) => {
+        return await this.analyzeCrab(photoUris, views, sessionId, coinType, (progress) => {
           if (onProgress) {
             onProgress({ ...progress, percentage: Math.min(progress.percentage + (attempt - 1) * 5, 100) })
           }

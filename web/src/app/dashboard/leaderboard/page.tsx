@@ -1,18 +1,12 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
+import { logger } from '@/lib/logger'
 import { useAuthStore } from '@/lib/authStore'
+import { LeaderboardEntryDto } from '@crabwatch/shared'
 
-interface LeaderboardEntry {
-  rank: number
-  userId: string
-  name: string
-  level: number
-  title: string
-  totalXP: number
-  approvedCount: number
-  currentStreak: number
+interface LeaderboardEntry extends LeaderboardEntryDto {
   isMe: boolean
 }
 
@@ -31,11 +25,12 @@ export default function LeaderboardPage(): React.JSX.Element {
   const loadLeaderboard = async () => {
     setLoading(true)
     try {
-      const data: any = await api.getLeaderboard({ scope, page, limit: 50 })
-      setEntries(data.entries || [])
+      const data = await api.getLeaderboard({ scope, page, limit: 50 }) as { entries: LeaderboardEntryDto[]; totalPages: number }
+      const userId = user?.id
+      setEntries((data.entries || []).map(e => ({ ...e, isMe: e.userId === userId })))
       setTotalPages(data.totalPages || 1)
     } catch {
-      console.error('Failed to load leaderboard')
+      logger.error('Failed to load leaderboard')
     } finally {
       setLoading(false)
     }

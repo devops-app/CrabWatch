@@ -35,9 +35,19 @@ export function Input({
         ]}
         placeholder={placeholder}
         placeholderTextColor={COLORS.textLight}
+        allowFontScaling
+        accessibilityLabel={label ? `${label}${error ? `, ${error}` : ''}` : undefined}
         {...props}
       />
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && (
+        <Text
+          style={styles.error}
+          accessibilityLiveRegion="polite"
+          role="alert"
+        >
+          {error}
+        </Text>
+      )}
     </View>
   )
 }

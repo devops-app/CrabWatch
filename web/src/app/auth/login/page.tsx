@@ -36,7 +36,13 @@ export default function LoginPage(): React.JSX.Element {
       setError('')
       const result = await api.login(data)
 
-      login({ ...result.user, role: result.user.role as UserRole }, result.token)
+      login({
+        ...result.user,
+        role: result.user.role as UserRole,
+        avatar: null,
+        firebaseUid: '',
+        createdAt: new Date(),
+      }, result.token)
       router.push('/dashboard')
     } catch {
       setError('Invalid email or password')

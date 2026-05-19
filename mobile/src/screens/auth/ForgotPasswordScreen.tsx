@@ -97,6 +97,7 @@ export function ForgotPasswordScreen() {
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoComplete="email"
+                    textContentType="emailAddress"
                     value={value}
                     onBlur={onBlur}
                     onChangeText={onChange}

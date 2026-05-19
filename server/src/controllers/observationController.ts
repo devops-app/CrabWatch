@@ -20,6 +20,10 @@ async function refreshPhotoUrls(photos: string[]): Promise<string[]> {
   const containerClient = service.getContainerClient(containerName)
 
   for (const url of photos) {
+    if (/^(file|content|ph|assets-library):\/\//i.test(url)) {
+      continue
+    }
+
     if (!url.includes('?sv=')) {
       refreshed.push(url)
       continue
@@ -57,7 +61,7 @@ function getDbUser(req: AuthRequest): DbUser {
 export async function createObservation(req: AuthRequest, res: Response): Promise<void> {
   try {
     const dbUser = getDbUser(req)
-    const { speciesId, cw, bw, gender, maturationStatus, lat, lng, locationMethod, photos, detectedCoin, notes } = req.body
+    const { speciesId, cw, bw, gender, maturationStatus, lat, lng, locationMethod, photos, detectedCoin, notes, uploadSessionId } = req.body
 
     const observation = await prisma.observation.create({
       data: {
@@ -71,6 +75,7 @@ export async function createObservation(req: AuthRequest, res: Response): Promis
         lng,
         locationMethod: locationMethod.toUpperCase(),
         photos: photos as string[],
+        uploadSessionId: uploadSessionId || null,
         detectedCoin: detectedCoin || null,
         notes: sanitizeText(notes),
       },
@@ -406,6 +411,7 @@ async function formatObservation(obs: ObservationWithRelations): Promise<Observa
     lng: obs.lng,
     locationMethod: obs.locationMethod.toLowerCase() as import('@crabwatch/shared').LocationMethod,
     photos,
+    uploadSessionId: obs.uploadSessionId,
     detectedCoin: obs.detectedCoin,
     notes: obs.notes,
     status: obs.status.toLowerCase() as import('@crabwatch/shared').ObservationStatus,

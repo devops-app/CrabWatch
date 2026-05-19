@@ -2,23 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '@/lib/api'
-import { useAuthStore } from '@/lib/authStore'
-
-interface Achievement {
-  achievementId: string
-  code: string
-  name: string
-  description: string
-  category: string
-  rarity: string
-  iconUrl: string | null
-  xpReward: number
-  isHidden: boolean
-  isUnlocked: boolean
-  progress: number
-  target: number
-  earnedAt: string | null
-}
+import { logger } from '@/lib/logger'
+import type { UserAchievementListDto } from '@crabwatch/shared'
 
 const RARITY_COLORS: Record<string, string> = {
   COMMON: 'bg-gray-100 text-gray-700 border-gray-200',
@@ -47,7 +32,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 const CATEGORIES = ['ALL', 'OBSERVATION', 'SPECIES', 'EXPLORATION', 'QUALITY', 'HIDDEN'] as const
 
 export default function AchievementsPage(): React.JSX.Element {
-  const [achievements, setAchievements] = useState<Achievement[]>([])
+  const [achievements, setAchievements] = useState<UserAchievementListDto[]>([])
   const [loading, setLoading] = useState(true)
   const [filterCategory, setFilterCategory] = useState<string>('ALL')
   const [filterStatus, setFilterStatus] = useState<'all' | 'unlocked' | 'in_progress'>('all')
@@ -56,13 +41,13 @@ export default function AchievementsPage(): React.JSX.Element {
   const unlockedCount = achievements.filter((a) => a.isUnlocked).length
   const totalCount = achievements.length
 
-  const loadAchievements = useCallback(async () => {
+ const loadAchievements = useCallback(async () => {
     setLoading(true)
     try {
-      const res: any = await api.getAchievements()
-      setAchievements(res || [])
-    } catch {
-      console.error('Failed to load achievements')
+      const res = await api.getAchievements()
+      setAchievements(res)
+    } catch (err) {
+      logger.error('Failed to load achievements', err)
     } finally {
       setLoading(false)
     }
@@ -70,14 +55,14 @@ export default function AchievementsPage(): React.JSX.Element {
 
   const checkAchievements = useCallback(async () => {
     try {
-      const res: any = await api.checkAchievements()
-      if (res && res.newlyUnlocked && res.newlyUnlocked.length > 0) {
+      const res = await api.checkAchievements()
+      if (res.newlyUnlocked.length > 0) {
         setToast(`🎉 Unlocked: ${res.newlyUnlocked.join(', ')}`)
         setTimeout(() => setToast(null), 4000)
         loadAchievements()
       }
-    } catch {
-      console.error('Failed to check achievements')
+    } catch (err) {
+      logger.error('Failed to check achievements', err)
     }
   }, [loadAchievements])
 
@@ -85,12 +70,14 @@ export default function AchievementsPage(): React.JSX.Element {
     loadAchievements()
   }, [loadAchievements])
 
-  const filtered = achievements.filter((a) => {
-    if (filterCategory !== 'ALL' && a.category !== filterCategory) return false
-    if (filterStatus === 'unlocked' && !a.isUnlocked) return false
-    if (filterStatus === 'in_progress' && a.isUnlocked) return false
-    return true
-  })
+  const filtered: UserAchievementListDto[] = Array.isArray(achievements)
+    ? achievements.filter((a) => {
+        if (filterCategory !== 'ALL' && a.category !== filterCategory) return false
+        if (filterStatus === 'unlocked' && !a.isUnlocked) return false
+        if (filterStatus === 'in_progress' && a.isUnlocked) return false
+        return true
+      })
+    : []
 
   return (
     <>

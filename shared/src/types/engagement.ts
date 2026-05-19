@@ -1,3 +1,5 @@
+import { LeaderboardEntryDto, XPTransactionDto } from './gamification'
+
 export interface AchievementDto {
   id: string
   code: string
@@ -48,6 +50,26 @@ export interface AchievementProgressDto {
   progress: number
   target: number
   unlocked: boolean
+}
+
+export interface UserAchievementListDto {
+  achievementId: string
+  code: string
+  name: string
+  description: string
+  category: string
+  rarity: string
+  iconUrl: string | null
+  xpReward: number
+  isHidden: boolean
+  isUnlocked: boolean
+  progress: number
+  target: number
+  earnedAt: string | null
+}
+
+export interface CheckAchievementsResponseDto {
+  newlyUnlocked: string[]
 }
 
 // Onboarding
@@ -151,10 +173,13 @@ export interface SeasonDto {
   id: string
   code: string
   name: string
+  description: string | null
   startsAt: string
   endsAt: string
   isActive: boolean
-  description: string | null
+  createdAt: string
+  updatedAt: string
+  _count?: { seasonStats: number }
 }
 
 export interface UserSeasonStatDto {
@@ -163,4 +188,122 @@ export interface UserSeasonStatDto {
   approvedCount: number
   totalSubmissions: number
   currentStreak: number
+}
+
+// Community
+export interface CommunityStatsDto {
+  totalUsers: number
+  totalObservations: number
+  totalSpecies: number
+  totalApproved: number
+  monthlyActivity: MonthlyActivityEntry[]
+}
+
+export interface MonthlyActivityEntry {
+  month: string
+  count: number
+}
+
+export interface ContributorDto {
+  id: string
+  name: string
+  avatar: string | null
+  approvedCount: number
+  totalSubmissions: number
+  level: number
+  title: string
+  totalXP: number
+}
+
+// Onboarding dashboard response
+export interface OnboardingStatusDto {
+  flowCode: string
+  totalCount: number
+  completedCount: number
+  progress: number
+  steps: OnboardingStepStatusDto[]
+}
+
+export interface OnboardingStepStatusDto {
+  step: string
+  key: string
+  title: string
+  xpReward: number
+  completed: boolean
+  completedAt: string | null
+}
+
+// Active missions dashboard response
+export interface ActiveMissionDto {
+  id: string
+  code: string
+  key: string
+  title: string
+  name: string
+  xpReward: number
+  claimed: boolean
+  completed: boolean
+  progress: number
+  targetCount: number
+}
+
+// Insight dashboard response
+export interface DashboardInsightDto {
+  id: string
+  type: string
+  title: string
+  message: string
+  description: string
+}
+
+// Leaderboard response
+export interface LeaderboardResponseDto {
+  entries: LeaderboardEntryDto[]
+  totalPages: number
+  currentPage: number
+}
+
+// XP History response
+export interface XPHistoryResponseDto {
+  transactions: XPTransactionDto[]
+  totalPages: number
+  currentPage: number
+}
+
+// Engagement metrics
+export interface EngagementMetricsDto {
+  totalUsers: number
+  activeUsers1d: number
+  activeUsers7d: number
+  activeUsers30d: number
+  dau: number
+  wau: number
+  mau: number
+  stickiness: number
+  newUsers7d: number
+  newUsers30d: number
+  totalObservations: number
+  observations7d: number
+  observations30d: number
+  pendingApproval: number
+  approvalRate: number
+  avgXP: number
+  medianXP: number
+  xpDistribution: Array<{ level: number; title: string; count: number }>
+  avgStreak: number
+  maxStreak: number
+  usersWithStreak: number
+  streakDistribution: Array<{ bucket: string; count: number }>
+  missionsCompleted7d: number
+  missionsCompleted30d: number
+  missionCompletionRate: number
+  totalAchievements: number
+  totalUnlocks: number
+  avgAchievementsPerUser: number
+  activeAbuseSignals: number
+  resolvedSignals7d: number
+  highRiskUsers: number
+  xpTransactions7d: number
+  auditLogs7d: number
+  leaderboardCacheHits: number
 }

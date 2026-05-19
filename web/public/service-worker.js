@@ -2,11 +2,17 @@ const CRABWATCH_NOTIFICATIONS = 'crabwatch-notifications'
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CRABWATCH_NOTIFICATIONS).then((cache) => {
-      return cache.addAll([
-        '/favicon.ico',
-        '/dashboard',
-      ])
+    caches.open(CRABWATCH_NOTIFICATIONS).then(async (cache) => {
+      const urlsToCache = ['/favicon.ico']
+
+      await Promise.allSettled(
+        urlsToCache.map(async (url) => {
+          const response = await fetch(url, { cache: 'no-cache' })
+          if (response.ok) {
+            await cache.put(url, response)
+          }
+        })
+      )
     })
   )
   self.skipWaiting()

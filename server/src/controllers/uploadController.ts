@@ -4,6 +4,7 @@ import { AuthRequest } from '../middleware/auth'
 import { randomUUID } from 'crypto'
 import { getBlobService } from '../services/upload'
 import { sanitizeInput } from '../utils/sanitize'
+import { buildObservationBlobPath } from '../utils/blobPath'
 
 export const MAX_UPLOAD_SIZE = 10 * 1024 * 1024
 
@@ -20,7 +21,7 @@ const ALLOWED_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/h
 
 export async function getUploadUrlHandler(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const { fileName, contentType } = req.body
+    const { fileName, contentType, sessionId, photoIndex } = req.body
     if (!fileName || !contentType) {
       res.status(400).json({ success: false, error: 'fileName and contentType are required' })
       return
@@ -33,12 +34,15 @@ export async function getUploadUrlHandler(req: AuthRequest, res: Response): Prom
       return
     }
 
-    const safeFileName = `${dbUser?.id || 'anon'}/${randomUUID()}-${sanitizeInput(fileName, 100).replace(/[^a-zA-Z0-9._-]/g, '')}`
+    const blobPath = sessionId
+      ? buildObservationBlobPath(dbUser?.id || 'anon', sessionId, photoIndex ?? 0, fileName, safeContentType)
+      : `${dbUser?.id || 'anon'}/${randomUUID()}-${sanitizeInput(fileName, 100).replace(/[^a-zA-Z0-9._-]/g, '')}`
+
     const service = getBlobService()
     const containerClient = service.getContainerClient(
       process.env.AZURE_STORAGE_CONTAINER || 'crabwatch-uploads'
     )
-    const blobClient = containerClient.getBlockBlobClient(safeFileName)
+    const blobClient = containerClient.getBlockBlobClient(blobPath)
 
     const sasUrl = await blobClient.generateSasUrl({
       expiresOn: new Date(Date.now() + 15 * 60 * 1000),
@@ -50,7 +54,7 @@ export async function getUploadUrlHandler(req: AuthRequest, res: Response): Prom
       data: {
         uploadUrl: sasUrl,
         blobUrl: blobClient.url,
-        fileName: safeFileName,
+        fileName: blobPath,
       },
     })
   } catch (error: unknown) {
@@ -64,6 +68,7 @@ export async function uploadPhoto(req: AuthRequest & { file?: MulterFile }, res:
     const file = req.file
     const fileName = req.body.fileName
     const contentType = req.body.contentType || file?.mimetype
+    const { sessionId, photoIndex } = req.body
 
     if (!file || !fileName || !contentType) {
       res.status(400).json({ success: false, error: 'file, fileName, and contentType are required' })
@@ -83,12 +88,15 @@ export async function uploadPhoto(req: AuthRequest & { file?: MulterFile }, res:
       return
     }
 
-    const safeFileName = `${dbUser?.id || 'anon'}/${randomUUID()}-${sanitizeInput(fileName, 100).replace(/[^a-zA-Z0-9._-]/g, '')}`
+    const blobPath = sessionId
+      ? buildObservationBlobPath(dbUser?.id || 'anon', sessionId, photoIndex ?? 0, fileName, safeContentType)
+      : `${dbUser?.id || 'anon'}/${randomUUID()}-${sanitizeInput(fileName, 100).replace(/[^a-zA-Z0-9._-]/g, '')}`
+
     const service = getBlobService()
     const containerClient = service.getContainerClient(
       process.env.AZURE_STORAGE_CONTAINER || 'crabwatch-uploads'
     )
-    const blobClient = containerClient.getBlockBlobClient(safeFileName)
+    const blobClient = containerClient.getBlockBlobClient(blobPath)
 
     await blobClient.upload(fileBuffer, fileBuffer.length, {
       blobHTTPHeaders: { blobContentType: safeContentType },
@@ -98,7 +106,7 @@ export async function uploadPhoto(req: AuthRequest & { file?: MulterFile }, res:
       success: true,
       data: {
         blobUrl: blobClient.url,
-        fileName: safeFileName,
+        fileName: blobPath,
       },
     })
   } catch (error: unknown) {

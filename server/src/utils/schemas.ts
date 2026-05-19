@@ -71,7 +71,12 @@ export const createObservationSchema = z.object({
   lat: z.number().min(-90).max(90),
   lng: z.number().min(-180).max(180),
   locationMethod: z.enum(['GPS', 'MANUAL', 'gps', 'manual']),
-  photos: z.array(z.string().url()),
+  photos: z.array(
+    z.string().url().refine((url) => /^https?:\/\//i.test(url), {
+      message: 'Photo URL must use http or https',
+    })
+  ),
+  uploadSessionId: z.string().uuid().optional().nullable(),
   detectedCoin: z.string().max(200).optional().nullable(),
   notes: z.string().max(1000).optional(),
 })
@@ -108,6 +113,8 @@ export const changePasswordSchema = z.object({
 export const uploadUrlSchema = z.object({
   fileName: z.string().min(1).max(200),
   contentType: z.string().min(1).max(50),
+  sessionId: z.string().uuid().optional(),
+  photoIndex: z.number().min(0).max(100).optional(),
 })
 
 export const registerFcmTokenSchema = z.object({
