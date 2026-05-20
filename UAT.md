@@ -424,6 +424,48 @@
 
 ---
 
+## 16. Mobile UX (Dark Mode, Safe Area, Deep Linking)
+
+### 16.1 Dark Mode
+
+| ID | Test Case | Steps | Expected Result |
+|----|-----------|-------|-----------------|
+| UX-001 | Light mode default | 1. Device in light mode | App uses light color palette |
+| UX-002 | Switch to dark mode | 1. Toggle device to dark mode | All screens update to dark palette |
+| UX-003 | Tab bar dark mode | 1. View tab bar in dark mode | Tab icons and labels visible on dark background |
+| UX-004 | Status bar adapts | 1. Toggle between light/dark | Status bar content visible (light/dark style) |
+| UX-005 | All screens dark safe | 1. Navigate all screens in dark mode | No inverted/invisible text |
+
+### 16.2 Safe Area
+
+| ID | Test Case | Steps | Expected Result |
+|----|-----------|-------|-----------------|
+| UX-006 | iPhone notch/home indicator | 1. Run on iPhone with notch | Tab bar not obscured by home indicator |
+| UX-007 | Android without notch | 1. Run on Android device | Tab bar renders at normal bottom position |
+| UX-008 | Orientation change | 1. Rotate to landscape then back | Layout re-adjusts correctly |
+
+### 16.3 Deep Linking
+
+| ID | Test Case | Steps | Expected Result |
+|----|-----------|-------|-----------------|
+| UX-009 | Cold start deep link | 1. App not running, open `crabwatch://reset-password/<token>` | App opens to ResetPassword screen with token pre-filled |
+| UX-010 | Background deep link | 1. App in background, open deep link | App foregrounds to ResetPassword screen |
+| UX-011 | Invalid deep link token | 1. Open link with invalid token | ResetPassword screen shows error on submit |
+| UX-012 | Unknown URL scheme | 1. Open `crabwatch://unknown/path` | App opens to default home/login |
+
+---
+
+## 17. Web Performance & Modernization
+
+| ID | Test Case | Steps | Expected Result |
+|----|-----------|-------|-----------------|
+| PERF-001 | Analytics lazy-loading | 1. Open analytics page | Shell loads fast; map/chart chunks load on tab selection |
+| PERF-002 | Community Server Component | 1. Open `/dashboard/community` | Data fetched server-side via `fetch()` + cookies |
+| PERF-003 | Community client interactivity | 1. Interact with community page | Client component handles likes, comments, etc. |
+| PERF-004 | Admin page extraction | 1. Open admin page | Lightweight shell loads; tab components render on selection |
+
+---
+
 ## Execution Summary Template
 
 | Module | Total | Pass | Fail | Blocked | N/A |
@@ -443,4 +485,6 @@
 | 13. Dashboard & Navigation | 9 | | | | |
 | 14. Error Handling | 10 | | | | |
 | 15. Deployment & Health | 6 | | | | |
-| **TOTAL** | **207** | | | | |
+| 16. Mobile UX | 12 | | | | |
+| 17. Web Performance | 4 | | | | |
+| **TOTAL** | **223** | | | | |

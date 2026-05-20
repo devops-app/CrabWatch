@@ -13,6 +13,8 @@ import type {
   SizeFrequencyData,
   GenderRatioData,
   CW50Data,
+  ConditionIndexAggregatedData,
+  SpeciesDistributionData,
   TemporalTrendData,
   UploadResponse,
   CrabAnalysisRequest,
@@ -296,6 +298,24 @@ export const api = {
     if (params?.year) p.set('year', params.year)
     const query = p.toString()
     return apiRequest(`/analytics/temporal-trends${query ? `?${query}` : ''}`)
+  },
+
+  async getConditionIndices(speciesId?: string): Promise<ConditionIndexAggregatedData[]> {
+    const p = new URLSearchParams()
+    if (speciesId) p.set('speciesId', speciesId)
+    const query = p.toString()
+    return apiRequest(`/analytics/condition-indices${query ? `?${query}` : ''}`)
+  },
+
+  async getSpeciesDistribution(params?: {
+    dateFrom?: string
+    dateTo?: string
+  }): Promise<SpeciesDistributionData[]> {
+    const p = new URLSearchParams()
+    if (params?.dateFrom) p.set('dateFrom', params.dateFrom)
+    if (params?.dateTo) p.set('dateTo', params.dateTo)
+    const query = p.toString()
+    return apiRequest(`/analytics/species-distribution${query ? `?${query}` : ''}`)
   },
 
   async getUploadUrl(fileName: string, contentType: string, sessionId?: string, photoIndex?: number): Promise<UploadResponse> {

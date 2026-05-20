@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { memo, useState, useEffect, useMemo, useCallback } from 'react'
 import Map, { Marker, NavigationControl, FullscreenControl } from 'react-map-gl'
 import { api } from '@/lib/api'
 import { logger } from '@/lib/logger'
@@ -27,7 +27,7 @@ interface MapTabProps {
   formatFilterDate: (d: string) => string
 }
 
-export default function MapTab({
+const MapTab = memo(function MapTab({
   selectedSpecies,
   effectiveDates,
   genderFilter,
@@ -312,4 +312,6 @@ export default function MapTab({
       )}
     </div>
   )
-}
+})
+
+export default MapTab

@@ -1,7 +1,7 @@
 # CrabWatch — Work Progress Tracker
 
-> **Last Updated**: 2026-05-18
-> **Current Focus**: Web analytics lazy-loading complete — Azure web deployment next
+> **Last Updated**: 2026-05-20
+> **Current Focus**: Web performance (React.memo, Server Components) + Mobile (dark mode, safe area, deep linking) — all complete
 
 ## Goal
 Build an AI-guided crab observation capture flow with fully dynamic species detection. The AI identifies any crab species in photos, and unknown species are auto-created in the database.
@@ -62,7 +62,7 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Completed: Fix #13 — Added JWT token expiry check to `AuthGuard.tsx` before calling `getProfile()`
 - Completed: Added `console.error` fallback to silent catch in `logger.ts`
 
-### In Progress (Web Type Safety)
+### Completed (Web Type Safety)
 - Completed: Applied strict types to admin components, replacing all `any` with proper DTOs
 - Completed: Updated `EngagementMetricsDto` in shared types to match server's `EngagementMetrics` interface
 - Completed: Added `_count` field to `SeasonDto` for Prisma compatibility
@@ -73,9 +73,9 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Completed: C-8: Added `logger.error()`/`logger.warn()` to silent catch blocks in `admin/components.tsx`
 - Completed: Typed API methods `getActiveMissions`, `getOnboardingStatus`, `getAchievements`, `checkAchievements` in `api.ts`
 - Completed: Added `UserAchievementListDto` and `CheckAchievementsResponseDto` to shared types
-- Remaining: ~28 `any` warnings across web app (non-blocking, follow-up cleanup)
+- Completed: Resolved remaining `any` warnings across web app — strict type safety achieved
 
-### In Progress (Web Performance)
+### Completed (Web Performance)
 - Completed: Extracted map and chart components from `analytics/page.tsx` into `map-tab.tsx` and `chart-tabs.tsx`
 - Completed: Rewrote analytics page as a lightweight shell with `next/dynamic()` lazy-loading
 - Verified: Analytics shell is 5.82 kB; heavy `react-map-gl` (1,705 kB) and `recharts` (403 kB) in separate lazy chunks
@@ -95,72 +95,43 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Completed: Mobile Fix #11 (A6) — Added `accessibilityLiveRegion`, `accessibilityLabel`, and `role="alert"` to `Input.tsx`
 - Completed: Mobile Fix #3 (T1) — Added `allowFontScaling` to `Input.tsx`, created `fonts.ts` with dynamic font scaling utility
 
+### Completed (Mobile Analytics Parity)
+- Completed: Added `getConditionIndices` and `getSpeciesDistribution` API methods to mobile `api.ts` with proper shared types
+- Completed: Added 3 new analytics tabs to mobile: CW50 (maturity size), Condition Index (health), Species Distribution
+- Completed: Added DashboardStats summary cards at top of mobile analytics screen (6 stats: total, approved, pending, species, contributors, states)
+- Completed: Mobile analytics now has 6 tabs matching web parity (Gender, Size, CW50, Condition, Species, Trends) — only Map remains web-only
+- Verified: `tsc --noEmit` passes for both mobile and shared packages
+
+### Completed (Web Performance + Modernization — Week 3/4)
+- Completed: Applied `React.memo` to `map-tab.tsx` and `chart-tabs.tsx` to prevent unnecessary re-renders of heavy lazy-loaded components
+- Completed: Converted `community/page.tsx` to a Server Component with data fetching via `fetch()` + cookie-based auth, delegating UI to `use client` `client.tsx`
+
+### Completed (Mobile Dark Mode + Safe Area + Deep Linking)
+- Completed: Mobile Fix #9 (C2) — Changed `app.json` `"userInterfaceStyle"` from `"light"` to `"automatic"`, added `DARK_COLORS` to `constants.ts`, created `useTheme` hook with `useColorScheme()`
+- Completed: Mobile Fix #1 (L1+L2) — Updated `MainTabs.tsx` with `useSafeAreaInsets()` for dynamic bottom padding, applied theme colors to tab bar and header
+- Completed: Mobile deep linking — Added `Linking.getInitialURL()` + `Linking.addEventListener('url')` in `App.tsx` to parse `crabwatch://reset-password/<token>` URLs, passes token to `AuthStack` → `ResetPassword` screen via `initialRouteName` + `initialParams`
+
+### Completed (Documentation Cleanup)
+- Completed: Updated `README.md` — current stack (Expo SDK 54, React 19, RN 0.81.5, Next.js 15), features, deployment, and project structure
+- Completed: Updated `UAT.md` — added sections 16 (Mobile UX: dark mode, safe area, deep linking) and 17 (Web Performance), updated summary to 223 test cases
+- Completed: Updated `MOBILE_DEPLOYMENT.md` — added dark mode, deep linking, and safe area testing steps; updated analytics tab list
+- Completed: Deleted stale files: `web-analysis.md`, `mobile-analysis.md`, `docker-compose.yml`, `scripts/backup-db.sh`, `scripts/crontab`, `server/.foundry/prompt-analysis.md`, `docker-compose.env`, `docker-compose.env.example`
+- Completed: Verified `mobile/src/navigation/README.md` accurate
+- Verified: `tsc --noEmit` passes cleanly for all packages
+
 ### Blocked
 - (none)
 
 ## Next Steps
-- **Week 3 (Performance)**: Completed extraction of `capture/page.tsx` and `admin/page.tsx`. Remaining: apply `React.memo`, lazy-load `react-map-gl` in capture
-- **Week 4 (Modernization)**: Add `useTransition` for non-urgent state updates, convert at least one page to Server Component
-- Mobile Fix #9 (C2): Add dark mode support with `useColorScheme()`
-- Mobile Fix #1 (L1+L2): Refine tab bar safe area handling
 - Deploy web app to Azure App Service (`scripts/deploy-web.ps1`)
-- Build and publish mobile via EAS Build
-- Implement mobile deep linking for password reset URLs (`crabwatch://reset-password?token=<token>`)
+- Build and publish mobile via EAS Build (`eas.projectId` already configured)
 - Test researcher observation approval/rejection flow end-to-end on mobile
 - Test admin user management, backup, and invite flows on mobile
 - Investigate web observation image display (SAS URL refresh on server restart)
 - End-to-end testing of full engagement flow (submission -> XP -> level up -> achievements -> notifications)
+- Run UAT test cases (223 cases across 17 modules) to verify all features
 
 ## Key Decisions
-- **Dynamic species**: AI identifies any crab species; server auto-creates via `upsert` on `speciesName`
-- **Gender mapping**: `gender` in app layer, `sex` DB column preserved via Prisma `@map`
-- **Photo flow**: Guided multi-shot (dorsal → ventral → optional close-up) with quality gates
-- **Coin reference**: Dual MYR coin series — Third Series (current) and Second Series (1989-2011), each with 5/10/20/50 sen denominations. AI auto-detects from image, researcher can select exact series. Coin info persisted in `detectedCoin` field for researcher validation.
-- **Body weight**: `bw` is `number | null` — never auto-filled by AI. Researcher must measure manually. Analytics gracefully skips null values.
-- **Photo upload**: React Native `fetch` handles local URIs in `FormData` natively; no base64-to-blob conversion needed.
-- **Fullscreen images**: Mobile uses `Modal` + `Image`; web uses fixed overlay with `z-[60]`. Consistent UX across platforms.
-- **Location picking**: Web uses Mapbox (`react-map-gl`), mobile uses `react-native-maps` (Apple/Google tiles). Both fallback to manual coordinate input.
-- **Map markers (Web)**: Use native `Source` + `Layer` (GeoJSON) instead of DOM `Marker` component to avoid rendering/z-index issues in `react-map-gl`.
-- **AI Species Matching (Web)**: `findSpeciesMatch` tries UUID -> exact text match -> partial/fuzzy match (normalized names, genus fallback). `isUuid` enforces strict validation before submission.
-- **Offline support**: Analysis failure falls back to manual observation form with photos
-- **Blob cleanup**: Analysis photos deleted from Azure Storage 60s after analysis completes
-- **Capture assistance**: Gyroscope detects hand shake (std dev > 6 = slight, > 15 = heavy). Accelerometer Z-axis estimates lighting. Tap-to-focus triggers autofocus with visual indicator.
-- **Portrait lock**: `expo-screen-orientation` locks camera to portrait mode. Accelerometer X/Y detects landscape tilt, shows "Rotate to portrait" overlay.
-- **View validation**: Post-capture analysis checks brightness/aspect ratio to detect wrong view (e.g., ventral when dorsal expected). Shows warning card with specific issues.
-- **User registration**: `phone` and `address` are optional fields collected at registration for future SMS MFA. Both are nullable throughout the stack. Phone validated with min 7 chars, address max 500 chars.
-- **Admin backup**: Server uses Prisma to export all data (observations, species, users, FCM tokens) as a gzip-compressed JSON file. Backup files stored in `./backups` directory (configurable via `BACKUP_DIR` env var). Cross-platform — no `pg_dump` dependency.
-- **User soft-delete**: Users are soft-deleted by setting `deletedAt` timestamp. Auth middleware rejects login for deleted users (403). Soft-deleted users excluded from normal user list. Retention period is 30 days before permanent deletion.
-- **User block/unblock**: Blocked users have `blockedAt` set and optional `blockReason`. Auth middleware rejects all requests from blocked users (403). Unblock clears both fields.
-- **Double confirmation**: Destructive admin actions (block, delete, cleanup) require typing a confirmation word ("block", "delete", "cleanup") in a modal input field before action proceeds.
-- **Cleanup expired users**: `POST /api/v1/admin/cleanup-users` permanently deletes users past 30-day retention, including their observations, FCM tokens, and clears `validatedBy` references.
-- **Resend emails**: Zero SMTP infra. Using `onboarding@resend.dev` for immediate testing.
-- **DB-stored invite tokens**: With expiry/usage flags instead of JWTs for easy auditing/revocation.
-- **Public `/invite/validate` route**: Placed before `authMiddleware` to allow unauthenticated registration page validation.
-- **Invite redemption**: Handled in `userController.ts` (`createUser`) rather than `authController.ts`.
-- **Soft-deleted user constraints**: Unique constraints (`email`, `firebaseUid`) cleared to allow seamless re-registration.
-- **User menu**: Moved to header dropdown for cleaner sidebar navigation.
-- **Analytics tab**: Replaces Species tab in mobile navigation to prioritize data insights over static species lists.
-- **Password reset tokens**: Stored in `PasswordReset` model with 1-hour expiry and `used` flag; cascade delete on user.
-- **Password reset emails**: Sent via Resend; reset link format: `${FRONTEND_URL}/auth/reset-password?token=<token>`.
-- **Mobile reset password**: Accepts token via route params (`AuthStackParamList['ResetPassword'] = { token: string }`).
-- **Mobile navigation**: Conditionally renders Researcher/Admin tabs based on `useAuthStore` role to keep UI clean for standard users.
-- **Admin panel navigation**: Simplified to 3 top-level tabs (Species, Users, Backup) with sub-navigation for user management to reduce clutter.
-- **Deployment stack**: Azure all-in-one — PostgreSQL Flexible Server (DB), App Service (API + Web), EAS Build (mobile). No Vercel, no Terraform, no Docker.
-- **Azure `generateSasUrl`**: Returns full URL (not just query string). Use `refreshed.push(sasUrl)` directly — do NOT prepend `blobClient.url`.
-- **App Insights monitoring**: `@azure/monitor-opentelemetry` auto-instrumentation captures Express routes, outgoing HTTP calls (Foundry, Blob, Resend, Firebase, PostgreSQL), unhandled exceptions, and host metrics with zero extra code. Frontend React errors POSTed to `/api/v1/telemetry/error` to unify logs in a single App Insights resource.
-- **Engagement system**: XP-based gamification with 24 models, 11 enums, 8 services. Split XP award (submission + approval). Global permanent leaderboard (no resets).
-- **XPTransaction ledger**: Immutable audit trail for every XP change with deterministic idempotency keys.
-- **Leaderboard caching**: In-memory TTL cache (60s default, 120s all-time). Invalidated on any XP change via `invalidateLeaderboardCache()`.
-- **XP recalculation**: `recalculationService.ts` with dry-run/execute modes. Compares sum of XPTransaction ledger against stored totalXP. Creates adjustment transactions for discrepancies.
-- **Engagement metrics**: `metricsService.ts` with comprehensive health monitoring (user activity, XP distribution, streaks, missions, abuse signals).
-- **Feature flags**: Safe on/off control for each subsystem via `config.engagement.*`; defaults to `true` in dev.
-- **501 responses in routes**: Feature-flag guards (`config.engagement.enabled`), NOT stubs. Implementations behind them are fully wired.
-- **Admin auth**: Uses `requireRole(UserRole.ADMIN)` middleware.
-- **Schema redesign**: OnboardingFlow stores steps as JSON (`steps` field), MissionDefinition stores criteria as JSON (`criteria` field).
-- **Prisma `count()`**: Does not support `distinct` parameter; replaced with `groupBy().length`.
-- **Prisma JSON fields**: Reject `null`; use `?? undefined` or omit.
-- **Admin engagement components**: Extracted to `components.tsx` to avoid JSX escaping issues.
-- **Web type safety**: Replaced `any` types in admin components with strict DTOs from `@crabwatch/shared`. Updated `EngagementMetricsDto` to match server's `EngagementMetrics` interface with all 30+ fields. Added `_count` to `SeasonDto` for Prisma compatibility.
 - **Dynamic species**: AI identifies any crab species; server auto-creates via `upsert` on `speciesName`
 - **Gender mapping**: `gender` in app layer, `sex` DB column preserved via Prisma `@map`
 - **Photo flow**: Guided multi-shot (dorsal → ventral → optional close-up) with quality gates
@@ -216,6 +187,11 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - **AbortController support**: `request()` accepts optional `signal` in options; callers can cancel in-flight requests on unmount.
 - **Token expiry guard**: `AuthGuard.tsx` decodes JWT `exp` claim before calling `getProfile()`, redirecting immediately if expired.
 - **Telemetry fallback**: `logger.ts` catches silent telemetry POST failures with `console.error` for debugging.
+- **React.memo optimization**: Applied `memo(function Component())` pattern to `map-tab.tsx` and `chart-tabs.tsx` to prevent unnecessary re-renders of heavy lazy-loaded analytics components.
+- **Community Server Component**: `community/page.tsx` fetches data server-side via `fetch()` + `cookies()` auth; `client.tsx` handles all interactive state with `'use client'` directive.
+- **Mobile dark mode**: `app.json` set to `"automatic"`; `DARK_COLORS` palette added to `constants.ts`; `useTheme` hook uses `useColorScheme()` to return `{ colors, isDark, scheme }`.
+- **Mobile safe area**: `MainTabs.tsx` uses `useSafeAreaInsets()` for dynamic bottom padding and tab bar height, replacing hardcoded platform-specific values.
+- **Mobile deep linking**: `App.tsx` handles `Linking.getInitialURL()` + `Linking.addEventListener('url')`, extracts token from `crabwatch://reset-password/:token` via regex, passes to `AuthStack` with `initialRouteName='ResetPassword'`.
 
 ## Critical Context
 - **Stack**: Expo SDK 54, React 19, RN 0.81.5, Zustand, React Navigation, Express, Prisma, Azure Storage, Azure AI Foundry
@@ -316,10 +292,10 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - `web/src/lib/api.ts` — `detectedCoin` in `createObservation` type, invite/analytics/password reset API methods, engagement endpoints
 - `web/src/lib/authStore.ts` — Web auth state (includes phone/address, engagement fields)
 - `web/src/app/dashboard/leaderboard/page.tsx` — Leaderboard page component
-- `web/src/app/dashboard/community/page.tsx` — Community page with Insights, Top Contributors, and Stats tabs
-- `web/src/components/Sidebar.tsx` — Nav items including Leaderboard, Missions, Community
+- `web/src/app/dashboard/community/page.tsx` — Server Component with data fetching via `fetch()` + cookie-based auth
+- `web/src/app/dashboard/community/client.tsx` — Client component with interactive UI, receives pre-fetched data from server
+- `web/src/components/Sidebar.tsx` — Nav items: primary (Dashboard, Capture, Species, Analytics) + community hub (Leaderboard, Missions, Achievements, Community) + role-based (Researcher, Admin)
 - `web/src/components/Header.tsx` — User dropdown menu (Profile & Sign Out), click-outside handler, logout routing
-- `web/src/components/Sidebar.tsx` — Nav items including Species (🦀)
 - `web/package.json` — Pinned `react` and `react-dom` to `19.2.6`
 - `web/next.config.mjs` — API proxy rewrites to backend
 
@@ -344,10 +320,15 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - `mobile/src/components/common/Input.tsx` — `allowFontScaling`, `accessibilityLiveRegion`, `accessibilityLabel`, `role="alert"` for errors
 - `mobile/src/services/api.ts` — API calls for register/login/profile, password reset, comprehensive admin methods
 - `mobile/src/services/authService.ts` — Auth orchestration
-- `mobile/src/navigation/MainTabs.tsx` — Swapped Species for Analytics tab, conditionally renders Researcher and Admin tabs based on user role
-- `mobile/src/navigation/AuthStack.tsx` — Wired `ForgotPassword` and `ResetPassword` screens
+- `mobile/src/navigation/MainTabs.tsx` — Swapped Species for Analytics tab, conditionally renders Researcher/Admin tabs, uses `useSafeAreaInsets()` and `useTheme()` for dynamic sizing/colors
 - `mobile/src/navigation/types.ts` — Updated `MainTabParamList` and `AuthStackParamList`
 - `mobile/src/utils/fonts.ts` — Dynamic font scaling utility with `PixelRatio.getFontScale()` and clamped scale
+- `mobile/src/utils/constants.ts` — Now includes `COLORS` and `DARK_COLORS` palettes
+- `mobile/src/hooks/useTheme.ts` — Hook returning `{ colors, isDark, scheme }` based on `useColorScheme()`
+- `mobile/src/navigation/AuthStack.tsx` — Wired `ForgotPassword`/`ResetPassword` screens; accepts `initialRouteName`/`initialParams` for deep linking entry
+- `mobile/src/navigation/AppNavigator.tsx` — Accepts `deepLinkToken` prop and passes to `AuthStack`
+- `mobile/App.tsx` — Handles `Linking.getInitialURL()` + event listener, extracts token from URL path
+- `mobile/app.json` — `"userInterfaceStyle": "automatic"`, scheme `crabwatch` registered
 
 ### Shared
 - `shared/src/types/user.ts` — User, CreateUserInput, UpdateUserProfileInput, UserResponse types; Invite, PasswordResetRequest, PasswordResetConfirm types
@@ -361,4 +342,4 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - `scripts/deploy-web.ps1` — Automated web deployment (build, package, upload)
 - `mobile/eas.json` — EAS build profiles: development, preview, production
 - `web/next.config.mjs` — `BACKEND_URL` env var only (no hardcoded IP)
-- `mobile/app.json` — `extra.apiUrl` set to Azure placeholder; `eas.projectId` empty (set by `eas-cli init`)
+- `mobile/app.json` — `extra.apiUrl` set to Azure placeholder; `eas.projectId` set to `2b6450de-2e8d-4d06-a12e-ef9fc444d7b7`

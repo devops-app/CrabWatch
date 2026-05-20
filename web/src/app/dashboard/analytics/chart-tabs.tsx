@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line,
@@ -41,7 +41,7 @@ interface ChartTabsProps {
   activeTab: string
 }
 
-export default function ChartTabs({
+const ChartTabs = memo(function ChartTabs({
   sizeFreq, genderRatio, cw50, conditionIndices, speciesDist, trends, activeTab,
 }: ChartTabsProps): React.JSX.Element {
   const trendSeries = useMemo(() => {
@@ -297,4 +297,6 @@ export default function ChartTabs({
   }
 
   return <div className="card"><p className="text-gray-500 text-center py-12">Select a tab</p></div>
-}
+})
+
+export default ChartTabs

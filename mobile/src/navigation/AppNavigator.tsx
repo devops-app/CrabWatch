@@ -16,11 +16,15 @@ import type { RootStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<RootStackParamList>()
 
-export function AppNavigator() {
+interface AppNavigatorProps {
+  deepLinkToken?: string | null
+}
+
+export function AppNavigator({ deepLinkToken }: AppNavigatorProps) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
 
   if (!isAuthenticated) {
-    return <AuthStack />
+    return <AuthStack initialRouteName={deepLinkToken ? 'ResetPassword' : undefined} initialParams={deepLinkToken ? { token: deepLinkToken } : undefined} />
   }
 
   return (

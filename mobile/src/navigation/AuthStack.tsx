@@ -7,9 +7,15 @@ import type { AuthStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<AuthStackParamList>()
 
-export function AuthStack() {
+interface AuthStackProps {
+  initialRouteName?: keyof AuthStackParamList
+  initialParams?: Record<string, string>
+}
+
+export function AuthStack({ initialRouteName, initialParams }: AuthStackProps) {
   return (
     <Stack.Navigator
+      initialRouteName={initialRouteName}
       screenOptions={{
         headerStyle: { backgroundColor: '#0284c7' },
         headerTintColor: '#ffffff',
@@ -34,6 +40,7 @@ export function AuthStack() {
       <Stack.Screen
         name="ResetPassword"
         component={ResetPasswordScreen}
+        initialParams={initialParams}
         options={{ title: 'Reset Password' }}
       />
     </Stack.Navigator>

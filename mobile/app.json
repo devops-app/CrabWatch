@@ -9,7 +9,7 @@
       "ios",
       "android"
     ],
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "extra": {
       "apiUrl": "https://crabwatch-api.azurewebsites.net/api/v1",
       "eas": {

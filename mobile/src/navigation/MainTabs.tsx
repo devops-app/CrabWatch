@@ -1,4 +1,5 @@
 import { Platform } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as Haptics from 'expo-haptics'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { Ionicons } from '@expo/vector-icons'
@@ -9,36 +10,35 @@ import { ResearcherScreen } from '../screens/researcher/ResearcherScreen'
 import { AdminScreen } from '../screens/admin/AdminScreen'
 import { ProfileScreen } from '../screens/profile/ProfileScreen'
 import { useAuthStore } from '../store/authStore'
+import { useTheme } from '../hooks/useTheme'
 import type { MainTabParamList } from './types'
 
 const Tab = createBottomTabNavigator<MainTabParamList>()
 
-const TAB_COLORS = {
-  active: '#0284c7',
-  inactive: '#94a3b8',
-  background: '#f0f9ff',
-  tabBar: '#ffffff',
-}
-
 export function MainTabs() {
+  const insets = useSafeAreaInsets()
+  const { colors, isDark } = useTheme()
   const user = useAuthStore((state) => state.user)
   const isResearcher = user?.role === 'researcher' || user?.role === 'admin'
   const isAdmin = user?.role === 'admin'
 
+  const tabBarHeight = Platform.OS === 'ios' ? 82 : 60
+  const bottomPadding = Math.max(insets.bottom, Platform.OS === 'ios' ? 28 : 8)
+
   return (
     <Tab.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: '#0284c7' },
-        headerTintColor: '#ffffff',
+        headerStyle: { backgroundColor: colors.primary },
+        headerTintColor: isDark ? '#0f172a' : '#ffffff',
         headerTitleStyle: { fontWeight: 'bold' },
-        tabBarActiveTintColor: TAB_COLORS.active,
-        tabBarInactiveTintColor: TAB_COLORS.inactive,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textLight,
         tabBarStyle: {
-          backgroundColor: TAB_COLORS.tabBar,
-          borderTopColor: '#e2e8f0',
-          paddingBottom: Platform.OS === 'ios' ? 28 : 8,
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          paddingBottom: bottomPadding,
           paddingTop: 8,
-          height: Platform.OS === 'ios' ? 82 : 60,
+          height: tabBarHeight + (insets.bottom - (Platform.OS === 'ios' ? 28 : 8)),
         },
         tabBarIconStyle: { marginTop: 2 },
         tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },

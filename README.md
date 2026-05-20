@@ -1,767 +1,119 @@
-# CrabWatch — Crab Conservation Platform
+# CrabWatch
 
-Citizen science platform for tracking and analyzing crab observations in Malaysia. Features AI-guided photo capture with dynamic species detection via GPT-4o Vision.
+AI-guided crab observation capture with fully dynamic species detection. The AI identifies any crab species in photos, and unknown species are auto-created in the database.
 
-## Architecture
+## Stack
 
-```
-CrabWatch/
-├── shared/          # Shared TypeScript types, constants, and utilities
-├── server/          # Express.js API server with Prisma ORM
-├── web/             # Next.js web application (App Router)
-├── mobile/          # React Native mobile app (Expo)
-└── scripts/         # Deployment automation (PowerShell)
-```
-
-## Tech Stack
-
-| Layer    | Technologies                                                      |
-| -------- | ----------------------------------------------------------------- |
-| **Shared** | TypeScript, Zod validation schemas                              |
-| **Server** | Express.js, Prisma ORM, PostgreSQL, Firebase Admin SDK, JWT, Application Insights |
-| **Web**    | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS, Mapbox GL |
-| **Mobile** | React Native 0.81.5, Expo SDK 54, TypeScript, Zustand, React 19 |
-| **AI**     | Azure AI Foundry, GPT-4o Vision, Azure Blob Storage             |
-| **Infra**  | Azure App Service, Azure PostgreSQL, Application Insights, EAS Build |
-
-## Prerequisites
-
-- Node.js >= 20.0.0
-- pnpm >= 8.0.0
-- PostgreSQL 15+ (local or Docker)
-- Docker (optional, for local database)
-- Expo Go for SDK 54 (mobile testing)
+| Package | Version |
+|---------|---------|
+| React Native | 0.81.5 |
+| Expo | SDK 54 |
+| React | 19 |
+| Next.js | 15 (App Router) |
+| Node.js | 22 |
+| Express | 4.x |
+| Prisma | 5.x |
+| PostgreSQL | 15 (Azure Flexible Server)
 
 ## Quick Start
 
-### 1. Install dependencies
-
 ```bash
+# Install dependencies
 pnpm install
+
+# Start backend (port 3001)
+pnpm dev:server
+
+# Start web (port 3000)
+pnpm dev:web
+
+# Start mobile (Expo Go)
+pnpm dev:mobile
 ```
 
-### 2. Set up the database
+## Features
 
-**Option A: Docker (recommended for local dev)**
+### AI-Guided Capture
+- Guided multi-shot photo capture (dorsal, ventral, optional close-up) with quality gates
+- MYR coin reference for size estimation (Third and Second Series)
+- Real-time capture assistance: gyroscope shake detection, brightness estimation, focus tracking, portrait lock, view validation
+- GPT-4o Vision via Azure AI Foundry for species, gender, and maturation detection
+- Dynamic species detection — unknown species auto-created via server upsert
+- Map-based location picking: Mapbox (web), react-native-maps (mobile)
 
-```bash
-docker run -d --name my-postgres -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 postgres:15
+### Observation Management
+- Full CRUD with photo management, measurements, and biological data
+- Researcher validation flow: approve/reject pending observations
+- Soft-delete with 30-day retention, block/unblock users
+- Azure Blob Storage for photo storage with SAS URL refresh
 
-# Create the database
-docker exec -i my-postgres psql -U postgres -c "CREATE DATABASE crabwatch;"
-```
+### Analytics
+- Gender ratio, size frequency, CW50, condition indices, species distribution, temporal trends
+- Dashboard summary stats: total observations, approved, pending, species, contributors, states
+- Lazy-loaded heavy components (map, charts) for fast initial load
 
-**Option B: Local PostgreSQL**
+### Gamification & Engagement
+- XP-based system with split award (submission + approval)
+- Global leaderboard with caching and recalculation
+- Daily/onboarding missions with progress tracking
+- Achievements with rarity, categories, and auto-award
+- Streak tracking with bonus XP
+- Abuse detection: velocity, duplicate, coordinate clustering
 
-```bash
-createdb crabwatch
-```
+### User Management
+- Registration with phone/address, invite system with role locking
+- Password reset via Resend email (1-hour expiry tokens)
+- Admin panel: species CRUD, user management, invites, backups, engagement config
+- Soft-delete with 30-day retention, cleanup expired users
 
-### 3. Configure environment
+### Web App
+- Next.js 15 App Router with Server Components
+- Dashboard, capture, researcher validation, profile, observation detail, species browse
+- Admin panel with species, users, backup, and engagement tabs
+- Gamification: leaderboard, missions, achievements, community
+- Application Insights auto-instrumentation, error boundary
+- React.memo optimizations, lazy-loaded analytics
 
-```bash
-cp server/.env.example server/.env
-```
+### Mobile App
+- Full capture flow with guided camera, quality gates, and AI analysis
+- Analytics with 6 tabs matching web parity
+- Gamification: leaderboard (scope toggle, pagination), missions, achievements
+- Dark mode support with automatic system theme detection
+- Safe area handling for notched devices
+- Deep linking for password reset (`crabwatch://reset-password/:token`)
+- Role-based conditional tabs (Researcher/Admin)
 
-Update `server/.env` with your database URL:
+## Deployment
 
-```env
-DATABASE_URL="postgresql://postgres:mysecretpassword@localhost:5432/crabwatch?schema=public"
-PORT=3001
-JWT_SECRET="development-secret-change-in-production"
-```
+### Azure (Production)
+- PostgreSQL Flexible Server (DB)
+- App Service (API + Web, shared B1 plan)
+- Application Insights (telemetry)
+- Scripts: `scripts/deploy-server.ps1`, `scripts/deploy-web.ps1`
 
-> **Firebase & Azure**: Firebase is configured for project `crabwatch-495303`. Leave Azure placeholders for local dev. The server uses JWT fallback when Firebase credentials are not configured.
+### Mobile
+- EAS Build for Android/iOS
+- Config: `mobile/eas.json` (development, preview, production profiles)
+- Project ID: `2b6450de-2e8d-4d06-a12e-ef9fc444d7b7`
 
-### 3b. Local Azure Storage (Optional, for photo upload/analysis)
-
-Install and run Azurite to emulate Azure Blob Storage locally:
-
-```bash
-npm install -g azurite
-
-# Start Azurite (blob + queue, data persisted in ./azurite-data)
-azurite --location ./azurite-data --skipApiVersionCheck --blobHost 0.0.0.0
-```
-
-Then set the connection string in `server/.env`:
-
-```env
-AZURE_STORAGE_CONNECTION_STRING="DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
-AZURE_STORAGE_CONTAINER="crabwatch"
-```
-
-> Azurite runs on port `10000` (blob) by default. The `--skipApiVersionCheck` flag avoids version mismatch warnings. Data persists across restarts in the `./azurite-data` directory.
-
-### 4. Generate Prisma client & seed database
-
-```bash
-# Generate Prisma client
-node server/node_modules/prisma/build/index.js generate --schema=server/prisma/schema.prisma
-
-# Push schema to database
-npx prisma db push --schema=server/prisma/schema.prisma
-
-# Seed with sample data
-tsx server/prisma/seed.ts
-```
-
-### 5. Start development servers
-
-```bash
-# Start all services
-pnpm dev
-
-# Or start individually
-pnpm dev:server   # API on :3001
-pnpm dev:web      # Next.js on :3000
-pnpm dev:mobile   # Expo on :8081
-```
+See `Azure-Deployment-Plan.md` for detailed deployment steps.
 
 ## Testing
 
-### Manual API Testing
-
-```bash
-# Health check
-curl http://localhost:3001/health
-
-# Login
-curl -X POST http://localhost:3001/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@crabwatch.my","password":"Pa55w.rd"}'
-
-# Get species (public endpoint)
-curl http://localhost:3001/api/v1/species
-
-# Get observations (requires auth token)
-curl http://localhost:3001/api/v1/observations \
-  -H "Authorization: Bearer <your_token>"
-
-# Get dashboard stats (any authenticated user)
-curl http://localhost:3001/api/v1/analytics/stats \
-  -H "Authorization: Bearer <your_token>"
-
-# Register new user (phoneCode, phoneNumber, addressLine1, state, postcode, country are required)
-curl -X POST http://localhost:3001/api/v1/users/register \
-  -H "Content-Type: application/json" \
-  -d '{"name":"New User","email":"new@example.com","password":"pass123456","phoneCode":"60","phoneNumber":"123456789","addressLine1":"123 Main St","state":"Kuala Lumpur","postcode":"50000","country":"Malaysia"}'
-
-# Upload photos for AI analysis
-curl -X POST http://localhost:3001/api/v1/analyze/upload \
-  -H "Authorization: Bearer <your_token>" \
-  -F "photos=@photo1.jpg" \
-  -F "photos=@photo2.jpg"
-
-# Analyze crab photos
-curl -X POST http://localhost:3001/api/v1/analyze/crab \
-  -H "Authorization: Bearer <your_token>" \
-  -H "Content-Type: application/json" \
-  -d '{"photoUrls":["<blob_url_1>","<blob_url_2>"],"views":["dorsal","ventral"]}'
-```
-
-### Seed Credentials
-
-All users share the same seed password (set via `SEED_PASSWORD` env var, default: `Pa55w.rd`):
-
-| Email                      | Role        |
-| -------------------------- | ----------- |
-| `admin@crabwatch.my`       | ADMIN       |
-| `researcher@crabwatch.my`  | RESEARCHER  |
-| `citizen@crabwatch.my`     | USER        |
-
-### Swagger API Docs (Development Only)
-
-In development mode, Swagger UI is available at:
-```
-http://localhost:3001/api/v1/docs
-```
-OpenAPI JSON spec at:
-```
-http://localhost:3001/api/v1/docs-json
-```
-Both are IP-whitelisted via `TRUSTED_IPS` env var (defaults to localhost).
-
-### Seed Data
-
-The seed script creates:
-- 3 users (admin, researcher, user)
-- 4 species (Scylla serrata, S. paramamosain, S. olivacea, S. tranquebarica)
-- 3 sample observations
-
-**Note:** Species are dynamically managed. The AI can identify mud crabs (Scylla spp.) and swimming crabs (Portunus, Charybdis), and unknown species are auto-created in the database. The seed species serve as initial reference data.
-
-### Web App Testing
-
-1. Open `http://localhost:3000`
-2. Navigate to `/auth/login`
-3. Login with seed credentials above
-4. Access dashboard based on role:
-   - **ADMIN**: `/dashboard/admin` — Manage users, species, invites, backups
-   - **RESEARCHER**: `/dashboard/researcher` — Validate observations, view analytics
-   - **USER**: `/dashboard` — Submit observations, view public data
-
-### Mobile App Testing
-
-1. Ensure **Expo Go** is installed for **SDK 54** (iOS App Store / Android Play Store)
-2. Run `pnpm dev:mobile`
-3. Scan QR code with Expo Go (iOS: use Camera app, Android: scan directly in Expo Go)
-4. Login with seed credentials
-5. Test AI-Guided Capture: tap "New" tab → select coin series → capture dorsal/ventral photos → AI analysis → review & submit
-
-If mobile startup fails after config or dependency changes, clear Metro cache:
-
-```bash
-pnpm --filter=@crabwatch/mobile exec expo start --clear
-```
-
-If you hit `App entry not found`, verify:
-- `mobile/package.json` has `"main": "index.js"`
-- `mobile/app.json` has `"entryPoint": "./index.js"`
-- `mobile/index.js` registers the app with `registerRootComponent(App)`
-
-### Automated Checks
-
-```bash
-# Type check all packages
-pnpm -r typecheck
-
-# Lint all packages
-pnpm -r lint
-
-# Fix lint issues
-pnpm -r lint:fix
-```
-
-### Automated Tests
-
-```bash
-# Run all tests (shared + server + web + mobile)
-pnpm -r test
-
-# Run tests with coverage
-pnpm -r test:coverage
-
-# Run tests in watch mode (development)
-pnpm -r test:watch
-
-# Run tests for a specific package
-pnpm --filter=shared test
-pnpm --filter=server test
-pnpm --filter=web test
-pnpm --filter=mobile test
-
-# Run E2E tests (requires dev servers running)
-pnpm test:e2e         # Run all E2E tests
-pnpm test:e2e:ui      # Run with Playwright UI mode
-pnpm test:e2e:headed  # Run with visible browser
-```
-
-**Test Summary** (587 unit/integration tests + 60 E2E tests, all passing):
-
-| Package  | Unit Tests | Integration Tests | E2E Tests | Total |
-| -------- | ---------- | ----------------- | --------- | ----- |
-| `shared` | 17         | —                 | —         | 17    |
-| `server` | 113        | 49                | —         | 162   |
-| `web`    | 58         | —                 | 60        | 118   |
-| `mobile` | 350        | —                 | —         | 350   |
-
-> E2E tests authenticate via `playwrightRequest.newContext()` (API calls) and inject tokens into `localStorage`. Start dev servers before running: `pnpm dev:server` and `pnpm dev:web`.
-
-**Test coverage areas**:
-- **shared**: Constants (roles, species, regions), pagination utilities
-- **server**: Analytics service, auth/validation/error middleware, Zod schemas, controllers (observation, user, species, auth, analytics, upload), full API integration suite
-- **web**: Zustand auth store, API client, Sidebar, Header, AuthGuard, DashboardLayout components; Playwright E2E suite (auth flows, dashboard, analytics, admin panel, observation validation, public APIs)
-- **mobile**: Utils (formatters, validators, constants), Zustand stores (auth, observation), services (api, auth, location, photo), hooks (useApi, useObservation, useLocation, useAuth), navigation (AppNavigator, MainTabs, AuthStack), common components (Button, Input, Picker, LoadingSpinner, EmptyState, Card, OfflineBanner), screen components (HomeScreen, NewObservationScreen, SpeciesListScreen, SpeciesDetailScreen, ProfileScreen, MapScreen)
-
-## API Endpoints
-
-### Authentication
-
-| Method | Endpoint                        | Auth     | Description                    |
-| ------ | ------------------------------- | -------- | ------------------------------ |
-| POST   | `/api/v1/auth/login`            | Public   | Login with email/password      |
-| POST   | `/api/v1/auth/logout`           | Bearer   | User logout                    |
-| POST   | `/api/v1/auth/verify`           | Public   | Verify JWT token               |
-| POST   | `/api/v1/auth/password-reset/request` | Public | Request password reset email |
-| POST   | `/api/v1/auth/password-reset/reset`   | Public   | Reset password with token    |
-
-### Species
-
-| Method | Endpoint                  | Auth     | Description              |
-| ------ | ------------------------- | -------- | ------------------------ |
-| GET    | `/api/v1/species`         | Public   | List all species         |
-| GET    | `/api/v1/species/:id`     | Public   | Get species details      |
-| POST   | `/api/v1/species`         | ADMIN    | Create species           |
-| PATCH  | `/api/v1/species/:id`     | ADMIN    | Update species           |
-| DELETE | `/api/v1/species/:id`     | ADMIN    | Delete species           |
-
-### Observations
-
-| Method | Endpoint                                  | Auth          | Description                       |
-| ------ | ----------------------------------------- | ------------- | --------------------------------- |
-| GET    | `/api/v1/observations`                    | Bearer        | List observations                 |
-| GET    | `/api/v1/observations/pending`            | RESEARCHER+   | List pending observations         |
-| GET    | `/api/v1/observations/:id`                | Bearer        | Get observation details           |
-| POST   | `/api/v1/observations`                    | Bearer        | Create observation                |
-| PATCH  | `/api/v1/observations/:id/validate`       | RESEARCHER+   | Validate/reject observation       |
-
-### Users
-
-| Method | Endpoint                      | Auth                | Description                  |
-| ------ | ----------------------------- | ------------------- | ---------------------------- |
-| POST   | `/api/v1/users/register`      | Public              | Register new user            |
-| GET    | `/api/v1/users/me`            | Bearer              | Get current user profile     |
-| PATCH  | `/api/v1/users/me`            | Bearer              | Update current user profile  |
-| GET    | `/api/v1/users`               | ADMIN/RESEARCHER    | List all users               |
-| PATCH  | `/api/v1/users/:id/role`      | ADMIN               | Update user role             |
-| DELETE | `/api/v1/users/:id`           | ADMIN               | Soft-delete a user           |
-| POST   | `/api/v1/users/:id/restore`   | ADMIN               | Restore soft-deleted user    |
-| POST   | `/api/v1/users/:id/block`     | ADMIN               | Block a user                 |
-| POST   | `/api/v1/users/:id/unblock`   | ADMIN               | Unblock a user               |
-
-### Analytics
-
-| Method | Endpoint                                    | Auth     | Description                     |
-| ------ | ------------------------------------------- | -------- | ------------------------------- |
-| GET    | `/api/v1/analytics/stats`                   | Bearer   | Dashboard statistics            |
-| GET    | `/api/v1/analytics/size-frequency`          | Bearer   | Carapace width frequency        |
-| GET    | `/api/v1/analytics/gender-ratio`            | Bearer   | Male/female ratio by species    |
-| GET    | `/api/v1/analytics/condition-indices`       | Bearer   | Body condition indices          |
-| GET    | `/api/v1/analytics/cw50`                    | Bearer   | CW50 maturity size estimate     |
-| GET    | `/api/v1/analytics/temporal-trends`         | Bearer   | Observation trends over time    |
-| GET    | `/api/v1/analytics/species-distribution`    | Bearer   | Species distribution            |
-
-### AI Analysis
-
-| Method | Endpoint                        | Auth     | Description                       |
-| ------ | ------------------------------- | -------- | --------------------------------- |
-| POST   | `/api/v1/analyze/upload`        | Bearer   | Upload photos for AI analysis     |
-| POST   | `/api/v1/analyze/crab`          | Bearer   | Analyze crab photos with AI       |
-| POST   | `/api/v1/analyze/detect-view`   | Bearer   | Detect dorsal/ventral/carapace view |
-
-### Admin
-
-| Method | Endpoint                              | Auth     | Description                       |
-| ------ | ------------------------------------- | -------- | --------------------------------- |
-| POST   | `/api/v1/admin/backup`                | ADMIN    | Trigger manual database backup    |
-| GET    | `/api/v1/admin/backups`               | ADMIN    | List all backup files             |
-| GET    | `/api/v1/admin/backups/:fileName/download` | ADMIN | Download a backup file         |
-| DELETE | `/api/v1/admin/backups/:fileName`     | ADMIN    | Delete a backup file              |
-| POST   | `/api/v1/admin/cleanup-users`         | ADMIN    | Permanently delete expired users  |
-| GET    | `/api/v1/admin/deleted-users`         | ADMIN    | List soft-deleted users           |
-| POST   | `/api/v1/admin/invite`                | ADMIN    | Create invite for new user        |
-| GET    | `/api/v1/admin/invites`               | ADMIN    | List all invites                  |
-| POST   | `/api/v1/admin/invite/validate`       | Public   | Validate invite token             |
-
-### Uploads
-
-| Method | Endpoint                      | Auth     | Description                       |
-| ------ | ----------------------------- | -------- | --------------------------------- |
-| POST   | `/api/v1/upload/url`          | Bearer   | Get Azure SAS upload URL          |
-| POST   | `/api/v1/upload`              | Bearer   | Upload image to server            |
-
-### Gamification
-
-| Method | Endpoint                                  | Auth     | Description                       |
-| ------ | ----------------------------------------- | -------- | --------------------------------- |
-| GET    | `/api/v1/gamification/stats/me`           | Bearer   | User XP, level, streak stats      |
-| GET    | `/api/v1/gamification/xp-history`         | Bearer   | Paginated XP transaction history  |
-| GET    | `/api/v1/gamification/leaderboard`        | Bearer   | Leaderboard (all-time/seasonal)   |
-
-### Engagement
-
-| Method | Endpoint                                          | Auth     | Description                       |
-| ------ | ------------------------------------------------- | -------- | --------------------------------- |
-| GET    | `/api/v1/engagement/onboarding/me`                | Bearer   | Current onboarding progress       |
-| POST   | `/api/v1/engagement/onboarding/steps/complete`    | Bearer   | Complete onboarding step          |
-| GET    | `/api/v1/engagement/missions/today`               | Bearer   | Today's missions                  |
-| POST   | `/api/v1/engagement/missions/claim`               | Bearer   | Claim mission XP reward           |
-| GET    | `/api/v1/engagement/achievements`                 | Bearer   | All available achievements        |
-| GET    | `/api/v1/engagement/achievements/unlocked`        | Bearer   | User's unlocked achievements      |
-| GET    | `/api/v1/engagement/achievements/:id/progress`    | Bearer   | Progress for specific achievement |
-| GET    | `/api/v1/engagement/achievements/check`           | Bearer   | Bulk achievement progress check   |
-| GET    | `/api/v1/engagement/insights/me`                  | Bearer   | AI-generated insights             |
-| POST   | `/api/v1/engagement/insights/:id/act`             | Bearer   | Mark insight as acted             |
-| GET    | `/api/v1/engagement/notification-preferences`     | Bearer   | User notification preferences     |
-| PATCH  | `/api/v1/engagement/notification-preferences`     | Bearer   | Update notification preferences   |
-
-### Admin Engagement
-
-| Method | Endpoint                                          | Auth     | Description                       |
-| ------ | ------------------------------------------------- | -------- | --------------------------------- |
-| GET    | `/api/v1/admin/engagement/rules`                  | ADMIN    | List XP rules                     |
-| POST   | `/api/v1/admin/engagement/rules`                  | ADMIN    | Create XP rule                    |
-| PATCH  | `/api/v1/admin/engagement/rules/:id`              | ADMIN    | Update XP rule                    |
-| DELETE | `/api/v1/admin/engagement/rules/:id`              | ADMIN    | Delete XP rule                    |
-| GET    | `/api/v1/admin/engagement/levels`                 | ADMIN    | List level configs                |
-| POST   | `/api/v1/admin/engagement/levels`                 | ADMIN    | Create level config               |
-| PATCH  | `/api/v1/admin/engagement/levels/:id`             | ADMIN    | Update level config               |
-| DELETE | `/api/v1/admin/engagement/levels/:id`             | ADMIN    | Delete level config               |
-| POST   | `/api/v1/admin/engagement/adjust-xp`              | ADMIN    | Manual XP adjustment              |
-| POST   | `/api/v1/admin/engagement/recalculate`            | ADMIN    | XP recalculation (dry-run/execute)|
-| GET    | `/api/v1/admin/engagement/recalculate/:jobId`     | ADMIN    | Recalculation job status          |
-| GET    | `/api/v1/admin/engagement/achievements`           | ADMIN    | List achievements                 |
-| POST   | `/api/v1/admin/engagement/achievements`           | ADMIN    | Create achievement                |
-| PATCH  | `/api/v1/admin/engagement/achievements/:id`       | ADMIN    | Update achievement                |
-| DELETE | `/api/v1/admin/engagement/achievements/:id`       | ADMIN    | Delete achievement                |
-| POST   | `/api/v1/admin/engagement/achievements/:id/award` | ADMIN    | Award achievement to user         |
-| GET    | `/api/v1/admin/engagement/missions`               | ADMIN    | List mission definitions          |
-| POST   | `/api/v1/admin/engagement/missions`               | ADMIN    | Create mission definition         |
-| PATCH  | `/api/v1/admin/engagement/missions/:id`           | ADMIN    | Update mission definition         |
-| DELETE | `/api/v1/admin/engagement/missions/:id`           | ADMIN    | Delete mission definition         |
-| GET    | `/api/v1/admin/engagement/seasons`                | ADMIN    | List seasons                      |
-| POST   | `/api/v1/admin/engagement/seasons`                | ADMIN    | Create season                     |
-| PATCH  | `/api/v1/admin/engagement/seasons/:id`            | ADMIN    | Update season                     |
-| DELETE | `/api/v1/admin/engagement/seasons/:id`            | ADMIN    | Delete season                     |
-| POST   | `/api/v1/admin/engagement/seasons/:id/activate`   | ADMIN    | Activate season                   |
-| GET    | `/api/v1/admin/engagement/campaigns`              | ADMIN    | List campaigns                    |
-| POST   | `/api/v1/admin/engagement/campaigns`              | ADMIN    | Create campaign                   |
-| PATCH  | `/api/v1/admin/engagement/campaigns/:id/status`   | ADMIN    | Update campaign status            |
-| POST   | `/api/v1/admin/engagement/campaigns/:id/launch`   | ADMIN    | Launch campaign                   |
-| POST   | `/api/v1/admin/engagement/campaigns/:id/send-test`| ADMIN    | Send test campaign                |
-| DELETE | `/api/v1/admin/engagement/campaigns/:id`          | ADMIN    | Delete campaign                   |
-| GET    | `/api/v1/admin/engagement/abuse-signals`          | ADMIN    | List abuse signals                |
-| PATCH  | `/api/v1/admin/engagement/abuse-signals/:id/resolve` | ADMIN | Resolve abuse signal          |
-| GET    | `/api/v1/admin/engagement/audit-logs`             | ADMIN    | List audit logs                   |
-| GET    | `/api/v1/admin/engagement/audit-logs/stats`       | ADMIN    | Audit log summary stats           |
-| GET    | `/api/v1/admin/engagement/metrics`                | ADMIN    | Engagement health metrics         |
-
-### FCM (Push Notifications)
-
-| Method | Endpoint                              | Auth          | Description                       |
-| ------ | ------------------------------------- | ------------- | --------------------------------- |
-| POST   | `/api/v1/fcm/register`                | Bearer        | Register FCM device token         |
-| DELETE | `/api/v1/fcm/register`                | Bearer        | Unregister FCM device token       |
-| POST   | `/api/v1/fcm/notify/approved`         | RESEARCHER+   | Send "approved" push notification |
-| POST   | `/api/v1/fcm/notify/rejected`         | RESEARCHER+   | Send "rejected" push notification |
-| POST   | `/api/v1/fcm/notify/new-species`      | ADMIN         | Broadcast new species alert       |
-
-### System
-
-| Method | Endpoint                              | Auth     | Description                       |
-| ------ | ------------------------------------- | -------- | --------------------------------- |
-| GET    | `/health`                             | Public   | Health check with DB connectivity |
-| GET    | `/api/v1/metrics/performance`         | Public   | Runtime performance metrics       |
-| POST   | `/api/v1/telemetry/error`             | Public   | Frontend error reporting          |
-| GET    | `/api/v1/docs`                        | Dev only | Swagger UI (IP-whitelisted)       |
-| GET    | `/api/v1/docs-json`                   | Dev only | OpenAPI spec (IP-whitelisted)     |
-
-## Database Schema
-
-```
-User (id, name, email, phoneCode, phoneNumber, addressLine1-3, state, postcode, country,
-      role, avatar, password, firebaseUid, deletedAt, blockedAt, blockReason, createdAt,
-      totalXP, level, title, currentStreak, longestStreak, lastActiveDate, approvedCount, totalSubmissions)
-  ├── role: USER | RESEARCHER | ADMIN
-  ├── observations[] → Observation
-  ├── validatedObs[] → Observation (as validator)
-  ├── fcmToken → FcmToken
-  ├── passwordResets[] → PasswordReset
-  └── Engagement: xpTransactions[], userAchievements[], userMissions[], onboardingProgress[],
-      seasonStats[], insights[], notificationPrefs[], sentNotifications[], adminAuditLogs[], abuseSignals[]
-
-Species (id, scientificName, commonName, description, keyFeatures, images, distributionZones)
-  └── observations[] → Observation
-
-Observation (id, userId, speciesId, cw, bw, gender, maturationStatus, lat, lng,
-             locationMethod, photos, detectedCoin, notes, status, validatedBy, validatedAt,
-             rejectionReason, createdAt)
-  ├── status: PENDING | APPROVED | REJECTED
-  ├── gender: MALE | FEMALE | UNKNOWN (DB column: `sex`, mapped via Prisma)
-  ├── maturationStatus: MATURE | IMMATURE | UNKNOWN
-  ├── locationMethod: GPS | MANUAL
-  ├── user → User
-  ├── validator → User
-  └── species → Species
-
-Invite (id, email, role, token, expiresAt, used, createdAt)
-  └── Single-use invite with expiry for user registration
-
-PasswordReset (id, userId, token, expiresAt, used, createdAt)
-  └── Single-use reset token with 1-hour expiry
-
-FcmToken (id, userId, token, createdAt, updatedAt)
-  └── Push notification device token
-
-### Engagement Models (24 models, 11 enums)
-
-GamificationRule — XP reward rules per action type
-LevelConfig — XP thresholds, titles per level
-XPTransaction — Immutable audit ledger for every XP change
-Achievement / UserAchievement — Achievement definitions and user unlocks
-Season / UserSeasonStat — Seasonal leaderboard tracking
-OnboardingFlow / OnboardingProgress — Guided onboarding steps
-MissionDefinition / UserMission — Daily/weekly missions and user assignments
-Campaign / NotificationDelivery — Campaign orchestration and delivery tracking
-UserInsight — AI-generated personalized insights
-NotificationPreference — Per-user notification settings
-AuditLog — Immutable admin action audit trail
-AbuseSignal — Automated abuse detection signals
-```
-
-## Role Permissions
-
-| Permission                | USER | RESEARCHER | ADMIN |
-| ------------------------- | ---- | ---------- | ----- |
-| Submit observations       | ✅   | ✅         | ✅    |
-| View own observations     | ✅   | ✅         | ✅    |
-| View all observations     | ❌   | ✅         | ✅    |
-| Validate observations     | ❌   | ✅         | ✅    |
-| View analytics            | ✅   | ✅         | ✅    |
-| View leaderboard          | ✅   | ✅         | ✅    |
-| Complete missions         | ✅   | ✅         | ✅    |
-| Earn achievements         | ✅   | ✅         | ✅    |
-| Manage species            | ❌   | ❌         | ✅    |
-| Manage users              | ❌   | ❌         | ✅    |
-| Create invites            | ❌   | ❌         | ✅    |
-| Database backup           | ❌   | ❌         | ✅    |
-| Manage engagement config  | ❌   | ❌         | ✅    |
-| Campaign orchestration    | ❌   | ❌         | ✅    |
-| Abuse detection queue     | ❌   | ❌         | ✅    |
+See `UAT.md` for comprehensive end-to-end test cases (223 test cases across 17 modules).
+
+Seed accounts (password: `Pa55w.rd`):
+- `admin@crabwatch.my` (ADMIN)
+- `researcher@crabwatch.my` (RESEARCHER)
+- `citizen@crabwatch.my` (USER)
 
 ## Project Structure
 
 ```
 CrabWatch/
-├── shared/
-│   ├── src/
-│   │   ├── types/          # TypeScript interfaces
-│   │   ├── constants/      # Roles, status enums
-│   │   └── utils/          # Shared utilities
-│   └── package.json
-├── server/
-│   ├── src/
-│   │   ├── config/         # Database, Firebase, Azure config
-│   │   ├── controllers/    # Request handlers
-│   │   ├── middleware/     # Auth, error handling
-│   │   ├── routes/         # Express routers
-│   │   ├── services/       # Business logic (analytics, AI, gamification, etc.)
-│   │   └── utils/          # Zod schemas, helpers
-│   ├── prisma/
-│   │   ├── schema.prisma   # Database schema
-│   │   └── seed.ts         # Seed script
-│   └── package.json
-├── web/
-│   ├── src/
-│   │   ├── app/            # Next.js App Router pages
-│   │   ├── components/     # React components
-│   │   ├── lib/            # API client, hooks
-│   │   └── store/          # Zustand state
-│   └── package.json
-├── mobile/
-│   ├── src/
-│   │   ├── screens/        # App screens
-│   │   ├── components/     # Reusable components
-│   │   ├── hooks/          # Custom hooks
-│   │   ├── navigation/     # React Navigation config
-│   │   └── store/          # Zustand state
-│   └── package.json
-└── scripts/
-    ├── deploy-server.ps1   # Server deployment automation
-    └── deploy-web.ps1      # Web deployment automation
+  server/        # Express + Prisma backend
+  web/           # Next.js 15 web app
+  mobile/        # Expo SDK 54 mobile app
+  shared/        # Shared TypeScript types and constants
+  scripts/       # Deployment scripts
 ```
-
-## Environment Variables
-
-### Server (`server/.env`)
-
-| Variable                           | Required | Description                        |
-| ---------------------------------- | -------- | ---------------------------------- |
-| `DATABASE_URL`                     | Yes      | PostgreSQL connection string       |
-| `PORT`                             | No       | Server port (default: 3001)        |
-| `JWT_SECRET`                       | No       | JWT signing secret                 |
-| `FIREBASE_PROJECT_ID`              | No*      | Firebase project ID                |
-| `FIREBASE_CLIENT_EMAIL`            | No*      | Firebase service account email     |
-| `FIREBASE_PRIVATE_KEY`             | No*      | Firebase private key               |
-| `AZURE_STORAGE_CONNECTION_STRING`  | No*      | Azure blob storage connection      |
-| `AZURE_STORAGE_CONTAINER`          | No*      | Azure container name               |
-| `FOUNDRY_PROJECT_ENDPOINT`         | No*      | Azure AI Foundry project URL       |
-| `FOUNDRY_AGENT_NAME`               | No*      | Foundry agent name (default: crab-analyzer) |
-| `FOUNDRY_AGENT_VERSION`            | No       | Foundry agent version              |
-| `FOUNDRY_API_KEY`                  | No*      | Foundry API key                    |
-| `FOUNDRY_API_VERSION`              | No       | API version (default: 2025-05-15-preview) |
-| `RESEND_API_KEY`                   | No*      | Resend API key for email dispatch  |
-| `FRONTEND_URL`                     | No*      | Frontend URL for invite/reset links|
-| `BACKUP_DIR`                       | No       | Backup directory (default: ./backups) |
-| `CORS_ORIGINS`                     | No       | Allowed CORS origins               |
-| `TRUSTED_IPS`                      | No       | IP whitelist for Swagger docs      |
-| `APPLICATIONINSIGHTS_CONNECTION_STRING` | No*  | Application Insights connection string |
-| `ENGAGEMENT_ENABLED`              | No       | Master toggle (default: true in dev, false in prod) |
-| `MISSIONS_ENABLED`                | No       | Daily/weekly missions |
-| `SEASONS_ENABLED`                 | No       | Seasonal leaderboards |
-| `CAMPAIGNS_ENABLED`               | No       | Campaign system |
-| `ABUSE_DETECTION_ENABLED`         | No       | Anti-abuse detection |
-| `NODE_ENV`                         | No       | Environment (development/production)|
-
-> *Optional for local dev with JWT fallback. Required for production.
-
-## Deployment
-
-### Target Stack
-
-- **Web**: Azure App Service (Node 22, Next.js standalone)
-- **API**: Azure App Service (Node 22, Express.js)
-- **Database**: Azure PostgreSQL Flexible Server
-- **Mobile**: Expo EAS Build (Android/iOS)
-- **Monitoring**: Azure Application Insights
-
-### Deployment Process
-
-Full step-by-step deployment guide: see [`Azure-Deployment-Plan.md`](./Azure-Deployment-Plan.md)
-
-**Summary:**
-1. Create Azure resource group (`VSES-CrabWatch-MY-RG`)
-2. Provision PostgreSQL Flexible Server (Basic B1ms, 32 GB)
-3. Create shared App Service Plan (B1, Linux)
-4. Deploy API server with environment variables
-5. Deploy Web app with environment variables
-6. Build mobile app with EAS Build
-7. Create Application Insights and configure connection strings
-8. Restrict database firewall to App Service outbound IPs
-
-### Re-Deployment (After Code Changes)
-
-```powershell
-# Deploy server (builds, packages, uploads, installs deps)
-.\scripts\deploy-server.ps1
-
-# Deploy web (builds, packages, uploads)
-.\scripts\deploy-web.ps1
-```
-
-### Deployment Script Usage
-
-#### `scripts/deploy-server.ps1`
-
-Run from repo root (PowerShell):
-
-```powershell
-.\scripts\deploy-server.ps1 [-ResourceGroup <name>] [-ApiAppName <name>] [-ZipPath <path>] [-SkipInstall] [-GeneratePrisma] [-Seed]
-```
-
-Common examples:
-
-```powershell
-# Standard deploy (recommended)
-.\scripts\deploy-server.ps1
-
-# Deploy and run engagement seed explicitly
-.\scripts\deploy-server.ps1 -Seed
-
-# Deploy without local pnpm install
-.\scripts\deploy-server.ps1 -SkipInstall
-
-# Deploy with local prisma client generation
-.\scripts\deploy-server.ps1 -GeneratePrisma
-```
-
-Parameter notes:
-
-- `-Seed`: opt-in seeding (default: no seed)
-- `-GeneratePrisma`: runs local `prisma generate` before build (use only when needed)
-- `-SkipInstall`: skips local workspace `pnpm install --frozen-lockfile`
-- `-ResourceGroup`, `-ApiAppName`, `-ZipPath`: override Azure target/zip path
-
-#### `scripts/deploy-web.ps1`
-
-Run from repo root (PowerShell):
-
-```powershell
-.\scripts\deploy-web.ps1 [-ResourceGroup <name>] [-WebAppName <name>] [-BackendUrl <url>] [-ZipPath <path>] [-SkipDeploy]
-```
-
-Common examples:
-
-```powershell
-# Standard web deploy
-.\scripts\deploy-web.ps1
-
-# Deploy to a different backend API URL
-.\scripts\deploy-web.ps1 -BackendUrl "https://your-api.azurewebsites.net"
-
-# Build web deploy zip only (no upload)
-.\scripts\deploy-web.ps1 -SkipDeploy
-```
-
-Parameter notes:
-
-- `-SkipDeploy`: packages build output into `web-deploy.zip` only
-- `-BackendUrl`: sets `BACKEND_URL` for build/runtime
-- `-ResourceGroup`, `-WebAppName`, `-ZipPath`: override Azure target/zip path
-
-For first-time Azure setup or troubleshooting, see [`Azure-Deployment-Plan.md`](./Azure-Deployment-Plan.md).
-
-## Troubleshooting
-
-### Prisma client not found
-
-```bash
-node server/node_modules/prisma/build/index.js generate --schema=server/prisma/schema.prisma
-```
-
-### Production deployment starts but API crashes
-
-If App Service shows module resolution errors after deploy, open Kudu SSH and run:
-
-```bash
-cd /home/site/wwwroot
-npm install --omit=dev --no-audit --no-fund
-```
-
-### TypeScript path resolution errors
-
-Ensure `@crabwatch/shared` is mapped in `tsconfig.json` paths.
-
-### Database connection refused
-
-Verify PostgreSQL is running:
-```bash
-docker ps | grep my-postgres
-# or
-pg_isready -h localhost -p 5432
-```
-
-### CORS errors
-
-Add your frontend URL to `CORS_ORIGINS` in `server/.env`:
-```env
-CORS_ORIGINS="http://localhost:3000,http://localhost:19006,https://yourdomain.com"
-```
-
-## Scripts
-
-| Command                   | Description                      |
-| ------------------------- | -------------------------------- |
-| `pnpm dev`                | Start all dev servers            |
-| `pnpm dev:server`         | Start API server (:3001)         |
-| `pnpm dev:web`            | Start Next.js app (:3000)        |
-| `pnpm dev:mobile`         | Start Expo app (:8081)           |
-| `pnpm build`              | Build all packages               |
-| `pnpm -r typecheck`       | Type check all packages          |
-| `pnpm -r lint`            | Lint all packages                |
-| `pnpm -r lint:fix`        | Auto-fix lint issues             |
-| `pnpm --filter=server db:seed` | Seed database with sample data |
-| `pnpm --filter=server db:studio` | Open Prisma Studio            |
-| `pnpm -r test`                    | Run all tests                 |
-| `pnpm -r test:coverage`           | Run tests with coverage       |
-| `pnpm -r test:watch`              | Run tests in watch mode       |
-| `pnpm --filter=mobile test`       | Run mobile tests              |
-| `pnpm test:e2e`                   | Run E2E tests                 |
-| `pnpm test:e2e:headed`            | Run E2E tests with visible browser |
-
-## Features
-
-| Area | Capabilities |
-|------|-------------|
-| **AI Capture** | GPT-4o Vision analysis, dynamic species detection, dual MYR coin reference, real-time capture assistance (gyroscope, accelerometer, focus tracking), portrait lock, post-capture view validation |
-| **Web** | Next.js 15 dashboard, role-based views (admin/researcher/user), Mapbox location picker, profile edit, observation detail, species browse, password reset, admin panel |
-| **Mobile** | Expo SDK 54, guided photo capture, analytics charts, researcher validation, admin management, password reset |
-| **Gamification** | XP + levels + achievements, daily missions, onboarding quests, leaderboard (all-time/seasonal), campaigns, abuse detection, audit logging |
-| **Admin** | User management (block/unblock/soft-delete/restore), species CRUD, invites, database backup, engagement config, campaign orchestration |
-| **Security** | Firebase Auth + JWT fallback, rate limiting, Helmet/CSP, soft-delete with 30-day retention, invite-based registration |
-| **Monitoring** | Application Insights auto-instrumentation, frontend error telemetry, performance metrics |
-
-## License
-
-Private project.

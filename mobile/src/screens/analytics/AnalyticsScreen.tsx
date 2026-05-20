@@ -13,14 +13,28 @@ import { api } from '../../services/api'
 import { Card } from '../../components/common/Card'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { COLORS } from '../../utils/constants'
-import type { GenderRatioData, SizeFrequencyData, TemporalTrendData } from '@crabwatch/shared'
+import type {
+  GenderRatioData,
+  SizeFrequencyData,
+  TemporalTrendData,
+  CW50Data,
+  ConditionIndexAggregatedData,
+  SpeciesDistributionData,
+  DashboardStats,
+} from '@crabwatch/shared'
 
 export function AnalyticsScreen() {
   const [loading, setLoading] = useState(true)
   const [genderData, setGenderData] = useState<GenderRatioData[]>([])
   const [sizeData, setSizeData] = useState<SizeFrequencyData[]>([])
   const [trendData, setTrendData] = useState<TemporalTrendData[]>([])
-  const [activeSection, setActiveSection] = useState<'gender' | 'size' | 'temporal'>('gender')
+  const [cw50Data, setCw50Data] = useState<CW50Data[]>([])
+  const [conditionData, setConditionData] = useState<ConditionIndexAggregatedData[]>([])
+  const [speciesData, setSpeciesData] = useState<SpeciesDistributionData[]>([])
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [activeSection, setActiveSection] = useState<
+    'gender' | 'size' | 'temporal' | 'cw50' | 'condition' | 'species'
+  >('gender')
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -29,14 +43,22 @@ export function AnalyticsScreen() {
 
   const loadAnalytics = async () => {
     try {
-      const [gender, size, trends] = await Promise.all([
+      const [gender, size, trends, cw50, condition, species, dashboardStats] = await Promise.all([
         api.getGenderRatio().catch(() => []),
         api.getSizeFrequency().catch(() => []),
         api.getTemporalTrends().catch(() => []),
+        api.getCW50().catch(() => []),
+        api.getConditionIndices().catch(() => []),
+        api.getSpeciesDistribution().catch(() => []),
+        api.getDashboardStats().catch(() => null),
       ])
       setGenderData(Array.isArray(gender) ? gender : [])
       setSizeData(Array.isArray(size) ? size : [])
       setTrendData(Array.isArray(trends) ? trends : [])
+      setCw50Data(Array.isArray(cw50) ? cw50 : [])
+      setConditionData(Array.isArray(condition) ? condition : [])
+      setSpeciesData(Array.isArray(species) ? species : [])
+      setStats(dashboardStats ?? null)
     } catch {
       setError('Failed to load analytics data')
     } finally {
@@ -72,38 +94,60 @@ export function AnalyticsScreen() {
           </View>
         )}
 
-        <View style={styles.tabs}>
-          <TabButton
-            label="Gender"
-            icon="male-female"
-            active={activeSection === 'gender'}
-            onPress={() => setActiveSection('gender')}
-          />
-          <TabButton
-            label="Size"
-            icon="resize"
-            active={activeSection === 'size'}
-            onPress={() => setActiveSection('size')}
-          />
-          <TabButton
-            label="Trends"
-            icon="trending-up"
-            active={activeSection === 'temporal'}
-            onPress={() => setActiveSection('temporal')}
-          />
-        </View>
+        {stats && <StatsCards stats={stats} />}
 
-        {activeSection === 'gender' && (
-          <GenderSection data={genderData} />
-        )}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll}>
+          <View style={styles.tabs}>
+            <TabButton
+              label="Gender"
+              icon="male-female"
+              active={activeSection === 'gender'}
+              onPress={() => setActiveSection('gender')}
+            />
+            <TabButton
+              label="Size"
+              icon="resize"
+              active={activeSection === 'size'}
+              onPress={() => setActiveSection('size')}
+            />
+            <TabButton
+              label="CW50"
+              icon="pencil"
+              active={activeSection === 'cw50'}
+              onPress={() => setActiveSection('cw50')}
+            />
+            <TabButton
+              label="Condition"
+              icon="heart"
+              active={activeSection === 'condition'}
+              onPress={() => setActiveSection('condition')}
+            />
+            <TabButton
+              label="Species"
+              icon="earth"
+              active={activeSection === 'species'}
+              onPress={() => setActiveSection('species')}
+            />
+            <TabButton
+              label="Trends"
+              icon="trending-up"
+              active={activeSection === 'temporal'}
+              onPress={() => setActiveSection('temporal')}
+            />
+          </View>
+        </ScrollView>
 
-        {activeSection === 'size' && (
-          <SizeSection data={sizeData} />
-        )}
+        {activeSection === 'gender' && <GenderSection data={genderData} />}
 
-        {activeSection === 'temporal' && (
-          <TemporalSection data={trendData} />
-        )}
+        {activeSection === 'size' && <SizeSection data={sizeData} />}
+
+        {activeSection === 'cw50' && <CW50Section data={cw50Data} />}
+
+        {activeSection === 'condition' && <ConditionSection data={conditionData} />}
+
+        {activeSection === 'species' && <SpeciesSection data={speciesData} />}
+
+        {activeSection === 'temporal' && <TemporalSection data={trendData} />}
       </ScrollView>
     </SafeAreaView>
   )
@@ -269,6 +313,156 @@ function TemporalSection({ data }: { data: TemporalTrendData[] }) {
   )
 }
 
+function StatsCards({ stats }: { stats: DashboardStats }) {
+  return (
+    <View style={styles.statsGrid}>
+      <StatCard label="Total" value={stats.totalObservations} icon="eye" color={COLORS.primary} />
+      <StatCard label="Approved" value={stats.approvedObservations} icon="checkmark-circle" color={COLORS.success} />
+      <StatCard label="Pending" value={stats.pendingObservations} icon="time" color={COLORS.warning} />
+      <StatCard label="Species" value={stats.totalSpecies} icon="earth" color={COLORS.accent} />
+      <StatCard label="Contributors" value={stats.totalContributors} icon="people" color="#8b5cf6" />
+      <StatCard label="States" value={stats.statesCovered} icon="location" color="#ec4899" />
+    </View>
+  )
+}
+
+function StatCard({ label, value, icon, color }: { label: string; value: number; icon: keyof typeof Ionicons.glyphMap; color: string }) {
+  return (
+    <Card padding={12} style={styles.statCard}>
+      <View style={[styles.statIcon, { backgroundColor: color + '18' }]}>
+        <Ionicons name={icon} size={18} color={color} />
+      </View>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </Card>
+  )
+}
+
+function CW50Section({ data }: { data: CW50Data[] }) {
+  if (data.length === 0) {
+    return <EmptyState message="No CW50 maturity data available yet" />
+  }
+
+  return (
+    <View style={styles.section}>
+      <Card padding={16}>
+        <Text style={styles.sectionTitle}>Size at Gender Maturity (CW50)</Text>
+        <Text style={styles.sectionDesc}>
+          Carapace width at which 50% of the population is mature
+        </Text>
+      </Card>
+      {data.map((item, index) => (
+        <Card key={index} padding={16}>
+          <Text style={styles.speciesName}>{item.species}</Text>
+          <View style={styles.cw50Row}>
+            <View style={styles.cw50ValueContainer}>
+              <Text style={styles.cw50Value}>{item.cw50}</Text>
+              <Text style={styles.cw50Unit}>cm</Text>
+            </View>
+            <View style={styles.cw50Meta}>
+              <Text style={styles.cw50MetaText}>
+                CI: {item.confidenceInterval[0]} – {item.confidenceInterval[1]} cm
+              </Text>
+              <Text style={styles.cw50MetaText}>n = {item.sampleSize}</Text>
+            </View>
+          </View>
+        </Card>
+      ))}
+    </View>
+  )
+}
+
+function ConditionSection({ data }: { data: ConditionIndexAggregatedData[] }) {
+  if (data.length === 0) {
+    return <EmptyState message="No condition index data available yet" />
+  }
+
+  return (
+    <View style={styles.section}>
+      <Card padding={16}>
+        <Text style={styles.sectionTitle}>Condition Index (K)</Text>
+        <Text style={styles.sectionDesc}>
+          Health indicator: K = (BW / CW³) × 100 — higher values indicate healthier crabs
+        </Text>
+      </Card>
+      {data.map((item, index) => (
+        <Card key={index} padding={16}>
+          <Text style={styles.speciesName}>{item.species}</Text>
+          <View style={styles.conditionGrid}>
+            <View style={styles.conditionCell}>
+              <Text style={styles.conditionLabel}>Mean K</Text>
+              <Text style={styles.conditionValue}>{item.meanConditionFactor.toFixed(3)}</Text>
+            </View>
+            <View style={styles.conditionCell}>
+              <Text style={styles.conditionLabel}>Median K</Text>
+              <Text style={styles.conditionValue}>{item.medianConditionFactor.toFixed(3)}</Text>
+            </View>
+            <View style={styles.conditionCell}>
+              <Text style={styles.conditionLabel}>Min K</Text>
+              <Text style={[styles.conditionValue, { color: COLORS.warning }]}>{item.minConditionFactor.toFixed(3)}</Text>
+            </View>
+            <View style={styles.conditionCell}>
+              <Text style={styles.conditionLabel}>Max K</Text>
+              <Text style={[styles.conditionValue, { color: COLORS.success }]}>{item.maxConditionFactor.toFixed(3)}</Text>
+            </View>
+            <View style={styles.conditionCell}>
+              <Text style={styles.conditionLabel}>Mean CW</Text>
+              <Text style={styles.conditionValueSecondary}>{item.meanCW.toFixed(1)} cm</Text>
+            </View>
+            <View style={styles.conditionCell}>
+              <Text style={styles.conditionLabel}>Mean BW</Text>
+              <Text style={styles.conditionValueSecondary}>{item.meanBW.toFixed(1)} g</Text>
+            </View>
+            <View style={styles.conditionCell}>
+              <Text style={styles.conditionLabel}>Std Dev</Text>
+              <Text style={styles.conditionValueSecondary}>{item.stdDevConditionFactor.toFixed(3)}</Text>
+            </View>
+            <View style={styles.conditionCell}>
+              <Text style={styles.conditionLabel}>Sample</Text>
+              <Text style={styles.conditionValueSecondary}>n = {item.count}</Text>
+            </View>
+          </View>
+        </Card>
+      ))}
+    </View>
+  )
+}
+
+function SpeciesSection({ data }: { data: SpeciesDistributionData[] }) {
+  if (data.length === 0) {
+    return <EmptyState message="No species distribution data available yet" />
+  }
+
+  const maxCount = Math.max(...data.map((d) => d.count))
+
+  return (
+    <View style={styles.section}>
+      {data.map((item, index) => {
+        const barWidth = maxCount > 0 ? (item.count / maxCount) * 100 : 0
+        return (
+          <Card key={index} padding={14}>
+            <View style={styles.speciesRow}>
+              <View style={styles.speciesInfo}>
+                <Text style={styles.speciesCommonName}>{item.commonName}</Text>
+                <Text style={styles.speciesScientific}>{item.species}</Text>
+              </View>
+              <Text style={styles.speciesCount}>{item.count}</Text>
+            </View>
+            <View style={styles.speciesBarTrack}>
+              <View
+                style={[
+                  styles.speciesBarFill,
+                  { width: `${Math.max(barWidth, 2)}%` },
+                ]}
+              />
+            </View>
+          </Card>
+        )
+      })}
+    </View>
+  )
+}
+
 function EmptyState({ message }: { message: string }) {
   return (
     <Card padding={32}>
@@ -279,14 +473,143 @@ function EmptyState({ message }: { message: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 32,
-  },
+   container: {
+     flex: 1,
+     backgroundColor: COLORS.background,
+   },
+   scrollContent: {
+     padding: 16,
+     paddingBottom: 32,
+   },
+   tabsScroll: {
+     marginBottom: 16,
+   },
+   statsGrid: {
+     flexDirection: 'row',
+     flexWrap: 'wrap',
+     gap: 8,
+     marginBottom: 16,
+   },
+   statCard: {
+     flex: 1,
+     minWidth: '30%',
+     alignItems: 'center',
+     paddingVertical: 10,
+   },
+   statIcon: {
+     width: 28,
+     height: 28,
+     borderRadius: 14,
+     alignItems: 'center',
+     justifyContent: 'center',
+     marginBottom: 4,
+   },
+   statValue: {
+     fontSize: 18,
+     fontWeight: '700',
+     color: COLORS.text,
+   },
+   statLabel: {
+     fontSize: 11,
+     color: COLORS.textSecondary,
+     marginTop: 2,
+   },
+   sectionDesc: {
+     fontSize: 12,
+     color: COLORS.textSecondary,
+     marginTop: 4,
+     marginBottom: 4,
+   },
+   cw50Row: {
+     flexDirection: 'row',
+     alignItems: 'center',
+     justifyContent: 'space-between',
+   },
+   cw50ValueContainer: {
+     flexDirection: 'row',
+     alignItems: 'baseline',
+     gap: 4,
+   },
+   cw50Value: {
+     fontSize: 32,
+     fontWeight: '700',
+     color: COLORS.primary,
+   },
+   cw50Unit: {
+     fontSize: 14,
+     color: COLORS.textSecondary,
+   },
+   cw50Meta: {
+     alignItems: 'flex-end',
+     gap: 2,
+   },
+   cw50MetaText: {
+     fontSize: 12,
+     color: COLORS.textSecondary,
+   },
+   conditionGrid: {
+     flexDirection: 'row',
+     flexWrap: 'wrap',
+     gap: 8,
+   },
+   conditionCell: {
+     flex: 1,
+     minWidth: '40%',
+     backgroundColor: COLORS.background,
+     borderRadius: 8,
+     padding: 10,
+   },
+   conditionLabel: {
+     fontSize: 11,
+     color: COLORS.textSecondary,
+     marginBottom: 2,
+   },
+   conditionValue: {
+     fontSize: 15,
+     fontWeight: '600',
+     color: COLORS.primary,
+   },
+   conditionValueSecondary: {
+     fontSize: 13,
+     fontWeight: '600',
+     color: COLORS.text,
+   },
+   speciesRow: {
+     flexDirection: 'row',
+     alignItems: 'center',
+     justifyContent: 'space-between',
+     marginBottom: 8,
+   },
+   speciesInfo: {
+     flex: 1,
+     marginRight: 8,
+   },
+   speciesCommonName: {
+     fontSize: 14,
+     fontWeight: '600',
+     color: COLORS.text,
+   },
+   speciesScientific: {
+     fontSize: 12,
+     color: COLORS.textSecondary,
+     fontStyle: 'italic',
+   },
+   speciesCount: {
+     fontSize: 18,
+     fontWeight: '700',
+     color: COLORS.primary,
+   },
+   speciesBarTrack: {
+     height: 6,
+     borderRadius: 3,
+     backgroundColor: COLORS.background,
+     overflow: 'hidden',
+   },
+   speciesBarFill: {
+     height: '100%',
+     backgroundColor: COLORS.primary,
+     borderRadius: 3,
+   },
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',

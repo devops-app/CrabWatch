@@ -29,6 +29,30 @@ export const COLORS = {
   rejected: '#ef4444',
 }
 
+export const DARK_COLORS = {
+  primary: '#7dd3fc',
+  primaryDark: '#0284c7',
+  primaryLight: '#0369a1',
+  secondary: '#99f6e4',
+  secondaryLight: '#0f766e',
+  accent: '#fbbf24',
+  background: '#0f172a',
+  surface: '#1e293b',
+  text: '#f1f5f9',
+  textSecondary: '#94a3b8',
+  textLight: '#64748b',
+  border: '#334155',
+  error: '#f87171',
+  errorLight: '#7f1d1d',
+  success: '#4ade80',
+  successLight: '#14532d',
+  warning: '#fbbf24',
+  warningLight: '#78350f',
+  pending: '#fbbf24',
+  approved: '#4ade80',
+  rejected: '#f87171',
+}
+
 export const GENDER_OPTIONS = [
   { label: 'Male', value: 'male' },
   { label: 'Female', value: 'female' },

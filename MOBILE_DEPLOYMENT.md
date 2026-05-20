@@ -86,15 +86,28 @@ pnpm dev:android
 2. **Test key flows:**
    - Home screen — view stats cards and quick actions
    - AI-Guided Capture — tap "New" tab → select coin series (Third/Second) → dorsal/ventral photos → AI analysis → review & submit
-   - Analytics — view Gender Ratio, Size Frequency, and Temporal Trends charts
-   - Profile — view/edit user profile
+   - Analytics — view Gender Ratio, Size Frequency, CW50, Condition Index, Species Distribution, and Temporal Trends charts
+   - Profile — view/edit user profile, view XP stats card
    - Logout — verify logout redirects to login screen
+
+3. **Test dark mode:**
+   - Toggle device between light/dark mode — verify all screens adapt
+   - Check tab bar, status bar, and all screens for correct colors
+
+4. **Test deep linking:**
+   - Open `crabwatch://reset-password/<token>` from terminal or another app
+   - Verify app opens to ResetPassword screen with token pre-filled
+   - Test with app in foreground, background, and not running
+
+5. **Test safe area:**
+   - On iPhone with notch: verify tab bar not obscured by home indicator
+   - On Android: verify tab bar at normal bottom position
 
 3. **Role-based tabs (visible based on user role):**
    - **RESEARCHER**: "Researcher" tab — approve/reject pending observations
    - **ADMIN**: "Admin" tab — manage users, species, invites, and backups
 
-3. **Test error handling:**
+6. **Test error handling:**
    - Disconnect network — verify offline banner appears
    - Invalid login — verify error messages display
    - Submit empty observation — verify form validation
