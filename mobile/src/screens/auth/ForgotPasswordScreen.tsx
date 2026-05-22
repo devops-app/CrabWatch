@@ -17,6 +17,7 @@ import { api } from '../../services/api'
 import { Input } from '../../components/common/Input'
 import { Button } from '../../components/common/Button'
 import { COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { AuthStackParamList } from '../../navigation/types'
 
@@ -142,12 +143,12 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   title: {
-    fontSize: 30,
+    fontSize: FONT['5xl'],
     fontWeight: '800',
     color: COLORS.primary,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
     marginTop: 8,
     textAlign: 'center',
@@ -166,11 +167,11 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   footerText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
   },
   linkText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.primary,
     fontWeight: '600',
   },
@@ -179,7 +180,7 @@ const styles = StyleSheet.create({
     gap: 24,
   },
   successText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
     textAlign: 'center',
     paddingHorizontal: 16,

@@ -25,6 +25,7 @@ import {
   CW_MAX,
   BW_MAX,
 } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 import { Input } from '../../components/common/Input'
 import { PickerWithAlert } from '../../components/common/Picker'
 import { Button } from '../../components/common/Button'
@@ -295,12 +296,12 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   offlineText: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: COLORS.warning,
     fontWeight: '600',
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     fontWeight: '600',
     color: COLORS.text,
     marginTop: 16,
@@ -317,7 +318,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   errorText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.error,
   },
   submitBtn: {

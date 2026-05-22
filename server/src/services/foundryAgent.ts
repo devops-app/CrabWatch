@@ -2,8 +2,8 @@ import { randomUUID } from 'crypto'
 import { BlobSASPermissions } from '@azure/storage-blob'
 import { getBlobService } from '../services/upload'
 import { buildObservationBlobPath } from '../utils/blobPath'
-import { config } from '../config'
 import { CrabAnalysisRequest, CrabAnalysisResult } from '@crabwatch/shared'
+import { getContainer } from './container'
 
 const ALLOWED_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic']
 
@@ -147,9 +147,23 @@ Return ONLY valid JSON:
 }
 `
 
-async function parseAgentResponse(body: any): Promise<string> {
-  const firstMessage = body.output?.find((item: any) => item?.type === 'message')
-  const firstTextPart = firstMessage?.content?.find((part: any) => part?.type === 'output_text')
+interface AgentOutputItem {
+  type?: string
+  content?: AgentContentPart[]
+}
+
+interface AgentContentPart {
+  type?: string
+  text?: string
+}
+
+interface AgentResponse {
+  output?: AgentOutputItem[]
+}
+
+async function parseAgentResponse(body: AgentResponse): Promise<string> {
+  const firstMessage = body.output?.find((item) => item?.type === 'message')
+  const firstTextPart = firstMessage?.content?.find((part) => part?.type === 'output_text')
   if (typeof firstTextPart?.text === 'string') {
     return firstTextPart.text
   }
@@ -230,11 +244,11 @@ export async function uploadAnalysisPhotos(
 export async function analyzeCrabWithAgent(
   request: CrabAnalysisRequest
 ): Promise<CrabAnalysisResult> {
-  const projectEndpoint = config.foundry?.projectEndpoint
-  const agentName = config.foundry?.agentName
-  const agentVersion = config.foundry?.agentVersion
-  const apiKey = config.foundry?.apiKey
-  const apiVersion = config.foundry?.apiVersion
+  const projectEndpoint = getContainer().config.foundry?.projectEndpoint
+  const agentName = getContainer().config.foundry?.agentName
+  const agentVersion = getContainer().config.foundry?.agentVersion
+  const apiKey = getContainer().config.foundry?.apiKey
+  const apiVersion = getContainer().config.foundry?.apiVersion
 
   if (!projectEndpoint || !agentName || !apiKey) {
     throw new Error('Foundry project endpoint, agent name, and API key must be configured')
@@ -321,11 +335,11 @@ export async function detectView(
   photoMimeType: string,
   expectedView: string
 ): Promise<{ detectedView: string; confidence: number; mismatch: boolean; message: string }> {
-  const projectEndpoint = config.foundry?.projectEndpoint
-  const agentName = config.foundry?.agentName
-  const agentVersion = config.foundry?.agentVersion
-  const apiKey = config.foundry?.apiKey
-  const apiVersion = config.foundry?.apiVersion
+  const projectEndpoint = getContainer().config.foundry?.projectEndpoint
+  const agentName = getContainer().config.foundry?.agentName
+  const agentVersion = getContainer().config.foundry?.agentVersion
+  const apiKey = getContainer().config.foundry?.apiKey
+  const apiVersion = getContainer().config.foundry?.apiVersion
 
   if (!projectEndpoint || !agentName || !apiKey) {
     throw new Error('Foundry project endpoint, agent name, and API key must be configured')

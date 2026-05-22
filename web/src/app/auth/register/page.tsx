@@ -139,7 +139,7 @@ export default function RegisterPage(): React.JSX.Element {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              Full Name
+              Full Name <span className="text-red-500">*</span>
             </label>
             <input
               id="name"
@@ -154,7 +154,7 @@ export default function RegisterPage(): React.JSX.Element {
 
           <div>
             <label htmlFor="reg-email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
+              Email <span className="text-red-500">*</span>
             </label>
             <input
               id="reg-email"
@@ -172,7 +172,7 @@ export default function RegisterPage(): React.JSX.Element {
           <div className="flex gap-3">
             <div className="w-20">
               <label htmlFor="reg-phoneCode" className="block text-sm font-medium text-gray-700 mb-1">
-                Code
+                Code <span className="text-red-500">*</span>
               </label>
               <Controller
                 control={control}
@@ -190,7 +190,7 @@ export default function RegisterPage(): React.JSX.Element {
             </div>
             <div className="flex-1">
               <label htmlFor="reg-phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                Phone
+                Phone <span className="text-red-500">*</span>
               </label>
               <input
                 id="reg-phoneNumber"
@@ -210,7 +210,7 @@ export default function RegisterPage(): React.JSX.Element {
 
           <div>
             <label htmlFor="reg-addressLine1" className="block text-sm font-medium text-gray-700 mb-1">
-              Address Line 1
+              Address Line 1 <span className="text-red-500">*</span>
             </label>
             <input
               id="reg-addressLine1"
@@ -247,7 +247,7 @@ export default function RegisterPage(): React.JSX.Element {
           <div className="flex gap-3">
             <div className="flex-1">
               <label htmlFor="reg-state" className="block text-sm font-medium text-gray-700 mb-1">
-                State
+                State <span className="text-red-500">*</span>
               </label>
               <input
                 id="reg-state"
@@ -258,7 +258,7 @@ export default function RegisterPage(): React.JSX.Element {
             </div>
             <div className="w-28">
               <label htmlFor="reg-postcode" className="block text-sm font-medium text-gray-700 mb-1">
-                Postcode
+                Postcode <span className="text-red-500">*</span>
               </label>
               <input
                 id="reg-postcode"
@@ -271,7 +271,7 @@ export default function RegisterPage(): React.JSX.Element {
 
           <div>
             <label htmlFor="reg-country" className="block text-sm font-medium text-gray-700 mb-1">
-              Country
+              Country <span className="text-red-500">*</span>
             </label>
             <Controller
               control={control}
@@ -305,7 +305,7 @@ export default function RegisterPage(): React.JSX.Element {
 
           <div>
             <label htmlFor="reg-password" className="block text-sm font-medium text-gray-700 mb-1">
-              Password
+              Password <span className="text-red-500">*</span>
             </label>
             <input
               id="reg-password"
@@ -324,7 +324,7 @@ export default function RegisterPage(): React.JSX.Element {
 
           <div>
             <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-1">
-              Confirm Password
+              Confirm Password <span className="text-red-500">*</span>
             </label>
             <input
               id="confirm-password"

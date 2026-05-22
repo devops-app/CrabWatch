@@ -1,6 +1,16 @@
-import prisma from '../config/database'
 import crypto from 'crypto'
+import { PrismaClient } from '@prisma/client'
+import { getContainer } from './container'
 import { invalidateLeaderboardCache } from './leaderboardService'
+import { sendNotification } from './notificationService'
+
+let _prisma: PrismaClient
+function getPrisma(): PrismaClient {
+  if (!_prisma) {
+    _prisma = getContainer().prisma
+  }
+  return _prisma
+}
 
 interface AwardXPParams {
   userId: string
@@ -31,12 +41,12 @@ export async function awardXP(params: AwardXPParams): Promise<XPResult> {
   const idempotencyKey = params.idempotencyKey || `${userId}:${actionType}:${sourceType}:${sourceId || 'none'}:${Date.now()}`
 
   // Check for duplicate award
-  const existing = await prisma.xPTransaction.findUnique({
+  const existing = await getPrisma().xPTransaction.findUnique({
     where: { idempotencyKey },
   })
 
   if (existing) {
-    const user = await prisma.user.findUnique({ where: { id: userId } })
+    const user = await getPrisma().user.findUnique({ where: { id: userId } })
     return {
       awarded: false,
       deltaXP: 0,
@@ -50,7 +60,7 @@ export async function awardXP(params: AwardXPParams): Promise<XPResult> {
 
   // Look up active rule for this action type
   const now = new Date()
-  const rule = await prisma.gamificationRule.findFirst({
+  const rule = await getPrisma().gamificationRule.findFirst({
     where: {
       actionType: actionType as any,
       active: true,
@@ -79,7 +89,7 @@ export async function awardXP(params: AwardXPParams): Promise<XPResult> {
   const deltaXP = rule.xpReward
 
   // Perform everything in a transaction
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await getPrisma().$transaction(async (tx) => {
     // Create XP transaction record
     await tx.xPTransaction.create({
       data: {
@@ -143,6 +153,17 @@ export async function awardXP(params: AwardXPParams): Promise<XPResult> {
     invalidateLeaderboardCache()
   }
 
+  if (result.leveledUp) {
+    sendNotification({
+      userId,
+      title: 'Level Up!',
+      body: `Congratulations! You've reached level ${result.newLevel} (${result.newTitle})`,
+      channel: 'IN_APP',
+      category: 'gamification',
+      data: { type: 'level_up', level: String(result.newLevel), title: result.newTitle },
+    }).catch(() => {})
+  }
+
   return result
 }
 
@@ -150,7 +171,7 @@ export async function awardXP(params: AwardXPParams): Promise<XPResult> {
  * Calculate the user's level based on total XP using active LevelConfig entries.
  */
 export async function calculateLevel(totalXP: number): Promise<{ level: number; title: string; xpToNextLevel: number }> {
-  const activeLevels = await prisma.levelConfig.findMany({
+  const activeLevels = await getPrisma().levelConfig.findMany({
     where: { active: true },
     orderBy: { xpThreshold: 'desc' },
   })
@@ -196,7 +217,7 @@ async function calculateLevelFromDB(totalXP: number, tx: any): Promise<{ level: 
  * Called after a new observation is submitted.
  */
 export async function updateStreak(userId: string): Promise<{ currentStreak: number; longestStreak: number; streakBonus: boolean }> {
-  const user = await prisma.user.findUnique({ where: { id: userId } })
+  const user = await getPrisma().user.findUnique({ where: { id: userId } })
   if (!user) throw new Error('User not found')
 
   const today = new Date()
@@ -209,6 +230,22 @@ export async function updateStreak(userId: string): Promise<{ currentStreak: num
 
   const yesterday = new Date(today)
   yesterday.setDate(yesterday.getDate() - 1)
+
+  // Streak warning: if user has an active streak and last activity was > 18 hours ago,
+  // send a warning that their streak is at risk (only when they're submitting today, so they can still save it)
+  if (user.currentStreak > 0 && lastActive) {
+    const hoursSinceActive = (today.getTime() - lastActive.getTime()) / (1000 * 60 * 60)
+    if (hoursSinceActive > 18 && lastActive.getTime() !== yesterday.getTime()) {
+      sendNotification({
+        userId,
+        title: 'Streak at Risk!',
+        body: `Your ${user.currentStreak}-day streak is about to expire. Great job staying active!`,
+        channel: 'IN_APP',
+        category: 'gamification',
+        data: { type: 'streak_warning', streak: String(user.currentStreak) },
+      }).catch(() => {})
+    }
+  }
 
   let newStreak = user.currentStreak
   let streakBonus = false
@@ -228,9 +265,21 @@ export async function updateStreak(userId: string): Promise<{ currentStreak: num
     newStreak = 1
   }
 
+  // Notify user when their streak is reset (they lost it)
+  if (newStreak === 1 && user.currentStreak > 1) {
+    sendNotification({
+      userId,
+      title: 'Streak Lost',
+      body: `Your ${user.currentStreak}-day streak has ended. Submit an observation daily to build a new one!`,
+      channel: 'IN_APP',
+      category: 'gamification',
+      data: { type: 'streak_lost', previousStreak: String(user.currentStreak) },
+    }).catch(() => {})
+  }
+
   const newLongest = Math.max(newStreak, user.longestStreak)
 
-  await prisma.user.update({
+  await getPrisma().user.update({
     where: { id: userId },
     data: {
       currentStreak: newStreak,
@@ -261,7 +310,7 @@ export async function updateStreak(userId: string): Promise<{ currentStreak: num
  * Get computed user stats with XP-to-next-level.
  */
 export async function getUserStats(userId: string): Promise<any> {
-  const user = await prisma.user.findUnique({ where: { id: userId } })
+  const user = await getPrisma().user.findUnique({ where: { id: userId } })
   if (!user) throw new Error('User not found')
 
   const { xpToNextLevel } = await calculateLevel(user.totalXP)
@@ -282,7 +331,7 @@ export async function getUserStats(userId: string): Promise<any> {
  * Check if this is the user's first observation.
  */
 export async function isFirstObservation(userId: string): Promise<boolean> {
-  const count = await prisma.observation.count({ where: { userId } })
+  const count = await getPrisma().observation.count({ where: { userId } })
   return count === 0
 }
 
@@ -290,7 +339,7 @@ export async function isFirstObservation(userId: string): Promise<boolean> {
  * Check if this is a new species for the user.
  */
 export async function isNewSpecies(userId: string, speciesId: string): Promise<boolean> {
-  const existing = await prisma.observation.findFirst({
+  const existing = await getPrisma().observation.findFirst({
     where: { userId, speciesId },
   })
   return !existing
@@ -300,7 +349,7 @@ export async function isNewSpecies(userId: string, speciesId: string): Promise<b
  * Increment user submission count.
  */
 export async function incrementSubmissions(userId: string): Promise<void> {
-  await prisma.user.update({
+  await getPrisma().user.update({
     where: { id: userId },
     data: {
       totalSubmissions: { increment: 1 },
@@ -312,7 +361,7 @@ export async function incrementSubmissions(userId: string): Promise<void> {
  * Increment user approved count.
  */
 export async function incrementApproved(userId: string): Promise<void> {
-  await prisma.user.update({
+  await getPrisma().user.update({
     where: { id: userId },
     data: {
       approvedCount: { increment: 1 },

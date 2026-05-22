@@ -134,12 +134,12 @@ export function ReviewSection({
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Carapace Width (cm){analysis.estimatedCW && <AIBadge label={`AI: ${analysis.estimatedCW}`} />}
           </label>
-          <input className="input-field" value={review.cw} onChange={(e) => onReviewChange({ ...review, cw: e.target.value })} placeholder="e.g. 8.5" />
+          <input type="number" step="0.01" min="0" className="input-field" value={review.cw} onChange={(e) => onReviewChange({ ...review, cw: e.target.value })} placeholder="e.g. 8.5" />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Body Weight (g)</label>
-          <input className="input-field" value={review.bw} onChange={(e) => onReviewChange({ ...review, bw: e.target.value })} placeholder="Optional - weigh manually" />
+          <input type="number" step="0.01" min="0" className="input-field" value={review.bw} onChange={(e) => onReviewChange({ ...review, bw: e.target.value })} placeholder="Optional - weigh manually" />
         </div>
 
         <div>

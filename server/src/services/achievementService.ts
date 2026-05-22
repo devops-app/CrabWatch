@@ -1,5 +1,15 @@
-import prisma from '../config/database'
+import { PrismaClient } from '@prisma/client'
+import { getContainer } from './container'
 import { awardXP } from './rewardEngine'
+import { sendNotification } from './notificationService'
+
+let _prisma: PrismaClient
+function getPrisma(): PrismaClient {
+  if (!_prisma) {
+    _prisma = getContainer().prisma
+  }
+  return _prisma
+}
 
 // ==================== ACHIEVEMENT SERVICE ====================
 
@@ -20,12 +30,12 @@ export interface AchievementProgress {
 }
 
 export async function getAchievements(userId: string): Promise<AchievementProgress[]> {
-  const achievements = await prisma.achievement.findMany({
+  const achievements = await getPrisma().achievement.findMany({
     where: { isActive: true },
     orderBy: [{ isHidden: 'asc' }, { rarity: 'asc' }],
   })
 
-  const userAchievements = await prisma.userAchievement.findMany({
+  const userAchievements = await getPrisma().userAchievement.findMany({
     where: { userId },
     select: { achievementId: true, earnedAt: true },
   })
@@ -66,12 +76,12 @@ export async function getUnlockedAchievements(userId: string): Promise<Achieveme
 }
 
 export async function getAchievementProgress(userId: string, achievementId: string): Promise<AchievementProgress | null> {
-  const achievement = await prisma.achievement.findUnique({
+  const achievement = await getPrisma().achievement.findUnique({
     where: { id: achievementId },
   })
   if (!achievement) return null
 
-  const userAchievement = await prisma.userAchievement.findUnique({
+  const userAchievement = await getPrisma().userAchievement.findUnique({
     where: { userId_achievementId: { userId, achievementId } },
   })
 
@@ -96,12 +106,12 @@ export async function getAchievementProgress(userId: string, achievementId: stri
 
 export async function checkAndAwardAchievements(userId: string): Promise<string[]> {
   const newlyUnlocked: string[] = []
-  const achievements = await prisma.achievement.findMany({
+  const achievements = await getPrisma().achievement.findMany({
     where: { isActive: true },
   })
 
   for (const achievement of achievements) {
-    const existing = await prisma.userAchievement.findUnique({
+    const existing = await getPrisma().userAchievement.findUnique({
       where: { userId_achievementId: { userId, achievementId: achievement.id } },
     })
     if (existing) continue
@@ -109,7 +119,7 @@ export async function checkAndAwardAchievements(userId: string): Promise<string[
     const progress = await calculateAchievementProgress(userId, achievement)
     if (progress.current >= progress.target) {
       try {
-        await prisma.userAchievement.create({
+        await getPrisma().userAchievement.create({
           data: {
             userId,
             achievementId: achievement.id,
@@ -127,6 +137,15 @@ export async function checkAndAwardAchievements(userId: string): Promise<string[
           }).catch(() => {})
         }
 
+        sendNotification({
+          userId,
+          title: 'Achievement Unlocked!',
+          body: `You've earned "${achievement.name}": ${achievement.description}`,
+          channel: 'IN_APP',
+          category: 'gamification',
+          data: { type: 'achievement_unlock', code: achievement.code, name: achievement.name, rarity: achievement.rarity },
+        }).catch(() => {})
+
         newlyUnlocked.push(achievement.code)
       } catch {
         // Duplicate or constraint error - skip
@@ -143,21 +162,21 @@ export async function awardAchievementManually(
   adminId: string,
   reason: string
 ): Promise<void> {
-  const existing = await prisma.userAchievement.findUnique({
+  const existing = await getPrisma().userAchievement.findUnique({
     where: { userId_achievementId: { userId, achievementId } },
   })
   if (existing) {
     throw new Error('User already has this achievement')
   }
 
-  const achievement = await prisma.achievement.findUnique({
+  const achievement = await getPrisma().achievement.findUnique({
     where: { id: achievementId },
   })
   if (!achievement) {
     throw new Error('Achievement not found')
   }
 
-  await prisma.userAchievement.create({
+  await getPrisma().userAchievement.create({
     data: {
       userId,
       achievementId: achievement.id,
@@ -176,7 +195,7 @@ export async function awardAchievementManually(
     }).catch(() => {})
   }
 
-  await prisma.auditLog.create({
+  await getPrisma().auditLog.create({
     data: {
       actorType: 'ADMIN',
       actorId: adminId,
@@ -206,11 +225,11 @@ export async function calculateAchievementProgress(
 
   switch (field) {
     case 'totalSubmissions': {
-      const count = await prisma.observation.count({ where: { userId } })
+      const count = await getPrisma().observation.count({ where: { userId } })
       return { current: count, target }
     }
     case 'speciesCount': {
-      const obs = await prisma.observation.groupBy({
+      const obs = await getPrisma().observation.groupBy({
         by: ['speciesId'],
         where: { userId },
         _count: { speciesId: true },
@@ -218,21 +237,21 @@ export async function calculateAchievementProgress(
       return { current: obs.length, target }
     }
     case 'longestStreak': {
-      const user = await prisma.user.findUnique({ where: { id: userId }, select: { longestStreak: true } })
+      const user = await getPrisma().user.findUnique({ where: { id: userId }, select: { longestStreak: true } })
       return { current: user?.longestStreak || 0, target }
     }
     case 'approvedCount': {
-      const count = await prisma.observation.count({
+      const count = await getPrisma().observation.count({
         where: { userId, status: 'APPROVED' },
       })
       return { current: count, target }
     }
     case 'level': {
-      const user = await prisma.user.findUnique({ where: { id: userId }, select: { level: true } })
+      const user = await getPrisma().user.findUnique({ where: { id: userId }, select: { level: true } })
       return { current: user?.level || 1, target }
     }
     case 'nightObservations': {
-      const count = await prisma.observation.count({
+      const count = await getPrisma().observation.count({
         where: {
           userId,
           AND: [
@@ -244,7 +263,7 @@ export async function calculateAchievementProgress(
       return { current: count, target }
     }
     case 'weekendObservations': {
-      const obs = await prisma.observation.findMany({
+      const obs = await getPrisma().observation.findMany({
         where: { userId },
         select: { createdAt: true },
       })

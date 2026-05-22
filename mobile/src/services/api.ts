@@ -8,7 +8,10 @@ import type {
   ObservationFilters,
   ValidateObservationInput,
   SpeciesResponse,
+  CreateSpeciesInput,
+  UpdateSpeciesInput,
   UserResponse,
+  Invite,
   DashboardStats,
   SizeFrequencyData,
   GenderRatioData,
@@ -20,6 +23,28 @@ import type {
   CrabAnalysisRequest,
   CrabAnalysisResult,
   ViewDetectionResult,
+  GamificationRuleDto,
+  CreateGamificationRuleInput,
+  LevelConfigDto,
+  CampaignDto,
+  CampaignCreateInput,
+  AdminAuditLogDto,
+  AbuseSignalDto,
+  EngagementMetricsDto,
+  RecalculationJobDto,
+  UserStatsDto,
+  XPHistoryResponseDto,
+  LeaderboardResponseDto,
+  ActiveMissionDto,
+  OnboardingStatusDto,
+  UserAchievementListDto,
+  CheckAchievementsResponseDto,
+  AchievementProgressDto,
+  InsightDto,
+  ContributorDto,
+  CommunityStatsDto,
+  NotificationPreferenceDto,
+  NotificationPreferenceUpdateRequest,
 } from '@crabwatch/shared'
 
 // For Expo Go: use your computer's local IP address
@@ -155,6 +180,12 @@ export const api = {
     return apiRequest('/users/me/password', {
       method: 'PATCH',
       body: JSON.stringify({ currentPassword, newPassword }),
+    })
+  },
+
+  async deleteMyAccount(): Promise<{ success: boolean; data: { id: string; name: string; email: string; deletedAt: string | null; expiresAt: string; retentionDays: number } }> {
+    return apiRequest('/users/me', {
+      method: 'DELETE',
     })
   },
 
@@ -369,7 +400,7 @@ export const api = {
     return apiRequest('/admin/deleted-users')
   },
 
-  async cleanupDeletedUsers(): Promise<{ deletedCount: number; users: any[]; retentionDays: number }> {
+  async cleanupDeletedUsers(): Promise<{ deletedCount: number; users: UserResponse[]; retentionDays: number }> {
     return apiRequest('/admin/cleanup-users', {
       method: 'POST',
     })
@@ -392,32 +423,18 @@ export const api = {
     })
   },
 
-  async listInvites(): Promise<any[]> {
+  async listInvites(): Promise<Invite[]> {
     return apiRequest('/admin/invites')
   },
 
-  async createSpecies(data: {
-    scientificName: string
-    commonName: string
-    description?: string
-    keyFeatures?: any[]
-    images?: string[]
-    distributionZones?: any[]
-  }): Promise<SpeciesResponse> {
+  async createSpecies(data: CreateSpeciesInput): Promise<SpeciesResponse> {
     return apiRequest('/species', {
       method: 'POST',
       body: JSON.stringify(data),
     })
   },
 
-  async updateSpecies(id: string, data: {
-    scientificName: string
-    commonName: string
-    description?: string
-    keyFeatures?: any[]
-    images?: string[]
-    distributionZones?: any[]
-  }): Promise<SpeciesResponse> {
+  async updateSpecies(id: string, data: UpdateSpeciesInput): Promise<SpeciesResponse> {
     return apiRequest(`/species/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
@@ -431,30 +448,18 @@ export const api = {
   },
 
   // Admin Engagement - XP Rules
-  async listGamificationRules(): Promise<any[]> {
+  async listGamificationRules(): Promise<GamificationRuleDto[]> {
     return apiRequest('/admin/gamification/rules')
   },
 
-  async createGamificationRule(payload: {
-    actionType: string
-    name: string
-    description?: string | null
-    xpReward: number
-    active?: boolean
-  }): Promise<any> {
+  async createGamificationRule(payload: CreateGamificationRuleInput): Promise<GamificationRuleDto> {
     return apiRequest('/admin/gamification/rules', {
       method: 'POST',
       body: JSON.stringify(payload),
     })
   },
 
-  async updateGamificationRule(id: string, payload: {
-    actionType?: string
-    name?: string
-    description?: string | null
-    xpReward?: number
-    active?: boolean
-  }): Promise<any> {
+  async updateGamificationRule(id: string, payload: Partial<Omit<GamificationRuleDto, 'description'>> & { description?: string | null }): Promise<GamificationRuleDto> {
     return apiRequest(`/admin/gamification/rules/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
@@ -468,30 +473,18 @@ export const api = {
   },
 
   // Admin Engagement - Level Configs
-  async listLevelConfigs(): Promise<any[]> {
+  async listLevelConfigs(): Promise<LevelConfigDto[]> {
     return apiRequest('/admin/gamification/levels')
   },
 
-  async createLevelConfig(payload: {
-    level: number
-    xpThreshold: number
-    title: string
-    description?: string | null
-    active?: boolean
-  }): Promise<any> {
+  async createLevelConfig(payload: Omit<LevelConfigDto, 'id' | 'createdAt' | 'updatedAt'>): Promise<LevelConfigDto> {
     return apiRequest('/admin/gamification/levels', {
       method: 'POST',
       body: JSON.stringify(payload),
     })
   },
 
-  async updateLevelConfig(id: string, payload: {
-    level?: number
-    xpThreshold?: number
-    title?: string
-    description?: string | null
-    active?: boolean
-  }): Promise<any> {
+  async updateLevelConfig(id: string, payload: Partial<LevelConfigDto>): Promise<LevelConfigDto> {
     return apiRequest(`/admin/gamification/levels/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
@@ -504,45 +497,45 @@ export const api = {
     })
   },
 
-  async adjustXP(payload: { userId: string; deltaXP: number; reason: string }): Promise<any> {
+  async adjustXP(payload: { userId: string; deltaXP: number; reason: string }): Promise<UserStatsDto> {
     return apiRequest('/admin/gamification/adjust-xp', {
       method: 'POST',
       body: JSON.stringify(payload),
     })
   },
 
-  async recalculateXP(payload: { mode: 'dry-run' | 'execute'; userId?: string; reason?: string }): Promise<any> {
+  async recalculateXP(payload: { mode: 'dry-run' | 'execute'; userId?: string; reason?: string }): Promise<RecalculationJobDto> {
     return apiRequest('/admin/gamification/recalculate', {
       method: 'POST',
       body: JSON.stringify(payload),
     })
   },
 
-  async getRecalculationJobStatus(jobId: string): Promise<any> {
+  async getRecalculationJobStatus(jobId: string): Promise<RecalculationJobDto> {
     return apiRequest(`/admin/gamification/recalculate/${jobId}`)
   },
 
-  async listCampaigns(status?: string): Promise<any[]> {
+  async listCampaigns(status?: string): Promise<CampaignDto[]> {
     const p = new URLSearchParams()
     if (status) p.set('status', status)
     const query = p.toString()
     return apiRequest(`/admin/campaigns${query ? `?${query}` : ''}`)
   },
 
-  async createCampaign(payload: Record<string, any>): Promise<any> {
+  async createCampaign(payload: CampaignCreateInput): Promise<CampaignDto> {
     return apiRequest('/admin/campaigns', {
       method: 'POST',
       body: JSON.stringify(payload),
     })
   },
 
-  async launchCampaign(id: string): Promise<any> {
+  async launchCampaign(id: string): Promise<CampaignDto> {
     return apiRequest(`/admin/campaigns/${id}/launch`, {
       method: 'POST',
     })
   },
 
-  async sendTestCampaign(id: string, userId: string): Promise<any> {
+  async sendTestCampaign(id: string, userId: string): Promise<{ sent: boolean }> {
     return apiRequest(`/admin/campaigns/${id}/send-test`, {
       method: 'POST',
       body: JSON.stringify({ userId }),
@@ -555,7 +548,7 @@ export const api = {
     })
   },
 
-  async getAuditLogs(params?: { action?: string; resourceType?: string; limit?: number }): Promise<any> {
+  async getAuditLogs(params?: { action?: string; resourceType?: string; limit?: number }): Promise<AdminAuditLogDto[]> {
     const p = new URLSearchParams()
     if (params?.action) p.set('action', params.action)
     if (params?.resourceType) p.set('resourceType', params.resourceType)
@@ -564,22 +557,22 @@ export const api = {
     return apiRequest(`/admin/audit-logs${query ? `?${query}` : ''}`)
   },
 
-  async getAuditLogStats(): Promise<any> {
+  async getAuditLogStats(): Promise<{ total: number; byAction: Record<string, number>; byResourceType: Record<string, number> }> {
     return apiRequest('/admin/audit-logs/stats')
   },
 
-  async getAbuseSignals(): Promise<any[]> {
+  async getAbuseSignals(): Promise<AbuseSignalDto[]> {
     return apiRequest('/admin/abuse-signals')
   },
 
-  async resolveAbuseSignal(id: string, note?: string): Promise<any> {
+  async resolveAbuseSignal(id: string, note?: string): Promise<AbuseSignalDto> {
     return apiRequest(`/admin/abuse-signals/${id}/resolve`, {
       method: 'PATCH',
       body: JSON.stringify({ note }),
     })
   },
 
-  async getEngagementMetrics(): Promise<any> {
+  async getEngagementMetrics(): Promise<EngagementMetricsDto> {
     return apiRequest('/admin/metrics')
   },
 
@@ -703,7 +696,7 @@ export const api = {
     return apiRequest('/gamification/stats/me')
   },
 
-  async getXPHistory(params?: { page?: number; limit?: number }): Promise<any> {
+  async getXPHistory(params?: { page?: number; limit?: number }): Promise<XPHistoryResponseDto> {
     const p = new URLSearchParams()
     if (params?.page) p.set('page', String(params.page))
     if (params?.limit) p.set('limit', String(params.limit))
@@ -711,7 +704,7 @@ export const api = {
     return apiRequest(`/gamification/xp-history${query ? `?${query}` : ''}`)
   },
 
-  async getLeaderboard(params?: { scope?: string; seasonId?: string; page?: number; limit?: number }): Promise<any> {
+  async getLeaderboard(params?: { scope?: string; seasonId?: string; page?: number; limit?: number }): Promise<LeaderboardResponseDto> {
     const p = new URLSearchParams()
     if (params?.scope) p.set('scope', params.scope)
     if (params?.seasonId) p.set('seasonId', params.seasonId)
@@ -722,18 +715,18 @@ export const api = {
   },
 
   // Engagement - Missions
-  async getActiveMissions(): Promise<any> {
+  async getActiveMissions(): Promise<ActiveMissionDto[]> {
     return apiRequest('/engagement/missions/today')
   },
 
-  async claimMission(body: { missionKey: string }): Promise<any> {
+  async claimMission(body: { missionKey: string }): Promise<{ claimed: boolean; xpAwarded: number }> {
     return apiRequest('/engagement/missions/claim', {
       method: 'POST',
       body: JSON.stringify(body),
     })
   },
 
-  async updateMissionProgress(body: { missionKey: string; increment?: number }): Promise<any> {
+  async updateMissionProgress(body: { missionKey: string; increment?: number }): Promise<{ progress: number }> {
     return apiRequest('/engagement/missions/progress', {
       method: 'POST',
       body: JSON.stringify(body),
@@ -741,11 +734,11 @@ export const api = {
   },
 
   // Engagement - Onboarding
-  async getOnboardingStatus(): Promise<any> {
+  async getOnboardingStatus(): Promise<OnboardingStatusDto> {
     return apiRequest('/engagement/onboarding/me')
   },
 
-  async completeOnboardingStep(body: { step: string }): Promise<any> {
+  async completeOnboardingStep(body: { step: string }): Promise<{ completed: boolean }> {
     return apiRequest('/engagement/onboarding/steps/complete', {
       method: 'POST',
       body: JSON.stringify(body),
@@ -753,41 +746,41 @@ export const api = {
   },
 
   // Engagement - Achievements
-  async getAchievements(): Promise<any> {
+  async getAchievements(): Promise<UserAchievementListDto[]> {
     return apiRequest('/engagement/achievements')
   },
 
-  async getUnlockedAchievements(): Promise<any> {
+  async getUnlockedAchievements(): Promise<UserAchievementListDto> {
     return apiRequest('/engagement/achievements/unlocked')
   },
 
-  async checkAchievements(): Promise<any> {
+  async checkAchievements(): Promise<CheckAchievementsResponseDto> {
     return apiRequest('/engagement/achievements/check')
   },
 
-  async getAchievementProgress(id: string): Promise<any> {
+  async getAchievementProgress(id: string): Promise<AchievementProgressDto> {
     return apiRequest(`/engagement/achievements/${id}/progress`)
   },
 
   // Engagement - Social
-  async getInsights(): Promise<any> {
+  async getInsights(): Promise<InsightDto[]> {
     return apiRequest('/engagement/insights/me')
   },
 
-  async getTopContributors(): Promise<any> {
+  async getTopContributors(): Promise<ContributorDto[]> {
     return apiRequest('/engagement/social/contributors')
   },
 
-  async getCommunityStats(): Promise<any> {
+  async getCommunityStats(): Promise<CommunityStatsDto> {
     return apiRequest('/engagement/social/stats')
   },
 
   // Engagement - Notifications
-  async getNotificationPreferences(): Promise<any> {
+  async getNotificationPreferences(): Promise<NotificationPreferenceDto> {
     return apiRequest('/engagement/notification-preferences')
   },
 
-  async updateNotificationPreferences(body: any): Promise<any> {
+  async updateNotificationPreferences(body: NotificationPreferenceUpdateRequest): Promise<NotificationPreferenceDto> {
     return apiRequest('/engagement/notification-preferences', {
       method: 'PATCH',
       body: JSON.stringify(body),

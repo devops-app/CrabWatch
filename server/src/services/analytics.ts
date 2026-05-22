@@ -7,19 +7,27 @@ import {
   SpeciesDistributionData,
   DashboardStats,
 } from '@crabwatch/shared'
-import { Prisma, Gender as PrismaGender } from '@prisma/client'
-import prisma from '../config/database'
+import { Prisma, Gender as PrismaGender, PrismaClient } from '@prisma/client'
+import { getContainer } from './container'
+
+let _prisma: PrismaClient
+function getPrisma(): PrismaClient {
+  if (!_prisma) {
+    _prisma = getContainer().prisma
+  }
+  return _prisma
+}
 
 export async function getDashboardStats(): Promise<DashboardStats> {
   const [totalObs, approvedObs, pendingObs, totalSpecies, totalUsers] = await Promise.all([
-    prisma.observation.count(),
-    prisma.observation.count({ where: { status: 'APPROVED' } }),
-    prisma.observation.count({ where: { status: 'PENDING' } }),
-    prisma.species.count(),
-    prisma.user.count(),
+    getPrisma().observation.count(),
+    getPrisma().observation.count({ where: { status: 'APPROVED' } }),
+    getPrisma().observation.count({ where: { status: 'PENDING' } }),
+    getPrisma().species.count(),
+    getPrisma().user.count(),
   ])
 
-  const approvedObsWithLocation = await prisma.observation.findMany({
+  const approvedObsWithLocation = await getPrisma().observation.findMany({
     where: { status: 'APPROVED' },
     select: { lat: true, lng: true },
     take: 50000,
@@ -50,7 +58,7 @@ export async function getSizeFrequency(
   if (speciesId) where.speciesId = speciesId
   if (gender) where.gender = gender.toUpperCase() as PrismaGender
 
-  const observations = await prisma.observation.findMany({
+  const observations = await getPrisma().observation.findMany({
     where,
     select: { cw: true },
   })
@@ -93,13 +101,13 @@ export async function getGenderRatio(
     if (dateTo) where.createdAt.lte = new Date(dateTo)
   }
 
-  const observations = await prisma.observation.groupBy({
+  const observations = await getPrisma().observation.groupBy({
     by: ['speciesId', 'gender'],
     where,
     _count: { _all: true },
   })
 
-  const speciesRows = await prisma.species.findMany({
+  const speciesRows = await getPrisma().species.findMany({
     where: { id: { in: observations.map(obs => obs.speciesId) } },
     select: { id: true, scientificName: true },
   })
@@ -134,7 +142,7 @@ export async function getConditionIndices(
   const where: Prisma.ObservationWhereInput = { status: 'APPROVED' }
   if (speciesId) where.speciesId = speciesId
 
-  const observations = await prisma.observation.findMany({
+  const observations = await getPrisma().observation.findMany({
     where,
     select: {
       cw: true,
@@ -192,7 +200,7 @@ export async function getCW50(
   }
   if (speciesId) where.speciesId = speciesId
 
-  const observations = await prisma.observation.findMany({
+  const observations = await getPrisma().observation.findMany({
     where,
     select: {
       cw: true,
@@ -237,13 +245,13 @@ export async function getSpeciesDistribution(
     if (dateTo) where.createdAt.lte = new Date(dateTo)
   }
 
-  const observations = await prisma.observation.groupBy({
+  const observations = await getPrisma().observation.groupBy({
     by: ['speciesId'],
     where,
     _count: { speciesId: true },
   })
 
-  const speciesData = await prisma.species.findMany({
+  const speciesData = await getPrisma().species.findMany({
     where: {
       id: {
         in: observations.map(o => o.speciesId),
@@ -276,7 +284,7 @@ export async function getTemporalTrends(
   const where: Prisma.ObservationWhereInput = { status: 'APPROVED' }
   if (speciesId) where.speciesId = speciesId
 
-  const observations = await prisma.observation.findMany({
+  const observations = await getPrisma().observation.findMany({
     where,
     select: {
       createdAt: true,

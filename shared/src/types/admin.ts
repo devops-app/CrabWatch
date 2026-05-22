@@ -64,6 +64,15 @@ export interface CampaignDto {
   updatedAt: string
 }
 
+export interface CampaignCreateInput {
+  code: string
+  name: string
+  channel: string
+  audienceFilter: Record<string, unknown>
+  content: { title: string; body: string; payload?: Record<string, unknown> }
+  scheduleAt?: string
+}
+
 export interface AdminXPAdjustmentRequest {
   userId: string
   deltaXP: number

@@ -4,6 +4,7 @@ import MapView, { Marker as MapMarker } from 'react-native-maps'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocation } from '../../hooks/useLocation'
 import { COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 import { formatCoordinates } from '../../utils/formatters'
 
 const MALAYSIA_REGION = {
@@ -198,7 +199,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   label: {
-    fontSize: 14,
+    fontSize: FONT.base,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -210,7 +211,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   toggleText: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: COLORS.textSecondary,
   },
   toggleActive: {
@@ -227,7 +228,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   errorText: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: COLORS.error,
     flex: 1,
   },
@@ -241,7 +242,7 @@ const styles = StyleSheet.create({
   },
   permissionText: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: FONT.base,
     fontWeight: '600',
   },
   mapContainer: {
@@ -270,7 +271,7 @@ const styles = StyleSheet.create({
   },
   recenterText: {
     color: '#ffffff',
-    fontSize: 12,
+    fontSize: FONT.sm,
     fontWeight: '600',
   },
   coordsBox: {
@@ -285,13 +286,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   coordsText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.text,
     fontFamily: 'monospace',
     flex: 1,
   },
   accuracyText: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: COLORS.textSecondary,
   },
   captureBtn: {
@@ -310,7 +311,7 @@ const styles = StyleSheet.create({
   },
   captureText: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: FONT.base,
     fontWeight: '600',
   },
 })

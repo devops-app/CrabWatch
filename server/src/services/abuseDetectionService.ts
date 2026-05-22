@@ -1,4 +1,13 @@
-import prisma from '../config/database'
+import { PrismaClient } from '@prisma/client'
+import { getContainer } from './container'
+
+let _prisma: PrismaClient
+function getPrisma(): PrismaClient {
+  if (!_prisma) {
+    _prisma = getContainer().prisma
+  }
+  return _prisma
+}
 
 // ==================== ABUSE DETECTION SERVICE ====================
 
@@ -36,7 +45,7 @@ async function checkVelocity(userId: string, now: Date): Promise<AbuseSignal[]> 
 
   // Check last hour
   const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
-  const hourlyCount = await prisma.observation.count({
+  const hourlyCount = await getPrisma().observation.count({
     where: { userId, createdAt: { gte: oneHourAgo } },
   })
 
@@ -64,7 +73,7 @@ async function checkVelocity(userId: string, now: Date): Promise<AbuseSignal[]> 
 
   // Check last day
   const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-  const dailyCount = await prisma.observation.count({
+  const dailyCount = await getPrisma().observation.count({
     where: { userId, createdAt: { gte: oneDayAgo } },
   })
 
@@ -87,7 +96,7 @@ async function checkDuplicates(userId: string, now: Date): Promise<AbuseSignal[]
   const signals: AbuseSignal[] = []
 
   // Find observations with same species and very close coordinates within 1 hour
-  const recentObs = await prisma.observation.findMany({
+  const recentObs = await getPrisma().observation.findMany({
     where: {
       userId,
       createdAt: { gte: new Date(now.getTime() - 60 * 60 * 1000) },
@@ -136,7 +145,7 @@ async function checkCoordinateClustering(userId: string, now: Date): Promise<Abu
   const signals: AbuseSignal[] = []
 
   // Group observations by coordinate clusters (rounded to 4 decimal places ~10m precision)
-  const observations = await prisma.observation.findMany({
+  const observations = await getPrisma().observation.findMany({
     where: {
       userId,
       createdAt: { gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) }, // Last 7 days
@@ -206,7 +215,7 @@ export async function getAbuseScore(userId: string): Promise<{
   const signals = await analyzeUserActivity(userId)
 
   // Check existing abuse record
-  const existing = await prisma.abuseSignal.findMany({
+  const existing = await getPrisma().abuseSignal.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
     take: 10,
@@ -247,7 +256,7 @@ export async function getAbuseScore(userId: string): Promise<{
       IMAGE_HASH: 'SUSPICIOUS_PATTERN',
     }
     const severityToScore = (s: string) => s === 'high' ? 85 : s === 'medium' ? 55 : 25
-    await prisma.abuseSignal.create({
+    await getPrisma().abuseSignal.create({
       data: {
         userId,
         type: (typeMap[signal.signalType] || 'SUSPICIOUS_PATTERN') as any,

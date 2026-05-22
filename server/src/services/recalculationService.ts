@@ -1,5 +1,14 @@
-import prisma from '../config/database'
 import crypto from 'crypto'
+import { PrismaClient } from '@prisma/client'
+import { getContainer } from './container'
+
+let _prisma: PrismaClient
+function getPrisma(): PrismaClient {
+  if (!_prisma) {
+    _prisma = getContainer().prisma
+  }
+  return _prisma
+}
 
 export interface RecalculationResult {
   userId: string
@@ -59,14 +68,14 @@ export async function recalculateXP(params: RecalculationParams, adminId?: strin
 
   try {
     const users = params.userId
-      ? await prisma.user.findMany({ where: { id: params.userId } })
-      : await prisma.user.findMany({ where: { deletedAt: null } })
+      ? await getPrisma().user.findMany({ where: { id: params.userId } })
+      : await getPrisma().user.findMany({ where: { deletedAt: null } })
 
     jobStatus.totalUsers = users.length
     const results: RecalculationResult[] = []
 
     for (const user of users) {
-      const transactions = await prisma.xPTransaction.findMany({
+      const transactions = await getPrisma().xPTransaction.findMany({
         where: { userId: user.id },
         select: { deltaXP: true },
       })
@@ -86,13 +95,13 @@ export async function recalculateXP(params: RecalculationParams, adminId?: strin
       }
 
       if (params.mode === 'execute' && diff !== 0) {
-        await prisma.user.update({
+        await getPrisma().user.update({
           where: { id: user.id },
           data: { totalXP: correctXP },
         })
 
         // Create adjustment transaction to keep ledger consistent
-        await prisma.xPTransaction.create({
+        await getPrisma().xPTransaction.create({
           data: {
             userId: user.id,
             actionType: diff > 0 ? 'ADMIN_ADJUSTMENT' : 'ADMIN_REVERSAL',
@@ -108,7 +117,7 @@ export async function recalculateXP(params: RecalculationParams, adminId?: strin
     }
 
     // Audit log for the recalculation run
-    await prisma.auditLog.create({
+    await getPrisma().auditLog.create({
       data: {
         actorType: adminId ? 'ADMIN' : 'SYSTEM',
         actorId: adminId || null,

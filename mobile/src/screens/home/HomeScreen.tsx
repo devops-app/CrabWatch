@@ -1,11 +1,12 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   RefreshControl,
   TouchableOpacity,
+  type ListRenderItemInfo,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
@@ -15,6 +16,7 @@ import { api } from '../../services/api'
 import { Card } from '../../components/common/Card'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 import type { DashboardStats } from '@crabwatch/shared'
 import type { NavigationProp } from '@react-navigation/native'
 import type { MainTabParamList } from '../../navigation/types'
@@ -23,6 +25,12 @@ import type { RootStackParamList } from '../../navigation/types'
 
 type TabNavigation = NavigationProp<MainTabParamList>
 type StackNavigation = NativeStackNavigationProp<RootStackParamList>
+
+type SectionType = 'quick_actions' | 'gamification' | 'about'
+
+interface SectionData {
+  type: SectionType
+}
 
 export function HomeScreen() {
   const tabNav = useNavigation<TabNavigation>()
@@ -55,99 +63,128 @@ export function HomeScreen() {
     loadStats()
   }, [])
 
-  if (loading) {
+  const sections = useMemo<SectionData[]>(() => {
+    const items: SectionData[] = []
+    if (stats) {
+      items.push({ type: 'quick_actions' })
+      items.push({ type: 'gamification' })
+    }
+    items.push({ type: 'about' })
+    return items
+  }, [stats])
+
+  const renderHeader = useCallback(() => (
+    <>
+      <View style={styles.header}>
+        <Text style={styles.greeting}>
+          Welcome, {user?.name?.split(' ')[0] || 'Contributor'}
+        </Text>
+        <Text style={styles.subheader}>
+          Track crab populations across Malaysia
+        </Text>
+      </View>
+
+      {stats && (
+        <View style={styles.statsGrid}>
+          <StatCard
+            icon="fish"
+            label="Observations"
+            value={stats.totalObservations}
+          />
+          <StatCard
+            icon="checkmark-circle"
+            label="Approved"
+            value={stats.approvedObservations}
+          />
+          <StatCard
+            icon="earth"
+            label="Species"
+            value={stats.totalSpecies}
+          />
+          <StatCard
+            icon="people"
+            label="Contributors"
+            value={stats.totalContributors}
+          />
+        </View>
+      )}
+    </>
+  ), [user, stats])
+
+  const renderSection = useCallback(({ item }: ListRenderItemInfo<SectionData>) => {
+    switch (item.type) {
+      case 'quick_actions':
+        return (
+          <Card padding={20}>
+            <View style={styles.quickActions}>
+              <Text style={styles.sectionTitle}>Quick Actions</Text>
+              <TouchableOpacity style={styles.actionBtn} onPress={() => tabNav.navigate('New')}>
+                <Ionicons name="add-circle" size={22} color={COLORS.primary} />
+                <Text style={styles.actionText}>New Observation</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionBtn} onPress={() => tabNav.navigate('Analytics')}>
+                <Ionicons name="analytics" size={22} color={COLORS.secondary} />
+                <Text style={styles.actionText}>Analytics</Text>
+              </TouchableOpacity>
+            </View>
+          </Card>
+        )
+
+      case 'gamification':
+        return (
+          <Card padding={20}>
+            <View style={styles.quickActions}>
+              <Text style={styles.sectionTitle}>Gamification</Text>
+              <TouchableOpacity style={styles.actionBtn} onPress={() => navigateToGamification('Leaderboard')}>
+                <Ionicons name="trophy" size={22} color={COLORS.accent} />
+                <Text style={styles.actionText}>Leaderboard</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionBtn} onPress={() => navigateToGamification('Missions')}>
+                <Ionicons name="shield-checkmark" size={22} color={COLORS.success} />
+                <Text style={styles.actionText}>Missions</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionBtn} onPress={() => navigateToGamification('Achievements')}>
+                <Ionicons name="ribbon" size={22} color={COLORS.primary} />
+                <Text style={styles.actionText}>Achievements</Text>
+              </TouchableOpacity>
+            </View>
+          </Card>
+        )
+
+      case 'about':
+        return (
+          <Card padding={20}>
+            <View style={styles.mission}>
+              <Ionicons name="information-circle" size={24} color={COLORS.primary} />
+              <Text style={styles.missionTitle}>About CrabWatch</Text>
+              <Text style={styles.missionText}>
+                CrabWatch is a citizen science platform helping to conserve
+                crab populations in Malaysia. Your observations help
+                researchers understand population health and inform
+                conservation policies.
+              </Text>
+            </View>
+          </Card>
+        )
+    }
+  }, [tabNav])
+
+  if (loading && !stats) {
     return <LoadingSpinner fullScreen />
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
+      <FlatList
+        data={sections}
+        keyExtractor={(item, index) => `${item.type}-${index}`}
+        renderItem={renderSection}
+        ListHeaderComponent={renderHeader}
+        contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={onRefresh} tintColor={COLORS.primary} />
         }
-      >
-        <View style={styles.header}>
-          <Text style={styles.greeting}>
-            Welcome, {user?.name?.split(' ')[0] || 'Contributor'}
-          </Text>
-          <Text style={styles.subheader}>
-            Track crab populations across Malaysia
-          </Text>
-        </View>
-
-        {stats && (
-          <>
-            <View style={styles.statsGrid}>
-              <StatCard
-                icon="fish"
-                label="Observations"
-                value={stats.totalObservations}
-              />
-              <StatCard
-                icon="checkmark-circle"
-                label="Approved"
-                value={stats.approvedObservations}
-              />
-              <StatCard
-                icon="earth"
-                label="Species"
-                value={stats.totalSpecies}
-              />
-              <StatCard
-                icon="people"
-                label="Contributors"
-                value={stats.totalContributors}
-              />
-            </View>
-
-            <Card padding={20}>
-              <View style={styles.quickActions}>
-                <Text style={styles.sectionTitle}>Quick Actions</Text>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => tabNav.navigate('New')}>
-                  <Ionicons name="add-circle" size={22} color={COLORS.primary} />
-                  <Text style={styles.actionText}>New Observation</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => tabNav.navigate('Analytics')}>
-                  <Ionicons name="analytics" size={22} color={COLORS.secondary} />
-                  <Text style={styles.actionText}>Analytics</Text>
-                </TouchableOpacity>
-              </View>
-            </Card>
-
-            <Card padding={20}>
-              <View style={styles.quickActions}>
-                <Text style={styles.sectionTitle}>Gamification</Text>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => navigateToGamification('Leaderboard')}>
-                  <Ionicons name="trophy" size={22} color={COLORS.accent} />
-                  <Text style={styles.actionText}>Leaderboard</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => navigateToGamification('Missions')}>
-                  <Ionicons name="shield-checkmark" size={22} color={COLORS.success} />
-                  <Text style={styles.actionText}>Missions</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => navigateToGamification('Achievements')}>
-                  <Ionicons name="ribbon" size={22} color={COLORS.primary} />
-                  <Text style={styles.actionText}>Achievements</Text>
-                </TouchableOpacity>
-              </View>
-            </Card>
-          </>
-        )}
-
-        <Card padding={20}>
-          <View style={styles.mission}>
-            <Ionicons name="information-circle" size={24} color={COLORS.primary} />
-            <Text style={styles.missionTitle}>About CrabWatch</Text>
-            <Text style={styles.missionText}>
-              CrabWatch is a citizen science platform helping to conserve
-              crab populations in Malaysia. Your observations help
-              researchers understand population health and inform
-              conservation policies.
-            </Text>
-          </View>
-        </Card>
-      </ScrollView>
+      />
     </SafeAreaView>
   )
 }
@@ -175,20 +212,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  scrollContent: {
+  listContent: {
     padding: 16,
     paddingBottom: 32,
+    gap: 8,
   },
   header: {
     marginBottom: 20,
   },
   greeting: {
-    fontSize: 24,
+    fontSize: FONT['4xl'],
     fontWeight: '700',
     color: COLORS.text,
   },
   subheader: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
     marginTop: 4,
   },
@@ -196,7 +234,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   statCard: {
     width: '48%',
@@ -208,13 +246,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statValue: {
-    fontSize: 28,
+    fontSize: FONT['5xl'],
     fontWeight: '700',
     color: COLORS.primary,
     marginTop: 8,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
@@ -222,7 +260,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 4,
@@ -237,7 +275,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   actionText: {
-    fontSize: 15,
+    fontSize: FONT.md,
     fontWeight: '500',
     color: COLORS.text,
   },
@@ -245,12 +283,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   missionTitle: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     fontWeight: '600',
     color: COLORS.text,
   },
   missionText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
     lineHeight: 20,
   },

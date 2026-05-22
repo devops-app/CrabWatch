@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Button } from '../../components/common/Button'
 import { COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 import { api } from '../../services/api'
 import {
   getPushPermissionStatus,
@@ -306,16 +307,16 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     fontWeight: '700',
     color: COLORS.text,
   },
   cardDescription: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: COLORS.textSecondary,
   },
   statusPill: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     fontWeight: '700',
     borderWidth: 1,
     borderRadius: 999,
@@ -332,7 +333,7 @@ const styles = StyleSheet.create({
   },
   settingsLink: {
     marginTop: 2,
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: COLORS.primary,
     fontWeight: '600',
   },
@@ -343,7 +344,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryLabel: {
-    fontSize: 14,
+    fontSize: FONT.base,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -370,7 +371,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   channelText: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: COLORS.textSecondary,
     fontWeight: '600',
   },

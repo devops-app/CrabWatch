@@ -13,6 +13,7 @@ import { api } from '../../services/api'
 import { Card } from '../../components/common/Card'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 import type {
   GenderRatioData,
   SizeFrequencyData,
@@ -504,22 +505,22 @@ const styles = StyleSheet.create({
      justifyContent: 'center',
      marginBottom: 4,
    },
-   statValue: {
-     fontSize: 18,
-     fontWeight: '700',
-     color: COLORS.text,
-   },
-   statLabel: {
-     fontSize: 11,
-     color: COLORS.textSecondary,
-     marginTop: 2,
-   },
-   sectionDesc: {
-     fontSize: 12,
-     color: COLORS.textSecondary,
-     marginTop: 4,
-     marginBottom: 4,
-   },
+statValue: {
+      fontSize: FONT.xl,
+      fontWeight: '700',
+      color: COLORS.text,
+    },
+    statLabel: {
+      fontSize: FONT.xs,
+      color: COLORS.textSecondary,
+      marginTop: 2,
+    },
+    sectionDesc: {
+      fontSize: FONT.sm,
+      color: COLORS.textSecondary,
+      marginTop: 4,
+      marginBottom: 4,
+    },
    cw50Row: {
      flexDirection: 'row',
      alignItems: 'center',
@@ -530,23 +531,23 @@ const styles = StyleSheet.create({
      alignItems: 'baseline',
      gap: 4,
    },
-   cw50Value: {
-     fontSize: 32,
-     fontWeight: '700',
-     color: COLORS.primary,
-   },
-   cw50Unit: {
-     fontSize: 14,
-     color: COLORS.textSecondary,
-   },
+cw50Value: {
+      fontSize: FONT['3xl'],
+      fontWeight: '700',
+      color: COLORS.primary,
+    },
+    cw50Unit: {
+      fontSize: FONT.base,
+      color: COLORS.textSecondary,
+    },
    cw50Meta: {
      alignItems: 'flex-end',
      gap: 2,
    },
-   cw50MetaText: {
-     fontSize: 12,
-     color: COLORS.textSecondary,
-   },
+cw50MetaText: {
+      fontSize: FONT.sm,
+      color: COLORS.textSecondary,
+    },
    conditionGrid: {
      flexDirection: 'row',
      flexWrap: 'wrap',
@@ -559,21 +560,21 @@ const styles = StyleSheet.create({
      borderRadius: 8,
      padding: 10,
    },
-   conditionLabel: {
-     fontSize: 11,
-     color: COLORS.textSecondary,
-     marginBottom: 2,
-   },
-   conditionValue: {
-     fontSize: 15,
-     fontWeight: '600',
-     color: COLORS.primary,
-   },
-   conditionValueSecondary: {
-     fontSize: 13,
-     fontWeight: '600',
-     color: COLORS.text,
-   },
+conditionLabel: {
+      fontSize: FONT.xs,
+      color: COLORS.textSecondary,
+      marginBottom: 2,
+    },
+    conditionValue: {
+      fontSize: FONT.base,
+      fontWeight: '600',
+      color: COLORS.primary,
+    },
+    conditionValueSecondary: {
+      fontSize: FONT['sm+'],
+      fontWeight: '600',
+      color: COLORS.text,
+    },
    speciesRow: {
      flexDirection: 'row',
      alignItems: 'center',
@@ -584,21 +585,21 @@ const styles = StyleSheet.create({
      flex: 1,
      marginRight: 8,
    },
-   speciesCommonName: {
-     fontSize: 14,
-     fontWeight: '600',
-     color: COLORS.text,
-   },
-   speciesScientific: {
-     fontSize: 12,
-     color: COLORS.textSecondary,
-     fontStyle: 'italic',
-   },
-   speciesCount: {
-     fontSize: 18,
-     fontWeight: '700',
-     color: COLORS.primary,
-   },
+speciesCommonName: {
+      fontSize: FONT.base,
+      fontWeight: '600',
+      color: COLORS.text,
+    },
+    speciesScientific: {
+      fontSize: FONT.sm,
+      color: COLORS.textSecondary,
+      fontStyle: 'italic',
+    },
+    speciesCount: {
+      fontSize: FONT.xl,
+      fontWeight: '700',
+      color: COLORS.primary,
+    },
    speciesBarTrack: {
      height: 6,
      borderRadius: 3,
@@ -611,13 +612,13 @@ const styles = StyleSheet.create({
      borderRadius: 3,
    },
   headerTitle: {
-    fontSize: 24,
+    fontSize: FONT['2xl'],
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: 4,
   },
   headerSub: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
     marginBottom: 16,
   },
@@ -631,7 +632,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   errorText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.error,
     flex: 1,
   },
@@ -658,7 +659,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
   },
   tabLabel: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
@@ -669,13 +670,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 12,
   },
   speciesName: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 12,
@@ -711,16 +712,16 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   legendText: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: COLORS.textSecondary,
   },
   unknownText: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: COLORS.textSecondary,
     marginTop: 4,
   },
   ratioText: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     fontWeight: '600',
     color: COLORS.primary,
     marginTop: 6,
@@ -748,13 +749,13 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   barLabel: {
-    fontSize: 10,
+    fontSize: FONT['2xs'],
     color: COLORS.textSecondary,
     marginTop: 4,
     textAlign: 'center',
   },
   barValue: {
-    fontSize: 11,
+    fontSize: FONT.xs,
     fontWeight: '600',
     color: COLORS.text,
     marginTop: 2,
@@ -766,20 +767,20 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   trendMonth: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     fontWeight: '600',
     color: COLORS.text,
     width: 60,
   },
   trendSpecies: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: COLORS.textSecondary,
     flex: 1,
     textAlign: 'right',
     marginRight: 8,
   },
   trendCount: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     fontWeight: '600',
     color: COLORS.primary,
     width: 30,
@@ -797,7 +798,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
     textAlign: 'center',
     marginTop: 12,

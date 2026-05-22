@@ -4,6 +4,7 @@ import {
   getUserProfile,
   updateUserProfile,
   changeUserPassword,
+  softDeleteMyAccount,
   listUsers,
   updateUserRole,
   softDeleteUser,
@@ -108,6 +109,7 @@ router.get('/me', requireAuth, resolveUser, getUserProfile)
  */
 router.patch('/me', requireAuth, resolveUser, validate(updateUserSchema), updateUserProfile)
 router.patch('/me/password', requireAuth, resolveUser, validate(changePasswordSchema), changeUserPassword)
+router.delete('/me', requireAuth, resolveUser, softDeleteMyAccount)
 
 /**
  * @openapi

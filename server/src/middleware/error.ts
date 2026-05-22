@@ -32,7 +32,7 @@ export function errorHandler(
     return
   }
 
-  // Prisma P2025 warning (transaction commit on nothing) — treat as 500
+ // Prisma P2025 warning (transaction commit on nothing) — treat as 500
   // Prisma P2025 is thrown when a transaction has no operations
   if (err.message?.includes('P2025')) {
     logger.error({
@@ -44,6 +44,38 @@ export function errorHandler(
     res.status(500).json({
       success: false,
       error: 'Internal server error',
+    })
+    return
+  }
+
+  // AI analysis timeout — treat as 504
+  if (err.message?.includes('timed out')) {
+    logger.warn({
+      err: err.message,
+      statusCode: 504,
+      requestId,
+      method: req.method,
+      path: req.path,
+    })
+    res.status(504).json({
+      success: false,
+      error: err.message,
+    })
+    return
+  }
+
+  // AI service not configured — treat as 503
+  if (err.message?.includes('not configured') || err.message?.includes('must be configured')) {
+    logger.warn({
+      err: err.message,
+      statusCode: 503,
+      requestId,
+      method: req.method,
+      path: req.path,
+    })
+    res.status(503).json({
+      success: false,
+      error: 'AI analysis service not configured',
     })
     return
   }

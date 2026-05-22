@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
@@ -10,6 +9,7 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native'
+import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -22,6 +22,7 @@ import { CountryPicker } from '../../components/common/CountryPicker'
 import { PhoneCodePicker } from '../../components/common/PhoneCodePicker'
 import { Button } from '../../components/common/Button'
 import { COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 import { type CountryOption } from '@crabwatch/shared'
 import * as ImagePicker from 'expo-image-picker'
 import type { RootStackParamList } from '../../navigation/types'
@@ -433,7 +434,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.surface,
   },
   avatarHint: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: COLORS.textSecondary,
     marginTop: 8,
   },
@@ -449,23 +450,23 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   infoLabel: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: COLORS.textSecondary,
     marginBottom: 4,
   },
   infoValue: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     color: COLORS.text,
     fontWeight: '500',
   },
   infoNote: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: COLORS.textLight,
     marginTop: 4,
     fontStyle: 'italic',
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 8,

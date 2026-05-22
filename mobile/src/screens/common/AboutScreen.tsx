@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 
 const APP_VERSION = '1.0.0'
 
@@ -111,13 +112,13 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primaryLight,
   },
   appName: {
-    fontSize: 26,
+    fontSize: FONT['5xl'],
     fontWeight: '700',
     color: COLORS.text,
     marginTop: 12,
   },
   appVersion: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: COLORS.textSecondary,
     marginTop: 2,
   },
@@ -130,13 +131,13 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 8,
   },
   cardText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
     lineHeight: 20,
   },
@@ -146,7 +147,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   creatorText: {
-    fontSize: 15,
+    fontSize: FONT.md,
     color: COLORS.text,
     fontWeight: '500',
   },
@@ -158,18 +159,18 @@ const styles = StyleSheet.create({
   },
   contactText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.primary,
     fontWeight: '500',
   },
   featureText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
     lineHeight: 22,
     paddingLeft: 4,
   },
   footerText: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: COLORS.textLight,
     textAlign: 'center',
     marginTop: 16,

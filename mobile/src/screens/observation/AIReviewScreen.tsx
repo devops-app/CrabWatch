@@ -5,12 +5,12 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-  Image,
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
   Modal,
 } from 'react-native'
+import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
@@ -23,6 +23,7 @@ import {
 } from '../../utils/validators'
 import { useObservation } from '../../hooks/useObservation'
 import { useSpeciesStore } from '../../store/speciesStore'
+import { api } from '../../services/api'
 import {
   GENDER_OPTIONS,
   MATURATION_OPTIONS,
@@ -30,6 +31,7 @@ import {
   CW_MAX,
   BW_MAX,
 } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 import { Input } from '../../components/common/Input'
 import { PickerWithAlert } from '../../components/common/Picker'
 import { Button } from '../../components/common/Button'
@@ -152,9 +154,32 @@ export function AIReviewScreen() {
       detectedCoin: coinType || analysis.detectedCoin || null,
     }
 
+    let previousLevel: number | null = null
+    let previousXP: number | null = null
+
+    try {
+      const stats = await api.getMyStats()
+      previousLevel = stats.stats.level
+      previousXP = stats.stats.totalXP
+    } catch { /* non-blocking */ }
+
     const result = await submitObservation(payload)
 
     if (result) {
+      try {
+        const newStats = await api.getMyStats()
+        if (previousLevel !== null && newStats.stats.level > previousLevel) {
+          Alert.alert(
+            'Level Up!',
+            `You're now level ${newStats.stats.level} (${newStats.stats.title})`,
+            [{ text: 'Awesome!' }]
+          )
+        } else if (previousXP !== null && newStats.stats.totalXP > previousXP) {
+          const xpEarned = newStats.stats.totalXP - previousXP
+          Alert.alert('XP Earned', `+${xpEarned} XP earned!`, [{ text: 'OK' }])
+        }
+      } catch { /* non-blocking */ }
+
       setShowSuccess(true)
     } else {
       Alert.alert(
@@ -487,7 +512,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: FONT.xl,
     fontWeight: '700',
     color: COLORS.text,
   },
@@ -515,7 +540,7 @@ const styles = StyleSheet.create({
   },
   aiSummaryTitle: {
     flex: 1,
-    fontSize: 15,
+    fontSize: FONT.base,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -526,17 +551,17 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   confidenceText: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     fontWeight: '600',
   },
   aiSpeciesName: {
-    fontSize: 18,
+    fontSize: FONT.xl,
     fontWeight: '700',
     color: COLORS.primary,
     marginBottom: 8,
   },
   aiRawAnalysis: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
     lineHeight: 20,
     marginBottom: 12,
@@ -552,7 +577,7 @@ const styles = StyleSheet.create({
   },
   suggestionText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: COLORS.primary,
     lineHeight: 18,
   },
@@ -569,7 +594,7 @@ const styles = StyleSheet.create({
   },
   manualFallbackText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.text,
     lineHeight: 20,
   },
@@ -594,11 +619,11 @@ const styles = StyleSheet.create({
   },
   coinInfoText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: COLORS.text,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     fontWeight: '600',
     color: COLORS.text,
     marginTop: 16,
@@ -623,7 +648,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   aiBadgeText: {
-    fontSize: 11,
+    fontSize: FONT.xs,
     color: COLORS.accent,
     fontWeight: '600',
   },
@@ -638,7 +663,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   errorText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.error,
   },
   actionRow: {
@@ -657,14 +682,14 @@ const styles = StyleSheet.create({
     padding: 32,
   },
   successTitle: {
-    fontSize: 24,
+    fontSize: FONT['2xl'],
     fontWeight: '700',
     color: COLORS.text,
     marginTop: 16,
     marginBottom: 8,
   },
   successMessage: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     color: COLORS.textSecondary,
     textAlign: 'center',
     marginBottom: 32,

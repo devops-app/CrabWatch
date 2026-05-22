@@ -6,11 +6,11 @@ import {
   ScrollView,
   Alert,
   TouchableOpacity,
-  Image,
   Modal,
   PanResponder,
   ActivityIndicator,
 } from 'react-native'
+import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
@@ -19,6 +19,7 @@ import * as ScreenOrientation from 'expo-screen-orientation'
 import { photoService } from '../../services/photoService'
 import { analysisService } from '../../services/analysisService'
 import { COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 import { Button } from '../../components/common/Button'
 import { CaptureFrameOverlay } from '../../components/observation/CaptureFrameOverlay'
 import { useCaptureAssistance } from '../../hooks/useCaptureAssistance'
@@ -548,12 +549,12 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: FONT['2xl'],
     fontWeight: '700',
     color: COLORS.text,
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
@@ -568,7 +569,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 8,
@@ -577,7 +578,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   sectionDescription: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
     marginBottom: 12,
     lineHeight: 20,
@@ -597,7 +598,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   seriesTitle: {
-    fontSize: 14,
+    fontSize: FONT.base,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -629,14 +630,14 @@ const styles = StyleSheet.create({
   aiDetectText: {
     color: COLORS.accent,
     fontWeight: '600',
-    fontSize: 16,
+    fontSize: FONT.lg,
   },
   coinButtonSelected: {
     borderColor: COLORS.primary,
     backgroundColor: COLORS.primaryLight,
   },
   coinButtonText: {
-    fontSize: 15,
+    fontSize: FONT.base,
     color: COLORS.text,
     fontWeight: '500',
   },
@@ -655,12 +656,12 @@ const styles = StyleSheet.create({
   },
   coinInfoText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.secondary,
     fontWeight: '600',
   },
   changeLink: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.primary,
     fontWeight: '600',
   },
@@ -692,7 +693,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   confirmText: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: '#ffffff',
     fontWeight: '600',
   },
@@ -706,7 +707,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   retakeText: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: '#ffffff',
     fontWeight: '600',
   },
@@ -718,7 +719,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   analyzingText: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: '#ffffff',
     fontWeight: '500',
   },
@@ -734,7 +735,7 @@ const styles = StyleSheet.create({
     borderColor: '#f59e0b',
   },
   viewWarningsTitle: {
-    fontSize: 14,
+    fontSize: FONT.base,
     fontWeight: '600',
     color: '#92400e',
     marginBottom: 6,
@@ -743,12 +744,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   viewWarningText: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: '#78350f',
     lineHeight: 18,
   },
   viewWarningHint: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: '#a16207',
     marginTop: 6,
     fontStyle: 'italic',
@@ -767,7 +768,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   capturePlaceholderText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
     textAlign: 'center',
     marginTop: 12,
@@ -787,7 +788,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   switchCaptureText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.primary,
     fontWeight: '500',
   },
@@ -799,13 +800,13 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   tipsTitle: {
-    fontSize: 14,
+    fontSize: FONT.base,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 8,
   },
   tipBullet: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: COLORS.textSecondary,
     lineHeight: 20,
   },
@@ -842,7 +843,7 @@ const styles = StyleSheet.create({
   },
   cameraTitleCenter: {
     color: '#ffffff',
-    fontSize: 15,
+    fontSize: FONT.base,
     fontWeight: '600',
     position: 'absolute',
     left: 0,
@@ -885,7 +886,7 @@ const styles = StyleSheet.create({
   },
   captureHint: {
     color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     textAlign: 'center',
   },
 })

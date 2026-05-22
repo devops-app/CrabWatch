@@ -17,6 +17,7 @@ import { authService } from '../../services/authService'
 import { Input } from '../../components/common/Input'
 import { Button } from '../../components/common/Button'
 import { COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { AuthStackParamList } from '../../navigation/types'
 
@@ -147,13 +148,13 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   title: {
-    fontSize: 36,
+    fontSize: FONT['6xl'],
     fontWeight: '800',
     color: COLORS.primary,
     letterSpacing: -1,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
     marginTop: 6,
     textAlign: 'center',
@@ -176,11 +177,11 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   footerText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
   },
   linkText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.primary,
     fontWeight: '600',
   },

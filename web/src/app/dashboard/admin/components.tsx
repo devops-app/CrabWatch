@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, memo } from 'react'
 import { api } from '@/lib/api'
 import { logger } from '@/lib/logger'
 import { GamificationRuleDto, LevelConfigDto, CampaignDto, AdminAuditLogDto, AbuseSignalDto, AchievementDto, MissionDto, SeasonDto, EngagementMetricsDto, RecalculationResultDto, RecalculationJobDto, RecalculationUserResult, AchievementCondition, RewardActionType } from '@crabwatch/shared'
@@ -47,7 +47,9 @@ export function EngagementAdminTab({ flash }: EngagementAdminTabProps): React.JS
   const [recalcJobStatus, setRecalcJobStatus] = useState<{ status: string; processed?: number; updatedAt?: Date } | null>(null)
 
   useEffect(() => {
+    const controller = new AbortController()
     Promise.all([loadRules(), loadLevels()])
+    return () => controller.abort()
   }, [])
 
   const loadRules = async () => {
@@ -331,7 +333,7 @@ export function EngagementAdminTab({ flash }: EngagementAdminTabProps): React.JS
   )
 }
 
-function XPRulesTab({
+const XPRulesTab = memo(({
   rules,
   draft,
   saving,
@@ -353,7 +355,7 @@ function XPRulesTab({
   onCancel: () => void
   onToggle: (r: GamificationRuleDto) => void
   onDelete: (r: GamificationRuleDto) => void
-}) {
+}) => {
   return (
     <div>
       <div className="mb-4 border rounded-lg p-4 bg-gray-50">
@@ -453,9 +455,10 @@ function XPRulesTab({
       </table>
     </div>
   )
-}
+})
+XPRulesTab.displayName = 'XPRulesTab'
 
-function LevelsTab({
+const LevelsTab = memo(({
   levels,
   draft,
   saving,
@@ -475,7 +478,7 @@ function LevelsTab({
   onEdit: (l: LevelConfigDto) => void
   onCancel: () => void
   onDelete: (l: LevelConfigDto) => void
-}) {
+}) => {
   return (
     <div>
       <div className="mb-4 border rounded-lg p-4 bg-gray-50">
@@ -576,9 +579,10 @@ function LevelsTab({
       </table>
     </div>
   )
-}
+})
+LevelsTab.displayName = 'LevelsTab'
 
-function XPAdjustTab(props: {
+const XPAdjustTab = memo((props: {
   adjUserId: string; setAdjUserId: (v: string) => void; adjDeltaXP: number; setAdjDeltaXP: (v: number) => void;
   adjReason: string; setAdjReason: (v: string) => void; adjLoading: boolean;
   recalcMode: 'dry-run' | 'execute'; setRecalcMode: (v: 'dry-run' | 'execute') => void;
@@ -586,7 +590,7 @@ function XPAdjustTab(props: {
   recalcLoading: boolean; recalcResults: RecalculationResultDto | null;
   recalcJobId: string | null; recalcJobStatus: { status: string; processed?: number; updatedAt?: Date } | null;
   onAdjust: () => void; onRecalculate: () => void; onCheckJob: (jobId: string) => void;
-}) {
+}) => {
   const { adjUserId, setAdjUserId, adjDeltaXP, setAdjDeltaXP, adjReason, setAdjReason, adjLoading,
     recalcMode, setRecalcMode, recalcUserId, setRecalcUserId, recalcReason, setRecalcReason,
     recalcLoading, recalcResults, recalcJobId, recalcJobStatus, onAdjust, onRecalculate, onCheckJob } = props
@@ -689,9 +693,10 @@ function XPAdjustTab(props: {
       </div>
     </div>
   )
-}
+})
+XPAdjustTab.displayName = 'XPAdjustTab'
 
-function CampaignAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Element {
+const CampaignAdminSubTab = memo(({ flash }: EngagementAdminTabProps): React.JSX.Element => {
   const [campaigns, setCampaigns] = useState<CampaignDto[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -845,9 +850,10 @@ function CampaignAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Elem
       </table>
     </div>
   )
-}
+})
+CampaignAdminSubTab.displayName = 'CampaignAdminSubTab'
 
-function AuditAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Element {
+const AuditAdminSubTab = memo(({ flash }: EngagementAdminTabProps): React.JSX.Element => {
   const [logs, setLogs] = useState<AdminAuditLogDto[]>([])
   const [stats, setStats] = useState<{ totalEntries: number; xpAdjustments: number; campaignLaunches: number; abuseResolutions: number } | null>(null)
   const [loading, setLoading] = useState(true)
@@ -922,9 +928,10 @@ function AuditAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Element
       )}
     </div>
   )
-}
+})
+AuditAdminSubTab.displayName = 'AuditAdminSubTab'
 
-function AbuseAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Element {
+const AbuseAdminSubTab = memo(({ flash }: EngagementAdminTabProps): React.JSX.Element => {
   const [signals, setSignals] = useState<AbuseSignalDto[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -992,11 +999,12 @@ function AbuseAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Element
       )}
     </div>
   )
-}
+})
+AbuseAdminSubTab.displayName = 'AbuseAdminSubTab'
 
 // ==================== ACHIEVEMENTS ADMIN ====================
 
-function AchievementsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Element {
+const AchievementsAdminSubTab = memo(({ flash }: EngagementAdminTabProps): React.JSX.Element => {
   const [achievements, setAchievements] = useState<AchievementDto[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -1199,11 +1207,12 @@ function AchievementsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.
       </table>
     </div>
   )
-}
+})
+AchievementsAdminSubTab.displayName = 'AchievementsAdminSubTab'
 
 // ==================== MISSIONS ADMIN ====================
 
-function MissionsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Element {
+const MissionsAdminSubTab = memo(({ flash }: EngagementAdminTabProps): React.JSX.Element => {
   const [missions, setMissions] = useState<MissionDto[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -1389,11 +1398,12 @@ function MissionsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Elem
       </table>
     </div>
   )
-}
+})
+MissionsAdminSubTab.displayName = 'MissionsAdminSubTab'
 
 // ==================== SEASONS ADMIN ====================
 
-function MetricsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Element {
+const MetricsAdminSubTab = memo(({ flash }: EngagementAdminTabProps): React.JSX.Element => {
   const [metrics, setMetrics] = useState<EngagementMetricsDto | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -1612,9 +1622,10 @@ function MetricsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Eleme
       </div>
     </div>
   )
-}
+})
+MetricsAdminSubTab.displayName = 'MetricsAdminSubTab'
 
-function SeasonsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Element {
+const SeasonsAdminSubTab = memo(({ flash }: EngagementAdminTabProps): React.JSX.Element => {
   const [seasons, setSeasons] = useState<SeasonDto[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -1761,7 +1772,8 @@ function SeasonsAdminSubTab({ flash }: EngagementAdminTabProps): React.JSX.Eleme
               </div>
             </td>
           </tr>))}</tbody>
-      </table>
-    </div>
-  )
-}
+     </table>
+     </div>
+)
+})
+SeasonsAdminSubTab.displayName = 'SeasonsAdminSubTab'

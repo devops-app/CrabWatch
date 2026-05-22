@@ -114,6 +114,22 @@ async function seedMissionDefinitions(): Promise<void> {
       criteria: [{ field: 'weeklySubmissions', operator: 'gte', value: 5 }],
       xpReward: 30,
     },
+    {
+      code: 'daily_validate_1',
+      name: 'Quick Validator',
+      description: 'Validate 1 observation today',
+      cadence: 'DAILY',
+      criteria: [{ field: 'dailyValidations', operator: 'gte', value: 1 }],
+      xpReward: 10,
+    },
+    {
+      code: 'daily_validate_5',
+      name: 'Diligent Validator',
+      description: 'Validate 5 observations today',
+      cadence: 'DAILY',
+      criteria: [{ field: 'dailyValidations', operator: 'gte', value: 5 }],
+      xpReward: 25,
+    },
   ]
 
   for (const mission of missions) {

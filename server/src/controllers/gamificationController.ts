@@ -1,75 +1,62 @@
-import { Response, NextFunction } from 'express'
+import { Response } from 'express'
 import { AuthRequest } from '../middleware/auth'
+import { asyncHandler, AppError } from '../utils/errors'
+import { getConfig } from '../services/container'
 import { getUserStats } from '../services/rewardEngine'
 import { getLeaderboard, getXPHistory } from '../services/leaderboardService'
-import { config } from '../config'
 
-export async function getMyStats(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-  if (!config.engagement.enabled) {
+export const getMyStats = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!getConfig().engagement.enabled) {
     res.status(501).json({ success: false, error: 'Gamification not enabled' })
     return
   }
 
-  try {
-    const userId = req.dbUser?.id
-    if (!userId) {
-      res.status(401).json({ success: false, error: 'Authentication required' })
-      return
-    }
-
-    const stats = await getUserStats(userId)
-    res.json({ success: true, data: { stats } })
-  } catch (error) {
-    next(error)
+  const userId = req.dbUser?.id
+  if (!userId) {
+    throw new AppError('Authentication required', 401)
   }
-}
 
-export async function getXPHistoryEndpoint(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-  if (!config.engagement.enabled) {
+  const stats = await getUserStats(userId)
+  res.json({ success: true, data: { stats } })
+})
+
+export const getXPHistoryEndpoint = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!getConfig().engagement.enabled) {
     res.status(501).json({ success: false, error: 'Gamification not enabled' })
     return
   }
 
-  try {
-    const userId = req.dbUser?.id
-    if (!userId) {
-      res.status(401).json({ success: false, error: 'Authentication required' })
-      return
-    }
-
-    const page = parseInt(req.query.page as string) || 1
-    const limit = parseInt(req.query.limit as string) || 20
-
-    const result = await getXPHistory(userId, page, limit)
-    res.json({ success: true, data: result })
-  } catch (error) {
-    next(error)
+  const userId = req.dbUser?.id
+  if (!userId) {
+    throw new AppError('Authentication required', 401)
   }
-}
 
-export async function getLeaderboardEndpoint(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-  if (!config.engagement.enabled) {
+  const page = parseInt(req.query.page as string) || 1
+  const limit = parseInt(req.query.limit as string) || 20
+
+  const result = await getXPHistory(userId, page, limit)
+  res.json({ success: true, data: result })
+})
+
+export const getLeaderboardEndpoint = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!getConfig().engagement.enabled) {
     res.status(501).json({ success: false, error: 'Gamification not enabled' })
     return
   }
 
-  try {
-    const scope = (req.query.scope as 'ALL_TIME' | 'SEASONAL') || 'ALL_TIME'
-    const seasonId = req.query.seasonId as string | undefined
-    const page = parseInt(req.query.page as string) || 1
-    const limit = parseInt(req.query.limit as string) || 50
-    const currentUserId = req.dbUser?.id
+  const scope = (req.query.scope as 'ALL_TIME' | 'SEASONAL') || 'ALL_TIME'
+  const seasonId = req.query.seasonId as string | undefined
+  const page = parseInt(req.query.page as string) || 1
+  const limit = parseInt(req.query.limit as string) || 50
+  const currentUserId = req.dbUser?.id
 
-    const result = await getLeaderboard({
-      scope,
-      seasonId,
-      page,
-      limit,
-      currentUserId,
-    })
+  const result = await getLeaderboard({
+    scope,
+    seasonId,
+    page,
+    limit,
+    currentUserId,
+  })
 
-    res.json({ success: true, data: result })
-  } catch (error) {
-    next(error)
-  }
-}
+  res.json({ success: true, data: result })
+})

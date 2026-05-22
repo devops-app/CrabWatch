@@ -20,6 +20,7 @@ import { CountryPicker } from '../../components/common/CountryPicker'
 import { PhoneCodePicker } from '../../components/common/PhoneCodePicker'
 import { Button } from '../../components/common/Button'
 import { COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 import { type CountryOption } from '@crabwatch/shared'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { AuthStackParamList } from '../../navigation/types'
@@ -108,7 +109,7 @@ export function RegisterScreen() {
               name="name"
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input
-                  label="Full Name"
+                  label="Full Name *"
                   placeholder="Your name"
                   autoCapitalize="words"
                   textContentType="name"
@@ -126,7 +127,7 @@ export function RegisterScreen() {
               name="email"
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input
-                  label="Email"
+                  label="Email *"
                   placeholder="your@email.com"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -146,7 +147,7 @@ export function RegisterScreen() {
               name="country"
               render={({ field: { value } }) => (
                 <CountryPicker
-                  label="Country"
+                  label="Country *"
                   selectedCode={value}
                   onSelect={handleCountrySelect}
                   error={errors.country?.message}
@@ -161,7 +162,7 @@ export function RegisterScreen() {
                     name="phoneCode"
                     render={({ field: { onChange, value } }) => (
                       <PhoneCodePicker
-                        label="Country Code"
+                        label="Country Code *"
                         selectedCode={value}
                         onSelect={onChange}
                         error={errors.phoneCode?.message}
@@ -175,7 +176,7 @@ export function RegisterScreen() {
                   name="phoneNumber"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <Input
-                      label="Phone Number"
+                      label="Phone Number *"
                       placeholder="123456789"
                       keyboardType="phone-pad"
                       autoCapitalize="none"
@@ -196,7 +197,7 @@ export function RegisterScreen() {
               name="addressLine1"
               render={({ field: { onChange, onBlur, value } }) => (
                <Input
-                    label="Address Line 1"
+                    label="Address Line 1 *"
                     placeholder="Street address"
                     autoCapitalize="words"
                     textContentType="streetAddressLine1"
@@ -252,7 +253,7 @@ export function RegisterScreen() {
                   name="state"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <Input
-                      label="State"
+                      label="State *"
                       placeholder="State"
                       autoCapitalize="words"
                       textContentType="addressState"
@@ -271,7 +272,7 @@ export function RegisterScreen() {
                   name="postcode"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <Input
-                      label="Postcode"
+                      label="Postcode *"
                       placeholder="Postcode"
                       keyboardType="number-pad"
                       textContentType="postalCode"
@@ -291,7 +292,7 @@ export function RegisterScreen() {
               name="password"
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input
-                  label="Password"
+                  label="Password *"
                   placeholder="At least 8 characters"
                   secureTextEntry
                   textContentType="newPassword"
@@ -309,7 +310,7 @@ export function RegisterScreen() {
               name="confirmPassword"
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input
-                  label="Confirm Password"
+                  label="Confirm Password *"
                   placeholder="Re-enter your password"
                   secureTextEntry
                   textContentType="newPassword"
@@ -359,12 +360,12 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   title: {
-    fontSize: 30,
+    fontSize: FONT['5xl'],
     fontWeight: '800',
     color: COLORS.primary,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
     marginTop: 6,
   },
@@ -382,11 +383,11 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   footerText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
   },
   linkText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.primary,
     fontWeight: '600',
   },

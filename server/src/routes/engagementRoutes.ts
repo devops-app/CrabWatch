@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { authMiddleware, requireAuth, resolveUser, AuthRequest } from '../middleware/auth'
-import { config } from '../config'
+import { getConfig, getPrisma } from '../services/container'
 import { Response, NextFunction } from 'express'
 import {
   getOnboardingStatus,
@@ -29,7 +29,7 @@ router.post('/missions/progress', validate(updateMissionProgressSchema), updateM
 
 // Achievements (Phase 3)
 router.get('/achievements', async (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (!config.engagement.enabled) {
+  if (!getConfig().engagement.enabled) {
     return res.status(501).json({ success: false, error: 'Achievements not enabled' })
   }
   try {
@@ -46,7 +46,7 @@ router.get('/achievements', async (req: AuthRequest, res: Response, next: NextFu
 })
 
 router.get('/achievements/unlocked', async (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (!config.engagement.enabled) {
+  if (!getConfig().engagement.enabled) {
     return res.status(501).json({ success: false, error: 'Achievements not enabled' })
   }
   try {
@@ -63,7 +63,7 @@ router.get('/achievements/unlocked', async (req: AuthRequest, res: Response, nex
 })
 
 router.get('/achievements/check', async (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (!config.engagement.enabled) {
+  if (!getConfig().engagement.enabled) {
     return res.status(501).json({ success: false, error: 'Achievements not enabled' })
   }
   try {
@@ -80,7 +80,7 @@ router.get('/achievements/check', async (req: AuthRequest, res: Response, next: 
 })
 
 router.get('/achievements/:id/progress', async (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (!config.engagement.enabled) {
+  if (!getConfig().engagement.enabled) {
     return res.status(501).json({ success: false, error: 'Achievements not enabled' })
   }
   try {
@@ -101,7 +101,7 @@ router.get('/achievements/:id/progress', async (req: AuthRequest, res: Response,
 
 // Insights (Phase 4)
 router.get('/insights/me', async (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (!config.engagement.enabled) {
+  if (!getConfig().engagement.enabled) {
     return res.status(501).json({ success: false, error: 'Insights not enabled' })
   }
   try {
@@ -118,7 +118,7 @@ router.get('/insights/me', async (req: AuthRequest, res: Response, next: NextFun
 })
 
 router.post('/insights/:id/act', async (req, res, next) => {
-  if (!config.engagement.enabled) {
+  if (!getConfig().engagement.enabled) {
     return res.status(501).json({ success: false, error: 'Insights not enabled' })
   }
   try {
@@ -130,7 +130,7 @@ router.post('/insights/:id/act', async (req, res, next) => {
 
 // Social (Phase 3)
 router.get('/social/contributors', async (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (!config.engagement.enabled) {
+  if (!getConfig().engagement.enabled) {
     return res.status(501).json({ success: false, error: 'Social features not enabled' })
   }
   try {
@@ -143,7 +143,7 @@ router.get('/social/contributors', async (req: AuthRequest, res: Response, next:
 })
 
 router.get('/social/stats', async (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (!config.engagement.enabled) {
+  if (!getConfig().engagement.enabled) {
     return res.status(501).json({ success: false, error: 'Social features not enabled' })
   }
   try {
@@ -160,7 +160,7 @@ const DEFAULT_CATEGORIES = ['mission_reminders', 'streak_warnings', 'milestone_a
 const DEFAULT_CHANNELS = ['PUSH', 'EMAIL', 'IN_APP'] as const
 
 router.get('/notification-preferences', async (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (!config.engagement.enabled) {
+  if (!getConfig().engagement.enabled) {
     return res.status(501).json({ success: false, error: 'Notifications not enabled' })
   }
   try {
@@ -168,8 +168,8 @@ router.get('/notification-preferences', async (req: AuthRequest, res: Response, 
     if (!userId) {
       return res.status(401).json({ success: false, error: 'Authentication required' })
     }
-    const prisma = (await import('../config/database')).default
-    let prefs = await prisma.notificationPreference.findMany({ where: { userId } })
+    const db = getPrisma()
+    let prefs = await db.notificationPreference.findMany({ where: { userId } })
     if (prefs.length === 0) {
       const createData = DEFAULT_CHANNELS.flatMap((channel) =>
         DEFAULT_CATEGORIES.map((category) => ({
@@ -179,7 +179,7 @@ router.get('/notification-preferences', async (req: AuthRequest, res: Response, 
           enabled: category !== 'community_updates',
         }))
       )
-      prefs = await prisma.notificationPreference.createManyAndReturn({ data: createData })
+      prefs = await db.notificationPreference.createManyAndReturn({ data: createData })
     }
     res.json({ success: true, data: prefs })
   } catch (error) {
@@ -188,7 +188,7 @@ router.get('/notification-preferences', async (req: AuthRequest, res: Response, 
 })
 
 router.patch('/notification-preferences', async (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (!config.engagement.enabled) {
+  if (!getConfig().engagement.enabled) {
     return res.status(501).json({ success: false, error: 'Notifications not enabled' })
   }
   try {
@@ -200,10 +200,10 @@ router.patch('/notification-preferences', async (req: AuthRequest, res: Response
     if (!Array.isArray(updates)) {
       return res.status(400).json({ success: false, error: 'updates array required' })
     }
-    const prisma = (await import('../config/database')).default
+    const db = getPrisma()
     const results = await Promise.all(
       updates.map((u: any) =>
-        prisma.notificationPreference.upsert({
+        db.notificationPreference.upsert({
           where: {
             userId_channel_category: { userId, channel: u.channel, category: u.category },
           },

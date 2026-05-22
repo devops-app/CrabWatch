@@ -10,6 +10,7 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 import { COUNTRIES } from '@crabwatch/shared'
 
 type PhoneCodeOption = {
@@ -111,7 +112,7 @@ export function PhoneCodePicker({ label, selectedCode, onSelect, error }: PhoneC
 
 const styles = StyleSheet.create({
   label: {
-    fontSize: 14,
+    fontSize: FONT.base,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 6,
@@ -137,14 +138,14 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   value: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     color: COLORS.text,
   },
   placeholder: {
     color: COLORS.textLight,
   },
   errorText: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: '#ef4444',
     marginTop: 4,
   },
@@ -169,7 +170,7 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: FONT.xl,
     fontWeight: '700',
     color: COLORS.text,
   },
@@ -186,7 +187,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary + '15',
   },
   countryName: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     color: COLORS.text,
   },
   countryNameSelected: {
@@ -194,7 +195,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   countryCode: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
   },
   countryCodeSelected: {

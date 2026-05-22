@@ -9,6 +9,7 @@ import {
 } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost'
 
@@ -74,9 +75,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderWidth: 0,
     minWidth: 120,
+    minHeight: 48,
   },
   text: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     fontWeight: '600',
   },
   disabled: {

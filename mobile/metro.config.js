@@ -20,8 +20,7 @@ config.resolver.disableHierarchicalLookup = false
 config.resolver.extraNodeModules = {
   react: resolvePackageRoot('react'),
   'react-native': resolvePackageRoot('react-native'),
-  buffer: resolvePackageRoot('buffer'),
-  'buffer/': resolvePackageRoot('buffer'),
+  assert: path.resolve(__dirname, 'polyfills/assert'),
 }
 
 config.resolver.unstable_enableSymlinks = true

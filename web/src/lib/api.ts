@@ -1,6 +1,7 @@
 ﻿import { useAuthStore } from './authStore'
 
 import type {
+  ApiResponse,
   SpeciesResponse,
   UserListResponse,
   User,
@@ -25,20 +26,17 @@ import type {
   BackupResult,
   BackupFileInfo,
   NotificationPreferenceDto,
+  NotificationPreferenceUpdateRequest,
   GamificationRuleDto,
   LevelConfigDto,
   CreateGamificationRuleInput,
   CreateLevelConfigInput,
   AchievementCondition,
+  CampaignDto,
+  CampaignCreateInput,
 } from '@crabwatch/shared'
 
 const API_URL = ''
-
-interface ApiResponse<T = unknown> {
-  success: boolean
-  data?: T
-  error?: string
-}
 
 async function request<T>(endpoint: string, options: RequestInit & { signal?: AbortSignal } = {}): Promise<T> {
   const token = useAuthStore.getState().token
@@ -169,6 +167,11 @@ export const api = {
     request<{ message: string }>('/api/v1/users/me/password', {
       method: 'PATCH',
       body: JSON.stringify(body),
+    }),
+
+  deleteMyAccount: () =>
+    request<{ success: boolean; data: { id: string; name: string; email: string; deletedAt: string | null; expiresAt: string; retentionDays: number } }>('/api/v1/users/me', {
+      method: 'DELETE',
     }),
 
   // Users (admin)
@@ -485,13 +488,14 @@ export const api = {
     seasonId?: string
     page?: number
     limit?: number
+    signal?: AbortSignal
   }) => {
     const query = new URLSearchParams()
     if (params?.scope) query.set('scope', params.scope)
     if (params?.seasonId) query.set('seasonId', params.seasonId)
     if (params?.page) query.set('page', params.page.toString())
     if (params?.limit) query.set('limit', params.limit.toString())
-    return request(`/api/v1/gamification/leaderboard?${query}`)
+    return request(`/api/v1/gamification/leaderboard?${query}`, { signal: params?.signal })
   },
 
   // Admin Gamification
@@ -557,12 +561,15 @@ export const api = {
   getAchievementProgress: (id: string) => request(`/api/v1/engagement/achievements/${id}/progress`),
 
   // Phase 3: Social + Notifications
-  getInsights: () => request('/api/v1/engagement/insights/me'),
-  getTopContributors: () => request('/api/v1/engagement/social/contributors'),
-  getCommunityStats: () => request('/api/v1/engagement/social/stats'),
+getInsights: (signal?: AbortSignal) => request('/api/v1/engagement/insights/me', { signal }),
+
+  getTopContributors: (signal?: AbortSignal) => request('/api/v1/engagement/social/contributors', { signal }),
+
+  getCommunityStats: (signal?: AbortSignal) => request('/api/v1/engagement/social/stats', { signal }),
+
   getNotificationPreferences: () =>
     request<NotificationPreferenceDto[]>('/api/v1/engagement/notification-preferences'),
-  updateNotificationPreferences: (body: Record<string, any>) =>
+  updateNotificationPreferences: (body: NotificationPreferenceUpdateRequest) =>
     request<NotificationPreferenceDto[]>('/api/v1/engagement/notification-preferences', {
       method: 'PATCH',
       body: JSON.stringify(body),
@@ -572,7 +579,7 @@ export const api = {
   listCampaigns: (status?: string) =>
     request(`/api/v1/admin/campaigns${status ? `?status=${status}` : ''}`),
   getCampaign: (id: string) => request(`/api/v1/admin/campaigns/${id}`),
-  createCampaign: (body: Record<string, any>) =>
+  createCampaign: (body: CampaignCreateInput) =>
     request('/api/v1/admin/campaigns', { method: 'POST', body: JSON.stringify(body) }),
   updateCampaignStatus: (id: string, status: string) =>
     request(`/api/v1/admin/campaigns/${id}/status`, {

@@ -2,6 +2,7 @@ import React from 'react'
 import { View, Text, StyleSheet, Dimensions } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const GUIDE_SIZE = SCREEN_WIDTH * 0.7
@@ -124,13 +125,13 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
   instructionsTitle: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     fontWeight: '700',
     color: '#ffffff',
     marginBottom: 6,
   },
   instructionText: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: 'rgba(255, 255, 255, 0.85)',
     lineHeight: 18,
   },
@@ -219,7 +220,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.warning,
   },
   coinZoneText: {
-    fontSize: 9,
+    fontSize: FONT['3xs'],
     color: '#ffffff',
     marginTop: 2,
     fontWeight: '600',
@@ -244,7 +245,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
   },
   tipText: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: '#ffffff',
     marginLeft: 4,
   },

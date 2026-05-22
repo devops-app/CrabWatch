@@ -16,6 +16,7 @@ import { api } from '../../services/api'
 import { Button } from '../../components/common/Button'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 import type { ObservationResponse } from '@crabwatch/shared'
 
 export function ResearcherScreen() {
@@ -322,12 +323,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   speciesName: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     fontWeight: '700',
     color: COLORS.primary,
   },
   speciesScientific: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: COLORS.textSecondary,
     fontStyle: 'italic',
   },
@@ -338,7 +339,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   statusText: {
-    fontSize: 10,
+    fontSize: FONT['2xs'],
     fontWeight: '700',
     color: '#92400e',
   },
@@ -351,12 +352,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   infoLabel: {
-    fontSize: 10,
+    fontSize: FONT['2xs'],
     color: COLORS.textLight,
     textTransform: 'uppercase',
   },
   infoValue: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     fontWeight: '600',
     color: COLORS.text,
     marginTop: 2,
@@ -369,11 +370,11 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   dateText: {
-    fontSize: 11,
+    fontSize: FONT.xs,
     color: COLORS.textSecondary,
   },
   photoCount: {
-    fontSize: 11,
+    fontSize: FONT.xs,
     color: COLORS.textSecondary,
   },
   emptyContainer: {
@@ -383,18 +384,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   emptyIcon: {
-    fontSize: 48,
+    fontSize: FONT['7xl'],
     color: COLORS.primary,
     marginBottom: 12,
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: FONT.xl,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: 8,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
     textAlign: 'center',
   },
@@ -413,7 +414,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: FONT.xl,
     fontWeight: '700',
     color: COLORS.primary,
     marginBottom: 16,
@@ -423,7 +424,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionLabel: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     fontWeight: '600',
     color: COLORS.textSecondary,
     marginBottom: 8,
@@ -446,12 +447,12 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   detailLabel: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: COLORS.textSecondary,
     fontWeight: '500',
   },
   detailValue: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: COLORS.text,
     fontWeight: '600',
     flex: 1,
@@ -466,7 +467,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: 8,
     padding: 12,
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.text,
     minHeight: 80,
   },
@@ -486,7 +487,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   closeBtnText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
   },
 })

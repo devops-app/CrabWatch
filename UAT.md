@@ -1,8 +1,8 @@
 # CrabWatch — User Acceptance Test (UAT)
 
-> **Version**: 1.0
-> **Date**: 2026-05-17
-> **Scope**: Full end-to-end testing across Web, Mobile, and Server
+> **Version**: 1.1
+> **Date**: 2026-05-22
+> **Scope**: Full end-to-end testing across Web, Mobile, and Server (232 test cases across 18 modules)
 > **Seed Password**: `Pa55w.rd` (all seeded accounts)
 
 ---
@@ -466,6 +466,35 @@
 
 ---
 
+## 18. Mobile Typography & Accessibility
+
+### 18.1 Dynamic Type Scaling
+
+| ID | Test Case | Steps | Expected Result |
+|----|-----------|-------|-----------------|
+| TYPE-001 | iOS text scaling | 1. iOS device, Settings → Display & Brightness → Text Size → increase to Large<br>2. Navigate through all screens | Text scales proportionally across all screens |
+| TYPE-002 | Maximum scale cap | 1. Set text size to maximum<br>2. Navigate through all screens | Text scales up to 2x cap, no overflow or layout breaking |
+| TYPE-003 | Android no scaling | 1. Android device, increase text size<br>2. Navigate through all screens | Text remains at base size (no dynamic scaling on Android) |
+| TYPE-004 | Font size consistency | 1. Compare text across screens | All text uses `FONT.*` sizes from `fonts.ts` (no hardcoded `fontSize`) |
+
+### 18.2 Card Accessibility
+
+| ID | Test Case | Steps | Expected Result |
+|----|-----------|-------|-----------------|
+| ACC-001 | Card screen reader | 1. Enable VoiceOver/TalkBack<br>2. Swipe to a Card component | Card announces with `accessibilityLabel` |
+| ACC-002 | Card role | 1. Inspect Card accessibility tree | `accessibilityRole="summary"` applied |
+| ACC-003 | Card escape | 1. Focus Card with VoiceOver<br>2. Trigger escape gesture | `onAccessibilityEscape` callback fires |
+
+### 18.3 MD3 Elevation
+
+| ID | Test Case | Steps | Expected Result |
+|----|-----------|-------|-----------------|
+| ELEV-001 | Card elevation default | 1. View Card with default elevation | Consistent shadow matching MD3 elevation level 1 |
+| ELEV-002 | Elevated card | 1. View Card with elevation prop | Shadow increases with elevation level (1–5) |
+| ELEV-003 | Elevation dark mode | 1. Toggle to dark mode | Shadows render correctly on dark background |
+
+---
+
 ## Execution Summary Template
 
 | Module | Total | Pass | Fail | Blocked | N/A |
@@ -487,4 +516,5 @@
 | 15. Deployment & Health | 6 | | | | |
 | 16. Mobile UX | 12 | | | | |
 | 17. Web Performance | 4 | | | | |
-| **TOTAL** | **223** | | | | |
+| 18. Typography & Accessibility | 9 | | | | |
+| **TOTAL** | **232** | | | | |

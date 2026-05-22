@@ -45,6 +45,18 @@ export class ConflictError extends AppError {
   }
 }
 
+export class TimeoutError extends AppError {
+  constructor(message: string = 'Request timed out') {
+    super(message, 504)
+  }
+}
+
+export class ServiceUnavailableError extends AppError {
+  constructor(message: string = 'Service unavailable') {
+    super(message, 503)
+  }
+}
+
 export const asyncHandler = (
   fn: (req: Request, res: Response, next: NextFunction) => Promise<any>,
 ) => {

@@ -14,7 +14,8 @@ import { api } from '../../services/api'
 import { Button } from '../../components/common/Button'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { COLORS } from '../../utils/constants'
-import type { UserResponse, SpeciesResponse } from '@crabwatch/shared'
+import { FONT } from '../../utils/fonts'
+import type { UserResponse, SpeciesResponse, Invite, GamificationRuleDto, LevelConfigDto, CampaignDto, AdminAuditLogDto, AbuseSignalDto, EngagementMetricsDto, RecalculationJobDto } from '@crabwatch/shared'
 
 type Tab = 'users' | 'species' | 'backup' | 'engagement'
 type UserSubTab = 'active' | 'deleted' | 'invites'
@@ -26,15 +27,15 @@ export function AdminScreen() {
   const [users, setUsers] = useState<UserResponse[]>([])
   const [deletedUsers, setDeletedUsers] = useState<UserResponse[]>([])
   const [species, setSpecies] = useState<SpeciesResponse[]>([])
-  const [backups, setBackups] = useState<any[]>([])
-  const [invites, setInvites] = useState<any[]>([])
-  const [rules, setRules] = useState<any[]>([])
-  const [levels, setLevels] = useState<any[]>([])
-  const [campaigns, setCampaigns] = useState<any[]>([])
-  const [auditLogs, setAuditLogs] = useState<any[]>([])
-  const [auditStats, setAuditStats] = useState<any | null>(null)
-  const [abuseSignals, setAbuseSignals] = useState<any[]>([])
-  const [metrics, setMetrics] = useState<any | null>(null)
+  const [backups, setBackups] = useState<{ fileName: string; size: number; timestamp: string }[]>([])
+  const [invites, setInvites] = useState<Invite[]>([])
+  const [rules, setRules] = useState<GamificationRuleDto[]>([])
+  const [levels, setLevels] = useState<LevelConfigDto[]>([])
+  const [campaigns, setCampaigns] = useState<CampaignDto[]>([])
+  const [auditLogs, setAuditLogs] = useState<AdminAuditLogDto[]>([])
+  const [auditStats, setAuditStats] = useState<{ total: number; byAction: Record<string, number>; byResourceType: Record<string, number> } | null>(null)
+  const [abuseSignals, setAbuseSignals] = useState<AbuseSignalDto[]>([])
+  const [metrics, setMetrics] = useState<EngagementMetricsDto | null>(null)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState('researcher')
   const [engagementSubTab, setEngagementSubTab] = useState<EngagementSubTab>('xp-rules')
@@ -119,7 +120,7 @@ export function AdminScreen() {
           setRules(rulesData)
           setLevels(levelsData)
           setMetrics(metricsData)
-          const normalizedLogs = Array.isArray(logsData) ? logsData : (logsData?.items ?? [])
+          const normalizedLogs = Array.isArray(logsData) ? logsData : []
           setCampaigns(Array.isArray(campaignsData) ? campaignsData : [])
           setAuditLogs(normalizedLogs)
           setAuditStats(statsData)
@@ -348,6 +349,31 @@ export function AdminScreen() {
     )
   }
 
+  const handleResendInvite = (email: string, role: string) => {
+    Alert.alert(
+      'Resend Invite',
+      `Resend ${role} invite to ${email}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Resend',
+          onPress: async () => {
+            setActionLoading(true)
+            try {
+              await api.createInvite(email, role)
+              flash('Invite resent', 'success')
+              loadTabData('users', 'invites')
+            } catch (err) {
+              flash(err instanceof Error ? err.message : 'Failed to resend invite', 'error')
+            } finally {
+              setActionLoading(false)
+            }
+          },
+        },
+      ]
+    )
+  }
+
   const handleDeleteSpecies = (s: SpeciesResponse) => {
     Alert.alert(
       'Delete Species',
@@ -396,17 +422,22 @@ export function AdminScreen() {
 
     setActionLoading(true)
     try {
-      const payload = {
-        commonName: speciesDraft.commonName.trim(),
-        scientificName: speciesDraft.scientificName.trim(),
-        description: speciesDraft.description.trim() || undefined,
-      }
-
       if (editingSpeciesId) {
-        await api.updateSpecies(editingSpeciesId, payload)
+        await api.updateSpecies(editingSpeciesId, {
+          commonName: speciesDraft.commonName.trim(),
+          scientificName: speciesDraft.scientificName.trim(),
+          description: speciesDraft.description.trim() || undefined,
+        })
         flash('Species updated', 'success')
       } else {
-        await api.createSpecies(payload)
+        await api.createSpecies({
+          commonName: speciesDraft.commonName.trim(),
+          scientificName: speciesDraft.scientificName.trim(),
+          description: speciesDraft.description.trim() || '',
+          keyFeatures: [],
+          images: [],
+          distributionZones: [],
+        })
         flash('Species created', 'success')
       }
 
@@ -443,8 +474,8 @@ export function AdminScreen() {
 
     setActionLoading(true)
     try {
-      const payload = {
-        actionType: ruleDraft.actionType.trim(),
+      const createPayload = {
+        actionType: ruleDraft.actionType.trim() as any,
         name: ruleDraft.name.trim(),
         description: ruleDraft.description.trim() || null,
         xpReward: ruleDraft.xpReward,
@@ -452,10 +483,10 @@ export function AdminScreen() {
       }
 
       if (editingRuleId) {
-        await api.updateGamificationRule(editingRuleId, payload)
+        await api.updateGamificationRule(editingRuleId, createPayload)
         flash('XP rule updated', 'success')
       } else {
-        await api.createGamificationRule(payload)
+        await api.createGamificationRule(createPayload)
         flash('XP rule created', 'success')
       }
 
@@ -602,9 +633,9 @@ export function AdminScreen() {
         reason: recalcReason.trim() || undefined,
       })
       setRecalcResults(result)
-      if (result?.jobId) {
+      if (result?.id) {
         setRecalcJobStatus(result)
-        setRecalcJobIdInput(result.jobId)
+        setRecalcJobIdInput(result.id)
       }
       flash('Recalculation completed', 'success')
       loadTabData('engagement')
@@ -665,7 +696,7 @@ export function AdminScreen() {
           setActionLoading(true)
           try {
             const result = await api.launchCampaign(campaign.id)
-            flash(`Campaign launched (${result?.sent ?? 0} sent)`, 'success')
+            flash('Campaign launched successfully', 'success')
             loadTabData('engagement')
           } catch (err) {
             flash(err instanceof Error ? err.message : 'Failed to launch campaign', 'error')
@@ -923,6 +954,17 @@ export function AdminScreen() {
                   <Text style={styles.statusText}>{item.used ? 'USED' : 'PENDING'}</Text>
                 </View>
               </View>
+              {!item.used && (
+                <View style={styles.cardActions}>
+                  <TouchableOpacity
+                    style={[styles.actionBtn, styles.inviteResendBtn]}
+                    onPress={() => handleResendInvite(item.email, item.role)}
+                    disabled={actionLoading}
+                  >
+                    <Text style={styles.actionBtnText}>Resend</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           )}
           contentContainerStyle={styles.listContent}
@@ -1179,11 +1221,11 @@ export function AdminScreen() {
       ) : (
         <View style={styles.card}>
           <Text style={styles.formTitle}>Engagement Metrics</Text>
-          <Text style={styles.description}>Daily active users: {metrics.dailyActiveUsers ?? 'N/A'}</Text>
-          <Text style={styles.description}>Weekly active users: {metrics.weeklyActiveUsers ?? 'N/A'}</Text>
-          <Text style={styles.description}>Monthly active users: {metrics.monthlyActiveUsers ?? 'N/A'}</Text>
-          <Text style={styles.description}>Avg XP per user: {metrics.avgXPPerUser ?? 'N/A'}</Text>
-          <Text style={styles.description}>Active streak users: {metrics.activeStreakUsers ?? 'N/A'}</Text>
+          <Text style={styles.description}>Daily active users: {metrics.activeUsers1d ?? 'N/A'}</Text>
+          <Text style={styles.description}>Weekly active users: {metrics.activeUsers7d ?? 'N/A'}</Text>
+          <Text style={styles.description}>Monthly active users: {metrics.activeUsers30d ?? 'N/A'}</Text>
+          <Text style={styles.description}>Avg XP per user: {metrics.avgXP ?? 'N/A'}</Text>
+          <Text style={styles.description}>Active streak users: {metrics.usersWithStreak ?? 'N/A'}</Text>
         </View>
       )}
     </ScrollView>
@@ -1372,10 +1414,10 @@ export function AdminScreen() {
       {auditStats ? (
         <View style={styles.card}>
           <Text style={styles.formTitle}>Audit Stats</Text>
-          <Text style={styles.description}>Total: {auditStats.totalEntries ?? 0}</Text>
-          <Text style={styles.description}>XP adjustments: {auditStats.xpAdjustments ?? 0}</Text>
-          <Text style={styles.description}>Campaign launches: {auditStats.campaignLaunches ?? 0}</Text>
-          <Text style={styles.description}>Abuse resolutions: {auditStats.abuseResolutions ?? 0}</Text>
+          <Text style={styles.description}>Total: {auditStats.total ?? 0}</Text>
+          <Text style={styles.description}>XP adjustments: {auditStats.byAction['XP_ADJUSTMENT'] ?? 0}</Text>
+          <Text style={styles.description}>Campaign launches: {auditStats.byAction['CAMPAIGN_LAUNCH'] ?? 0}</Text>
+          <Text style={styles.description}>Abuse resolutions: {auditStats.byAction['ABUSE_RESOLVED'] ?? 0}</Text>
         </View>
       ) : null}
 
@@ -1384,7 +1426,7 @@ export function AdminScreen() {
           <Text style={styles.userName}>{log.action || 'Unknown Action'}</Text>
           <Text style={styles.userEmail}>{log.actorType || 'SYSTEM'} • {log.actorId || 'N/A'}</Text>
           <Text style={styles.description}>{log.resourceType || '-'} {log.resourceId ? `(${log.resourceId})` : ''}</Text>
-          <Text style={styles.description}>{log.reason || log.details || 'No details'}</Text>
+          <Text style={styles.description}>{log.reason || 'No details'}</Text>
           <Text style={styles.userEmail}>{log.createdAt ? new Date(log.createdAt).toLocaleString('en-MY') : 'N/A'}</Text>
         </View>
       ))}
@@ -1398,10 +1440,10 @@ export function AdminScreen() {
       ) : (
         abuseSignals.map((signal) => (
           <View key={signal.id} style={styles.card}>
-            <Text style={styles.userName}>{signal.signalType || 'Signal'}</Text>
-            <Text style={styles.userEmail}>User: {signal.userId || signal.user?.id || 'N/A'}</Text>
-            <Text style={styles.description}>Risk: {signal.riskScore ?? signal.compositeScore ?? 0}</Text>
-            <Text style={styles.description}>{signal.details || 'No details'}</Text>
+            <Text style={styles.userName}>{signal.type || 'Signal'}</Text>
+            <Text style={styles.userEmail}>User: {signal.userId || 'N/A'}</Text>
+            <Text style={styles.description}>Risk: {signal.riskScore ?? 0}</Text>
+            <Text style={styles.description}>{signal.summary || 'No details'}</Text>
             {!signal.resolved ? (
               <View style={styles.cardActions}>
                 <TouchableOpacity style={[styles.actionBtn, styles.restoreBtn]} onPress={() => handleResolveAbuseSignal(signal)}>
@@ -1585,12 +1627,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   userName: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     fontWeight: '700',
     color: COLORS.text,
   },
   userEmail: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
@@ -1609,7 +1651,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#dcfce7',
   },
   roleText: {
-    fontSize: 10,
+    fontSize: FONT['2xs'],
     fontWeight: '700',
     color: COLORS.text,
     textTransform: 'uppercase',
@@ -1627,7 +1669,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   actionBtnText: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     fontWeight: '600',
   },
   roleChangeBtn: {
@@ -1650,6 +1692,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#dcfce7',
     borderColor: '#bbf7d0',
   },
+  inviteResendBtn: {
+    backgroundColor: '#dbeafe',
+    borderColor: '#bfdbfe',
+  },
   editBtn: {
     backgroundColor: '#e0f2fe',
     borderColor: '#bae6fd',
@@ -1661,22 +1707,22 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   deletedText: {
-    fontSize: 10,
+    fontSize: FONT['2xs'],
     fontWeight: '700',
     color: '#991b1b',
   },
   speciesName: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     fontWeight: '700',
     color: COLORS.primary,
   },
   speciesScientific: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: COLORS.textSecondary,
     fontStyle: 'italic',
   },
   description: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: COLORS.textSecondary,
     marginTop: 4,
   },
@@ -1699,7 +1745,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   formTitle: {
-    fontSize: 15,
+    fontSize: FONT.md,
     fontWeight: '700',
     color: COLORS.text,
   },
@@ -1718,12 +1764,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   fileName: {
-    fontSize: 14,
+    fontSize: FONT.base,
     fontWeight: '600',
     color: COLORS.text,
   },
   fileMeta: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
@@ -1736,7 +1782,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: 8,
     padding: 12,
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.text,
     backgroundColor: COLORS.surface,
   },
@@ -1758,7 +1804,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#e0f2fe',
   },
   roleOptionText: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
@@ -1766,12 +1812,12 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   inviteEmail: {
-    fontSize: 14,
+    fontSize: FONT.base,
     fontWeight: '600',
     color: COLORS.text,
   },
   inviteMeta: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
@@ -1793,7 +1839,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f1f5f9',
   },
   statusText: {
-    fontSize: 10,
+    fontSize: FONT['2xs'],
     fontWeight: '700',
     color: COLORS.textSecondary,
   },
@@ -1817,7 +1863,7 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.primary,
   },
   tabText: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
@@ -1842,7 +1888,7 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.primary,
   },
   subTabText: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
@@ -1863,7 +1909,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#bbf7d0',
   },
   alertText: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: '#991b1b',
     textAlign: 'center',
   },

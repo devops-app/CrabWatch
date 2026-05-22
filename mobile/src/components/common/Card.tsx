@@ -1,11 +1,12 @@
 import React from 'react'
 import { View, StyleSheet, type ViewProps, TouchableOpacity } from 'react-native'
-import { COLORS } from '../../utils/constants'
+import { COLORS, ELEVATION } from '../../utils/constants'
 
 interface CardProps extends ViewProps {
   onPress?: () => void
   padding?: number
-  elevation?: number
+  elevation?: 1 | 2 | 3 | 4 | 5
+  accessibilityLabel?: string
 }
 
 export function Card({
@@ -14,15 +15,19 @@ export function Card({
   elevation = 2,
   style,
   children,
+  accessibilityLabel,
   ...props
 }: CardProps) {
   const content = (
     <View
       style={[
         styles.card,
-        { padding, elevation },
+        ELEVATION[elevation],
+        { padding },
         style,
       ]}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={accessibilityLabel}
       {...props}
     >
       {children}
@@ -35,6 +40,9 @@ export function Card({
         onPress={onPress}
         activeOpacity={0.7}
         style={styles.wrapper}
+        onAccessibilityEscape={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
       >
         {content}
       </TouchableOpacity>
@@ -53,9 +61,5 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: COLORS.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
   },
 })

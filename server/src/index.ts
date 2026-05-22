@@ -29,6 +29,12 @@ import gamificationRoutes from './routes/gamificationRoutes'
 import engagementRoutes from './routes/engagementRoutes'
 import adminEngagementRoutes from './routes/adminEngagementRoutes'
 import prisma from './config/database'
+import { createContainer } from './services/container'
+import admin from './config/firebase'
+import { getBlobService } from './services/upload'
+
+// Initialize DI container before any services are used
+createContainer(prisma, config, admin, getBlobService)
 
 const app = express()
 

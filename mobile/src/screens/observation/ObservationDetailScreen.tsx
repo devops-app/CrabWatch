@@ -2,12 +2,12 @@ import React, { useState } from 'react'
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   Modal,
 } from 'react-native'
+import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
@@ -15,6 +15,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Card } from '../../components/common/Card'
 import { Button } from '../../components/common/Button'
 import { COLORS, STATUS_COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 import {
   formatDate,
   formatCoordinates,
@@ -179,13 +180,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   speciesName: {
-    fontSize: 22,
+    fontSize: FONT['2xl'],
     fontWeight: '700',
     color: COLORS.text,
     fontStyle: 'italic',
   },
   commonName: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     color: COLORS.textSecondary,
     marginTop: 2,
     marginBottom: 8,
@@ -202,12 +203,12 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   statusText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     fontWeight: '600',
     color: COLORS.text,
   },
   cardTitle: {
-    fontSize: 15,
+    fontSize: FONT.base,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 10,
@@ -218,11 +219,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   rowLabel: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
   },
   rowValue: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.text,
     fontWeight: '500',
   },
@@ -237,7 +238,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.border,
   },
   notesText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.text,
     lineHeight: 20,
   },
@@ -248,12 +249,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   rejectionLabel: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     fontWeight: '600',
     color: COLORS.error,
   },
   rejectionText: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: COLORS.error,
     marginTop: 2,
   },

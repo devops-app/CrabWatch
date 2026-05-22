@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, Text, StyleSheet, Alert } from 'react-native'
 import { COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 
 interface PickerOption {
   label: string
@@ -79,7 +80,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   label: {
-    fontSize: 14,
+    fontSize: FONT.base,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 6,
@@ -100,15 +101,15 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.errorLight,
   },
   pickerText: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     color: COLORS.text,
   },
   chevron: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: COLORS.textSecondary,
   },
   error: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: COLORS.error,
     marginTop: 4,
   },

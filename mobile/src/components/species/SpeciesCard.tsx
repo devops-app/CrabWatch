@@ -1,7 +1,9 @@
 import React from 'react'
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { Image } from 'expo-image'
 import type { SpeciesResponse } from '@crabwatch/shared'
 import { COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 
 interface SpeciesCardProps {
   species: SpeciesResponse
@@ -58,7 +60,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   placeholderText: {
-    fontSize: 32,
+    fontSize: FONT['6xl'],
   },
   info: {
     flex: 1,
@@ -66,13 +68,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   scientificName: {
-    fontSize: 15,
+    fontSize: FONT.md,
     fontWeight: '600',
     color: COLORS.text,
     fontStyle: 'italic',
   },
   commonName: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: COLORS.textSecondary,
     marginTop: 3,
   },

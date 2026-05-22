@@ -4,15 +4,16 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
-  Image,
   ScrollView,
   TouchableOpacity,
 } from 'react-native'
+import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { analysisService, AnalysisProgress } from '../../services/analysisService'
 import { COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 import { Button } from '../../components/common/Button'
 import { PhotoView } from '@crabwatch/shared'
 
@@ -299,12 +300,12 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: FONT.xl,
     fontWeight: '700',
     color: COLORS.text,
   },
   elapsedTime: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: COLORS.textSecondary,
     marginTop: 2,
     flexDirection: 'row',
@@ -365,7 +366,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.errorLight,
   },
   stepLabel: {
-    fontSize: 15,
+    fontSize: FONT.base,
     color: COLORS.textLight,
   },
   stepLabelDone: {
@@ -396,7 +397,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.error,
   },
   progressText: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: COLORS.textSecondary,
     textAlign: 'right',
   },
@@ -408,14 +409,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorTitle: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     fontWeight: '600',
     color: COLORS.error,
     marginTop: 8,
     marginBottom: 4,
   },
   errorMessage: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
     textAlign: 'center',
     marginBottom: 16,

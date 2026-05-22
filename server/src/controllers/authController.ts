@@ -4,227 +4,219 @@ import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import { Resend } from 'resend'
 import admin, { isFirebaseEnabled } from '../config/firebase'
-import prisma from '../config/database'
-import { config } from '../config'
+import { getPrisma, getConfig } from '../services/container'
 import { AuthRequest } from '../middleware/auth'
 import { setAuthCookie } from '../middleware/cookieAuth'
 import { requestPasswordResetSchema, resetPasswordSchema } from '../utils/schemas'
+import { asyncHandler, UnauthorizedError, ValidationError } from '../utils/errors'
 
-const resend = config.resend.apiKey ? new Resend(config.resend.apiKey) : null
+let _resend: Resend | null | undefined
+
+function getResend(): Resend | null {
+  if (_resend === undefined) {
+    const c = getConfig()
+    _resend = c.resend.apiKey ? new Resend(c.resend.apiKey) : null
+  }
+  return _resend
+}
 
 function generateJwt(user: { id: string; firebaseUid?: string | null; email: string; name: string | null }) {
+  const c = getConfig()
   return jwt.sign(
     { uid: user.firebaseUid || user.id, email: user.email, name: user.name },
-    config.jwtSecret,
+    c.jwtSecret,
     { expiresIn: '7d' }
   )
 }
 
-export async function login(req: AuthRequest, res: Response): Promise<void> {
-  try {
-    const { email, password } = req.body
+export const login = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { email, password } = req.body
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-    })
+  const db = getPrisma()
+  const user = await db.user.findUnique({
+    where: { email },
+  })
 
-    if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
-      res.status(401).json({ success: false, error: 'Invalid credentials' })
-      return
-    }
-
-    let token: string
-
-    if (isFirebaseEnabled) {
-      let firebaseUid = user.firebaseUid
-
-      if (!firebaseUid) {
-        try {
-          const newUser = await admin.auth().createUser({
-            email,
-            displayName: user.name,
-          })
-          firebaseUid = newUser.uid
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { firebaseUid },
-          })
-        } catch (createError: unknown) {
-          const err = createError instanceof Error ? createError : new Error(String(createError))
-          console.error('Firebase createUser error:', err.message)
-        }
-      }
-
-      token = generateJwt(user)
-    } else {
-      token = generateJwt(user)
-    }
-
-    setAuthCookie(res, token)
-
-    res.json({
-      success: true,
-      data: {
-        token,
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          phoneCode: user.phoneCode,
-          phoneNumber: user.phoneNumber,
-          addressLine1: user.addressLine1,
-          addressLine2: user.addressLine2,
-          addressLine3: user.addressLine3,
-          state: user.state,
-          postcode: user.postcode,
-          country: user.country,
-          role: user.role.toLowerCase(),
-        },
-      },
-    })
-  } catch (error: unknown) {
-    console.error('Login error:', error)
-    res.status(500).json({ success: false, error: 'Login failed' })
+  if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
+    throw new UnauthorizedError('Invalid credentials')
   }
-}
 
-export async function logout(_req: AuthRequest, res: Response): Promise<void> {
+  let token: string
+
+  if (isFirebaseEnabled) {
+    let firebaseUid = user.firebaseUid
+
+    if (!firebaseUid) {
+      try {
+        const newUser = await admin.auth().createUser({
+          email,
+          displayName: user.name,
+        })
+        firebaseUid = newUser.uid
+        await db.user.update({
+          where: { id: user.id },
+          data: { firebaseUid },
+        })
+      } catch (createError: unknown) {
+        const err = createError instanceof Error ? createError : new Error(String(createError))
+        console.error('Firebase createUser error:', err.message)
+      }
+    }
+
+    token = generateJwt(user)
+  } else {
+    token = generateJwt(user)
+  }
+
+  setAuthCookie(res, token)
+
+  res.json({
+    success: true,
+    data: {
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phoneCode: user.phoneCode,
+        phoneNumber: user.phoneNumber,
+        addressLine1: user.addressLine1,
+        addressLine2: user.addressLine2,
+        addressLine3: user.addressLine3,
+        state: user.state,
+        postcode: user.postcode,
+        country: user.country,
+        role: user.role.toLowerCase(),
+      },
+    },
+  })
+})
+
+export const logout = asyncHandler(async (_req: AuthRequest, res: Response) => {
   res.clearCookie('auth_token', { path: '/' })
   res.json({ success: true, data: { loggedOut: true } })
-}
+})
 
-export async function verifyToken(req: AuthRequest, res: Response): Promise<void> {
-  try {
-    const { token } = req.body
+export const verifyToken = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { token } = req.body
 
-    let decoded: { uid: string; email?: string; name?: string }
+  let decoded: { uid: string; email?: string; name?: string }
 
-    if (isFirebaseEnabled) {
-      try {
-        decoded = await admin.auth().verifyIdToken(token)
-      } catch {
-        decoded = jwt.verify(token, config.jwtSecret) as { uid: string; email?: string; name?: string }
-      }
-    } else {
-      decoded = jwt.verify(token, config.jwtSecret) as { uid: string; email?: string; name?: string }
+  if (isFirebaseEnabled) {
+    try {
+      decoded = await admin.auth().verifyIdToken(token)
+    } catch {
+      decoded = jwt.verify(token, getConfig().jwtSecret) as { uid: string; email?: string; name?: string }
     }
-
-    res.json({
-      success: true,
-      data: {
-        uid: decoded.uid,
-        email: decoded.email,
-        name: decoded.name,
-      },
-    })
-  } catch (error: unknown) {
-    console.error('Verify token error:', error)
-    res.status(401).json({ success: false, error: 'Invalid token' })
+  } else {
+    decoded = jwt.verify(token, getConfig().jwtSecret) as { uid: string; email?: string; name?: string }
   }
-}
 
-export async function requestPasswordReset(req: AuthRequest, res: Response): Promise<void> {
-  try {
-    const parsed = requestPasswordResetSchema.safeParse(req.body)
-    if (!parsed.success) {
-      res.status(400).json({ success: false, error: parsed.error.flatten().fieldErrors })
-      return
-    }
+  res.json({
+    success: true,
+    data: {
+      uid: decoded.uid,
+      email: decoded.email,
+      name: decoded.name,
+    },
+  })
+})
 
-    const { email } = parsed.data
+export const requestPasswordReset = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const parsed = requestPasswordResetSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: parsed.error.flatten().fieldErrors })
+    return
+  }
 
-    const user = await prisma.user.findUnique({ where: { email } })
+  const { email } = parsed.data
+  const db = getPrisma()
 
-    if (!user || user.deletedAt) {
-      res.json({ success: true, data: { message: 'If the email exists, a reset link has been sent' } })
-      return
-    }
+  const user = await db.user.findUnique({ where: { email } })
 
-    await prisma.passwordReset.deleteMany({ where: { userId: user.id, used: false } })
-
-    const token = crypto.randomBytes(32).toString('hex')
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
-
-    await prisma.passwordReset.create({
-      data: {
-        userId: user.id,
-        token,
-        expiresAt,
-      },
-    })
-
-    const resetLink = `${config.frontendUrl}/auth/reset-password?token=${token}`
-
-    if (resend) {
-      try {
-        await resend.emails.send({
-          from: 'CrabWatch <noreply@crabwatch.dsigncodehub.com>',
-          to: email,
-          subject: 'Reset Your CrabWatch Password',
-          html: `
-            <h2>Password Reset Request</h2>
-            <p>You requested to reset your CrabWatch password. Click the link below to set a new password:</p>
-            <a href="${resetLink}">${resetLink}</a>
-            <p>This link will expire in 1 hour.</p>
-            <p>If you did not request this, you can safely ignore this email.</p>
-          `,
-        })
-      } catch (emailError) {
-        console.error('Failed to send reset email:', emailError)
-      }
-    }
-
+  if (!user || user.deletedAt) {
     res.json({ success: true, data: { message: 'If the email exists, a reset link has been sent' } })
-  } catch (error: unknown) {
-    console.error('Request password reset error:', error)
-    res.status(500).json({ success: false, error: 'Failed to process password reset request' })
+    return
   }
-}
 
-export async function resetPassword(req: AuthRequest, res: Response): Promise<void> {
-  try {
-    const parsed = resetPasswordSchema.safeParse(req.body)
-    if (!parsed.success) {
-      res.status(400).json({ success: false, error: parsed.error.flatten().fieldErrors })
-      return
+  await db.passwordReset.deleteMany({ where: { userId: user.id, used: false } })
+
+  const token = crypto.randomBytes(32).toString('hex')
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
+
+  await db.passwordReset.create({
+    data: {
+      userId: user.id,
+      token,
+      expiresAt,
+    },
+  })
+
+  const c2 = getConfig()
+  const resetLink = `${c2.frontendUrl}/auth/reset-password?token=${token}`
+
+  const r = getResend()
+  if (r) {
+    try {
+      await r.emails.send({
+        from: 'CrabWatch <noreply@crabwatch.dsigncodehub.com>',
+        to: email,
+        subject: 'Reset Your CrabWatch Password',
+        html: `
+          <h2>Password Reset Request</h2>
+          <p>You requested to reset your CrabWatch password. Click the link below to set a new password:</p>
+          <a href="${resetLink}">${resetLink}</a>
+          <p>This link will expire in 1 hour.</p>
+          <p>If you did not request this, you can safely ignore this email.</p>
+        `,
+      })
+    } catch (emailError) {
+      console.error('Failed to send reset email:', emailError)
     }
+  }
 
-    const { token, password } = parsed.data
+  res.json({ success: true, data: { message: 'If the email exists, a reset link has been sent' } })
+})
 
-    const reset = await prisma.passwordReset.findUnique({ where: { token } })
+export const resetPassword = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const parsed = resetPasswordSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: parsed.error.flatten().fieldErrors })
+    return
+  }
 
-    if (!reset || reset.used || reset.expiresAt < new Date()) {
-      res.status(400).json({ success: false, error: 'Invalid or expired reset token' })
-      return
-    }
+  const { token, password } = parsed.data
+  const db = getPrisma()
 
-    const hashedPassword = await bcrypt.hash(password, 12)
+  const reset = await db.passwordReset.findUnique({ where: { token } })
 
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: reset.userId },
-        data: { password: hashedPassword },
-      }),
-      prisma.passwordReset.update({
-        where: { id: reset.id },
-        data: { used: true },
-      }),
-    ])
+  if (!reset || reset.used || reset.expiresAt < new Date()) {
+    throw new ValidationError('Invalid or expired reset token')
+  }
 
-    if (isFirebaseEnabled) {
-      try {
-        const user = await prisma.user.findUnique({ where: { id: reset.userId } })
-        if (user?.firebaseUid) {
-          await admin.auth().updateUser(user.firebaseUid, { password })
-        }
-      } catch (firebaseError) {
-        console.error('Firebase password update error:', firebaseError)
+  const hashedPassword = await bcrypt.hash(password, 12)
+
+  await db.$transaction([
+    db.user.update({
+      where: { id: reset.userId },
+      data: { password: hashedPassword },
+    }),
+    db.passwordReset.update({
+      where: { id: reset.id },
+      data: { used: true },
+    }),
+  ])
+
+  if (isFirebaseEnabled) {
+    try {
+      const user = await db.user.findUnique({ where: { id: reset.userId } })
+      if (user?.firebaseUid) {
+        await admin.auth().updateUser(user.firebaseUid, { password })
       }
+    } catch (firebaseError) {
+      console.error('Firebase password update error:', firebaseError)
     }
-
-    res.json({ success: true, data: { message: 'Password has been reset successfully' } })
-  } catch (error: unknown) {
-    console.error('Reset password error:', error)
-    res.status(500).json({ success: false, error: 'Failed to reset password' })
   }
-}
+
+  res.json({ success: true, data: { message: 'Password has been reset successfully' } })
+})

@@ -9,6 +9,7 @@ import {
   type StyleProp,
 } from 'react-native'
 import { COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 
 interface InputProps extends Omit<TextInputProps, 'ref'> {
   label?: string
@@ -58,7 +59,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   label: {
-    fontSize: 14,
+    fontSize: FONT.base,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 6,
@@ -69,7 +70,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    fontSize: 16,
+    fontSize: FONT.lg,
     color: COLORS.text,
     backgroundColor: COLORS.surface,
   },
@@ -78,7 +79,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.errorLight,
   },
   error: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: COLORS.error,
     marginTop: 4,
   },

@@ -1,4 +1,13 @@
-import prisma from '../config/database'
+import { PrismaClient } from '@prisma/client'
+import { getContainer } from './container'
+
+let _prisma: PrismaClient
+function getPrisma(): PrismaClient {
+  if (!_prisma) {
+    _prisma = getContainer().prisma
+  }
+  return _prisma
+}
 
 // ==================== AI INSIGHTS SERVICE ====================
 
@@ -15,7 +24,7 @@ export interface Insight {
 
 export async function generateInsights(userId: string): Promise<Insight[]> {
   const insights: Insight[] = []
-  const user = await prisma.user.findUnique({
+  const user = await getPrisma().user.findUnique({
     where: { id: userId },
     select: {
       id: true,
@@ -71,7 +80,7 @@ export async function generateInsights(userId: string): Promise<Insight[]> {
   }
 
  // Species diversity suggestion
-  const speciesGroups = await prisma.observation.groupBy({
+  const speciesGroups = await getPrisma().observation.groupBy({
     by: ['speciesId'],
     where: { userId, status: 'APPROVED' },
   })
@@ -92,10 +101,10 @@ export async function generateInsights(userId: string): Promise<Insight[]> {
   const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
   const [lastWeekCount, prevWeekCount] = await Promise.all([
-    prisma.observation.count({
+    getPrisma().observation.count({
       where: { userId, createdAt: { gte: lastWeek } },
     }),
-    prisma.observation.count({
+    getPrisma().observation.count({
       where: { userId, createdAt: { gte: twoWeeksAgo, lt: lastWeek } },
     }),
   ])

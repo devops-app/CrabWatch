@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { View, Text, StyleSheet, Dimensions, Animated } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
 const FRAME_WIDTH = SCREEN_WIDTH * 0.72
@@ -252,12 +253,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   topBarTitle: {
-    fontSize: 18,
+    fontSize: FONT.xl,
     fontWeight: '700',
     color: '#ffffff',
   },
   topBarHint: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: 'rgba(255, 255, 255, 0.7)',
   },
   
@@ -398,7 +399,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   warningText: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: '#ffffff',
     fontWeight: '500',
   },
@@ -415,7 +416,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   readinessText: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: '#ffffff',
     fontWeight: '600',
   },

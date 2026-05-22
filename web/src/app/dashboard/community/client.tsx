@@ -17,9 +17,9 @@ interface Insight {
 }
 
 interface CommunityClientProps {
-  initialInsights: InsightDto[]
-  initialContributors: ContributorDto[]
-  initialStats: CommunityStatsDto | null
+  initialInsights?: InsightDto[] | null
+  initialContributors?: ContributorDto[] | null
+  initialStats?: CommunityStatsDto | null
 }
 
 export function CommunityClient({
@@ -43,23 +43,25 @@ export function CommunityClient({
   const [contributors, setContributors] = useState<ContributorDto[]>(
     Array.isArray(initialContributors) ? initialContributors : []
   )
-  const [communityStats, setCommunityStats] = useState<CommunityStatsDto | null>(initialStats)
+  const [communityStats, setCommunityStats] = useState<CommunityStatsDto | null>(initialStats ?? null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
+    const controller = new AbortController()
     if (activeTab === 'insights') {
-      refreshInsights()
+      refreshInsights(controller.signal)
     } else if (activeTab === 'contributors') {
-      refreshContributors()
+      refreshContributors(controller.signal)
     } else {
-      refreshStats()
+      refreshStats(controller.signal)
     }
+    return () => controller.abort()
   }, [activeTab])
 
-  const refreshInsights = async () => {
+  const refreshInsights = async (signal?: AbortSignal) => {
     setLoading(true)
     try {
-      const data = await api.getInsights() as InsightDto[]
+      const data = await api.getInsights(signal) as InsightDto[]
       setInsights(
         Array.isArray(data)
           ? data.map((d: InsightDto) => ({
@@ -73,30 +75,33 @@ export function CommunityClient({
           : []
       )
     } catch (error) {
+      if (signal?.aborted) return
       logger.error('Failed to load insights', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const refreshContributors = async () => {
+  const refreshContributors = async (signal?: AbortSignal) => {
     setLoading(true)
     try {
-      const data = await api.getTopContributors() as ContributorDto[]
+      const data = await api.getTopContributors(signal) as ContributorDto[]
       setContributors(Array.isArray(data) ? data : [])
     } catch (error) {
+      if (signal?.aborted) return
       logger.error('Failed to load contributors', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const refreshStats = async () => {
+  const refreshStats = async (signal?: AbortSignal) => {
     setLoading(true)
     try {
-      const data = await api.getCommunityStats() as CommunityStatsDto
+      const data = await api.getCommunityStats(signal) as CommunityStatsDto
       setCommunityStats(data)
     } catch (error) {
+      if (signal?.aborted) return
       logger.error('Failed to load community stats', error)
     } finally {
       setLoading(false)

@@ -1,8 +1,10 @@
 import React from 'react'
-import { View, Image, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native'
+import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
 import { photoService } from '../../services/photoService'
 import { COLORS, MAX_PHOTOS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 
 interface PhotoPickerProps {
   photos: string[]
@@ -78,7 +80,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontSize: 14,
+    fontSize: FONT.base,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 8,

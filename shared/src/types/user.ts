@@ -167,3 +167,10 @@ export interface RecalculationUserResult {
   correctXP: number
   diff: number
 }
+
+export interface DeleteAccountResponse {
+  message: string
+  deletedAt: string
+  retentionDays: number
+  expiresAt: string
+}

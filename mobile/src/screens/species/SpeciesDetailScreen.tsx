@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   ScrollView,
   FlatList,
 } from 'react-native'
+import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -16,6 +16,7 @@ import { Card } from '../../components/common/Card'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { Button } from '../../components/common/Button'
 import { COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 import type { SpeciesResponse } from '@crabwatch/shared'
 import type { RootStackParamList } from '../../navigation/types'
 
@@ -142,13 +143,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scientificName: {
-    fontSize: 24,
+    fontSize: FONT['4xl'],
     fontWeight: '700',
     color: COLORS.text,
     fontStyle: 'italic',
   },
   commonName: {
-    fontSize: 18,
+    fontSize: FONT.xl,
     color: COLORS.textSecondary,
     marginTop: 4,
     marginBottom: 16,
@@ -164,13 +165,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.border,
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 10,
   },
   description: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.text,
     lineHeight: 21,
   },
@@ -184,12 +185,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   featureTrait: {
-    fontSize: 14,
+    fontSize: FONT.base,
     fontWeight: '600',
     color: COLORS.text,
   },
   featureValue: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: COLORS.textSecondary,
     marginTop: 1,
   },
@@ -200,7 +201,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   zoneName: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.text,
   },
   backBtn: {

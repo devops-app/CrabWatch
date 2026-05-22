@@ -168,6 +168,16 @@ export interface NotificationPreferenceDto {
   timezone: string | null
 }
 
+export interface NotificationPreferenceUpdate {
+  channel: NotificationChannel
+  category: string
+  enabled: boolean
+}
+
+export interface NotificationPreferenceUpdateRequest {
+  updates: NotificationPreferenceUpdate[]
+}
+
 // Seasons
 export interface SeasonDto {
   id: string
@@ -228,6 +238,7 @@ export interface OnboardingStepStatusDto {
   step: string
   key: string
   title: string
+  description: string
   xpReward: number
   completed: boolean
   completedAt: string | null
@@ -240,6 +251,7 @@ export interface ActiveMissionDto {
   key: string
   title: string
   name: string
+  description: string
   xpReward: number
   claimed: boolean
   completed: boolean

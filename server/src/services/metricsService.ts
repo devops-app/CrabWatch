@@ -1,4 +1,13 @@
-import prisma from '../config/database'
+import { PrismaClient } from '@prisma/client'
+import { getContainer } from './container'
+
+let _prisma: PrismaClient
+function getPrisma(): PrismaClient {
+  if (!_prisma) {
+    _prisma = getContainer().prisma
+  }
+  return _prisma
+}
 
 export interface EngagementMetrics {
   // User engagement
@@ -60,12 +69,12 @@ export async function getEngagementMetrics(): Promise<EngagementMetrics> {
 
   // User metrics
   const [totalUsers, activeUsers1d, activeUsers7d, activeUsers30d, newUsers7d, newUsers30d] = await Promise.all([
-    prisma.user.count({ where: { deletedAt: null, blockedAt: null } }),
-    prisma.user.count({ where: { deletedAt: null, blockedAt: null, lastActiveDate: { gte: oneDayAgo } } }),
-    prisma.user.count({ where: { deletedAt: null, blockedAt: null, lastActiveDate: { gte: sevenDaysAgo } } }),
-    prisma.user.count({ where: { deletedAt: null, blockedAt: null, lastActiveDate: { gte: thirtyDaysAgo } } }),
-    prisma.user.count({ where: { deletedAt: null, createdAt: { gte: sevenDaysAgo } } }),
-    prisma.user.count({ where: { deletedAt: null, createdAt: { gte: thirtyDaysAgo } } }),
+    getPrisma().user.count({ where: { deletedAt: null, blockedAt: null } }),
+    getPrisma().user.count({ where: { deletedAt: null, blockedAt: null, lastActiveDate: { gte: oneDayAgo } } }),
+    getPrisma().user.count({ where: { deletedAt: null, blockedAt: null, lastActiveDate: { gte: sevenDaysAgo } } }),
+    getPrisma().user.count({ where: { deletedAt: null, blockedAt: null, lastActiveDate: { gte: thirtyDaysAgo } } }),
+    getPrisma().user.count({ where: { deletedAt: null, createdAt: { gte: sevenDaysAgo } } }),
+    getPrisma().user.count({ where: { deletedAt: null, createdAt: { gte: thirtyDaysAgo } } }),
   ])
 
   const dau = activeUsers1d
@@ -75,15 +84,15 @@ export async function getEngagementMetrics(): Promise<EngagementMetrics> {
 
   // Observation metrics
   const [totalObservations, observations7d, observations30d, pendingApproval, totalApproved] = await Promise.all([
-    prisma.observation.count(),
-    prisma.observation.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
-    prisma.observation.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
-    prisma.observation.count({ where: { status: 'PENDING' } }),
-    prisma.observation.count({ where: { status: 'APPROVED' } }),
+    getPrisma().observation.count(),
+    getPrisma().observation.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
+    getPrisma().observation.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
+    getPrisma().observation.count({ where: { status: 'PENDING' } }),
+    getPrisma().observation.count({ where: { status: 'APPROVED' } }),
   ])
 
   // XP distribution by level
-  const xpDistribution = await prisma.user.groupBy({
+  const xpDistribution = await getPrisma().user.groupBy({
     by: ['level', 'title'],
     where: { deletedAt: null, blockedAt: null },
     _count: { id: true },
@@ -91,7 +100,7 @@ export async function getEngagementMetrics(): Promise<EngagementMetrics> {
   })
 
   // XP stats
-  const xpStats = await prisma.$queryRaw<Array<{ avg: number; median: number }>>`
+  const xpStats = await getPrisma().$queryRaw<Array<{ avg: number; median: number }>>`
     SELECT
       AVG("totalXP") as avg,
       PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY "totalXP") as median
@@ -100,7 +109,7 @@ export async function getEngagementMetrics(): Promise<EngagementMetrics> {
   `
 
   // Streak metrics
-  const streakStats = await prisma.$queryRaw<Array<{ avg: number; max: number; usersWithStreak: number }>>`
+  const streakStats = await getPrisma().$queryRaw<Array<{ avg: number; max: number; usersWithStreak: number }>>`
     SELECT
       AVG("currentStreak") as avg,
       MAX("currentStreak") as max,
@@ -110,7 +119,7 @@ export async function getEngagementMetrics(): Promise<EngagementMetrics> {
   `
 
   // Streak distribution
-  const streakDist = await prisma.$queryRaw<Array<{ bucket: string; count: number }>>`
+  const streakDist = await getPrisma().$queryRaw<Array<{ bucket: string; count: number }>>`
     SELECT
       bucket,
       COUNT(*) as count
@@ -141,22 +150,22 @@ export async function getEngagementMetrics(): Promise<EngagementMetrics> {
 
   // Mission metrics
   const [missionsCompleted7d, missionsCompleted30d, totalActiveMissions] = await Promise.all([
-    prisma.userMission.count({ where: { completedAt: { gte: sevenDaysAgo } } }),
-    prisma.userMission.count({ where: { completedAt: { gte: thirtyDaysAgo } } }),
-    prisma.userMission.count({ where: { status: 'CLAIMED' } }),
+    getPrisma().userMission.count({ where: { completedAt: { gte: sevenDaysAgo } } }),
+    getPrisma().userMission.count({ where: { completedAt: { gte: thirtyDaysAgo } } }),
+    getPrisma().userMission.count({ where: { status: 'CLAIMED' } }),
   ])
 
   // Achievement metrics
   const [totalAchievements, totalUnlocks] = await Promise.all([
-    prisma.achievement.count({ where: { isActive: true } }),
-    prisma.userAchievement.count(),
+    getPrisma().achievement.count({ where: { isActive: true } }),
+    getPrisma().userAchievement.count(),
   ])
 
   // Abuse metrics
   const [activeAbuseSignals, resolvedSignals7d, highRiskUserList] = await Promise.all([
-    prisma.abuseSignal.count({ where: { resolved: false } }),
-    prisma.abuseSignal.count({ where: { resolved: true, resolvedAt: { gte: sevenDaysAgo } } }),
-    prisma.abuseSignal.groupBy({
+    getPrisma().abuseSignal.count({ where: { resolved: false } }),
+    getPrisma().abuseSignal.count({ where: { resolved: true, resolvedAt: { gte: sevenDaysAgo } } }),
+    getPrisma().abuseSignal.groupBy({
       by: ['userId'],
       where: { resolved: false, riskScore: { gte: 80 } },
     }),
@@ -165,8 +174,8 @@ export async function getEngagementMetrics(): Promise<EngagementMetrics> {
 
   // System health
   const [xpTransactions7d, auditLogs7d] = await Promise.all([
-    prisma.xPTransaction.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
-    prisma.auditLog.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
+    getPrisma().xPTransaction.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
+    getPrisma().auditLog.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
   ])
 
   return {
@@ -195,7 +204,7 @@ export async function getEngagementMetrics(): Promise<EngagementMetrics> {
     avgStreak: streakStats[0]?.avg ? Number(streakStats[0].avg) : 0,
     maxStreak: streakStats[0]?.max ? Number(streakStats[0].max) : 0,
     usersWithStreak: streakStats[0]?.usersWithStreak ? Number(streakStats[0].usersWithStreak) : 0,
-    streakDistribution: streakDist as Array<{ bucket: string; count: number }>,
+    streakDistribution: streakDist.map((r) => ({ bucket: r.bucket, count: Number(r.count) })),
     missionsCompleted7d,
     missionsCompleted30d,
     missionCompletionRate: totalActiveMissions > 0

@@ -1,4 +1,4 @@
-import admin from '../config/firebase'
+import { getContainer } from './container'
 
 export interface PushNotificationPayload {
   title: string
@@ -18,13 +18,13 @@ export async function sendToToken(
   fcmToken: string,
   payload: PushNotificationPayload
 ): Promise<void> {
-  if (!admin.apps.length) {
+  if (!getContainer().firebase.apps.length) {
     console.warn('FCM not initialized, skipping notification')
     return
   }
 
   try {
-    await admin.messaging().send({
+    await getContainer().firebase.messaging().send({
       token: fcmToken,
       notification: {
         title: payload.title,
@@ -62,13 +62,13 @@ export async function sendToTopic(
   topic: string,
   payload: PushNotificationPayload
 ): Promise<void> {
-  if (!admin.apps.length) {
+  if (!getContainer().firebase.apps.length) {
     console.warn('FCM not initialized, skipping notification')
     return
   }
 
   try {
-    await admin.messaging().send({
+    await getContainer().firebase.messaging().send({
       topic,
       notification: {
         title: payload.title,

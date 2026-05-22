@@ -14,6 +14,7 @@ import { api } from '../../services/api'
 import { Card } from '../../components/common/Card'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 import type { LeaderboardEntryDto } from '@crabwatch/shared'
 
 type Scope = 'ALL_TIME' | 'SEASONAL'
@@ -206,7 +207,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
   },
   scopeText: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
@@ -218,13 +219,13 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   emptyTitle: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     fontWeight: '600',
     color: COLORS.text,
     marginTop: 10,
   },
   emptyText: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: COLORS.textSecondary,
     textAlign: 'center',
     marginTop: 4,
@@ -249,10 +250,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   medal: {
-    fontSize: 24,
+    fontSize: FONT['4xl'],
   },
   rankText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     fontWeight: '700',
     color: COLORS.textSecondary,
   },
@@ -266,7 +267,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   entryName: {
-    fontSize: 15,
+    fontSize: FONT.md,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -277,12 +278,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primaryLight,
   },
   meBadgeText: {
-    fontSize: 10,
+    fontSize: FONT['2xs'],
     fontWeight: '600',
     color: COLORS.primary,
   },
   entryTitle: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
@@ -296,12 +297,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   levelText: {
-    fontSize: 11,
+    fontSize: FONT.xs,
     fontWeight: '600',
     color: COLORS.primary,
   },
   xpText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     fontWeight: '700',
     color: COLORS.primary,
     marginTop: 2,
@@ -318,11 +319,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   subStatText: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: COLORS.textSecondary,
   },
   fire: {
-    fontSize: 14,
+    fontSize: FONT.base,
   },
   loadMoreBtn: {
     flexDirection: 'row',
@@ -333,7 +334,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   loadMoreText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     fontWeight: '600',
     color: COLORS.primary,
   },

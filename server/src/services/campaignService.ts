@@ -1,4 +1,13 @@
-import prisma from '../config/database'
+import { PrismaClient } from '@prisma/client'
+import { getContainer } from './container'
+
+let _prisma: PrismaClient
+function getPrisma(): PrismaClient {
+  if (!_prisma) {
+    _prisma = getContainer().prisma
+  }
+  return _prisma
+}
 
 // ==================== CAMPAIGN SERVICE ====================
 
@@ -12,7 +21,7 @@ export interface CampaignCreateInput {
 }
 
 export async function createCampaign(input: CampaignCreateInput, adminId: string): Promise<any> {
-  const campaign = await prisma.campaign.create({
+  const campaign = await getPrisma().campaign.create({
     data: {
       code: input.code,
       name: input.name,
@@ -25,7 +34,7 @@ export async function createCampaign(input: CampaignCreateInput, adminId: string
     },
   })
 
-  await prisma.auditLog.create({
+  await getPrisma().auditLog.create({
     data: {
       actorType: 'ADMIN',
       actorId: adminId,
@@ -46,7 +55,7 @@ export async function listCampaigns(
   if (filter?.status) {
     where.status = filter.status
   }
-  return prisma.campaign.findMany({
+  return getPrisma().campaign.findMany({
     where,
     orderBy: { createdAt: 'desc' },
     include: {
@@ -58,7 +67,7 @@ export async function listCampaigns(
 }
 
 export async function getCampaign(id: string): Promise<any | null> {
-  return prisma.campaign.findUnique({
+  return getPrisma().campaign.findUnique({
     where: { id },
     include: {
       deliveries: {
@@ -74,10 +83,10 @@ export async function updateCampaignStatus(
   status: string,
   adminId: string
 ): Promise<any> {
-  const campaign = await prisma.campaign.findUnique({ where: { id } })
+  const campaign = await getPrisma().campaign.findUnique({ where: { id } })
   if (!campaign) throw new Error('Campaign not found')
 
-  const updated = await prisma.campaign.update({
+  const updated = await getPrisma().campaign.update({
     where: { id },
     data: {
       status,
@@ -86,7 +95,7 @@ export async function updateCampaignStatus(
     },
   })
 
-  await prisma.auditLog.create({
+  await getPrisma().auditLog.create({
     data: {
       actorType: 'ADMIN',
       actorId: adminId,
@@ -102,7 +111,7 @@ export async function updateCampaignStatus(
 }
 
 export async function launchCampaign(id: string, adminId: string): Promise<{ sent: number; failed: number }> {
-  const campaign = await prisma.campaign.findUnique({ where: { id } })
+  const campaign = await getPrisma().campaign.findUnique({ where: { id } })
   if (!campaign) throw new Error('Campaign not found')
 
   const audienceFilter = campaign.audienceFilter as any
@@ -120,7 +129,7 @@ export async function launchCampaign(id: string, adminId: string): Promise<{ sen
     where.currentStreak = { gte: audienceFilter.minStreak }
   }
 
-  const users = await prisma.user.findMany({
+  const users = await getPrisma().user.findMany({
     where,
     select: { id: true, name: true },
   })
@@ -130,7 +139,7 @@ export async function launchCampaign(id: string, adminId: string): Promise<{ sen
 
   for (const user of users) {
     try {
-      await prisma.notificationDelivery.create({
+      await getPrisma().notificationDelivery.create({
         data: {
           campaignId: campaign.id,
           userId: user.id,
@@ -149,7 +158,7 @@ export async function launchCampaign(id: string, adminId: string): Promise<{ sen
     }
   }
 
-  await prisma.campaign.update({
+  await getPrisma().campaign.update({
     where: { id },
     data: {
       status: 'ACTIVE',
@@ -157,7 +166,7 @@ export async function launchCampaign(id: string, adminId: string): Promise<{ sen
     },
   })
 
-  await prisma.auditLog.create({
+  await getPrisma().auditLog.create({
     data: {
       actorType: 'ADMIN',
       actorId: adminId,
@@ -172,12 +181,12 @@ export async function launchCampaign(id: string, adminId: string): Promise<{ sen
 }
 
 export async function deleteCampaign(id: string, adminId: string): Promise<void> {
-  const campaign = await prisma.campaign.findUnique({ where: { id } })
+  const campaign = await getPrisma().campaign.findUnique({ where: { id } })
   if (!campaign) throw new Error('Campaign not found')
 
-  await prisma.campaign.delete({ where: { id } })
+  await getPrisma().campaign.delete({ where: { id } })
 
-  await prisma.auditLog.create({
+  await getPrisma().auditLog.create({
     data: {
       actorType: 'ADMIN',
       actorId: adminId,
@@ -194,15 +203,15 @@ export async function sendTestCampaign(
   userId: string,
   adminId: string
 ): Promise<{ sent: boolean; userId: string }> {
-  const campaign = await prisma.campaign.findUnique({ where: { id } })
+  const campaign = await getPrisma().campaign.findUnique({ where: { id } })
   if (!campaign) throw new Error('Campaign not found')
 
   const content = campaign.content as any
 
-  const user = await prisma.user.findUnique({ where: { id: userId } })
+  const user = await getPrisma().user.findUnique({ where: { id: userId } })
   if (!user) throw new Error('User not found')
 
-  await prisma.notificationDelivery.create({
+  await getPrisma().notificationDelivery.create({
     data: {
       campaignId: campaign.id,
       userId,
@@ -216,7 +225,7 @@ export async function sendTestCampaign(
     },
   })
 
-  await prisma.auditLog.create({
+  await getPrisma().auditLog.create({
     data: {
       actorType: 'ADMIN',
       actorId: adminId,
@@ -246,7 +255,7 @@ export async function getAuditLogs(filter: AuditLogFilter): Promise<any[]> {
   if (filter.resourceType) where.resourceType = filter.resourceType
   if (filter.actorId) where.actorId = filter.actorId
 
-  return prisma.auditLog.findMany({
+  return getPrisma().auditLog.findMany({
     where,
     orderBy: { createdAt: 'desc' },
     take: filter.limit || 50,
@@ -261,16 +270,16 @@ export async function getAuditLogStats(): Promise<{
   topActions: Array<{ action: string; count: number }>
   topActors: Array<{ actorId: string; name: string; count: number }>
 }> {
-  const totalLogs = await prisma.auditLog.count()
+  const totalLogs = await getPrisma().auditLog.count()
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  const logsToday = await prisma.auditLog.count({ where: { createdAt: { gte: today } } })
+  const logsToday = await getPrisma().auditLog.count({ where: { createdAt: { gte: today } } })
 
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-  const logsThisWeek = await prisma.auditLog.count({ where: { createdAt: { gte: weekAgo } } })
+  const logsThisWeek = await getPrisma().auditLog.count({ where: { createdAt: { gte: weekAgo } } })
 
-  const actionGroups = await prisma.auditLog.groupBy({
+  const actionGroups = await getPrisma().auditLog.groupBy({
     by: ['action'],
     _count: { action: true },
     orderBy: { _count: { action: 'desc' } },
@@ -282,7 +291,7 @@ export async function getAuditLogStats(): Promise<{
     count: g._count.action,
   }))
 
-  const actorGroups = await prisma.auditLog.groupBy({
+  const actorGroups = await getPrisma().auditLog.groupBy({
     by: ['actorId'],
     _count: { actorId: true },
     orderBy: { _count: { actorId: 'desc' } },
@@ -291,7 +300,7 @@ export async function getAuditLogStats(): Promise<{
 
   const topActors = await Promise.all(
     actorGroups.map(async (g) => {
-      const user = g.actorId ? await prisma.user.findUnique({ where: { id: g.actorId }, select: { name: true } }) : null
+      const user = g.actorId ? await getPrisma().user.findUnique({ where: { id: g.actorId }, select: { name: true } }) : null
       return {
         actorId: g.actorId || 'SYSTEM',
         name: user?.name || 'System',

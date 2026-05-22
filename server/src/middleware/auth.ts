@@ -7,18 +7,22 @@ import { config } from '../config'
 import prisma from '../config/database'
 import logger from '../utils/logger'
 
-export interface AuthRequest extends Request {
-  user?: {
-    uid: string
-    email: string
-    name?: string
-  }
-  dbUser?: {
-    id: string
-    role: string
-    email: string
+declare module 'express' {
+  interface Request {
+    user?: {
+      uid: string
+      email: string
+      name?: string
+    }
+    dbUser?: {
+      id: string
+      role: string
+      email: string
+    }
   }
 }
+
+export type AuthRequest = Request
 
 // Granular admin permissions
 export const AdminPermission = {

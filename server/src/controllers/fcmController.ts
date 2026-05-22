@@ -1,171 +1,136 @@
 import { Response } from 'express'
 import { AuthRequest } from '../middleware/auth'
-import prisma from '../config/database'
+import { asyncHandler, AppError, NotFoundError } from '../utils/errors'
+import { getPrisma } from '../services/container'
 import {
   sendObservationApproved,
   sendObservationRejected,
   sendNewSpeciesAlert,
 } from '../services/fcm'
 
-export async function registerFcmToken(req: AuthRequest, res: Response): Promise<void> {
-  try {
-    const dbUser = req.dbUser
-    if (!dbUser) {
-      res.status(401).json({ success: false, error: 'Authentication required' })
-      return
-    }
-
-    const { fcmToken } = req.body
-    if (!fcmToken) {
-      res.status(400).json({ success: false, error: 'fcmToken is required' })
-      return
-    }
-
-    await prisma.fcmToken.upsert({
-      where: { userId: dbUser.id },
-      update: { token: fcmToken, updatedAt: new Date() },
-      create: {
-        userId: dbUser.id,
-        token: fcmToken,
-      },
-    })
-
-    res.json({ success: true, data: { registered: true } })
-  } catch (error: unknown) {
-    console.error('FCM token registration error:', error)
-    res.status(500).json({ success: false, error: 'Failed to register FCM token' })
+export const registerFcmToken = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const dbUser = req.dbUser
+  if (!dbUser) {
+    throw new AppError('Authentication required', 401)
   }
-}
 
-export async function unregisterFcmToken(req: AuthRequest, res: Response): Promise<void> {
-  try {
-    const dbUser = req.dbUser
-    if (!dbUser) {
-      res.status(401).json({ success: false, error: 'Authentication required' })
-      return
-    }
-
-    await prisma.fcmToken.deleteMany({
-      where: { userId: dbUser.id },
-    })
-
-    res.json({ success: true, data: { unregistered: true } })
-  } catch (error: unknown) {
-    console.error('FCM token unregistration error:', error)
-    res.status(500).json({ success: false, error: 'Failed to unregister FCM token' })
+  const { fcmToken } = req.body
+  if (!fcmToken) {
+    throw new AppError('fcmToken is required', 400)
   }
-}
 
-export async function notifyObservationApproved(req: AuthRequest, res: Response): Promise<void> {
-  try {
-    const dbUser = req.dbUser
-    if (!dbUser) {
-      res.status(401).json({ success: false, error: 'Authentication required' })
-      return
-    }
+  await getPrisma().fcmToken.upsert({
+    where: { userId: dbUser.id },
+    update: { token: fcmToken, updatedAt: new Date() },
+    create: {
+      userId: dbUser.id,
+      token: fcmToken,
+    },
+  })
 
-    const { observationId } = req.body
-    if (!observationId) {
-      res.status(400).json({ success: false, error: 'observationId is required' })
-      return
-    }
+  res.json({ success: true, data: { registered: true } })
+})
 
-    const observation = await prisma.observation.findUnique({
-      where: { id: observationId },
-      include: {
-        user: { include: { fcmToken: true } },
-        species: { select: { commonName: true } },
-      },
-    })
-
-    if (!observation) {
-      res.status(404).json({ success: false, error: 'Observation not found' })
-      return
-    }
-
-    if (!observation.user.fcmToken) {
-      res.json({ success: true, data: { sent: false, reason: 'No FCM token for user' } })
-      return
-    }
-
-    await sendObservationApproved(observation.user.fcmToken.token, observation.species.commonName)
-
-    res.json({ success: true, data: { sent: true } })
-  } catch (error: unknown) {
-    console.error('Notify approved error:', error)
-    res.status(500).json({ success: false, error: 'Failed to send notification' })
+export const unregisterFcmToken = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const dbUser = req.dbUser
+  if (!dbUser) {
+    throw new AppError('Authentication required', 401)
   }
-}
 
-export async function notifyObservationRejected(req: AuthRequest, res: Response): Promise<void> {
-  try {
-    const dbUser = req.dbUser
-    if (!dbUser) {
-      res.status(401).json({ success: false, error: 'Authentication required' })
-      return
-    }
+  await getPrisma().fcmToken.deleteMany({
+    where: { userId: dbUser.id },
+  })
 
-    const { observationId, reason } = req.body
-    if (!observationId || !reason) {
-      res.status(400).json({ success: false, error: 'observationId and reason are required' })
-      return
-    }
+  res.json({ success: true, data: { unregistered: true } })
+})
 
-    const observation = await prisma.observation.findUnique({
-      where: { id: observationId },
-      include: {
-        user: { include: { fcmToken: true } },
-        species: { select: { commonName: true } },
-      },
-    })
-
-    if (!observation) {
-      res.status(404).json({ success: false, error: 'Observation not found' })
-      return
-    }
-
-    if (!observation.user.fcmToken) {
-      res.json({ success: true, data: { sent: false, reason: 'No FCM token for user' } })
-      return
-    }
-
-    await sendObservationRejected(observation.user.fcmToken.token, observation.species.commonName, reason)
-
-    res.json({ success: true, data: { sent: true } })
-  } catch (error: unknown) {
-    console.error('Notify rejected error:', error)
-    res.status(500).json({ success: false, error: 'Failed to send notification' })
+export const notifyObservationApproved = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const dbUser = req.dbUser
+  if (!dbUser) {
+    throw new AppError('Authentication required', 401)
   }
-}
 
-export async function notifyNewSpecies(req: AuthRequest, res: Response): Promise<void> {
-  try {
-    const dbUser = req.dbUser
-    if (!dbUser) {
-      res.status(401).json({ success: false, error: 'Authentication required' })
-      return
-    }
-
-    const { speciesName, zone } = req.body
-    if (!speciesName || !zone) {
-      res.status(400).json({ success: false, error: 'speciesName and zone are required' })
-      return
-    }
-
-    const tokens = await prisma.fcmToken.findMany({
-      select: { token: true },
-    })
-
-    if (tokens.length === 0) {
-      res.json({ success: true, data: { sent: false, reason: 'No FCM tokens registered' } })
-      return
-    }
-
-    await sendNewSpeciesAlert(tokens.map((t) => t.token), speciesName, zone)
-
-    res.json({ success: true, data: { sent: true } })
-  } catch (error: unknown) {
-    console.error('Notify new species error:', error)
-    res.status(500).json({ success: false, error: 'Failed to send notification' })
+  const { observationId } = req.body
+  if (!observationId) {
+    throw new AppError('observationId is required', 400)
   }
-}
+
+  const observation = await getPrisma().observation.findUnique({
+    where: { id: observationId },
+    include: {
+      user: { include: { fcmToken: true } },
+      species: { select: { commonName: true } },
+    },
+  })
+
+  if (!observation) {
+    throw new NotFoundError('Observation not found')
+  }
+
+  if (!observation.user.fcmToken) {
+    res.json({ success: true, data: { sent: false, reason: 'No FCM token for user' } })
+    return
+  }
+
+  await sendObservationApproved(observation.user.fcmToken.token, observation.species.commonName)
+
+  res.json({ success: true, data: { sent: true } })
+})
+
+export const notifyObservationRejected = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const dbUser = req.dbUser
+  if (!dbUser) {
+    throw new AppError('Authentication required', 401)
+  }
+
+  const { observationId, reason } = req.body
+  if (!observationId || !reason) {
+    throw new AppError('observationId and reason are required', 400)
+  }
+
+  const observation = await getPrisma().observation.findUnique({
+    where: { id: observationId },
+    include: {
+      user: { include: { fcmToken: true } },
+      species: { select: { commonName: true } },
+    },
+  })
+
+  if (!observation) {
+    throw new NotFoundError('Observation not found')
+  }
+
+  if (!observation.user.fcmToken) {
+    res.json({ success: true, data: { sent: false, reason: 'No FCM token for user' } })
+    return
+  }
+
+  await sendObservationRejected(observation.user.fcmToken.token, observation.species.commonName, reason)
+
+  res.json({ success: true, data: { sent: true } })
+})
+
+export const notifyNewSpecies = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const dbUser = req.dbUser
+  if (!dbUser) {
+    throw new AppError('Authentication required', 401)
+  }
+
+  const { speciesName, zone } = req.body
+  if (!speciesName || !zone) {
+    throw new AppError('speciesName and zone are required', 400)
+  }
+
+  const tokens = await getPrisma().fcmToken.findMany({
+    select: { token: true },
+  })
+
+  if (tokens.length === 0) {
+    res.json({ success: true, data: { sent: false, reason: 'No FCM tokens registered' } })
+    return
+  }
+
+  await sendNewSpeciesAlert(tokens.map((t: { token: string }) => t.token), speciesName, zone)
+
+  res.json({ success: true, data: { sent: true } })
+})

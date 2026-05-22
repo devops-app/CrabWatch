@@ -100,8 +100,20 @@ pnpm dev:android
    - Test with app in foreground, background, and not running
 
 5. **Test safe area:**
-   - On iPhone with notch: verify tab bar not obscured by home indicator
-   - On Android: verify tab bar at normal bottom position
+    - On iPhone with notch: verify tab bar not obscured by home indicator
+    - On Android: verify tab bar at normal bottom position
+
+6. **Test dynamic type scaling (iOS):**
+    - Go to Settings → Display & Brightness → Text Size
+    - Increase text size to Large or Extra Large
+    - Navigate through all screens and verify text scales appropriately
+    - Verify no text overflow or layout breaking at maximum scale (2x cap)
+    - On Android: verify text size remains at base values (no dynamic scaling)
+
+7. **Test MD3 elevation:**
+    - Navigate to screens with Card components (Home, Profile, Leaderboard, etc.)
+    - Verify cards have consistent shadow/elevation
+    - Test in both light and dark mode to verify shadows render correctly
 
 3. **Role-based tabs (visible based on user role):**
    - **RESEARCHER**: "Researcher" tab — approve/reject pending observations

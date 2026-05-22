@@ -1,10 +1,4 @@
-'use client'
-
-import { useRouter } from 'next/navigation'
-
 export default function AboutPage(): React.JSX.Element {
-  const router = useRouter()
-
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-8">

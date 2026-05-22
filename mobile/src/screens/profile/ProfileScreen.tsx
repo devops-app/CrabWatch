@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   Alert,
 } from 'react-native'
+import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
@@ -17,6 +17,7 @@ import { Card } from '../../components/common/Card'
 import { Button } from '../../components/common/Button'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { COLORS, STATUS_COLORS } from '../../utils/constants'
+import { FONT } from '../../utils/fonts'
 import { formatDate, formatStatus } from '../../utils/formatters'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { ObservationResponse, UserStatsDto } from '@crabwatch/shared'
@@ -62,6 +63,34 @@ export function ProfileScreen() {
         onPress: () => logout(),
       },
     ])
+  }
+
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This will delete your account. You have 30 days to restore it by logging in again. All your data will be permanently removed after 30 days.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setDeleting(true)
+            try {
+              await api.deleteMyAccount()
+              logout()
+              Alert.alert('Account Deleted', 'Your account has been deleted. You have 30 days to restore it.')
+            } catch (err) {
+              Alert.alert('Error', err instanceof Error ? err.message : 'Failed to delete account')
+            } finally {
+              setDeleting(false)
+            }
+          },
+        },
+      ]
+    )
   }
 
   const roleColors: Record<string, string> = {
@@ -207,6 +236,13 @@ export function ProfileScreen() {
             onPress={handleLogout}
             style={styles.actionBtn}
           />
+          <Button
+            title="Delete Account"
+            variant="danger"
+            onPress={handleDeleteAccount}
+            loading={deleting}
+            style={styles.actionBtn}
+          />
         </View>
 
         <View style={styles.engagementSection}>
@@ -328,18 +364,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarText: {
-    fontSize: 32,
+    fontSize: FONT['3xl'],
     fontWeight: '700',
     color: '#ffffff',
   },
   name: {
-    fontSize: 22,
+    fontSize: FONT['2xl'],
     fontWeight: '700',
     color: COLORS.text,
     marginTop: 12,
   },
   email: {
-    fontSize: 14,
+    fontSize: FONT.base,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
@@ -353,7 +389,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   roleText: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     fontWeight: '600',
   },
   statsRow: {
@@ -371,12 +407,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statValue: {
-    fontSize: 24,
+    fontSize: FONT['2xl'],
     fontWeight: '700',
     color: COLORS.primary,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: FONT.sm,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
@@ -398,12 +434,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   xpLevel: {
-    fontSize: 18,
+    fontSize: FONT.xl,
     fontWeight: '700',
     color: COLORS.text,
   },
   xpTitle: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: COLORS.textSecondary,
     marginTop: 2,
   },
@@ -413,7 +449,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   xpNumber: {
-    fontSize: 18,
+    fontSize: FONT.xl,
     fontWeight: '700',
     color: COLORS.accent,
   },
@@ -426,7 +462,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   xpProgressText: {
-    fontSize: 11,
+    fontSize: FONT.xs,
     color: COLORS.textSecondary,
   },
   xpBar: {
@@ -453,12 +489,12 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   xpStatValue: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     fontWeight: '700',
     color: COLORS.text,
   },
   xpStatLabel: {
-    fontSize: 11,
+    fontSize: FONT.xs,
     color: COLORS.textSecondary,
   },
   xpStatDivider: {
@@ -490,12 +526,12 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   engagementTitle: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     fontWeight: '600',
     color: COLORS.text,
   },
   engagementDesc: {
-    fontSize: 11,
+    fontSize: FONT.xs,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
@@ -508,7 +544,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 10,
@@ -522,13 +558,13 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   emptyTitle: {
-    fontSize: 16,
+    fontSize: FONT.lg,
     fontWeight: '600',
     color: COLORS.text,
     marginTop: 10,
   },
   emptyText: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: COLORS.textSecondary,
     textAlign: 'center',
     marginTop: 4,
@@ -548,7 +584,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   obsSpecies: {
-    fontSize: 15,
+    fontSize: FONT.base,
     fontWeight: '600',
     color: COLORS.text,
     fontStyle: 'italic',
@@ -560,12 +596,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   obsStatusText: {
-    fontSize: 11,
+    fontSize: FONT.xs,
     fontWeight: '600',
     color: '#ffffff',
   },
   obsDetails: {
-    fontSize: 13,
+    fontSize: FONT['sm+'],
     color: COLORS.textSecondary,
   },
 })

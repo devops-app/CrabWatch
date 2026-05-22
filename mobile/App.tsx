@@ -7,6 +7,7 @@ import { AppNavigator } from './src/navigation/AppNavigator'
 import { initAuth } from './src/store/authStore'
 import { usePendingObservationSync } from './src/hooks/usePendingObservationSync'
 import { useTheme } from './src/hooks/useTheme'
+import { ErrorBoundary } from './src/components/common/ErrorBoundary'
 
 export default function App() {
   usePendingObservationSync()
@@ -69,11 +70,11 @@ export default function App() {
   }
 
   return (
-    <>
+    <ErrorBoundary>
       <StatusBar style={Platform.OS === 'ios' ? 'dark' : 'auto'} />
       <NavigationContainer>
         <AppNavigator deepLinkToken={deepLinkToken} />
       </NavigationContainer>
-    </>
+    </ErrorBoundary>
   )
 }

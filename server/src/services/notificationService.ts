@@ -1,5 +1,17 @@
-import prisma from '../config/database'
-import { config } from '../config'
+import { PrismaClient } from '@prisma/client'
+import { getContainer } from './container'
+
+let _prisma: PrismaClient
+function getPrisma(): PrismaClient {
+  if (!_prisma) {
+    _prisma = getContainer().prisma
+  }
+  return _prisma
+}
+
+function getConfig() {
+  return getContainer().config
+}
 
 // ==================== NOTIFICATION SERVICE ====================
 
@@ -9,29 +21,32 @@ export interface NotificationPayload {
   body: string
   data?: Record<string, string>
   channel: 'PUSH' | 'EMAIL' | 'IN_APP'
+  category?: string
 }
 
 export async function sendNotification(payload: NotificationPayload): Promise<void> {
-  if (!config.engagement.enabled) return
+  if (!getConfig().engagement.enabled) return
+
+  const category = payload.category || 'system'
 
   try {
     // Check user preferences
-    const preferences = await prisma.notificationPreference.findMany({
+    const preferences = await getPrisma().notificationPreference.findMany({
       where: { userId: payload.userId },
     })
 
     // Skip if user has disabled this channel+category
     const disabled = preferences.find(
-      (p) => p.channel === payload.channel && p.category === 'system' && !p.enabled
+      (p) => p.channel === payload.channel && p.category === category && !p.enabled
     )
     if (disabled) return
 
     // Create notification delivery record
-    const delivery = await prisma.notificationDelivery.create({
+    const delivery = await getPrisma().notificationDelivery.create({
       data: {
         userId: payload.userId,
         channel: payload.channel as any,
-        category: 'system',
+        category,
         title: payload.title,
         body: payload.body,
         payload: payload.data ?? undefined,
@@ -49,7 +64,7 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
         break
       case 'IN_APP':
         // In-app notifications are stored in DB
-        await prisma.notificationDelivery.update({
+        await getPrisma().notificationDelivery.update({
           where: { id: delivery.id },
           data: { status: 'SENT', sentAt: new Date() },
         })
@@ -63,12 +78,12 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
 
 async function sendPushNotification(payload: NotificationPayload, deliveryId: string): Promise<void> {
   try {
-    const fcmTokens = await prisma.fcmToken.findMany({
+    const fcmTokens = await getPrisma().fcmToken.findMany({
       where: { userId: payload.userId },
     })
 
     if (fcmTokens.length === 0) {
-      await prisma.notificationDelivery.update({
+      await getPrisma().notificationDelivery.update({
         where: { id: deliveryId },
         data: { status: 'FAILED', failureReason: 'No FCM tokens found' },
       })
@@ -92,13 +107,13 @@ async function sendPushNotification(payload: NotificationPayload, deliveryId: st
       }
     }
 
-    await prisma.notificationDelivery.update({
+    await getPrisma().notificationDelivery.update({
       where: { id: deliveryId },
       data: { status: 'SENT', sentAt: new Date() },
     })
   } catch (error) {
     console.error('Push notification error:', error)
-    await prisma.notificationDelivery.update({
+    await getPrisma().notificationDelivery.update({
       where: { id: deliveryId },
       data: { status: 'FAILED', failureReason: String(error) },
     }).catch(() => {})
@@ -107,7 +122,7 @@ async function sendPushNotification(payload: NotificationPayload, deliveryId: st
 
 async function sendEmailNotification(payload: NotificationPayload, deliveryId: string): Promise<void> {
   try {
-    const user = await prisma.user.findUnique({
+    const user = await getPrisma().user.findUnique({
       where: { id: payload.userId },
       select: { email: true, name: true },
     })
@@ -126,14 +141,14 @@ async function sendEmailNotification(payload: NotificationPayload, deliveryId: s
 
     // Update delivery status
     try {
-      await prisma.notificationDelivery.update({
+      await getPrisma().notificationDelivery.update({
         where: { id: deliveryId },
         data: { status: 'SENT', sentAt: new Date() },
       })
     } catch { /* delivery record may not exist */ }
   } catch (error) {
     console.error('Email notification error:', error)
-    await prisma.notificationDelivery.update({
+    await getPrisma().notificationDelivery.update({
       where: { id: deliveryId },
       data: { status: 'FAILED', failureReason: String(error) },
     }).catch(() => {})
@@ -143,7 +158,7 @@ async function sendEmailNotification(payload: NotificationPayload, deliveryId: s
 // ==================== SOCIAL FEATURES ====================
 
 export async function getTopContributors(limit = 10): Promise<any[]> {
-  const users = await prisma.user.findMany({
+  const users = await getPrisma().user.findMany({
     where: { approvedCount: { gt: 0 } },
     orderBy: { approvedCount: 'desc' },
     take: limit,
@@ -163,7 +178,7 @@ export async function getTopContributors(limit = 10): Promise<any[]> {
 }
 
 export async function getUserStats(userId: string): Promise<any> {
-  const user = await prisma.user.findUnique({
+  const user = await getPrisma().user.findUnique({
     where: { id: userId },
     select: {
       id: true,
@@ -183,7 +198,7 @@ export async function getUserStats(userId: string): Promise<any> {
   if (!user) return null
 
   // Get species diversity
-  const speciesGroups = await prisma.observation.groupBy({
+  const speciesGroups = await getPrisma().observation.groupBy({
     by: ['speciesId'],
     where: {
       userId,
@@ -193,7 +208,7 @@ export async function getUserStats(userId: string): Promise<any> {
   const speciesCount = speciesGroups.length
 
   // Get recent observations
-  const recent = await prisma.observation.findMany({
+  const recent = await getPrisma().observation.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
     take: 3,
@@ -211,14 +226,14 @@ export async function getUserStats(userId: string): Promise<any> {
 
 export async function getCommunityStats(): Promise<any> {
   const [totalUsers, totalObservations, totalSpecies, totalApproved] = await Promise.all([
-    prisma.user.count(),
-    prisma.observation.count(),
-    prisma.species.count(),
-    prisma.observation.count({ where: { status: 'APPROVED' } }),
+    getPrisma().user.count(),
+    getPrisma().observation.count(),
+    getPrisma().species.count(),
+    getPrisma().observation.count({ where: { status: 'APPROVED' } }),
   ])
 
   // Monthly activity
-  const monthlyActivity = await prisma.observation.groupBy({
+  const monthlyActivity = await getPrisma().observation.groupBy({
     by: ['createdAt'],
     _count: { id: true },
     where: {

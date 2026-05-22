@@ -1,4 +1,13 @@
-import prisma from '../config/database'
+import { PrismaClient } from '@prisma/client'
+import { getContainer } from './container'
+
+let _prisma: PrismaClient
+function getPrisma(): PrismaClient {
+  if (!_prisma) {
+    _prisma = getContainer().prisma
+  }
+  return _prisma
+}
 
 interface LeaderboardEntry {
   rank: number
@@ -21,21 +30,21 @@ interface LeaderboardResult {
 }
 
 // Simple in-memory cache with TTL
-interface CacheEntry<T> {
-  data: T
+interface CacheEntry {
+  data: LeaderboardResult
   expiresAt: number
 }
 
-const cache = new Map<string, CacheEntry<any>>()
+const cache = new Map<string, CacheEntry>()
 
-const DEFAULT_TTL = 60 * 1000 // 60 seconds
-const ALL_TIME_TTL = 120 * 1000 // 2 minutes for all-time (changes less)
+const DEFAULT_TTL = 60 * 1000
+const ALL_TIME_TTL = 120 * 1000
 
 function getCacheKey(scope: string, seasonId?: string, page?: number, limit?: number): string {
   return `leaderboard:${scope}:${seasonId || 'none'}:${page || 1}:${limit || 50}`
 }
 
-function get<T>(key: string): T | null {
+function get(key: string): LeaderboardResult | null {
   const entry = cache.get(key)
   if (!entry || Date.now() > entry.expiresAt) {
     cache.delete(key)
@@ -44,7 +53,7 @@ function get<T>(key: string): T | null {
   return entry.data
 }
 
-function set(key: string, data: any, ttl: number = DEFAULT_TTL): void {
+function set(key: string, data: LeaderboardResult, ttl: number = DEFAULT_TTL): void {
   cache.set(key, {
     data,
     expiresAt: Date.now() + ttl,
@@ -73,7 +82,7 @@ export async function getLeaderboard(
   const cacheKey = getCacheKey(params.scope || 'ALL_TIME', params.seasonId, page, limit)
 
   // Try cache first
-  const cached = get<LeaderboardResult & { myRankXP?: number }>(cacheKey)
+  const cached = get(cacheKey)
   if (cached) {
     // Re-compute myRank for the requesting user (not cached, depends on current user)
     let result = { ...cached }
@@ -91,7 +100,7 @@ export async function getLeaderboard(
   let total: number
 
   if (params.scope === 'SEASONAL' && params.seasonId) {
-    const seasonStats = await prisma.userSeasonStat.findMany({
+    const seasonStats = await getPrisma().userSeasonStat.findMany({
       where: { seasonId: params.seasonId },
       orderBy: { totalXP: 'desc' },
       skip,
@@ -109,7 +118,7 @@ export async function getLeaderboard(
       },
     })
 
-    total = await prisma.userSeasonStat.count({
+    total = await getPrisma().userSeasonStat.count({
       where: { seasonId: params.seasonId },
     })
 
@@ -125,7 +134,7 @@ export async function getLeaderboard(
       currentStreak: stat.currentStreak,
     }))
   } else {
-    const users = await prisma.user.findMany({
+    const users = await getPrisma().user.findMany({
       where: {
         deletedAt: null,
         blockedAt: null,
@@ -145,7 +154,7 @@ export async function getLeaderboard(
       },
     })
 
-    total = await prisma.user.count({
+    total = await getPrisma().user.count({
       where: {
         deletedAt: null,
         blockedAt: null,
@@ -189,7 +198,7 @@ async function computeMyRank(
   seasonId?: string
 ): Promise<number | undefined> {
   if (scope === 'SEASONAL' && seasonId) {
-    const userStat = await prisma.userSeasonStat.findUnique({
+    const userStat = await getPrisma().userSeasonStat.findUnique({
       where: {
         seasonId_userId: {
           seasonId,
@@ -199,7 +208,7 @@ async function computeMyRank(
     })
 
     if (userStat) {
-      const rank = await prisma.userSeasonStat.count({
+      const rank = await getPrisma().userSeasonStat.count({
         where: {
           seasonId,
           totalXP: { gt: userStat.totalXP },
@@ -208,13 +217,13 @@ async function computeMyRank(
       return rank + 1
     }
   } else {
-    const currentUser = await prisma.user.findUnique({
+    const currentUser = await getPrisma().user.findUnique({
       where: { id: userId },
       select: { totalXP: true },
     })
 
     if (currentUser) {
-      const rank = await prisma.user.count({
+      const rank = await getPrisma().user.count({
         where: {
           deletedAt: null,
           blockedAt: null,
@@ -235,13 +244,13 @@ export async function getXPHistory(userId: string, page: number = 1, limit: numb
   const skip = (page - 1) * limit
 
   const [transactions, total] = await Promise.all([
-    prisma.xPTransaction.findMany({
+    getPrisma().xPTransaction.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
       skip,
       take: limit,
     }),
-    prisma.xPTransaction.count({ where: { userId } }),
+    getPrisma().xPTransaction.count({ where: { userId } }),
   ])
 
   return {

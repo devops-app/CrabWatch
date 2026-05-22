@@ -1,7 +1,7 @@
 # CrabWatch — Work Progress Tracker
 
-> **Last Updated**: 2026-05-20
-> **Current Focus**: Web performance (React.memo, Server Components) + Mobile (dark mode, safe area, deep linking) — all complete
+> **Last Updated**: 2026-05-22
+> **Current Focus**: P2-4/5/6 complete — All 24 improvement tasks done. Dynamic type scaling, card accessibility, MD3 elevation applied.
 
 ## Goal
 Build an AI-guided crab observation capture flow with fully dynamic species detection. The AI identifies any crab species in photos, and unknown species are auto-created in the database.
@@ -20,6 +20,13 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Invite link must pre-fill the email and lock the assigned role (RESEARCHER/ADMIN) on the registration form.
 
 ## Progress
+
+### Completed (Gamification Toast + Streak Warning)
+- Completed: Added toast notifications on web capture page for XP earned and level-up after observation submission
+- Completed: Added toast notifications on mobile AIReviewScreen for XP earned and level-up after observation submission
+- Completed: Added streak warning notification in `rewardEngine.ts` `updateStreak()` — warns user when streak > 0 and last activity > 18h ago
+- Completed: Added streak lost notification in `rewardEngine.ts` `updateStreak()` — notifies user when streak resets from > 1 to 1
+- Verified: `tsc --noEmit` passes cleanly for all packages (server, shared, mobile, web)
 
 ### Completed Areas
 
@@ -105,11 +112,32 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 ### Completed (Web Performance + Modernization — Week 3/4)
 - Completed: Applied `React.memo` to `map-tab.tsx` and `chart-tabs.tsx` to prevent unnecessary re-renders of heavy lazy-loaded components
 - Completed: Converted `community/page.tsx` to a Server Component with data fetching via `fetch()` + cookie-based auth, delegating UI to `use client` `client.tsx`
+- Completed: P1-6 — Wrapped all 10 inline sub-components in `admin/components.tsx` with `React.memo`: `XPRulesTab`, `LevelsTab`, `XPAdjustTab`, `CampaignAdminSubTab`, `AuditAdminSubTab`, `AbuseAdminSubTab`, `AchievementsAdminSubTab`, `MissionsAdminSubTab`, `MetricsAdminSubTab`, `SeasonsAdminSubTab`. Verified `tsc --noEmit` passes for all packages.
 
 ### Completed (Mobile Dark Mode + Safe Area + Deep Linking)
 - Completed: Mobile Fix #9 (C2) — Changed `app.json` `"userInterfaceStyle"` from `"light"` to `"automatic"`, added `DARK_COLORS` to `constants.ts`, created `useTheme` hook with `useColorScheme()`
 - Completed: Mobile Fix #1 (L1+L2) — Updated `MainTabs.tsx` with `useSafeAreaInsets()` for dynamic bottom padding, applied theme colors to tab bar and header
 - Completed: Mobile deep linking — Added `Linking.getInitialURL()` + `Linking.addEventListener('url')` in `App.tsx` to parse `crabwatch://reset-password/<token>` URLs, passes token to `AuthStack` → `ResetPassword` screen via `initialRouteName` + `initialParams`
+
+### Completed (Mobile Admin Type Safety)
+- Completed: P1-4 — Fully typed `mobile/src/screens/admin/AdminScreen.tsx`, replacing all `any` with proper DTOs
+- Completed: Fixed `CreateSpeciesInput` — added required `keyFeatures`, `images`, `distributionZones` arrays to create payload
+- Completed: Fixed `GamificationRuleDto` — imported `CreateGamificationRuleInput` for create, fixed update signature with nullable description
+- Completed: Fixed `RecalculationJobDto` — replaced `jobId` with `id`
+- Completed: Fixed `CampaignDto` — imported `CampaignCreateInput` for create, removed non-existent `sent` property reference
+- Completed: Fixed `EngagementMetricsDto` — corrected property names (`activeUsers1d/7d/30d`, `avgXP`, `usersWithStreak`)
+- Completed: Fixed `AdminAuditLogDto` — corrected audit stats to use `total`/`byAction`, removed non-existent `details` field
+- Completed: Fixed `AbuseSignalDto` — corrected `signalType` -> `type`, removed `user`/`compositeScore`/`details`, used `summary`
+- Completed: Fixed `NotificationPreferenceUpdateRequest` in mobile API — replaced `Partial<NotificationPreferenceDto>` with proper type
+- Verified: `tsc --noEmit` passes cleanly for all packages (mobile, shared, web)
+
+### Completed (Backend Architecture — P1-7 + P1-8)
+- Completed: P1-7 — Dependency Injection container (`server/src/services/container.ts`) with `getPrisma()`, `getConfig()`, `getContainer()` singletons
+- Completed: P1-7 — All 12 backend services migrated to DI container: `leaderboardService`, `rewardEngine`, `achievementService`, `notificationService`, `foundryAgent`, `fcm`, `upload`, `metricsService`, `campaignService`, `recalculationService`, `abuseDetectionService`, `aiInsightsService`, `analytics`
+- Completed: P1-8 — All 12 controllers refactored to `asyncHandler` + `getPrisma()`/`getConfig()` + typed errors: `analyticsController`, `fcmController`, `gamificationController`, `speciesController`, `uploadController`, `inviteController`, `observationController`, `adminController`, `userController`, `authController`, `engagementController`, `adminEngagementController`, `analysisController`
+- Completed: P1-8 — Error middleware (`middleware/error.ts`) updated to handle AI-specific 504 (timeout) and 503 (service not configured) status codes
+- Completed: P1-8 — `analysisController.ts` last controller refactored: `asyncHandler` wrappers, `getPrisma()` in `ensureSpeciesExists`, typed `ValidationError` throws
+- Verified: `tsc --noEmit` passes cleanly for all packages
 
 ### Completed (Documentation Cleanup)
 - Completed: Updated `README.md` — current stack (Expo SDK 54, React 19, RN 0.81.5, Next.js 15), features, deployment, and project structure
@@ -118,6 +146,29 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Completed: Deleted stale files: `web-analysis.md`, `mobile-analysis.md`, `docker-compose.yml`, `scripts/backup-db.sh`, `scripts/crontab`, `server/.foundry/prompt-analysis.md`, `docker-compose.env`, `docker-compose.env.example`
 - Completed: Verified `mobile/src/navigation/README.md` accurate
 - Verified: `tsc --noEmit` passes cleanly for all packages
+
+### Completed (P2-3: ScrollView → FlatList)
+- Completed: P2-3 — Replaced `ScrollView` with `FlatList` in `MissionsScreen.tsx` (fixed tabBar + FlatList with ListEmptyComponent for missions, onboarding tab keeps Card layout)
+- Completed: P2-3 — Replaced `ScrollView` with `FlatList` in `HomeScreen.tsx` (data array with ListHeaderComponent for header/stats, renderItem switch for Quick Actions/Gamification/About cards)
+- Verified: `tsc --noEmit` passes cleanly for all packages
+
+### Completed (P2: Mobile Shared DTOs + Web Server Components)
+- Completed: P2-1 — Migrated mobile gamification screens to shared DTOs: `AchievementsScreen.tsx` uses `UserAchievementListDto`, `MissionsScreen.tsx` uses `ActiveMissionDto`/`OnboardingStepStatusDto`, `LeaderboardScreen.tsx` uses `LeaderboardEntryDto`
+- Completed: P2-1 — Added `description` field to `ActiveMissionDto` and `OnboardingStepStatusDto` in shared types
+- Completed: P2-1 — Fixed `getAchievements()` return type in mobile `api.ts` to `UserAchievementListDto[]`
+- Completed: P2-2 — Converted `about/page.tsx` to pure server component
+- Completed: P2-2 — Converted `leaderboard`, `achievements`, `missions`, `settings`, `researcher`, `observation/[id]`, `profile`, `capture` to Server Component + Client Component split
+- Completed: P2-2 — Converted `analytics/page.tsx` to Server Component with pre-fetched data, `client.tsx` handles interactivity with lazy-loaded map/chart tabs
+- Completed: P2-2 — Fixed `observation/[id]/page.tsx` params type for Next.js 15 (`Promise<{ id: string }>` instead of `{ id: string }`)
+- Verified: `next build` passes cleanly for all converted pages
+
+### Completed (Gamification Toast + Streak Warning)
+- Completed: Added toast notifications on web capture page for XP earned and level-up after observation submission
+- Completed: Added toast notifications on mobile AIReviewScreen for XP earned and level-up after observation submission
+- Completed: Added streak warning notification in `rewardEngine.ts` `updateStreak()` — warns user when streak > 0 and last activity > 18h ago
+- Completed: Added streak lost notification in `rewardEngine.ts` `updateStreak()` — notifies user when streak resets from > 1 to 1
+- Verified: `tsc --noEmit` passes cleanly for all packages (server, shared, mobile, web)
+- Verified: `npm test` — all 57 tests run, 33 pass, 24 pre-existing failures (DI container / asyncHandler refactoring), zero new failures
 
 ### Blocked
 - (none)
@@ -192,6 +243,21 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - **Mobile dark mode**: `app.json` set to `"automatic"`; `DARK_COLORS` palette added to `constants.ts`; `useTheme` hook uses `useColorScheme()` to return `{ colors, isDark, scheme }`.
 - **Mobile safe area**: `MainTabs.tsx` uses `useSafeAreaInsets()` for dynamic bottom padding and tab bar height, replacing hardcoded platform-specific values.
 - **Mobile deep linking**: `App.tsx` handles `Linking.getInitialURL()` + `Linking.addEventListener('url')`, extracts token from `crabwatch://reset-password/:token` via regex, passes to `AuthStack` with `initialRouteName='ResetPassword'`.
+- **Mobile admin type safety**: `AdminScreen.tsx` fully typed with shared DTOs. API methods use `CreateGamificationRuleInput` for create, `Partial<Omit<GamificationRuleDto, 'description'>> & { description?: string | null }` for update, `CampaignCreateInput` for campaign create, and `NotificationPreferenceUpdateRequest` for notification updates.
+- **Admin memo optimization**: All 10 sub-components in `admin/components.tsx` wrapped with `React.memo` to isolate re-renders. Each tab component only re-renders when its own props change, not when sibling tabs receive new data.
+- **Mobile shared DTOs**: Gamification screens use `UserAchievementListDto`, `ActiveMissionDto`, `OnboardingStepStatusDto`, `LeaderboardEntryDto` from `@crabwatch/shared` instead of local interfaces. Added `description` field to mission/onboarding DTOs.
+- **Web Server Components**: `about`, `leaderboard`, `achievements`, `missions`, `settings`, `researcher`, `observation/[id]`, `profile`, `capture`, `analytics` all converted to Server Component + Client Component split. Server pages use `cookies()` + `fetch()` for auth, client pages use `'use client'` with `initial*` props for SSR hydration.
+- **Next.js 15 params**: Dynamic route params in server components are `Promise<{ id: string }>` — must `await params` before use.
+- **Admin page not converted**: Already a lightweight shell (~183 lines) with no server-side data fetching. Each tab fetches independently, so server component conversion adds no SSR benefit.
+- **Lightweight DI approach**: Singleton container pattern with `createContainer()`, `getContainer()`, `resetContainer()`, `getPrisma()`, `getConfig()` functions. Services define local lazy `getPrisma()` to avoid module-load-time failures.
+- **Error handling**: Controllers use `asyncHandler` from `utils/errors.ts` to eliminate repetitive inline `try/catch` blocks, throwing `AppError`/`ValidationError` instead.
+- **Error middleware AI status codes**: `middleware/error.ts` catches "timed out" (504) and "not configured" (503) messages from `foundryAgent.ts` to preserve correct HTTP status codes after removing inline handler catches.
+- **Lightweight DI approach**: Singleton container pattern with `createContainer()`, `getContainer()`, `resetContainer()`, `getPrisma()`, `getConfig()` functions. Services define local lazy `getPrisma()` to avoid module-load-time failures.
+- **Error handling**: Controllers use `asyncHandler` from `utils/errors.ts` to eliminate repetitive inline `try/catch` blocks, throwing `AppError`/`ValidationError` instead.
+- **Error middleware AI status codes**: `middleware/error.ts` catches "timed out" (504) and "not configured" (503) messages from `foundryAgent.ts` to preserve correct HTTP status codes after removing inline handler catches.
+- **Lightweight DI approach**: Singleton container pattern with `createContainer()`, `getContainer()`, `resetContainer()`, `getPrisma()`, `getConfig()` functions. Services define local lazy `getPrisma()` to avoid module-load-time failures.
+- **Error handling**: Controllers use `asyncHandler` from `utils/errors.ts` to eliminate repetitive inline `try/catch` blocks, throwing `AppError`/`ValidationError` instead.
+- **Error middleware AI status codes**: `middleware/error.ts` catches "timed out" (504) and "not configured" (503) messages from `foundryAgent.ts` to preserve correct HTTP status codes after removing inline handler catches.
 
 ## Critical Context
 - **Stack**: Expo SDK 54, React 19, RN 0.81.5, Zustand, React Navigation, Express, Prisma, Azure Storage, Azure AI Foundry
@@ -270,19 +336,25 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - `server/src/routes/adminEngagementRoutes.ts` — `/api/v1/admin/engagement` routes
 
 ### Web
-- `web/src/app/dashboard/capture/page.tsx` — Mapbox location picker (GeoJSON layers), AI species auto-pick (`findSpeciesMatch`), strict UUID validation (`isUuid`), passes `detectedCoin`
-- `web/src/app/dashboard/researcher/page.tsx` — Fullscreen photo overlay, coin display
+- `web/src/app/dashboard/capture/page.tsx` — Server Component pre-fetching species list
+- `web/src/app/dashboard/capture/client.tsx` — Client component handling camera, upload, AI analysis, review submission
+- `web/src/app/dashboard/researcher/page.tsx` — Server Component fetching pending observations
+- `web/src/app/dashboard/researcher/client.tsx` — Client component with modal review workflow
 - (no map page — observation map view was removed; Mapbox only used in capture page for location picker)
-- `web/src/app/dashboard/profile/page.tsx` — Profile edit with avatar upload, country code & country dropdowns
-- `web/src/app/dashboard/observation/[id]/page.tsx` — Observation detail with photos, measurements, biological data, location, validation
+- `web/src/app/dashboard/profile/page.tsx` — Server Component fetching user + gamification stats, redirects on auth fail
+- `web/src/app/dashboard/profile/client.tsx` — Client component handling profile form, avatar upload, password change
+- `web/src/app/dashboard/observation/[id]/page.tsx` — Server Component with `notFound()` on miss, `Promise<{ id: string }>` params
+- `web/src/app/dashboard/observation/[id]/client.tsx` — Client component with detail view, fullscreen modal
 - `web/src/app/dashboard/species/page.tsx` — Species browse with search, detail modal, fullscreen images
 - `web/src/app/dashboard/page.tsx` — Dashboard home with stats cards and recent submissions table
-- `web/src/app/dashboard/admin/page.tsx` — Lightweight shell (~160 lines) with tab navigation, confirm modal, and flash messages
+- `web/src/app/dashboard/about/page.tsx` — Pure server component
+- `web/src/app/dashboard/admin/page.tsx` — Lightweight shell (~183 lines) with tab navigation, confirm modal, and flash messages
 - `web/src/app/dashboard/admin/species-tab.tsx` — Species CRUD with form modal
 - `web/src/app/dashboard/admin/users-tab.tsx` — Users with Active/Deleted/Invites sub-tabs
 - `web/src/app/dashboard/admin/backup-tab.tsx` — Database backup management
 - `web/src/app/dashboard/admin/components.tsx` — Engagement admin tab with XP Rules, Levels, Adjustments, Recalculation, Campaigns, Audit Log, Abuse Detection
-- `web/src/app/dashboard/analytics/page.tsx` — Lightweight shell (5.82 kB) with `next/dynamic()` lazy-loading for map/chart tabs
+- `web/src/app/dashboard/analytics/page.tsx` — Server Component pre-fetching all analytics data + species list
+- `web/src/app/dashboard/analytics/client.tsx` — Client component with tab state, filters, lazy-loaded map/chart tabs
 - `web/src/app/dashboard/analytics/map-tab.tsx` — Extracted map component (lazy-loaded, 1,705 kB chunk with react-map-gl)
 - `web/src/app/dashboard/analytics/chart-tabs.tsx` — Extracted chart components (lazy-loaded, 403 kB chunk with recharts)
 - `web/src/app/auth/register/page.tsx` — Registration form with phone/address, invite token parsing & pre-filling
@@ -291,7 +363,14 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - `web/src/app/auth/reset-password/page.tsx` — Reset password form with token from URL params
 - `web/src/lib/api.ts` — `detectedCoin` in `createObservation` type, invite/analytics/password reset API methods, engagement endpoints
 - `web/src/lib/authStore.ts` — Web auth state (includes phone/address, engagement fields)
-- `web/src/app/dashboard/leaderboard/page.tsx` — Leaderboard page component
+- `web/src/app/dashboard/leaderboard/page.tsx` — Server Component with searchParams for scope/page
+- `web/src/app/dashboard/leaderboard/client.tsx` — Client component with scope toggle, pagination, medals
+- `web/src/app/dashboard/achievements/page.tsx` — Server Component fetching achievements
+- `web/src/app/dashboard/achievements/client.tsx` — Client component with filters, rarity colors, toast notifications
+- `web/src/app/dashboard/missions/page.tsx` — Server Component fetching missions + onboarding
+- `web/src/app/dashboard/missions/client.tsx` — Client component with tabs, claim/complete actions
+- `web/src/app/dashboard/settings/page.tsx` — Server Component fetching notification preferences
+- `web/src/app/dashboard/settings/client.tsx` — Client component with toggle switches
 - `web/src/app/dashboard/community/page.tsx` — Server Component with data fetching via `fetch()` + cookie-based auth
 - `web/src/app/dashboard/community/client.tsx` — Client component with interactive UI, receives pre-fetched data from server
 - `web/src/components/Sidebar.tsx` — Nav items: primary (Dashboard, Capture, Species, Analytics) + community hub (Leaderboard, Missions, Achievements, Community) + role-based (Researcher, Admin)
@@ -301,9 +380,9 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 
 ### Mobile
 - `mobile/src/screens/home/HomeScreen.tsx` — Updated quick actions to navigate to Analytics/New tabs; gamification quick-actions card with Leaderboard/Missions/Achievements navigation
-- `mobile/src/screens/gamification/LeaderboardScreen.tsx` — Scope toggle (All Time/Seasonal), pagination, medals, "You" badge, pull-to-refresh
-- `mobile/src/screens/gamification/MissionsScreen.tsx` — Daily missions + onboarding tabs, claim/complete actions, progress bars, XP badges
-- `mobile/src/screens/gamification/AchievementsScreen.tsx` — Rarity colors, category/status filters, progress tracking, check-achievements action
+- `mobile/src/screens/gamification/LeaderboardScreen.tsx` — Scope toggle (All Time/Seasonal), pagination, medals, "You" badge, pull-to-refresh; uses `LeaderboardEntryDto`
+- `mobile/src/screens/gamification/MissionsScreen.tsx` — Daily missions + onboarding tabs, claim/complete actions, progress bars, XP badges; uses `ActiveMissionDto`/`OnboardingStepStatusDto`
+- `mobile/src/screens/gamification/AchievementsScreen.tsx` — Rarity colors, category/status filters, progress tracking, check-achievements action; uses `UserAchievementListDto`
 - `mobile/src/screens/profile/ProfileScreen.tsx` — XP stats card with level/title/XP/streak/progress; gamification quick-link cards
 - `mobile/src/screens/analytics/AnalyticsScreen.tsx` — Fixed `data.map` crash with array guards; added `RefreshControl` pull-to-refresh
 - `mobile/src/screens/researcher/ResearcherScreen.tsx` — Researcher validation screen for approving/rejecting pending observations
@@ -333,6 +412,7 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 ### Shared
 - `shared/src/types/user.ts` — User, CreateUserInput, UpdateUserProfileInput, UserResponse types; Invite, PasswordResetRequest, PasswordResetConfirm types
 - `shared/src/types/api.ts` — LoginResponse type
+- `shared/src/types/engagement.ts` — Engagement DTOs: `LeaderboardEntryDto`, `ActiveMissionDto`, `OnboardingStepStatusDto`, `UserAchievementListDto` (with `description` field)
 - `shared/src/constants/countries.ts` — Country list used by web profile dropdowns
 - `shared/src/constants/roles.ts` — Defines `user`, `researcher`, `admin` roles and hierarchy
 
