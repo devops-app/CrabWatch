@@ -1,7 +1,7 @@
 # CrabWatch — Work Progress Tracker
 
-> **Last Updated**: 2026-05-22
-> **Current Focus**: P2-4/5/6 complete — All 24 improvement tasks done. Dynamic type scaling, card accessibility, MD3 elevation applied.
+> **Last Updated**: 2026-05-23
+> **Current Focus**: Observation print feature complete — Web and mobile print support added.
 
 ## Goal
 Build an AI-guided crab observation capture flow with fully dynamic species detection. The AI identifies any crab species in photos, and unknown species are auto-created in the database.
@@ -20,6 +20,12 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Invite link must pre-fill the email and lock the assigned role (RESEARCHER/ADMIN) on the registration form.
 
 ## Progress
+
+### Completed (Observation Print)
+- Completed: Added print button to web observation detail page (`observation/[id]/client.tsx`) with `window.print()` and `@media print` CSS that hides sidebar/header
+- Completed: Added print button to mobile observation detail screen (`ObservationDetailScreen.tsx`) using `expo-print`
+- Completed: iOS uses native print dialog via `Print.printAsync()`; Android saves PDF via `Print.printToFileAsync()` with confirmation alert
+- Completed: Updated UAT.md with 8 new test cases (Section 19), total now 240 test cases across 19 modules
 
 ### Completed (Gamification Toast + Streak Warning)
 - Completed: Added toast notifications on web capture page for XP earned and level-up after observation submission
@@ -49,6 +55,7 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Full capture flow, Analytics charts, Researcher validation, Admin management
 - Gamification: Leaderboard (scope toggle, pagination), Missions (daily/onboarding), Achievements (filters, progress)
 - Password reset, role-based conditional tabs (Researcher/Admin)
+- Observation detail print with `expo-print` (iOS native dialog, Android PDF save)
 
 **Server**
 - Express + Prisma, 8 analytics endpoints, AI analysis, blob storage, email (Resend)
@@ -190,6 +197,7 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - **Body weight**: `bw` is `number | null` — never auto-filled by AI. Researcher must measure manually. Analytics gracefully skips null values.
 - **Photo upload**: React Native `fetch` handles local URIs in `FormData` natively; no base64-to-blob conversion needed.
 - **Fullscreen images**: Mobile uses `Modal` + `Image`; web uses fixed overlay with `z-[60]`. Consistent UX across platforms.
+- **Observation print**: Web uses `window.print()` with `@media print` CSS hiding sidebar/header; mobile uses `expo-print` with iOS native dialog and Android PDF save.
 - **Location picking**: Web uses Mapbox (`react-map-gl`), mobile uses `react-native-maps` (Apple/Google tiles). Both fallback to manual coordinate input.
 - **Map markers (Web)**: Use native `Source` + `Layer` (GeoJSON) instead of DOM `Marker` component to avoid rendering/z-index issues in `react-map-gl`.
 - **AI Species Matching (Web)**: `findSpeciesMatch` tries UUID -> exact text match -> partial/fuzzy match (normalized names, genus fallback). `isUuid` enforces strict validation before submission.

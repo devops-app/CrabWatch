@@ -44,6 +44,7 @@ interface AIReviewRouteParams {
   views: PhotoView[]
   sessionId: string
   coinType?: string
+  blobUrls?: string[]
   isManualFallback?: boolean
 }
 
@@ -71,7 +72,8 @@ function AIBadge({ label }: { label: string }) {
 export function AIReviewScreen() {
   const navigation = useNavigation<any>()
   const route = useRoute<any>()
-  const { analysis, photos, sessionId, coinType, isManualFallback } = route.params as AIReviewRouteParams
+  const { analysis, photos, sessionId, coinType, blobUrls, isManualFallback } = route.params as AIReviewRouteParams
+  const displayPhotos = blobUrls || photos
 
   const { submitObservation, submitting, error: submitError } = useObservation()
   const { species, loadSpecies, getSpeciesById } = useSpeciesStore()
@@ -149,7 +151,7 @@ export function AIReviewScreen() {
       lat: latitude,
       lng: longitude,
       locationMethod: (manualLocation ? 'manual' : 'gps') as 'manual' | 'gps',
-      photos: photos,
+      photos: blobUrls || photos,
       uploadSessionId: sessionId,
       detectedCoin: coinType || analysis.detectedCoin || null,
     }
@@ -296,9 +298,9 @@ export function AIReviewScreen() {
             </View>
           )}
 
-          {photos.length > 0 && (
+          {displayPhotos.length > 0 && (
             <View style={styles.photoStrip}>
-              {photos.map((uri, i) => (
+              {displayPhotos.map((uri, i) => (
                 <TouchableOpacity
                   key={i}
                   onPress={() => handlePhotoPress(uri)}

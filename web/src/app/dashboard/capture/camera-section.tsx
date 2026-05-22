@@ -54,18 +54,6 @@ export function CameraSection({
         <p className="text-sm text-gray-600">{current.hint}</p>
       </div>
 
-      {currentView !== 'carapace-closeup' && (
-        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-          <p className="text-sm font-semibold text-ocean-800 mb-1">Photo Tips</p>
-          <ul className="text-xs text-gray-600 space-y-0.5">
-            <li>Place the coin flat next to the crab</li>
-            <li>Ensure the entire crab fits in the frame</li>
-            <li>Use natural light when possible</li>
-            <li>Hold your device steady before shooting</li>
-          </ul>
-        </div>
-      )}
-
       {photos[currentView] ? (
         <div className="space-y-3">
           <div className="relative w-full h-[420px] rounded-lg bg-black/5 overflow-hidden">

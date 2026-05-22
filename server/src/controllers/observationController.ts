@@ -4,6 +4,8 @@ import { BlobSASPermissions } from '@azure/storage-blob'
 import { AuthRequest } from '../middleware/auth'
 import { ObservationResponse, ObservationListResponse } from '@crabwatch/shared'
 import { sendObservationApproved, sendObservationRejected } from '../services/fcm'
+import { copyAnalysisBlobsToObservation, cleanupAnalysisBlobs } from '../services/foundryAgent'
+import { markAnalysisSessionDone } from './analysisController'
 import { OBSERVATION_INCLUDE, parsePagination, ObservationWithRelations } from '../utils/query'
 import { sanitizeText } from '../utils/sanitize'
 import { getBlobService } from '../services/upload'
@@ -62,6 +64,17 @@ export const createObservation = asyncHandler(async (req: AuthRequest, res: Resp
   const dbUser = getDbUser(req)
   const { speciesId, cw, bw, gender, maturationStatus, lat, lng, locationMethod, photos, detectedCoin, notes, uploadSessionId } = req.body
 
+  const photoUrls = photos as string[]
+  const hasAnalysisBlobs = photoUrls.some((url: string) => url.includes('/analysis/'))
+  let finalPhotos = photoUrls
+
+  if (hasAnalysisBlobs) {
+    const tempObservationId = `temp_${Date.now()}`
+    finalPhotos = await copyAnalysisBlobsToObservation(photoUrls, dbUser.id, tempObservationId)
+    cleanupAnalysisBlobs(photoUrls).catch(() => {})
+    markAnalysisSessionDone(dbUser.id)
+  }
+
   const prisma = getPrisma()
   const observation = await prisma.observation.create({
     data: {
@@ -74,7 +87,7 @@ export const createObservation = asyncHandler(async (req: AuthRequest, res: Resp
       lat,
       lng,
       locationMethod: locationMethod.toUpperCase(),
-      photos: photos as string[],
+      photos: finalPhotos,
       uploadSessionId: uploadSessionId || null,
       detectedCoin: detectedCoin || null,
       notes: sanitizeText(notes),

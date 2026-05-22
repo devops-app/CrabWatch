@@ -20,7 +20,6 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
-    "@babel/runtime": "^7.29.2",
     "@crabwatch/shared": "workspace:*",
     "@expo/metro-runtime": "~6.1.2",
     "@expo/vector-icons": "^15.0.3",
@@ -29,9 +28,7 @@
     "@react-navigation/bottom-tabs": "^6.5.11",
     "@react-navigation/native": "^6.1.17",
     "@react-navigation/native-stack": "^6.9.26",
-    "babel-preset-expo": "~54.0.10",
     "expo": "~54.0.0",
-    "expo-asset": "^12.0.13",
     "expo-camera": "~17.0.10",
     "expo-constants": "~18.0.0",
     "expo-file-system": "~19.0.22",
@@ -42,8 +39,8 @@
     "expo-image-picker": "~17.0.11",
     "expo-linking": "~8.0.0",
     "expo-location": "~19.0.8",
-    "expo-modules-core": "~3.0.30",
     "expo-notifications": "~0.32.17",
+    "expo-print": "~15.0.8",
     "expo-screen-orientation": "~9.0.9",
     "expo-secure-store": "~15.0.8",
     "expo-sensors": "~15.0.8",
@@ -55,7 +52,6 @@
     "react-native": "0.81.5",
     "react-native-maps": "1.20.1",
     "react-native-safe-area-context": "~5.6.0",
-    "react-native-screens": "~4.16.0",
     "zod": "^3.23.0",
     "zustand": "^4.5.2"
   },

@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto'
 import { BlobSASPermissions } from '@azure/storage-blob'
 import { getBlobService } from '../services/upload'
-import { buildObservationBlobPath } from '../utils/blobPath'
+import { buildAnalysisBlobPath } from '../utils/blobPath'
 import { CrabAnalysisRequest, CrabAnalysisResult } from '@crabwatch/shared'
 import { getContainer } from './container'
 
@@ -222,7 +222,7 @@ export async function uploadAnalysisPhotos(
       throw new Error(`Invalid file type: ${file.mimetype}`)
     }
 
-    const blobPath = buildObservationBlobPath(userId, sessionId, index, file.originalname, file.mimetype)
+    const blobPath = buildAnalysisBlobPath(userId, sessionId, index, file.originalname, file.mimetype)
     const blobClient = containerClient.getBlockBlobClient(blobPath)
 
     await blobClient.upload(file.buffer, file.buffer.length, {
@@ -448,6 +448,61 @@ export async function cleanupAnalysisBlobs(blobUrls: string[]): Promise<void> {
       // Best effort cleanup - don't fail if cleanup fails
     }
   }
+}
+
+export async function copyAnalysisBlobsToObservation(
+  blobUrls: string[],
+  userId: string,
+  observationId: string
+): Promise<string[]> {
+  const service = getBlobService()
+  const containerName = process.env.AZURE_STORAGE_CONTAINER || 'crabwatch-uploads'
+  const containerClient = service.getContainerClient(containerName)
+
+  const copiedUrls: string[] = []
+
+  for (const [index, url] of blobUrls.entries()) {
+    try {
+      const sourceBlobName = extractBlobName(url, containerName)
+      if (!sourceBlobName) {
+        copiedUrls.push(url)
+        continue
+      }
+
+      const dateStr = new Date().toISOString().slice(0, 10)
+      const ext = sourceBlobName.split('.').pop() || 'jpg'
+      const destBlobName = `observations/${userId}/${dateStr}/${observationId}-${index}.${ext}`
+
+      const sourceBlobClient = containerClient.getBlockBlobClient(sourceBlobName)
+      const destBlobClient = containerClient.getBlockBlobClient(destBlobName)
+
+      const download = await sourceBlobClient.download()
+      const chunks: Buffer[] = []
+      for await (const chunk of download.readableStreamBody!) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+      }
+      const buffer = Buffer.concat(chunks)
+
+      const extToType: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', heic: 'image/heic' }
+      const contentType = extToType[ext.toLowerCase()] || 'image/jpeg'
+
+      await destBlobClient.upload(buffer, buffer.length, {
+        blobHTTPHeaders: { blobContentType: contentType },
+      })
+
+      const sasUrl = await destBlobClient.generateSasUrl({
+        startsOn: new Date(Date.now() - 2 * 60 * 1000),
+        expiresOn: new Date(Date.now() + 60 * 60 * 1000),
+        permissions: BlobSASPermissions.parse('r'),
+      })
+
+      copiedUrls.push(sasUrl)
+    } catch {
+      copiedUrls.push(url)
+    }
+  }
+
+  return copiedUrls
 }
 
 function validateResult(result: CrabAnalysisResult): CrabAnalysisResult {

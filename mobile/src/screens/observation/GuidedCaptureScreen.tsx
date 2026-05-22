@@ -261,6 +261,15 @@ export function GuidedCaptureScreen() {
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+        {currentView !== 'carapace-closeup' && (
+          <View style={[styles.tipsCard, { marginBottom: 16 }]}>
+            <Text style={styles.tipsTitle}>Photo Tips</Text>
+            <Text style={styles.tipBullet}>\u2022 Place the coin flat next to the crab</Text>
+            <Text style={styles.tipBullet}>\u2022 Ensure the entire crab fits in the frame</Text>
+            <Text style={styles.tipBullet}>\u2022 Use natural light when possible</Text>
+            <Text style={styles.tipBullet}>\u2022 Hold your phone steady before shooting</Text>
+          </View>
+        )}
         {!coinSelected && currentStep === 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
@@ -445,16 +454,6 @@ export function GuidedCaptureScreen() {
             </View>
           )}
         </View>
-
-        {currentView !== 'carapace-closeup' && (
-          <View style={styles.tipsCard}>
-            <Text style={styles.tipsTitle}>Photo Tips</Text>
-            <Text style={styles.tipBullet}>\u2022 Place the coin flat next to the crab</Text>
-            <Text style={styles.tipBullet}>\u2022 Ensure the entire crab fits in the frame</Text>
-            <Text style={styles.tipBullet}>\u2022 Use natural light when possible</Text>
-            <Text style={styles.tipBullet}>\u2022 Hold your phone steady before shooting</Text>
-          </View>
-        )}
       </ScrollView>
 
       <View style={styles.footer}>

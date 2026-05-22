@@ -26,6 +26,18 @@ function normalizeExtension(fileName: string, contentType?: string): string {
 
 export function buildObservationBlobPath(
   userId: string,
+  observationId: string,
+  photoIndex: number,
+  fileName: string,
+  contentType?: string
+): string {
+  const dateStr = new Date().toISOString().slice(0, 10)
+  const ext = normalizeExtension(fileName, contentType)
+  return `observations/${userId}/${dateStr}/${observationId}-${photoIndex}${ext}`
+}
+
+export function buildAnalysisBlobPath(
+  userId: string,
   sessionId: string,
   photoIndex: number,
   fileName: string,
@@ -33,5 +45,5 @@ export function buildObservationBlobPath(
 ): string {
   const dateStr = new Date().toISOString().slice(0, 10)
   const ext = normalizeExtension(fileName, contentType)
-  return `observations/${userId}/${dateStr}/${sessionId}-${photoIndex}${ext}`
+  return `analysis/${userId}/${dateStr}/${sessionId}-${photoIndex}${ext}`
 }

@@ -2,7 +2,7 @@
 
 > **Version**: 1.1
 > **Date**: 2026-05-22
-> **Scope**: Full end-to-end testing across Web, Mobile, and Server (232 test cases across 18 modules)
+> **Scope**: Full end-to-end testing across Web, Mobile, and Server (240 test cases across 19 modules)
 > **Seed Password**: `Pa55w.rd` (all seeded accounts)
 
 ---
@@ -495,6 +495,40 @@
 
 ---
 
+## 19. Observation Print
+
+### 19.1 Web Print
+
+| ID | Test Case | Steps | Expected Result |
+|----|-----------|-------|-----------------|
+| PRNT-001 | Print button visible | 1. Navigate to observation detail page | Print icon button visible next to status badge |
+| PRNT-002 | Print dialog opens | 1. Click print button | Browser print dialog opens |
+| PRNT-003 | Print layout correct | 1. Open print preview | Only observation content visible; sidebar/header hidden |
+| PRNT-004 | Photos render in print | 1. Observation has photos<br>2. Open print preview | Photos included in print output |
+| PRNT-005 | Print hides interactive elements | 1. Open print preview | Back button and fullscreen modal hidden |
+| PRNT-006 | Print card breaks | 1. Print observation with many sections | Cards don't split across pages (`break-inside: avoid`) |
+
+### 19.2 Mobile Print (iOS)
+
+| ID | Test Case | Steps | Expected Result |
+|----|-----------|-------|-----------------|
+| PRNT-007 | Print button visible | 1. Navigate to observation detail screen | Print button visible alongside Back button |
+| PRNT-008 | Print dialog opens | 1. Tap Print button | iOS native print dialog appears |
+| PRNT-009 | Print content complete | 1. Preview print output | All observation data rendered: species, measurements, biological data, location, photos |
+| PRNT-010 | Print with notes | 1. Observation has notes<br>2. Print | Notes section included in output |
+| PRNT-011 | Print cancellation | 1. Open print dialog<br>2. Cancel | App returns to observation detail without error |
+
+### 19.3 Mobile Print (Android)
+
+| ID | Test Case | Steps | Expected Result |
+|----|-----------|-------|-----------------|
+| PRNT-012 | Print saves PDF | 1. Tap Print button | PDF generated and saved to Downloads |
+| PRNT-013 | Print confirmation | 1. Print completes | Alert confirms "PDF Saved" |
+| PRNT-014 | Print error handling | 1. Simulate print failure | Alert shows "Print Failed" message |
+| PRNT-015 | Print with rejection | 1. Observation is rejected<br>2. Print | Rejection reason included in output |
+
+---
+
 ## Execution Summary Template
 
 | Module | Total | Pass | Fail | Blocked | N/A |
@@ -517,4 +551,5 @@
 | 16. Mobile UX | 12 | | | | |
 | 17. Web Performance | 4 | | | | |
 | 18. Typography & Accessibility | 9 | | | | |
-| **TOTAL** | **232** | | | | |
+| 19. Observation Print | 8 | | | | |
+| **TOTAL** | **240** | | | | |

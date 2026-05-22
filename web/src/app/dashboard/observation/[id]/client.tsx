@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { logger } from '@/lib/logger'
@@ -44,6 +44,10 @@ export function ObservationClient({
     return () => { cancelled = true }
   }, [initialObservation, idPromise])
 
+   const handlePrint = useCallback(() => {
+    window.print()
+  }, [])
+
   const statusColors: Record<string, string> = {
     pending: 'bg-yellow-100 text-yellow-800',
     approved: 'bg-green-100 text-green-800',
@@ -68,20 +72,56 @@ export function ObservationClient({
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <style>{`
+        @media print {
+          body * { visibility: hidden !important; }
+          #print-area, #print-area * { visibility: visible !important; }
+          #print-area {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 20px !important;
+          }
+          #print-area .card {
+            break-inside: avoid !important;
+            border: 1px solid #e5e7eb !important;
+            box-shadow: none !important;
+          }
+          #print-area img {
+            max-width: 300px !important;
+            height: auto !important;
+          }
+          .print\\:hidden { display: none !important; }
+        }
+      `}</style>
+      <div id="print-area" className="space-y-6">
       {/* Header */}
       <div className="card">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h1 className="text-2xl font-bold text-ocean-900">
-              {observation.species.commonName || observation.species.scientificName}
-            </h1>
-            <p className="text-sm text-gray-500 italic">{observation.species.scientificName}</p>
+<div className="flex items-start justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-bold text-ocean-900">
+                {observation.species.commonName || observation.species.scientificName}
+              </h1>
+              <p className="text-sm text-gray-500 italic">{observation.species.scientificName}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${statusColors[observation.status] || 'bg-gray-100 text-gray-800'}`}>
+                {observation.status}
+              </span>
+              <button
+                onClick={handlePrint}
+                className="p-2 text-gray-500 hover:text-ocean-600 hover:bg-ocean-50 rounded-lg transition-colors print:hidden"
+                aria-label="Print observation"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+              </button>
+            </div>
           </div>
-          <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${statusColors[observation.status] || 'bg-gray-100 text-gray-800'}`}>
-            {observation.status}
-          </span>
-        </div>
         <div className="flex items-center gap-4 text-sm text-gray-500">
           <span>By {observation.user.name}</span>
           <span>&middot;</span>
@@ -211,15 +251,16 @@ export function ObservationClient({
       {/* Back Button */}
       <button
         onClick={() => router.back()}
-        className="text-ocean-600 hover:underline text-sm"
+        className="text-ocean-600 hover:underline text-sm print:hidden"
       >
         &larr; Back
       </button>
+      </div>
 
       {/* Fullscreen Photo Modal */}
       {fullscreenPhoto && (
         <div
-          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4 print:hidden"
           onClick={() => setFullscreenPhoto(null)}
         >
           <button
@@ -238,6 +279,6 @@ export function ObservationClient({
           />
         </div>
       )}
-    </div>
+    </>
   )
 }

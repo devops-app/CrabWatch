@@ -7,6 +7,30 @@ import { asyncHandler, ValidationError } from '../utils/errors'
 import { clearCache } from '../utils/cache'
 import { sanitizeInput, sanitizeHtml } from '../utils/sanitize'
 
+export const activeSessions = new Map<string, { sessionId: string; blobUrls: string[]; lastActive: number }>()
+const ANALYSIS_BLOB_TTL_MS = Number(process.env.ANALYSIS_BLOB_TTL_MS) || 20 * 60 * 1000
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000
+let cleanupInterval: ReturnType<typeof setInterval> | null = null
+
+function startCleanupTimer() {
+  if (cleanupInterval) return
+  cleanupInterval = setInterval(() => {
+    const now = Date.now()
+    for (const [userId, session] of activeSessions.entries()) {
+      if (now - session.lastActive > ANALYSIS_BLOB_TTL_MS) {
+        cleanupAnalysisBlobs(session.blobUrls).catch(() => {})
+        activeSessions.delete(userId)
+      }
+    }
+  }, CLEANUP_INTERVAL_MS)
+}
+
+startCleanupTimer()
+
+export function markAnalysisSessionDone(userId: string): void {
+  activeSessions.delete(userId)
+}
+
 interface MulterFile {
   fieldname: string
   originalname: string
@@ -40,6 +64,13 @@ export const uploadAnalysisPhotosHandler = asyncHandler(async (
     userId: req.dbUser?.id || 'anon',
     sessionId,
   })
+
+  const userId = req.dbUser?.id || 'anon'
+  const prevSession = activeSessions.get(userId)
+  if (prevSession && prevSession.sessionId !== sessionId) {
+    cleanupAnalysisBlobs(prevSession.blobUrls).catch(() => {})
+  }
+  activeSessions.set(userId, { sessionId: sessionId || prevSession?.sessionId || 'unknown', blobUrls, lastActive: Date.now() })
 
   res.json({
     success: true,
@@ -116,19 +147,6 @@ export const analyzeCrabHandler = asyncHandler(async (
     success: true,
     data: result,
   })
-
-  const cleanupDelayRaw = process.env.ANALYSIS_BLOB_CLEANUP_DELAY_MS
-  const cleanupDelayMs = cleanupDelayRaw != null ? Number(cleanupDelayRaw) : null
-
-  if (cleanupDelayMs != null && Number.isFinite(cleanupDelayMs) && cleanupDelayMs > 0) {
-    const blobUrlsToCleanup = photoUrls.filter((url) => !url.includes('/observations/'))
-    if (blobUrlsToCleanup.length === 0) {
-      return
-    }
-    setTimeout(() => {
-      cleanupAnalysisBlobs(blobUrlsToCleanup).catch(() => {})
-    }, cleanupDelayMs)
-  }
 })
 
 export const detectViewHandler = asyncHandler(async (

@@ -521,6 +521,18 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
         </p>
       </div>
 
+      {currentView !== 'carapace-closeup' && !inReview && !analysisError && (
+        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+          <p className="text-sm font-semibold text-ocean-800 mb-1">Photo Tips</p>
+          <ul className="text-xs text-gray-600 space-y-0.5">
+            <li>Place the coin flat next to the crab</li>
+            <li>Ensure the entire crab fits in the frame</li>
+            <li>Use natural light when possible</li>
+            <li>Hold your device steady before shooting</li>
+          </ul>
+        </div>
+      )}
+
       {(analysisStage !== 'idle' || inReview) && (
         <AnalysisProgress analysisStage={analysisStage} capturedEntries={capturedEntries} elapsed={elapsed} />
       )}

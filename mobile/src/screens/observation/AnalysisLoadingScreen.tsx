@@ -11,7 +11,7 @@ import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
-import { analysisService, AnalysisProgress } from '../../services/analysisService'
+import { analysisService, AnalysisProgress, AnalysisResult } from '../../services/analysisService'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 import { Button } from '../../components/common/Button'
@@ -87,11 +87,12 @@ export function AnalysisLoadingScreen() {
         if (!cancelled) {
           if (timerRef.current) clearInterval(timerRef.current)
           navigation.navigate('AIReview', {
-            analysis: result,
+            analysis: result.analysis,
             photos,
             views,
             sessionId,
             coinType,
+            blobUrls: result.blobUrls,
           })
         }
       } catch (error: unknown) {
@@ -131,11 +132,12 @@ export function AnalysisLoadingScreen() {
 
         if (timerRef.current) clearInterval(timerRef.current)
         navigation.navigate('AIReview', {
-          analysis: result,
+          analysis: result.analysis,
           photos,
           views,
           sessionId,
           coinType,
+          blobUrls: result.blobUrls,
         })
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Analysis failed'

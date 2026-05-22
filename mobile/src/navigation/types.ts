@@ -23,7 +23,7 @@ export type RootStackParamList = {
   ObservationDetail: { observation: ObservationResponse }
   EditProfile: undefined
   AnalysisLoading: { photos: string[]; views: PhotoView[]; sessionId: string; coinType?: string }
-  AIReview: { analysis: CrabAnalysisResult; photos: string[]; views: PhotoView[]; sessionId: string; coinType?: string }
+  AIReview: { analysis: CrabAnalysisResult; photos: string[]; views: PhotoView[]; sessionId: string; coinType?: string; blobUrls?: string[] }
   About: undefined
   Leaderboard: undefined
   Missions: undefined

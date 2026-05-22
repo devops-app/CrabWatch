@@ -7,6 +7,11 @@ export interface AnalysisProgress {
   percentage: number
 }
 
+export interface AnalysisResult {
+  analysis: CrabAnalysisResult
+  blobUrls: string[]
+}
+
 export const analysisService = {
   async analyzeCrab(
     photoUris: string[],
@@ -14,7 +19,7 @@ export const analysisService = {
     sessionId: string,
     coinType?: string,
     onProgress?: (progress: AnalysisProgress) => void
-  ): Promise<CrabAnalysisResult> {
+  ): Promise<AnalysisResult> {
     if (photoUris.length === 0) {
       throw new Error('At least one photo is required')
     }
@@ -45,7 +50,7 @@ export const analysisService = {
 
       onProgress?.({ status: 'complete', message: 'Analysis complete!', percentage: 100 })
 
-      return result
+      return { analysis: result, blobUrls }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Analysis failed'
       onProgress?.({ status: 'error', message, percentage: 0 })
@@ -59,7 +64,7 @@ export const analysisService = {
     sessionId: string,
     coinType?: string,
     onProgress?: (progress: AnalysisProgress) => void
-  ): Promise<CrabAnalysisResult> {
+  ): Promise<AnalysisResult> {
     let lastError: Error | null = null
 
     for (let attempt = 1; attempt <= 3; attempt++) {
