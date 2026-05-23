@@ -74,12 +74,15 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_5FDC2254746143CD8DA38D5D4876F309 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_CFFB632CA86743B5B96216EA7A84DEE6 }}
 
+      - name: Verify downloaded artifact
+        run: ls -la crabwatch-web/ && ls -la crabwatch-web.tar.gz 2>/dev/null || true
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'crabwatch-web'
           slot-name: 'Production'
-          package: crabwatch-web.tar.gz
+          package: crabwatch-web/crabwatch-web.tar.gz
 
       - name: Restart Web App
         run: az webapp restart --resource-group VSES-CrabWatch-MY-RG --name crabwatch-web
