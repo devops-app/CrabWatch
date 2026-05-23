@@ -41,6 +41,12 @@ jobs:
           BACKEND_URL: ${{ secrets.BACKEND_URL }}
           MAPBOX_TOKEN: ${{ secrets.MAPBOX_TOKEN }}
 
+      - name: Install production deps for standalone
+        run: |
+          cd web/.next/standalone
+          npm install --omit=dev --ignore-scripts
+          cd ../..
+
       - name: Prepare standalone deployment
         run: |
           cp -r web/.next/static web/.next/standalone/web/.next/static
