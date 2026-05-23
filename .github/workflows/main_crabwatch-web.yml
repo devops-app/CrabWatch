@@ -79,7 +79,7 @@ jobs:
         with:
           app-name: 'crabwatch-web'
           slot-name: 'Production'
-          package: crabwatch-web/crabwatch-web.tar.gz
+          package: crabwatch-web.tar.gz
 
       - name: Restart Web App
         run: az webapp restart --resource-group VSES-CrabWatch-MY-RG --name crabwatch-web

@@ -40,17 +40,16 @@ jobs:
 
       - name: Prepare deployment package
         run: |
-          cd server
-          tar -czf ../crabwatch-api.tar.gz \
-            dist/ \
-            package.json \
-            prisma/
+          mkdir -p deploy
+          cp -r server/dist deploy/
+          cp server/package.json deploy/
+          cp -r server/prisma deploy/
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: crabwatch-api
-          path: crabwatch-api.tar.gz
+          path: deploy/
           retention-days: 1
 
   deploy:
