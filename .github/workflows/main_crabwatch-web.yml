@@ -87,5 +87,15 @@ jobs:
       - name: Disable Oryx build
         run: az webapp config appsettings set --resource-group VSES-CrabWatch-MY-RG --name crabwatch-web --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false ENABLE_ORYX_BUILD=false WEBSITE_NODE_DEFAULT_VERSION=22
 
+      - name: Install production dependencies on server
+        run: |
+          PUBCRED=$(az webapp deployment list-publishing-credentials --resource-group VSES-CrabWatch-MY-RG --name crabwatch-web --query "{username:publishingUserName,password:password}" --output tsv)
+          USERNAME=$(echo $PUBCRED | cut -f1)
+          PASSWORD=$(echo $PUBCRED | cut -f2)
+          curl -X POST "https://crabwatch-web.scm.azurewebsites.net/api/shell" \
+            -u "$USERNAME:$PASSWORD" \
+            -H "Content-Type: application/json" \
+            -d '{"command":"cd /home/site/wwwroot && npm install --omit=dev"}'
+
       - name: Restart Web App
         run: az webapp restart --resource-group VSES-CrabWatch-MY-RG --name crabwatch-web
