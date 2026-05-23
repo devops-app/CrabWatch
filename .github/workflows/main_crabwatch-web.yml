@@ -44,13 +44,13 @@ jobs:
       - name: Prepare standalone deployment
         run: |
           cp -r web/.next/static web/.next/standalone/web/.next/
-          tar -czf crabwatch-web.tar.gz -C web/.next/standalone .
+          (cd web/.next/standalone && zip -r ../../../../crabwatch-web.zip .)
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: crabwatch-web
-          path: crabwatch-web.tar.gz
+          path: crabwatch-web.zip
           retention-days: 1
 
   deploy:
@@ -74,15 +74,12 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_5FDC2254746143CD8DA38D5D4876F309 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_CFFB632CA86743B5B96216EA7A84DEE6 }}
 
-      - name: Verify downloaded artifact
-        run: ls -laR .
-
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'crabwatch-web'
           slot-name: 'Production'
-          package: crabwatch-web.tar.gz
+          package: crabwatch-web.zip
 
       - name: Restart Web App
         run: az webapp restart --resource-group VSES-CrabWatch-MY-RG --name crabwatch-web
