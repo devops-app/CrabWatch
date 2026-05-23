@@ -43,7 +43,7 @@ jobs:
 
       - name: Prepare standalone deployment
         run: |
-          cp -r web/.next/static web/.next/standalone/web/.next/
+          cp -r web/.next/static web/.next/standalone/.next/static
           (cd web/.next/standalone && zip -r ../../../crabwatch-web.zip .)
 
       - name: Upload artifact for deployment job
@@ -80,6 +80,12 @@ jobs:
           app-name: 'crabwatch-web'
           slot-name: 'Production'
           package: crabwatch-web.zip
+
+      - name: Set startup command
+        run: az webapp config set --resource-group VSES-CrabWatch-MY-RG --name crabwatch-web --startup-file "node server.js"
+
+      - name: Disable Oryx build
+        run: az webapp config appsettings set --resource-group VSES-CrabWatch-MY-RG --name crabwatch-web --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false ENABLE_ORYX_BUILD=false WEBSITE_NODE_DEFAULT_VERSION=22
 
       - name: Restart Web App
         run: az webapp restart --resource-group VSES-CrabWatch-MY-RG --name crabwatch-web
