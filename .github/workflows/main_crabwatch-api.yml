@@ -44,12 +44,13 @@ jobs:
           cp -r server/dist deploy/
           cp server/package.json deploy/
           cp -r server/prisma deploy/
+          tar -czf crabwatch-api.tar.gz -C deploy .
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: crabwatch-api
-          path: deploy/
+          path: crabwatch-api.tar.gz
           retention-days: 1
 
   deploy:
@@ -74,14 +75,14 @@ jobs:
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_851B4F74A1304A729757464F26A6E974 }}
 
       - name: Verify downloaded artifact
-        run: ls -la crabwatch-api/ && ls -la crabwatch-api.tar.gz 2>/dev/null || true
+        run: ls -laR .
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'crabwatch-api'
           slot-name: 'Production'
-          package: crabwatch-api
+          package: crabwatch-api.tar.gz
 
       - name: Restart Web App
         run: az webapp restart --resource-group VSES-CrabWatch-MY-RG --name crabwatch-api
