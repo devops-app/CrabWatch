@@ -12,7 +12,7 @@ import {
 } from 'react-native'
 import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import * as ScreenOrientation from 'expo-screen-orientation'
@@ -84,6 +84,31 @@ export function GuidedCaptureScreen() {
   const [analyzingView, setAnalyzingView] = useState(false)
 
   const { quality, setFocused } = useCaptureAssistance()
+
+  useFocusEffect(
+    useCallback(() => {
+      setCoinType('')
+      setCoinSelected(false)
+      setExpandedSeries(null)
+      setCurrentStep(0)
+      setCameraVisible(false)
+      setCapturingView('dorsal')
+      setCapturing(false)
+      setPhotos({
+        'dorsal': null,
+        'ventral': null,
+        'carapace-closeup': null,
+      })
+      setUsePicker({
+        'dorsal': false,
+        'ventral': false,
+        'carapace-closeup': false,
+      })
+      setShowPreview(false)
+      setViewWarnings([])
+      setAnalyzingView(false)
+    }, [])
+  )
 
   const handleFocus = useCallback(async () => {
     if (cameraRef.current) {

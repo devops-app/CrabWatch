@@ -7,7 +7,7 @@ const API_BASE = process.env.BACKEND_URL || 'https://crabwatch-api.azurewebsites
 async function fetchServer<T>(path: string): Promise<T | null> {
   try {
     const cookieStore = await cookies()
-    const token = cookieStore.get('token')?.value
+    const token = cookieStore.get('auth_token')?.value
     const res = await fetch(`${API_BASE}${path}`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -15,7 +15,8 @@ async function fetchServer<T>(path: string): Promise<T | null> {
       cache: 'no-store',
     })
     if (!res.ok) return null
-    return res.json() as T
+    const json = await res.json()
+    return (json?.data ?? json) as T
   } catch {
     return null
   }

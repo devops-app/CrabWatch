@@ -8,7 +8,8 @@ async function fetchSpecies(): Promise<SpeciesResponse[]> {
       cache: 'no-store',
     })
     if (!res.ok) return []
-    return res.json()
+    const json = await res.json()
+    return json?.data ?? json
   }
   catch {
     return []

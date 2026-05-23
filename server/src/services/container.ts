@@ -25,6 +25,7 @@ export interface ServiceConfig {
   }
   resend: {
     apiKey: string | undefined
+    fromEmail: string
   }
   engagement: {
     enabled: boolean

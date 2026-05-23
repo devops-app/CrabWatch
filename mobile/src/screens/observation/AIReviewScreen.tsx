@@ -222,7 +222,7 @@ export function AIReviewScreen() {
             title="Capture Another"
             onPress={() => {
               setShowSuccess(false)
-              navigation.navigate('Home')
+              navigation.navigate('New')
             }}
             style={styles.successButton}
             accessibilityLabel="Capture another observation"

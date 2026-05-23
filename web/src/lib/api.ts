@@ -540,10 +540,10 @@ export const api = {
   getActiveMissions: () => request<ActiveMissionDto[]>('/api/v1/engagement/missions/today'),
 
   claimMission: (body: { missionKey: string }) =>
-    request('/api/v1/engagement/missions/claim', { method: 'POST', body: JSON.stringify(body) }),
+    request('/api/v1/engagement/missions/claim', { method: 'POST', body: JSON.stringify({ missionCode: body.missionKey }) }),
 
   updateMissionProgress: (body: { missionKey: string; increment?: number }) =>
-    request('/api/v1/engagement/missions/progress', { method: 'POST', body: JSON.stringify(body) }),
+    request('/api/v1/engagement/missions/progress', { method: 'POST', body: JSON.stringify({ missionCode: body.missionKey, increment: body.increment }) }),
 
   getOnboardingStatus: () => request<OnboardingStatusDto>('/api/v1/engagement/onboarding/me'),
 

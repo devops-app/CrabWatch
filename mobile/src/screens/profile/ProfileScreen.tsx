@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
 } from 'react-native'
 import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -27,7 +26,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>
 
 export function ProfileScreen() {
   const navigation = useNavigation<NavigationProp>()
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const [observations, setObservations] = useState<ObservationResponse[]>([])
   const [stats, setStats] = useState<UserStatsDto | null>(null)
   const [loading, setLoading] = useState(true)
@@ -53,45 +52,6 @@ export function ProfileScreen() {
   }
 
   const approvedCount = observations.filter((o) => o.status === 'approved').length
-
-  const handleLogout = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign Out',
-        style: 'destructive',
-        onPress: () => logout(),
-      },
-    ])
-  }
-
-  const [deleting, setDeleting] = useState(false)
-
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      'Delete Account',
-      'This will delete your account. You have 30 days to restore it by logging in again. All your data will be permanently removed after 30 days.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setDeleting(true)
-            try {
-              await api.deleteMyAccount()
-              logout()
-              Alert.alert('Account Deleted', 'Your account has been deleted. You have 30 days to restore it.')
-            } catch (err) {
-              Alert.alert('Error', err instanceof Error ? err.message : 'Failed to delete account')
-            } finally {
-              setDeleting(false)
-            }
-          },
-        },
-      ]
-    )
-  }
 
   const roleColors: Record<string, string> = {
     user: COLORS.primary,
@@ -149,6 +109,44 @@ export function ProfileScreen() {
               {observations.filter((o) => o.status === 'pending').length}
             </Text>
             <Text style={styles.statLabel}>Pending</Text>
+          </View>
+        </View>
+
+        <View style={styles.engagementSection}>
+          <Text style={styles.sectionTitle}>Gamification</Text>
+          <View style={styles.engagementGrid}>
+            <TouchableOpacity
+              style={styles.engagementCard}
+              onPress={() => navigation.navigate('Leaderboard')}
+            >
+              <View style={[styles.engagementIcon, { backgroundColor: COLORS.warningLight }]}>
+                <Ionicons name="trophy" size={22} color={COLORS.accent} />
+              </View>
+              <Text style={styles.engagementTitle}>Leaderboard</Text>
+              <Text style={styles.engagementDesc}>See top contributors</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.engagementCard}
+              onPress={() => navigation.navigate('Missions')}
+            >
+              <View style={[styles.engagementIcon, { backgroundColor: COLORS.successLight }]}>
+                <Ionicons name="shield-checkmark" size={22} color={COLORS.success} />
+              </View>
+              <Text style={styles.engagementTitle}>Missions</Text>
+              <Text style={styles.engagementDesc}>Daily challenges</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.engagementCard}
+              onPress={() => navigation.navigate('Achievements')}
+            >
+              <View style={[styles.engagementIcon, { backgroundColor: COLORS.primaryLight }]}>
+                <Ionicons name="ribbon" size={22} color={COLORS.primary} />
+              </View>
+              <Text style={styles.engagementTitle}>Achievements</Text>
+              <Text style={styles.engagementDesc}>Your badges</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -216,72 +214,19 @@ export function ProfileScreen() {
             style={styles.actionBtn}
           />
           <Button
-            title="Notifications"
+            title="Settings"
             variant="secondary"
-            onPress={() => navigation.navigate('NotificationSettings')}
+            onPress={() => navigation.navigate('ProfileSettings')}
             style={styles.actionBtn}
           />
         </View>
 
-        <View style={styles.actionsRow}>
-          <Button
-            title="About"
-            variant="secondary"
-            onPress={() => navigation.navigate('About')}
-            style={styles.actionBtn}
-          />
-          <Button
-            title="Sign Out"
-            variant="danger"
-            onPress={handleLogout}
-            style={styles.actionBtn}
-          />
-          <Button
-            title="Delete Account"
-            variant="danger"
-            onPress={handleDeleteAccount}
-            loading={deleting}
-            style={styles.actionBtn}
-          />
-        </View>
-
-        <View style={styles.engagementSection}>
-          <Text style={styles.sectionTitle}>Gamification</Text>
-          <View style={styles.engagementGrid}>
-            <TouchableOpacity
-              style={styles.engagementCard}
-              onPress={() => navigation.navigate('Leaderboard')}
-            >
-              <View style={[styles.engagementIcon, { backgroundColor: COLORS.warningLight }]}>
-                <Ionicons name="trophy" size={22} color={COLORS.accent} />
-              </View>
-              <Text style={styles.engagementTitle}>Leaderboard</Text>
-              <Text style={styles.engagementDesc}>See top contributors</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.engagementCard}
-              onPress={() => navigation.navigate('Missions')}
-            >
-              <View style={[styles.engagementIcon, { backgroundColor: COLORS.successLight }]}>
-                <Ionicons name="shield-checkmark" size={22} color={COLORS.success} />
-              </View>
-              <Text style={styles.engagementTitle}>Missions</Text>
-              <Text style={styles.engagementDesc}>Daily challenges</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.engagementCard}
-              onPress={() => navigation.navigate('Achievements')}
-            >
-              <View style={[styles.engagementIcon, { backgroundColor: COLORS.primaryLight }]}>
-                <Ionicons name="ribbon" size={22} color={COLORS.primary} />
-              </View>
-              <Text style={styles.engagementTitle}>Achievements</Text>
-              <Text style={styles.engagementDesc}>Your badges</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <Button
+          title="Notifications"
+          variant="secondary"
+          onPress={() => navigation.navigate('NotificationSettings')}
+          style={styles.fullWidthBtn}
+        />
 
         <Text style={styles.sectionTitle}>Recent Submissions</Text>
 
@@ -542,6 +487,9 @@ const styles = StyleSheet.create({
   },
   actionBtn: {
     flex: 1,
+  },
+  fullWidthBtn: {
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: FONT.lg,

@@ -12,6 +12,7 @@ import { LeaderboardScreen } from '../screens/gamification/LeaderboardScreen'
 import { MissionsScreen } from '../screens/gamification/MissionsScreen'
 import { AchievementsScreen } from '../screens/gamification/AchievementsScreen'
 import { NotificationSettingsScreen } from '../screens/profile/NotificationSettingsScreen'
+import { ProfileSettingsScreen } from '../screens/profile/ProfileSettingsScreen'
 import type { RootStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<RootStackParamList>()
@@ -79,6 +80,11 @@ export function AppNavigator({ deepLinkToken }: AppNavigatorProps) {
         name="NotificationSettings"
         component={NotificationSettingsScreen}
         options={{ headerShown: true, headerTitle: 'Notifications', headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
+      />
+      <Stack.Screen
+        name="ProfileSettings"
+        component={ProfileSettingsScreen}
+        options={{ headerShown: true, headerTitle: 'Settings', headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
       />
     </Stack.Navigator>
   )

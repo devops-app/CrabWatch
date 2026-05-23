@@ -59,10 +59,10 @@ export function LeaderboardClient({
         page: currentPage,
         limit: 50,
         signal,
-      }) as { entries: LeaderboardEntryDto[]; totalPages: number }
+      }) as { items: LeaderboardEntryDto[]; total: number; limit: number }
       const userId = currentUserIdState
-      setEntries((data.entries || []).map(e => ({ ...e, isMe: e.userId === userId })))
-      setTotalPages(data.totalPages || 1)
+      setEntries((data.items || []).map(e => ({ ...e, isMe: e.userId === userId })))
+      setTotalPages(data.total ? Math.ceil(data.total / (data.limit || 50)) : 1)
     } catch {
       logger.error('Failed to load leaderboard')
     } finally {

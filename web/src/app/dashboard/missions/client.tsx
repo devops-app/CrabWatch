@@ -23,9 +23,22 @@ export function MissionsClient({
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const missionsData: ActiveMissionDto[] = await api.getActiveMissions().catch(() => [])
-      const onboardingData: OnboardingStatusDto | null = await api.getOnboardingStatus().catch(() => null)
-      setMissions(missionsData)
+        const missionsRaw: any[] = await api.getActiveMissions().catch(() => [])
+        const missionsData: ActiveMissionDto[] = (Array.isArray(missionsRaw) ? missionsRaw : []).map((m: any) => ({
+          id: m.code || m.id,
+          code: m.code || m.id,
+          key: m.code || m.id,
+          title: m.title || m.name || 'Mission',
+          name: m.title || m.name || 'Mission',
+          description: m.description || '',
+          xpReward: m.xpReward || 0,
+          claimed: m.claimed || m.completed,
+          completed: m.completed,
+          progress: m.progress || 0,
+          targetCount: m.targetCount || 1,
+        }))
+        const onboardingData: OnboardingStatusDto | null = await api.getOnboardingStatus().catch(() => null)
+        setMissions(missionsData)
       setOnboarding(onboardingData)
     } catch (err) {
       logger.error('Failed to load missions/onboarding data', err)

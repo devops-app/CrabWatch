@@ -37,31 +37,31 @@ export function MissionsScreen() {
     try {
       if (activeTab === 'missions') {
         const data: any = await api.getActiveMissions()
-        const items = data?.items || []
+        const items = Array.isArray(data) ? data : []
         const mapped: ActiveMissionDto[] = items.map((item: any) => ({
-          id: item.id,
-          code: item.mission?.code || item.id,
-          key: item.mission?.code || item.id,
-          title: item.mission?.name || 'Mission',
-          name: item.mission?.name || 'Mission',
-          description: item.mission?.description || '',
-          xpReward: item.mission?.xpReward || 0,
-          claimed: item.status === 'CLAIMED' || item.status === 'COMPLETED',
-          completed: item.status === 'COMPLETED',
-          progress: item.progressValue || 0,
-          targetCount: item.targetValue || 0,
+          id: item.code || item.id,
+          code: item.code || item.id,
+          key: item.code || item.id,
+          title: item.title || item.name || 'Mission',
+          name: item.title || item.name || 'Mission',
+          description: item.description || '',
+          xpReward: item.xpReward || 0,
+          claimed: item.claimed || item.completed,
+          completed: item.completed,
+          progress: item.progress || 0,
+          targetCount: item.targetCount || 1,
         }))
         setMissions(mapped)
       } else {
         const data: any = await api.getOnboardingStatus()
         const steps = data?.steps || []
         const mapped: OnboardingStepStatusDto[] = steps.map((s: any) => ({
-          step: s.stepKey || s.step,
-          key: s.stepKey || s.step,
-          title: s.title || s.stepKey || s.step,
+          step: s.step || s.stepKey || 'unknown',
+          key: s.step || s.stepKey || 'unknown',
+          title: s.title || s.step || s.stepKey || 'Step',
           description: s.description || '',
           xpReward: s.xpReward || 0,
-          completed: s.status === 'COMPLETED',
+          completed: s.completed === true || s.status === 'COMPLETED',
           completedAt: s.completedAt || null,
         }))
         setOnboarding({

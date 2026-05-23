@@ -31,9 +31,10 @@ export function LeaderboardScreen() {
   const loadLeaderboard = useCallback(async (currentPage: number, reset: boolean) => {
     try {
       const data: any = await api.getLeaderboard({ scope, page: currentPage, limit: 50 })
-      const newEntries = data.entries || []
+      const newEntries = data.items || []
+      const totalPages = data.total ? Math.ceil(data.total / (data.limit || 50)) : 1
       setEntries(reset ? newEntries : [...entries, ...newEntries])
-      setTotalPages(data.totalPages || 1)
+      setTotalPages(totalPages)
       setPage(currentPage)
     } catch {
       console.error('Failed to load leaderboard')

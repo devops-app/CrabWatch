@@ -29,4 +29,5 @@ export type RootStackParamList = {
   Missions: undefined
   Achievements: undefined
   NotificationSettings: undefined
+  ProfileSettings: undefined
 }

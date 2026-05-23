@@ -129,11 +129,12 @@ async function sendEmailNotification(payload: NotificationPayload, deliveryId: s
 
     if (!user) return
 
+    const cfg = getConfig()
     const Resend = await import('resend').then((m) => m.Resend || m.default)
-    const resend = new Resend(process.env.RESEND_API_KEY)
+    const resend = new Resend(cfg.resend.apiKey)
 
     await resend.emails.send({
-      from: `CrabWatch <${process.env.RESEND_FROM_EMAIL || 'noreply@crabwatch.dsigncodehub.com'}>`,
+      from: `CrabWatch <${cfg.resend.fromEmail}>`,
       to: user.email,
       subject: payload.title,
       html: `<p>Hi ${user.name},</p><p>${payload.body}</p>`,
