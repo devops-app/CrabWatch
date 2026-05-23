@@ -65,6 +65,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: crabwatch-api
+          path: .
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -78,7 +79,7 @@ jobs:
         with:
           app-name: 'crabwatch-api'
           slot-name: 'Production'
-          package: crabwatch-api.tar.gz
+          package: crabwatch-api/crabwatch-api.tar.gz
 
       - name: Restart Web App
         run: az webapp restart --resource-group VSES-CrabWatch-MY-RG --name crabwatch-api
