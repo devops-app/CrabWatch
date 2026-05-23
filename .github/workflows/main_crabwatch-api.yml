@@ -44,7 +44,7 @@ jobs:
           cp -r server/dist deploy/
           cp server/package.json deploy/
           cp -r server/prisma deploy/
-          (cd deploy && zip -r ../../crabwatch-api.zip .)
+          (cd deploy && zip -r ../crabwatch-api.zip .)
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4

@@ -44,7 +44,7 @@ jobs:
       - name: Prepare standalone deployment
         run: |
           cp -r web/.next/static web/.next/standalone/web/.next/
-          (cd web/.next/standalone && zip -r ../../../../crabwatch-web.zip .)
+          (cd web/.next/standalone && zip -r ../../../crabwatch-web.zip .)
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
