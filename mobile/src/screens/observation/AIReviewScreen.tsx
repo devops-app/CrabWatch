@@ -84,6 +84,8 @@ export function AIReviewScreen() {
   const [showSuccess, setShowSuccess] = useState(false)
   const [showFullscreen, setShowFullscreen] = useState(false)
   const [fullscreenPhoto, setFullscreenPhoto] = useState<string | null>(null)
+  const [rawCW, setRawCW] = useState(analysis.estimatedCW?.toString() || '')
+  const [rawBW, setRawBW] = useState('')
 
   const findMatchingSpecies = (): string => {
     if (!analysis.speciesId || analysis.speciesId === 'unknown') return ''
@@ -129,6 +131,8 @@ export function AIReviewScreen() {
     }
   }, [species, analysis.speciesId, reset])
 
+ 
+
   const handleLocationCapture = (lat: number, lng: number) => {
     setLatitude(lat)
     setLongitude(lng)
@@ -147,7 +151,8 @@ export function AIReviewScreen() {
 
     const payload = {
       ...data,
-      bw: data.bw ?? null,
+      cw: parseFloat(rawCW) || 0,
+      bw: rawBW === '' ? null : parseFloat(rawBW) || null,
       lat: latitude,
       lng: longitude,
       locationMethod: (manualLocation ? 'manual' : 'gps') as 'manual' | 'gps',
@@ -362,9 +367,15 @@ export function AIReviewScreen() {
                   label={`Carapace Width (cm)`}
                   placeholder="e.g. 8.5"
                   keyboardType="decimal-pad"
-                  value={value?.toString() || ''}
-                  onBlur={onBlur}
-                  onChangeText={(v) => onChange(parseFloat(v) || 0)}
+                  value={rawCW}
+                  onBlur={() => {
+                    onChange(parseFloat(rawCW) || 0)
+                    onBlur()
+                  }}
+                  onChangeText={(v) => {
+                    setRawCW(v)
+                    onChange(parseFloat(v) || 0)
+                  }}
                   error={errors.cw?.message}
                 />
                 {!isManualFallback && analysis.estimatedCW && <AIBadge label={`AI: ${analysis.estimatedCW} cm`} />}
@@ -380,9 +391,15 @@ export function AIReviewScreen() {
                 label="Body Weight (g)"
                 placeholder="Optional — weigh manually"
                 keyboardType="decimal-pad"
-                value={value?.toString() || ''}
-                onBlur={onBlur}
-                onChangeText={(v) => onChange(v === '' ? undefined : parseFloat(v) || 0)}
+                value={rawBW}
+                onBlur={() => {
+                  onChange(rawBW === '' ? undefined : parseFloat(rawBW) || 0)
+                  onBlur()
+                }}
+                onChangeText={(v) => {
+                  setRawBW(v)
+                  onChange(v === '' ? undefined : parseFloat(v) || 0)
+                }}
                 error={errors.bw?.message}
               />
             )}

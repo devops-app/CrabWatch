@@ -26,9 +26,10 @@ const menuItems = [
     screen: 'About' as const,
   },
   {
-    icon: 'log-out-outline' as const,
-    label: 'Sign Out',
-    action: 'logout' as const,
+    icon: 'notifications-outline' as const,
+    label: 'Notifications',
+    action: 'navigate' as const,
+    screen: 'NotificationSettings' as const,
   },
   {
     icon: 'trash-outline' as const,
@@ -42,17 +43,6 @@ export function ProfileSettingsScreen() {
   const navigation = useNavigation<NavigationProp>()
   const { logout } = useAuth()
   const [deleting, setDeleting] = useState(false)
-
-  const handleLogout = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign Out',
-        style: 'destructive',
-        onPress: () => logout(),
-      },
-    ])
-  }
 
   const handleDeleteAccount = () => {
     Alert.alert(
@@ -82,9 +72,7 @@ export function ProfileSettingsScreen() {
 
   const handlePress = (item: typeof menuItems[0]) => {
     if (item.action === 'navigate' && item.screen) {
-      navigation.navigate(item.screen)
-    } else if (item.action === 'logout') {
-      handleLogout()
+      navigation.navigate(item.screen as 'About' | 'NotificationSettings')
     } else if (item.action === 'delete') {
       handleDeleteAccount()
     }

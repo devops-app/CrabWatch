@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from 'react-native'
 import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -26,7 +27,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>
 
 export function ProfileScreen() {
   const navigation = useNavigation<NavigationProp>()
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const [observations, setObservations] = useState<ObservationResponse[]>([])
   const [stats, setStats] = useState<UserStatsDto | null>(null)
   const [loading, setLoading] = useState(true)
@@ -222,9 +223,14 @@ export function ProfileScreen() {
         </View>
 
         <Button
-          title="Notifications"
+          title="Sign Out"
           variant="secondary"
-          onPress={() => navigation.navigate('NotificationSettings')}
+          onPress={() => {
+            Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Sign Out', style: 'destructive', onPress: () => logout() },
+            ])
+          }}
           style={styles.fullWidthBtn}
         />
 
