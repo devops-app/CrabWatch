@@ -1,12 +1,6 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
 name: Build and deploy Node.js app to Azure Web App - crabwatch-web
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
@@ -41,18 +35,12 @@ jobs:
           BACKEND_URL: ${{ secrets.BACKEND_URL }}
           MAPBOX_TOKEN: ${{ secrets.MAPBOX_TOKEN }}
 
-      - name: Install production deps for standalone
-        run: |
-          cp web/package.json web/.next/standalone/package.json
-          cd web/.next/standalone
-          npm install --omit=dev --ignore-scripts
-          cd ../..
-
       - name: Prepare standalone deployment
         run: |
-          cp -r web/.next/static web/.next/standalone/web/.next/static
-          cp -r web/public web/.next/standalone/web/public
-          (cd web/.next/standalone && zip -r ../../../crabwatch-web.zip .)
+          cp -r web/.next/static web/.next/standalone/web/.next/static || true
+          cp -r web/public web/.next/standalone/web/public || true
+          cd web/.next/standalone
+          zip -r ../../../crabwatch-web.zip .
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -89,11 +77,28 @@ jobs:
           slot-name: 'Production'
           package: crabwatch-web.zip
 
-      - name: Set startup command
-        run: az webapp config set --resource-group VSES-CrabWatch-MY-RG --name crabwatch-web --startup-file "node web/server.js"
-
-      - name: Disable Oryx build
-        run: az webapp config appsettings set --resource-group VSES-CrabWatch-MY-RG --name crabwatch-web --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false ENABLE_ORYX_BUILD=false WEBSITE_NODE_DEFAULT_VERSION=22
+      - name: Disable Oryx build and set Node version
+        run: |
+          az webapp config appsettings set \
+            --resource-group VSES-CrabWatch-MY-RG \
+            --name crabwatch-web \
+            --settings \
+              SCM_DO_BUILD_DURING_DEPLOYMENT=false \
+              ENABLE_ORYX_BUILD=false \
+              WEBSITE_NODE_DEFAULT_VERSION=22
 
       - name: Restart Web App
         run: az webapp restart --resource-group VSES-CrabWatch-MY-RG --name crabwatch-web
+
+      - name: Wait for health check
+        run: |
+          for i in {1..12}; do
+            if curl -sf https://crabwatch-web.azurewebsites.net; then
+              echo "App is up"
+              exit 0
+            fi
+            echo "Waiting... attempt $i"
+            sleep 10
+          done
+          echo "Health check timed out"
+          exit 1

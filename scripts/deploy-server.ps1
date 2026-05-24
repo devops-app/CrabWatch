@@ -3,6 +3,7 @@ param(
   [string]$ApiAppName = "crabwatch-api",
   [string]$ZipPath = "",
   [switch]$SkipInstall,
+  [switch]$SkipDeploy,
   [switch]$GeneratePrisma,
   [switch]$Migrate,
   [switch]$Seed
@@ -175,8 +176,6 @@ if ([string]::IsNullOrWhiteSpace($ZipPath)) {
   $ZipPath = Join-Path $repoRoot "server-deploy.zip"
 }
 
-$azPath = Get-AzCommand
-
 Push-Location $repoRoot
 try {
   Remove-Item -Recurse -Force -ErrorAction SilentlyContinue (Join-Path $serverDir "dist")
@@ -218,94 +217,103 @@ try {
     throw "Package verification failed: dist/server/src/services/seedEngagement.js is missing from $ZipPath"
   }
 
-  Invoke-Checked -FilePath $azPath -Arguments @(
-    'webapp', 'config', 'appsettings', 'set',
-    '--resource-group', $ResourceGroup,
-    '--name', $ApiAppName,
-    '--settings',
-    'SCM_DO_BUILD_DURING_DEPLOYMENT=false',
-    'ENABLE_ORYX_BUILD=false',
-    'WEBSITE_NODE_DEFAULT_VERSION=22'
-  ) -ErrorMessage "Failed to set deployment app settings"
+  Write-Host "Package ready: $ZipPath"
 
-  # Must use NODE|<version> for Linux code stack so Azure Portal detects Node runtime correctly.
-  # Keep surrounding quotes in the argument so az.cmd (cmd.exe wrapper) doesn't treat | as a pipe.
-  $linuxFxVersion = '"NODE|22-lts"'
-  Invoke-Checked -FilePath $azPath -Arguments @(
-    'webapp', 'config', 'set',
-    '--resource-group', $ResourceGroup,
-    '--name', $ApiAppName,
-    '--linux-fx-version', $linuxFxVersion,
-    '--startup-file', 'node dist/server/src/index.js'
-  ) -ErrorMessage "Failed to set runtime/startup configuration"
+  if ($SkipDeploy) {
+    Write-Host "Skipping Azure deployment. Use without -SkipDeploy to push to $ApiAppName."
+  }
+  else {
+    $azPath = Get-AzCommand
 
-  $deployed = $false
-  try {
     Invoke-Checked -FilePath $azPath -Arguments @(
-      'webapp', 'deploy',
+      'webapp', 'config', 'appsettings', 'set',
       '--resource-group', $ResourceGroup,
       '--name', $ApiAppName,
-      '--src-path', $ZipPath,
-      '--type', 'zip',
-      '--clean', 'true',
-      '--restart', 'false',
-      '--track-status', 'false'
-    ) -ErrorMessage "az webapp deploy failed"
-    $deployed = $true
-  } catch {
-    Write-Warning "az webapp deploy failed. Falling back to Kudu upload + unzip."
-  }
+      '--settings',
+      'SCM_DO_BUILD_DURING_DEPLOYMENT=false',
+      'ENABLE_ORYX_BUILD=false',
+      'WEBSITE_NODE_DEFAULT_VERSION=22'
+    ) -ErrorMessage "Failed to set deployment app settings"
 
-  $kuduHeaders = Get-KuduHeaders -AzPath $azPath -ResourceGroupName $ResourceGroup -WebAppName $ApiAppName
+    # Must use NODE|<version> for Linux code stack so Azure Portal detects Node runtime correctly.
+    # Keep surrounding quotes in the argument so az.cmd (cmd.exe wrapper) doesn't treat | as a pipe.
+    $linuxFxVersion = '"NODE|22-lts"'
+    Invoke-Checked -FilePath $azPath -Arguments @(
+      'webapp', 'config', 'set',
+      '--resource-group', $ResourceGroup,
+      '--name', $ApiAppName,
+      '--linux-fx-version', $linuxFxVersion,
+      '--startup-file', 'node dist/server/src/index.js'
+    ) -ErrorMessage "Failed to set runtime/startup configuration"
 
-  if (-not $deployed) {
-    $uploadHeaders = @{}
-    foreach ($key in $kuduHeaders.Keys) {
-      $uploadHeaders[$key] = $kuduHeaders[$key]
+    $deployed = $false
+    try {
+      Invoke-Checked -FilePath $azPath -Arguments @(
+        'webapp', 'deploy',
+        '--resource-group', $ResourceGroup,
+        '--name', $ApiAppName,
+        '--src-path', $ZipPath,
+        '--type', 'zip',
+        '--clean', 'true',
+        '--restart', 'false',
+        '--track-status', 'false'
+      ) -ErrorMessage "az webapp deploy failed"
+      $deployed = $true
+    } catch {
+      Write-Warning "az webapp deploy failed. Falling back to Kudu upload + unzip."
     }
-    $uploadHeaders['If-Match'] = '*'
 
-    Invoke-WebRequest -Uri "https://$ApiAppName.scm.azurewebsites.net/api/vfs/tmp/server-deploy.zip" -Method PUT -Headers $uploadHeaders -InFile $ZipPath -ContentType "application/zip" -UseBasicParsing | Out-Null
-    $unzipResult = Invoke-KuduCommandWithRetry -ApiName $ApiAppName -Headers $kuduHeaders -Command 'bash -lc "rm -rf /home/site/wwwroot/* && unzip -o /home/tmp/server-deploy.zip -d /home/site/wwwroot"'
-    if ($unzipResult.ExitCode -ne 0) {
-      throw "Kudu unzip failed: $($unzipResult.Error)"
+    $kuduHeaders = Get-KuduHeaders -AzPath $azPath -ResourceGroupName $ResourceGroup -WebAppName $ApiAppName
+
+    if (-not $deployed) {
+      $uploadHeaders = @{}
+      foreach ($key in $kuduHeaders.Keys) {
+        $uploadHeaders[$key] = $kuduHeaders[$key]
+      }
+      $uploadHeaders['If-Match'] = '*'
+
+      Invoke-WebRequest -Uri "https://$ApiAppName.scm.azurewebsites.net/api/vfs/tmp/server-deploy.zip" -Method PUT -Headers $uploadHeaders -InFile $ZipPath -ContentType "application/zip" -UseBasicParsing | Out-Null
+      $unzipResult = Invoke-KuduCommandWithRetry -ApiName $ApiAppName -Headers $kuduHeaders -Command 'bash -lc "rm -rf /home/site/wwwroot/* && unzip -o /home/tmp/server-deploy.zip -d /home/site/wwwroot"'
+      if ($unzipResult.ExitCode -ne 0) {
+        throw "Kudu unzip failed: $($unzipResult.Error)"
+      }
     }
-  }
 
-  Install-ProductionDependencies -ApiName $ApiAppName -Headers $kuduHeaders
+    Install-ProductionDependencies -ApiName $ApiAppName -Headers $kuduHeaders
 
-  if ($Migrate) {
-    Write-Host "Applying Prisma migrations with migrate deploy..."
-    $migrateResult = Invoke-KuduCommandWithRetry -ApiName $ApiAppName -Headers $kuduHeaders -Command 'bash -lc "cd /home/site/wwwroot && npx prisma migrate deploy"'
-    if ($migrateResult.ExitCode -ne 0) {
-      throw "Prisma migrate deploy failed: $($migrateResult.Error)"
+    if ($Migrate) {
+      Write-Host "Applying Prisma migrations with migrate deploy..."
+      $migrateResult = Invoke-KuduCommandWithRetry -ApiName $ApiAppName -Headers $kuduHeaders -Command 'bash -lc "cd /home/site/wwwroot && npx prisma migrate deploy"'
+      if ($migrateResult.ExitCode -ne 0) {
+        throw "Prisma migrate deploy failed: $($migrateResult.Error)"
+      }
+      Write-Host $migrateResult.Output
+    } else {
+      Write-Host "Skipping Prisma migrations. Use -Migrate to run prisma migrate deploy after deploy."
     }
-    Write-Host $migrateResult.Output
-  } else {
-    Write-Host "Skipping Prisma migrations. Use -Migrate to run prisma migrate deploy after deploy."
-  }
 
-  $verifyDepsResult = Invoke-KuduCommandWithRetry -ApiName $ApiAppName -Headers $kuduHeaders -Command 'bash -lc "cd /home/site/wwwroot && node -e \"require.resolve(\\\"compression\\\"); require.resolve(\\\"bcryptjs\\\"); require.resolve(\\\"@azure/monitor-opentelemetry\\\"); console.log(\\\"Dependency verification passed\\\")\""'
-  if ($verifyDepsResult.ExitCode -ne 0) {
-    throw "Production dependency verification failed: $($verifyDepsResult.Error)"
-  }
-
-  Invoke-Checked -FilePath $azPath -Arguments @('webapp', 'restart', '--resource-group', $ResourceGroup, '--name', $ApiAppName) -ErrorMessage "Failed to restart app service"
-
-  $health = Wait-ForHealthySite -ApiName $ApiAppName
-
-  if ($Seed) {
-    $seedResult = Invoke-KuduCommandWithRetry -ApiName $ApiAppName -Headers $kuduHeaders -Command 'node /home/site/wwwroot/dist/server/src/services/seedEngagement.js'
-    if ($seedResult.ExitCode -ne 0) {
-      throw "Engagement seed failed: $($seedResult.Error)"
+    $verifyDepsResult = Invoke-KuduCommandWithRetry -ApiName $ApiAppName -Headers $kuduHeaders -Command 'bash -lc "cd /home/site/wwwroot && node -e \"require.resolve(\\\"compression\\\"); require.resolve(\\\"bcryptjs\\\"); require.resolve(\\\"@azure/monitor-opentelemetry\\\"); console.log(\\\"Dependency verification passed\\\")\""'
+    if ($verifyDepsResult.ExitCode -ne 0) {
+      throw "Production dependency verification failed: $($verifyDepsResult.Error)"
     }
-    Write-Host $seedResult.Output
-  } else {
-    Write-Host "Skipping engagement seed. Use -Seed to run seedEngagement after deploy."
-  }
 
-  Write-Host "Server deployment complete: https://$ApiAppName.azurewebsites.net"
-  Write-Host "Health response: $($health.Content)"
+    Invoke-Checked -FilePath $azPath -Arguments @('webapp', 'restart', '--resource-group', $ResourceGroup, '--name', $ApiAppName) -ErrorMessage "Failed to restart app service"
+
+    $health = Wait-ForHealthySite -ApiName $ApiAppName
+
+    if ($Seed) {
+      $seedResult = Invoke-KuduCommandWithRetry -ApiName $ApiAppName -Headers $kuduHeaders -Command 'node /home/site/wwwroot/dist/server/src/services/seedEngagement.js'
+      if ($seedResult.ExitCode -ne 0) {
+        throw "Engagement seed failed: $($seedResult.Error)"
+      }
+      Write-Host $seedResult.Output
+    } else {
+      Write-Host "Skipping engagement seed. Use -Seed to run seedEngagement after deploy."
+    }
+
+    Write-Host "Server deployment complete: https://$ApiAppName.azurewebsites.net"
+    Write-Host "Health response: $($health.Content)"
+  }
 }
 finally {
   Pop-Location

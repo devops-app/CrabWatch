@@ -1,12 +1,6 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
 name: Build and deploy Node.js app to Azure Web App - crabwatch-api
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
@@ -44,7 +38,10 @@ jobs:
           cp -r server/dist deploy/
           cp server/package.json deploy/
           cp -r server/prisma deploy/
-          (cd deploy && zip -r ../crabwatch-api.zip .)
+          cd deploy
+          pnpm install --prod
+          pnpm exec prisma generate
+          zip -r ../crabwatch-api.zip .
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
