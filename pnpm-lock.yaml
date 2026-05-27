@@ -361,6 +361,9 @@ importers:
       recharts:
         specifier: ^2.12.0
         version: 2.15.4(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      styled-jsx:
+        specifier: ^5.1.6
+        version: 5.1.6(@babel/core@7.29.0)(react@19.2.6)
       zod:
         specifier: ^3.23.0
         version: 3.25.76
