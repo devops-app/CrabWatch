@@ -75,7 +75,7 @@ jobs:
           cp -R web/public deploy/web/
 
           # Validate
-          test -f deploy/server.js || (echo "server.js missing" && exit 1)
+          test -f deploy/web/server.js || (echo "server.js missing" && exit 1)
 
           cd deploy
           zip -r ../crabwatch-web.zip .
@@ -98,7 +98,7 @@ jobs:
               SCM_DO_BUILD_DURING_DEPLOYMENT=false \
               ENABLE_ORYX_BUILD=false \
               WEBSITE_NODE_DEFAULT_VERSION=20 \
-              WEBSITE_STARTUP_COMMAND="node server.js"
+              WEBSITE_STARTUP_COMMAND="node deploy/web/server.js"
 
       # ✅ Deploy
       - name: Deploy to Azure Web App
