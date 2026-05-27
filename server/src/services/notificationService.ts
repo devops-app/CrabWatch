@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { getContainer } from './container'
+import { getServerI18n } from '../config/i18n'
 
 let _prisma: PrismaClient
 function getPrisma(): PrismaClient {
@@ -22,6 +23,7 @@ export interface NotificationPayload {
   data?: Record<string, string>
   channel: 'PUSH' | 'EMAIL' | 'IN_APP'
   category?: string
+  locale?: string
 }
 
 export async function sendNotification(payload: NotificationPayload): Promise<void> {
@@ -57,7 +59,7 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
     // Dispatch based on channel
     switch (payload.channel) {
       case 'PUSH':
-        await sendPushNotification(payload, delivery.id)
+        await sendPushNotification(payload, delivery.id, payload.locale)
         break
       case 'EMAIL':
         await sendEmailNotification(payload, delivery.id)
@@ -76,16 +78,18 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
   }
 }
 
-async function sendPushNotification(payload: NotificationPayload, deliveryId: string): Promise<void> {
+async function sendPushNotification(payload: NotificationPayload, deliveryId: string, locale?: string): Promise<void> {
   try {
     const fcmTokens = await getPrisma().fcmToken.findMany({
       where: { userId: payload.userId },
     })
 
     if (fcmTokens.length === 0) {
+      const i18n = getServerI18n()
+      const noTokens = i18n.t('notification.fcm.noTokens', { lng: locale || 'en', ns: 'notification' })
       await getPrisma().notificationDelivery.update({
         where: { id: deliveryId },
-        data: { status: 'FAILED', failureReason: 'No FCM tokens found' },
+        data: { status: 'FAILED', failureReason: noTokens },
       })
       return
     }
@@ -130,14 +134,20 @@ async function sendEmailNotification(payload: NotificationPayload, deliveryId: s
     if (!user) return
 
     const cfg = getConfig()
+    const i18n = getServerI18n()
+    const lng = payload.locale || 'en'
     const Resend = await import('resend').then((m) => m.Resend || m.default)
     const resend = new Resend(cfg.resend.apiKey)
+
+    const greeting = i18n.t('notification.email.greeting', { lng, name: user.name })
+    const body = i18n.t('notification.email.body', { lng, message: payload.body })
+    const signoff = i18n.t('notification.email.signoff', { lng })
 
     await resend.emails.send({
       from: `CrabWatch <${cfg.resend.fromEmail}>`,
       to: user.email,
       subject: payload.title,
-      html: `<p>Hi ${user.name},</p><p>${payload.body}</p>`,
+      html: `<p>${greeting},</p><p>${body}</p><p>${signoff}</p>`,
     })
 
     // Update delivery status

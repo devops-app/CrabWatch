@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   View,
   Text,
@@ -16,10 +17,12 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useForm, Controller } from 'react-hook-form'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../../hooks/useAuth'
+import { useLocaleStore } from '../../store/localeStore'
 import { api } from '../../services/api'
 import { Input } from '../../components/common/Input'
 import { CountryPicker } from '../../components/common/CountryPicker'
 import { PhoneCodePicker } from '../../components/common/PhoneCodePicker'
+import { PickerWithAlert } from '../../components/common/Picker'
 import { Button } from '../../components/common/Button'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
@@ -42,6 +45,8 @@ type FormValues = {
 export function EditProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
   const { user, updateUser, logout } = useAuth()
+  const { t } = useTranslation('editProfile')
+  const { locale, setLocale } = useLocaleStore()
   const [loading, setLoading] = useState(false)
   const [avatarUri, setAvatarUri] = useState<string | null>(user?.avatar || null)
   const [passwordLoading, setPasswordLoading] = useState(false)
@@ -68,9 +73,26 @@ export function EditProfileScreen() {
     },
   })
 
+  const LANGUAGE_OPTIONS = useMemo(() => [
+    { label: t('common.english'), value: 'en' },
+    { label: t('common.bahasaMelayu'), value: 'ms' },
+  ], [t])
+
   const handleCountrySelect = (country: CountryOption) => {
     setValue('country', country.code)
     setValue('phoneCode', country.phoneCode)
+  }
+
+  const handleLanguageChange = async (newLocale: string) => {
+    if (newLocale === 'en' || newLocale === 'ms') {
+      setLocale(newLocale)
+      try {
+        const updated = await api.updateProfile({ preferredLocale: newLocale })
+        updateUser(updated)
+      } catch {
+        // Silently fail - locale still changed locally
+      }
+    }
   }
 
   const handlePickAvatar = async () => {
@@ -102,12 +124,12 @@ export function EditProfileScreen() {
         avatar: avatarUri,
       })
       updateUser(updated)
-      Alert.alert('Success', 'Profile updated successfully')
+      Alert.alert(t('common.success'), t('updated'))
       navigation.goBack()
     } catch (err) {
       Alert.alert(
-        'Error',
-        err instanceof Error ? err.message : 'Failed to update profile'
+        t('common.error'),
+        err instanceof Error ? err.message : t('updateFailed')
       )
     } finally {
       setLoading(false)
@@ -116,17 +138,17 @@ export function EditProfileScreen() {
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all password fields')
+      Alert.alert(t('common.error'), t('password.fillAllFields'))
       return
     }
 
     if (newPassword.length < 8) {
-      Alert.alert('Error', 'New password must be at least 8 characters')
+      Alert.alert(t('common.error'), t('password.minLength'))
       return
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'New password and confirm password do not match')
+      Alert.alert(t('common.error'), t('password.notMatch'))
       return
     }
 
@@ -136,16 +158,16 @@ export function EditProfileScreen() {
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
-      Alert.alert('Password Updated', 'Please sign in again with your new password.', [
+      Alert.alert(t('password.updated'), t('password.signInAgain'), [
         {
-          text: 'OK',
+          text: t('common.ok'),
           onPress: () => {
             logout()
           },
         },
       ])
     } catch (err) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to update password')
+      Alert.alert(t('common.error'), err instanceof Error ? err.message : t('password.updateFailed'))
     } finally {
       setPasswordLoading(false)
     }
@@ -175,7 +197,7 @@ export function EditProfileScreen() {
                 <Ionicons name="camera" size={18} color="#ffffff" />
               </View>
             </TouchableOpacity>
-            <Text style={styles.avatarHint}>Tap to change photo</Text>
+            <Text style={styles.avatarHint}>{t('tapToChangePhoto')}</Text>
           </View>
 
           <View style={styles.form}>
@@ -184,8 +206,8 @@ export function EditProfileScreen() {
               name="name"
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input
-                  label="Display Name"
-                  placeholder="Your name"
+                  label={t('displayName')}
+                  placeholder={t('yourName')}
                   autoCapitalize="words"
                   value={value}
                   onBlur={onBlur}
@@ -202,7 +224,7 @@ export function EditProfileScreen() {
                 name="phoneCode"
                 render={({ field: { onChange, value } }) => (
                   <PhoneCodePicker
-                    label="Country Code"
+                    label={t('countryCode')}
                     selectedCode={value}
                     onSelect={onChange}
                     error={errors.phoneCode?.message}
@@ -216,8 +238,8 @@ export function EditProfileScreen() {
                 name="phoneNumber"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <Input
-                    label="Phone Number"
-                    placeholder="123456789"
+                    label={t('phoneNumber')}
+                    placeholder={t('phonePlaceholder')}
                     keyboardType="phone-pad"
                     autoCapitalize="none"
                     value={value}
@@ -235,8 +257,8 @@ export function EditProfileScreen() {
             name="addressLine1"
             render={({ field: { onChange, onBlur, value } }) => (
               <Input
-                label="Address Line 1"
-                placeholder="Street address"
+           label={t('addressLine1')}
+                  placeholder={t('streetAddress')}
                 autoCapitalize="words"
                 value={value}
                 onBlur={onBlur}
@@ -251,8 +273,8 @@ export function EditProfileScreen() {
             name="addressLine2"
             render={({ field: { onChange, onBlur, value } }) => (
               <Input
-                label="Address Line 2"
-                placeholder="Apartment, suite, etc."
+          label={t('addressLine2')}
+                  placeholder={t('aptSuite')}
                 autoCapitalize="words"
                 value={value}
                 onBlur={onBlur}
@@ -267,8 +289,8 @@ export function EditProfileScreen() {
             name="addressLine3"
             render={({ field: { onChange, onBlur, value } }) => (
               <Input
-                label="Address Line 3"
-                placeholder="Additional address info"
+         label={t('addressLine3')}
+                  placeholder={t('additionalAddressInfo')}
                 autoCapitalize="words"
                 value={value}
                 onBlur={onBlur}
@@ -285,8 +307,8 @@ export function EditProfileScreen() {
                 name="state"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <Input
-                    label="State"
-                    placeholder="State"
+                    label={t('state')}
+                    placeholder={t('state')}
                     autoCapitalize="words"
                     value={value}
                     onBlur={onBlur}
@@ -302,8 +324,8 @@ export function EditProfileScreen() {
                 name="postcode"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <Input
-                    label="Postcode"
-                    placeholder="Postcode"
+                    label={t('postcode')}
+                    placeholder={t('postcode')}
                     keyboardType="number-pad"
                     value={value}
                     onBlur={onBlur}
@@ -320,7 +342,7 @@ export function EditProfileScreen() {
             name="country"
             render={({ field: { value } }) => (
               <CountryPicker
-                label="Country"
+                label={t('country')}
                 selectedCode={value}
                 onSelect={handleCountrySelect}
                 error={errors.country?.message}
@@ -329,53 +351,64 @@ export function EditProfileScreen() {
           />
 
           <View style={styles.infoCard}>
-            <Text style={styles.infoLabel}>Email</Text>
-            <Text style={styles.infoValue}>{user?.email}</Text>
-            <Text style={styles.infoNote}>Email cannot be changed</Text>
+          <Text style={styles.infoLabel}>{t('common.email')}</Text>
+              <Text style={styles.infoValue}>{user?.email}</Text>
+              <Text style={styles.infoNote}>{t('emailCannotChange')}</Text>
+          </View>
+
+          <View style={styles.languageSection}>
+            <Text style={styles.sectionLabel}>{t('language')}</Text>
+            <PickerWithAlert
+              label=""
+              options={LANGUAGE_OPTIONS}
+              selectedValue={locale}
+              onValueChange={handleLanguageChange}
+              placeholder={t('common.select')}
+            />
           </View>
 
           <Button
-            title="Save Changes"
+            title={t('saveChanges')}
             loading={loading}
             onPress={handleSubmit(onSubmit)}
             style={styles.saveBtn}
           />
 
           <Button
-            title="Cancel"
+            title={t('common.cancel')}
             variant="ghost"
             onPress={() => navigation.goBack()}
             style={styles.cancelBtn}
           />
 
             <View style={styles.infoCard}>
-              <Text style={styles.sectionTitle}>Change Password</Text>
+              <Text style={styles.sectionTitle}>{t('password.changePassword')}</Text>
               <Input
-                label="Current Password"
-                placeholder="Current password"
+                label={t('password.current')}
+                placeholder={t('password.currentPlaceholder')}
                 secureTextEntry
                 autoCapitalize="none"
                 value={currentPassword}
                 onChangeText={setCurrentPassword}
               />
               <Input
-                label="New Password"
-                placeholder="New password"
+                label={t('password.new')}
+                placeholder={t('password.newPlaceholder')}
                 secureTextEntry
                 autoCapitalize="none"
                 value={newPassword}
                 onChangeText={setNewPassword}
               />
               <Input
-                label="Confirm New Password"
-                placeholder="Confirm new password"
+                label={t('password.confirm')}
+                placeholder={t('password.confirmPlaceholder')}
                 secureTextEntry
                 autoCapitalize="none"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
               />
               <Button
-                title="Update Password"
+                title={t('password.updatePassword')}
                 loading={passwordLoading}
                 onPress={handleChangePassword}
                 style={styles.passwordBtn}
@@ -499,5 +532,13 @@ const styles = StyleSheet.create({
   },
   postcodeWrap: {
     flex: 1,
+  },
+  languageSection: {
+    marginBottom: 20,
+  },
+  sectionLabel: {
+    fontSize: FONT.sm,
+    color: COLORS.textSecondary,
+    marginBottom: 6,
   },
 })

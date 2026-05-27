@@ -1,13 +1,15 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useTranslations, useLocale } from 'next-intl'
+import { Link, useRouter, usePathname } from '@/i18n/navigation'
 import { useAuthStore } from '@/lib/authStore'
 import { api } from '@/lib/api'
 import { logger } from '@/lib/logger'
 import { useNotifications } from '@/hooks/useNotifications'
 import { useClickOutside } from '@/hooks/useClickOutside'
+
+const LOCALES = { en: 'EN', ms: 'BM' } as const
 
 interface HeaderProps {
   onSidebarToggle: () => void
@@ -15,13 +17,20 @@ interface HeaderProps {
 
 export default function Header({ onSidebarToggle }: HeaderProps): React.JSX.Element {
   const router = useRouter()
+  const pathname = usePathname()
+  const t = useTranslations('header')
+  const locale = useLocale()
   const { user, logout } = useAuthStore()
   const { isSupported, permission, isRegistered, requestPermission, registerToken } = useNotifications()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [langOpen, setLangOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const langRef = useRef<HTMLDivElement>(null)
 
   const closeMenu = useCallback(() => setMenuOpen(false), [])
+  const closeLang = useCallback(() => setLangOpen(false), [])
   useClickOutside(menuRef, closeMenu)
+  useClickOutside(langRef, closeLang)
 
   const handleNotificationClick = async () => {
     if (permission === 'default') {
@@ -67,8 +76,8 @@ export default function Header({ onSidebarToggle }: HeaderProps): React.JSX.Elem
           <button
             onClick={handleNotificationClick}
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-amber-600"
-            title="Enable notifications"
-            aria-label="Enable push notifications"
+            title={t('enableNotifications')}
+            aria-label={t('enableNotifications')}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -76,12 +85,59 @@ export default function Header({ onSidebarToggle }: HeaderProps): React.JSX.Elem
           </button>
         )}
         {isRegistered && (
-          <div className="p-2 rounded-lg bg-green-50 text-green-600" title="Notifications enabled">
+          <div className="p-2 rounded-lg bg-green-50 text-green-600" title={t('notificationsEnabled')}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
           </div>
         )}
+
+        {/* Language switcher */}
+        <div className="relative" ref={langRef}>
+          <button
+            onClick={() => setLangOpen(!langOpen)}
+            className="flex items-center gap-1.5 rounded-lg hover:bg-gray-100 transition-colors px-2.5 py-1.5 text-sm font-medium text-gray-600"
+            title={t('languageSwitch')}
+            aria-label={t('languageSwitch')}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016 4a9.728 9.728 0 006.75 2.98C15.072 6.975 16.5 7 18 7c-1.5 0-2.925-.025-4.25-.075A18.022 18.022 0 0118 14c-2.625 0-4.75-.05-6.452-.145M12 21l-2-2m4 0l2-2" />
+            </svg>
+            {LOCALES[locale as keyof typeof LOCALES]}
+            <svg
+              className={`w-3.5 h-3.5 text-gray-400 transition-transform ${langOpen ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {langOpen && (
+            <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+              {(['en', 'ms'] as const).map((l) => (
+                <a
+                  key={l}
+                  href={`/${l}${pathname.replace(/^\/(en|ms)(?=\/|$)/, '') || ''}`}
+                  onClick={() => setLangOpen(false)}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                    l === locale
+                      ? 'bg-ocean-50 text-ocean-700 font-medium'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="flex-1">{l === 'en' ? 'English' : 'Bahasa Melayu'}</span>
+                  {l === locale && (
+                    <svg className="w-4 h-4 text-ocean-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* User menu */}
         <div className="relative" ref={menuRef}>
@@ -94,7 +150,7 @@ export default function Header({ onSidebarToggle }: HeaderProps): React.JSX.Elem
             </div>
             <div className="hidden sm:block text-left">
               <p className="text-sm font-medium text-gray-800 leading-tight">
-                {user?.name ?? 'User'}
+                {user?.name ?? t('user')}
               </p>
               <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
             </div>
@@ -117,7 +173,7 @@ export default function Header({ onSidebarToggle }: HeaderProps): React.JSX.Elem
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-                Profile
+                {t('profile')}
               </button>
               <Link
                 href="/dashboard/settings"
@@ -125,10 +181,10 @@ export default function Header({ onSidebarToggle }: HeaderProps): React.JSX.Elem
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94 1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                Settings
+                {t('settings')}
               </Link>
               <hr className="my-1 border-gray-100" />
               <button
@@ -138,7 +194,7 @@ export default function Header({ onSidebarToggle }: HeaderProps): React.JSX.Elem
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
-                Sign Out
+                {t('signOut')}
               </button>
             </div>
           )}

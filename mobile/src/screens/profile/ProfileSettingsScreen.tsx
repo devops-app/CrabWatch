@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   View,
   Text,
@@ -18,49 +19,62 @@ import type { RootStackParamList } from '../../navigation/types'
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>
 
-const menuItems = [
-  {
-    icon: 'information-circle-outline' as const,
-    label: 'About',
-    action: 'navigate' as const,
-    screen: 'About' as const,
-  },
-  {
-    icon: 'notifications-outline' as const,
-    label: 'Notifications',
-    action: 'navigate' as const,
-    screen: 'NotificationSettings' as const,
-  },
-  {
-    icon: 'trash-outline' as const,
-    label: 'Delete Account',
-    action: 'delete' as const,
-    destructive: true,
-  },
-]
+type MenuItem = {
+  key: 'about' | 'notifications' | 'deleteAccount'
+  icon: 'information-circle-outline' | 'notifications-outline' | 'trash-outline'
+  label: string
+  action: 'navigate' | 'delete'
+  screen?: 'About' | 'NotificationSettings'
+  destructive?: boolean
+}
 
 export function ProfileSettingsScreen() {
   const navigation = useNavigation<NavigationProp>()
+  const { t } = useTranslation('profileSettings')
   const { logout } = useAuth()
   const [deleting, setDeleting] = useState(false)
 
+  const menuItems: MenuItem[] = useMemo(() => [
+    {
+      key: 'about',
+      icon: 'information-circle-outline',
+      label: t('menu.about'),
+      action: 'navigate',
+      screen: 'About',
+    },
+    {
+      key: 'notifications',
+      icon: 'notifications-outline',
+      label: t('menu.notifications'),
+      action: 'navigate',
+      screen: 'NotificationSettings',
+    },
+    {
+      key: 'deleteAccount',
+      icon: 'trash-outline',
+      label: t('menu.deleteAccount'),
+      action: 'delete',
+      destructive: true,
+    },
+  ], [t])
+
   const handleDeleteAccount = () => {
     Alert.alert(
-      'Delete Account',
-      'This will delete your account. You have 30 days to restore it by logging in again. All your data will be permanently removed after 30 days.',
+      t('delete.title'),
+      t('delete.body'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('delete.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('delete.confirm'),
           style: 'destructive',
           onPress: async () => {
             setDeleting(true)
             try {
               await api.deleteMyAccount()
               logout()
-              Alert.alert('Account Deleted', 'Your account has been deleted. You have 30 days to restore it.')
+              Alert.alert(t('delete.successTitle'), t('delete.successBody'))
             } catch (err) {
-              Alert.alert('Error', err instanceof Error ? err.message : 'Failed to delete account')
+              Alert.alert(t('delete.errorTitle'), err instanceof Error ? err.message : t('delete.errorBody'))
             } finally {
               setDeleting(false)
             }
@@ -70,7 +84,7 @@ export function ProfileSettingsScreen() {
     )
   }
 
-  const handlePress = (item: typeof menuItems[0]) => {
+  const handlePress = (item: MenuItem) => {
     if (item.action === 'navigate' && item.screen) {
       navigation.navigate(item.screen as 'About' | 'NotificationSettings')
     } else if (item.action === 'delete') {
@@ -82,7 +96,7 @@ export function ProfileSettingsScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         {menuItems.map((item, index) => (
-          <React.Fragment key={item.label}>
+          <React.Fragment key={item.key}>
             {index > 0 && <View style={styles.divider} />}
             <TouchableOpacity
               style={styles.menuItem}

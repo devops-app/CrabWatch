@@ -3,15 +3,19 @@ import { NavigationContainer } from '@react-navigation/native'
 import { View, ActivityIndicator, Platform, Linking } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import * as LinkingModule from 'expo-linking'
+import { I18nextProvider } from 'react-i18next'
 import { AppNavigator } from './src/navigation/AppNavigator'
 import { initAuth } from './src/store/authStore'
+import { useLocaleStore } from './src/store/localeStore'
 import { usePendingObservationSync } from './src/hooks/usePendingObservationSync'
 import { useTheme } from './src/hooks/useTheme'
 import { ErrorBoundary } from './src/components/common/ErrorBoundary'
+import i18n from './src/lib/i18n'
 
 export default function App() {
   usePendingObservationSync()
   const { colors } = useTheme()
+  const initLocale = useLocaleStore((state) => state.init)
 
   const [isInitialized, setIsInitialized] = useState(false)
   const [initError, setInitError] = useState<string | null>(null)
@@ -25,6 +29,7 @@ export default function App() {
           extractToken(url)
         }
 
+        await initLocale()
         await initAuth()
         setIsInitialized(true)
       } catch (error) {
@@ -71,10 +76,12 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <StatusBar style={Platform.OS === 'ios' ? 'dark' : 'auto'} />
-      <NavigationContainer>
-        <AppNavigator deepLinkToken={deepLinkToken} />
-      </NavigationContainer>
+      <I18nextProvider i18n={i18n}>
+        <StatusBar style={Platform.OS === 'ios' ? 'dark' : 'auto'} />
+        <NavigationContainer>
+          <AppNavigator deepLinkToken={deepLinkToken} />
+        </NavigationContainer>
+      </I18nextProvider>
     </ErrorBoundary>
   )
 }

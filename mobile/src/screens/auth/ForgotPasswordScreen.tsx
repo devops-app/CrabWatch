@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigation } from '@react-navigation/native'
+import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
 import { api } from '../../services/api'
 import { Input } from '../../components/common/Input'
@@ -30,6 +31,7 @@ const forgotPasswordSchema = z.object({
 type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>
 
 export function ForgotPasswordScreen() {
+  const { t } = useTranslation()
   const navigation = useNavigation<NavigationProp>()
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -52,8 +54,8 @@ export function ForgotPasswordScreen() {
       setSuccess(true)
     } catch (err) {
       Alert.alert(
-        'Error',
-        err instanceof Error ? err.message : 'Failed to send reset email'
+        t('forgotPassword.error'),
+        err instanceof Error ? err.message : t('forgotPassword.failedToSend')
       )
     } finally {
       setLoading(false)
@@ -68,9 +70,9 @@ export function ForgotPasswordScreen() {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Forgot Password</Text>
+          <Text style={styles.title}>{t('forgotPassword.title')}</Text>
           <Text style={styles.subtitle}>
-            Enter your email and we&apos;ll send you a link to reset your password.
+            {t('forgotPassword.subtitle')}
           </Text>
         </View>
 
@@ -78,10 +80,10 @@ export function ForgotPasswordScreen() {
           {success ? (
             <View style={styles.successContainer}>
               <Text style={styles.successText}>
-                If an account exists with that email, a password reset link has been sent. Check your inbox.
+                {t('forgotPassword.success')}
               </Text>
               <Button
-                title="Back to Login"
+                title={t('forgotPassword.backToLogin')}
                 onPress={() => navigation.replace('Login')}
                 style={styles.backBtn}
               />
@@ -93,8 +95,8 @@ export function ForgotPasswordScreen() {
                 name="email"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <Input
-                    label="Email"
-                    placeholder="your@email.com"
+                    label={t('forgotPassword.email')}
+                    placeholder={t('forgotPassword.emailPlaceholder')}
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoComplete="email"
@@ -109,16 +111,16 @@ export function ForgotPasswordScreen() {
               />
 
               <Button
-                title="Send Reset Link"
+                title={t('forgotPassword.sendLink')}
                 loading={loading}
                 onPress={handleSubmit(onSubmit)}
                 style={styles.submitBtn}
               />
 
               <View style={styles.footer}>
-                <Text style={styles.footerText}>Remember your password? </Text>
+                <Text style={styles.footerText}>{t('forgotPassword.rememberPassword')} </Text>
                 <TouchableOpacity onPress={() => navigation.replace('Login')}>
-                  <Text style={styles.linkText}>Sign in</Text>
+                  <Text style={styles.linkText}>{t('forgotPassword.signIn')}</Text>
                 </TouchableOpacity>
               </View>
             </>

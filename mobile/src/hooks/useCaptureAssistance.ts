@@ -11,8 +11,15 @@ interface CaptureQuality {
   overallReady: boolean
   shakeLevel: 'none' | 'slight' | 'heavy'
   brightnessLevel: 'dark' | 'low' | 'good' | 'bright'
-  messages: string[]
+  messages: CaptureMessageKey[]
 }
+
+export type CaptureMessageKey =
+  | 'focusLocked'
+  | 'lightingTooDark'
+  | 'lightingLow'
+  | 'holdStill'
+  | 'holdSteadier'
 
 const DEFAULT_QUALITY: CaptureQuality = {
   isSteady: true,
@@ -32,12 +39,12 @@ export function useCaptureAssistance() {
 
   const setFocused = useCallback((focused: boolean) => {
     setQuality((prev) => {
-      const messages = prev.messages.filter((m) => m !== 'Focus locked')
+      const messages = prev.messages.filter((m) => m !== 'focusLocked') as CaptureMessageKey[]
       return {
         ...prev,
         isFocused: focused,
         overallReady: focused && prev.isSteady && prev.isWellLit,
-        messages: focused ? [...messages, 'Focus locked'] : messages,
+        messages: focused ? [...messages, 'focusLocked'] : messages,
       }
     })
   }, [])
@@ -45,9 +52,9 @@ export function useCaptureAssistance() {
   const setBrightness = useCallback((level: CaptureQuality['brightnessLevel']) => {
     setQuality((prev) => {
       const isWellLit = level === 'good' || level === 'bright'
-      const messages = prev.messages.filter((m) => !m.startsWith('Lighting'))
-      if (level === 'dark') messages.push('Lighting too dark — move to brighter area')
-      else if (level === 'low') messages.push('Lighting is low — try near a window')
+      const messages = prev.messages.filter((m) => m !== 'lightingTooDark' && m !== 'lightingLow') as CaptureMessageKey[]
+      if (level === 'dark') messages.push('lightingTooDark')
+      else if (level === 'low') messages.push('lightingLow')
       return {
         ...prev,
         isWellLit,
@@ -72,21 +79,19 @@ export function useCaptureAssistance() {
 
       let shakeLevel: CaptureQuality['shakeLevel'] = 'none'
       let isSteady = true
-      let motionMsg = ''
+      let motionMsg: CaptureMessageKey | null = null
 
       if (stdDev > 15) {
         shakeLevel = 'heavy'
         isSteady = false
-        motionMsg = 'Hold still — too much movement'
+        motionMsg = 'holdStill'
       } else if (stdDev > 6) {
         shakeLevel = 'slight'
-        motionMsg = 'Try to hold steadier'
+        motionMsg = 'holdSteadier'
       }
 
       setQuality((prev) => {
-        const messages = prev.messages.filter(
-          (m) => !m.includes('Hold') && !m.includes('steadier') && !m.includes('movement')
-        )
+        const messages = prev.messages.filter((m) => m !== 'holdStill' && m !== 'holdSteadier') as CaptureMessageKey[]
         if (motionMsg) messages.push(motionMsg)
         return {
           ...prev,

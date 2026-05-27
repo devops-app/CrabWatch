@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Alert,
   Linking,
@@ -32,35 +33,12 @@ type NotificationPreference = {
 
 const CHANNELS: NotificationChannel[] = ['PUSH', 'EMAIL', 'IN_APP']
 
-const CATEGORIES = [
-  { key: 'mission_reminders', label: 'Mission Reminders' },
-  { key: 'streak_warnings', label: 'Streak Warnings' },
-  { key: 'milestone_alerts', label: 'Milestone Alerts' },
-  { key: 'community_updates', label: 'Community Updates' },
-] as const
+const CATEGORIES = ['mission_reminders', 'streak_warnings', 'milestone_alerts', 'community_updates'] as const
 
-const CHANNEL_LABELS: Record<NotificationChannel, string> = {
-  PUSH: 'Push',
-  EMAIL: 'Email',
-  IN_APP: 'In-App',
-}
-
-const PERMISSION_COPY: Record<PushPermissionState, { title: string; description: string; color: string }> = {
-  granted: {
-    title: 'Enabled',
-    description: 'This device can receive push notifications.',
-    color: COLORS.success,
-  },
-  denied: {
-    title: 'Blocked',
-    description: 'Push notifications are blocked in system settings.',
-    color: COLORS.error,
-  },
-  undetermined: {
-    title: 'Not Set',
-    description: 'Permission has not been requested on this device yet.',
-    color: COLORS.warning,
-  },
+const CHANNEL_LABEL_KEYS: Record<NotificationChannel, 'push' | 'email' | 'inApp'> = {
+  PUSH: 'push',
+  EMAIL: 'email',
+  IN_APP: 'inApp',
 }
 
 function normalizePreferences(data: unknown): NotificationPreference[] {
@@ -93,6 +71,7 @@ function normalizePreferences(data: unknown): NotificationPreference[] {
 }
 
 export function NotificationSettingsScreen() {
+  const { t } = useTranslation('notificationSettings')
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -100,7 +79,29 @@ export function NotificationSettingsScreen() {
   const [prefs, setPrefs] = useState<NotificationPreference[]>([])
   const [permission, setPermission] = useState<PushPermissionState>('undetermined')
 
-  const permissionInfo = useMemo(() => PERMISSION_COPY[permission], [permission])
+  const permissionInfo = useMemo(() => {
+    if (permission === 'granted') {
+      return {
+        title: t('permission.status.granted.title'),
+        description: t('permission.status.granted.description'),
+        color: COLORS.success,
+      }
+    }
+
+    if (permission === 'denied') {
+      return {
+        title: t('permission.status.denied.title'),
+        description: t('permission.status.denied.description'),
+        color: COLORS.error,
+      }
+    }
+
+    return {
+      title: t('permission.status.undetermined.title'),
+      description: t('permission.status.undetermined.description'),
+      color: COLORS.warning,
+    }
+  }, [permission, t])
 
   const loadData = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
@@ -153,9 +154,9 @@ export function NotificationSettingsScreen() {
     setSaving(true)
     try {
       await api.updateNotificationPreferences({ updates: prefs })
-      Alert.alert('Saved', 'Notification preferences updated successfully.')
+      Alert.alert(t('alerts.savedTitle'), t('alerts.savedBody'))
     } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to save preferences.')
+      Alert.alert(t('alerts.errorTitle'), error instanceof Error ? error.message : t('alerts.saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -168,15 +169,15 @@ export function NotificationSettingsScreen() {
       setPermission(result.permission)
 
       if (result.registered) {
-        Alert.alert('Push Enabled', 'Push notifications are enabled for this device.')
+        Alert.alert(t('alerts.pushEnabledTitle'), t('alerts.pushEnabledBody'))
         return
       }
 
       if (result.reason) {
-        Alert.alert('Push Not Enabled', result.reason)
+        Alert.alert(t('alerts.pushNotEnabledTitle'), result.reason)
       }
     } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to enable push notifications.')
+      Alert.alert(t('alerts.errorTitle'), error instanceof Error ? error.message : t('alerts.enableFailed'))
     } finally {
       setSyncingPush(false)
     }
@@ -186,9 +187,9 @@ export function NotificationSettingsScreen() {
     setSyncingPush(true)
     try {
       await unregisterPushTokenFromServer()
-      Alert.alert('Device Unlinked', 'This device is no longer registered for push notifications.')
+      Alert.alert(t('alerts.unlinkedTitle'), t('alerts.unlinkedBody'))
     } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to unlink this device.')
+      Alert.alert(t('alerts.errorTitle'), error instanceof Error ? error.message : t('alerts.unlinkFailed'))
     } finally {
       setSyncingPush(false)
     }
@@ -202,7 +203,7 @@ export function NotificationSettingsScreen() {
       >
         <View style={styles.statusCard}>
           <View style={styles.statusHeader}>
-            <Text style={styles.cardTitle}>Push Permission</Text>
+            <Text style={styles.cardTitle}>{t('permission.title')}</Text>
             <Text style={[styles.statusPill, { color: permissionInfo.color, borderColor: permissionInfo.color }]}> 
               {permissionInfo.title}
             </Text>
@@ -211,13 +212,13 @@ export function NotificationSettingsScreen() {
 
           <View style={styles.statusActions}>
             <Button
-              title="Enable Push"
+              title={t('actions.enablePush')}
               onPress={handleEnablePush}
               loading={syncingPush}
               style={styles.statusButton}
             />
             <Button
-              title="Unlink Device"
+              title={t('actions.unlinkDevice')}
               variant="ghost"
               onPress={handleDisablePush}
               disabled={syncingPush}
@@ -227,33 +228,33 @@ export function NotificationSettingsScreen() {
 
           {permission === 'denied' ? (
             <TouchableOpacity onPress={() => Linking.openSettings()}>
-              <Text style={styles.settingsLink}>Open system settings</Text>
+              <Text style={styles.settingsLink}>{t('permission.openSettings')}</Text>
             </TouchableOpacity>
           ) : null}
         </View>
 
         <View style={styles.prefCard}>
-          <Text style={styles.cardTitle}>Notification Preferences</Text>
-          <Text style={styles.cardDescription}>Choose which notifications you receive by channel.</Text>
+          <Text style={styles.cardTitle}>{t('preferences.title')}</Text>
+          <Text style={styles.cardDescription}>{t('preferences.description')}</Text>
 
           {CATEGORIES.map((category) => (
-            <View key={category.key} style={styles.prefRow}>
-              <Text style={styles.categoryLabel}>{category.label}</Text>
+            <View key={category} style={styles.prefRow}>
+              <Text style={styles.categoryLabel}>{t(`categories.${category}`)}</Text>
               <View style={styles.channelRow}>
                 {CHANNELS.map((channel) => {
-                  const enabled = getEnabled(channel, category.key)
+                  const enabled = getEnabled(channel, category)
                   return (
                     <TouchableOpacity
-                      key={`${category.key}-${channel}`}
+                      key={`${category}-${channel}`}
                       style={[styles.channelToggle, enabled ? styles.channelToggleOn : styles.channelToggleOff]}
-                      onPress={() => togglePreference(channel, category.key)}
+                      onPress={() => togglePreference(channel, category)}
                     >
                       <Ionicons
                         name={enabled ? 'checkmark-circle' : 'ellipse-outline'}
                         size={14}
                         color={enabled ? '#ffffff' : COLORS.textSecondary}
                       />
-                      <Text style={[styles.channelText, enabled && styles.channelTextOn]}>{CHANNEL_LABELS[channel]}</Text>
+                      <Text style={[styles.channelText, enabled && styles.channelTextOn]}>{t(`channels.${CHANNEL_LABEL_KEYS[channel]}`)}</Text>
                     </TouchableOpacity>
                   )
                 })}
@@ -262,7 +263,7 @@ export function NotificationSettingsScreen() {
           ))}
 
           <Button
-            title={loading ? 'Loading...' : 'Save Preferences'}
+            title={loading ? t('actions.loading') : t('actions.savePreferences')}
             onPress={handleSave}
             loading={saving}
             disabled={loading || syncingPush}

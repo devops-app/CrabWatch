@@ -6,6 +6,7 @@ import { AuthRequest } from '../middleware/auth'
 import { getPrisma } from '../services/container'
 import { BackupResult } from '@crabwatch/shared'
 import { asyncHandler, AppError, NotFoundError } from '../utils/errors'
+import { createTranslator } from '../middleware/i18n'
 
 const BACKUP_DIR = path.resolve(process.env.BACKUP_DIR || './backups')
 const SOFT_DELETE_RETENTION_DAYS = 30
@@ -32,11 +33,12 @@ export const listBackups = asyncHandler(async (_req: AuthRequest, res: Response)
 })
 
 export const deleteBackup = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const __ = createTranslator(req)
   const fileName = req.params.fileName
   const filePath = path.join(BACKUP_DIR, fileName)
 
   if (!fs.existsSync(filePath)) {
-    throw new NotFoundError('Backup file not found')
+    throw new NotFoundError(__('admin.backup.notFound', 'admin'))
   }
 
   fs.unlinkSync(filePath)
@@ -44,11 +46,12 @@ export const deleteBackup = asyncHandler(async (req: AuthRequest, res: Response)
 })
 
 export const downloadBackup = asyncHandler(async (req: Request, res: Response) => {
+  const __ = createTranslator(req)
   const fileName = req.params.fileName
   const filePath = path.join(BACKUP_DIR, fileName)
 
   if (!fs.existsSync(filePath)) {
-    throw new NotFoundError('Backup file not found')
+    throw new NotFoundError(__('admin.backup.notFound', 'admin'))
   }
 
   res.download(filePath, fileName)

@@ -4,8 +4,10 @@ import { CrabAnalysisRequest, CrabAnalysisResult } from '@crabwatch/shared'
 import { analyzeCrabWithAgent, uploadAnalysisPhotos, cleanupAnalysisBlobs, detectView as detectViewAgent } from '../services/foundryAgent'
 import { getPrisma } from '../services/container'
 import { asyncHandler, ValidationError } from '../utils/errors'
+import { detectLocale } from '../middleware/i18n'
 import { clearCache } from '../utils/cache'
 import { sanitizeInput, sanitizeHtml } from '../utils/sanitize'
+import { createTranslator } from '../middleware/i18n'
 
 export const activeSessions = new Map<string, { sessionId: string; blobUrls: string[]; lastActive: number }>()
 const ANALYSIS_BLOB_TTL_MS = Number(process.env.ANALYSIS_BLOB_TTL_MS) || 20 * 60 * 1000
@@ -46,19 +48,20 @@ export const uploadAnalysisPhotosHandler = asyncHandler(async (
   req: AuthRequest & { files?: MulterFile[] | { [key: string]: MulterFile[] } },
   res: Response
 ): Promise<void> => {
+  const __ = createTranslator(req)
   const rawFiles = req.files
   const files = Array.isArray(rawFiles) ? rawFiles : Object.values(rawFiles || {}).flat()
   if (!files || files.length === 0) {
-    throw new ValidationError('At least one photo is required')
+    throw new ValidationError(__('analysis.photo.required', 'analysis'))
   }
 
   if (files.length > 5) {
-    throw new ValidationError('Maximum 5 photos allowed')
+    throw new ValidationError(__('analysis.photo.tooMany', 'analysis'))
   }
 
   const sessionId = typeof req.body?.sessionId === 'string' ? req.body.sessionId : undefined
   if (sessionId && !UUID_PATTERN.test(sessionId)) {
-    throw new ValidationError('sessionId must be a valid UUID')
+    throw new ValidationError(__('analysis.sessionInvalid', 'analysis'))
   }
   const blobUrls = await uploadAnalysisPhotos(files, {
     userId: req.dbUser?.id || 'anon',
@@ -120,14 +123,15 @@ export const analyzeCrabHandler = asyncHandler(async (
   req: AuthRequest,
   res: Response
 ): Promise<void> => {
+  const __ = createTranslator(req)
   const { photoUrls, views, coinType }: CrabAnalysisRequest = req.body
 
   if (!photoUrls || photoUrls.length === 0) {
-    throw new ValidationError('photoUrls is required (array of blob URLs)')
+    throw new ValidationError(__('analysis.photoUrls.required', 'analysis'))
   }
 
   if (photoUrls.length > 5) {
-    throw new ValidationError('Maximum 5 photos allowed')
+    throw new ValidationError(__('analysis.photo.tooMany', 'analysis'))
   }
 
   const validViews = ['dorsal', 'ventral', 'carapace-closeup']
@@ -137,6 +141,7 @@ export const analyzeCrabHandler = asyncHandler(async (
     photoUrls,
     views: validViewList.length === photoUrls.length ? validViewList : Array(photoUrls.length).fill('dorsal'),
     coinType,
+    locale: detectLocale(req, (req as any).dbUser?.preferredLocale ?? null),
   }
 
   const result: CrabAnalysisResult = await analyzeCrabWithAgent(analysisRequest)
@@ -153,14 +158,15 @@ export const detectViewHandler = asyncHandler(async (
   req: AuthRequest & { file?: MulterFile },
   res: Response
 ): Promise<void> => {
+  const __ = createTranslator(req)
   const { expectedView } = req.body
 
   if (!expectedView || !['dorsal', 'ventral', 'carapace-closeup'].includes(expectedView)) {
-    throw new ValidationError('expectedView is required (dorsal, ventral, or carapace-closeup)')
+    throw new ValidationError(__('analysis.view.invalid', 'analysis'))
   }
 
   if (!req.file) {
-    throw new ValidationError('Photo file is required')
+    throw new ValidationError(__('analysis.photo.fileRequired', 'analysis'))
   }
 
   const result = await detectViewAgent(req.file.buffer, req.file.mimetype, expectedView)

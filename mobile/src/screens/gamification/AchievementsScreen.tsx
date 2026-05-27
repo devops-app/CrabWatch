@@ -11,6 +11,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import { useTranslation } from 'react-i18next'
 import type { UserAchievementListDto } from '@crabwatch/shared'
 import { api } from '../../services/api'
 import { Card } from '../../components/common/Card'
@@ -18,6 +19,7 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { Button } from '../../components/common/Button'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
+import { useFormatters } from '../../hooks/useFormatters'
 
 const RARITY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   COMMON: { bg: '#f3f4f6', text: '#374151', border: '#e5e7eb' },
@@ -37,13 +39,11 @@ const CATEGORY_ICONS: Record<string, string> = {
 
 const CATEGORIES = ['ALL', 'OBSERVATION', 'SPECIES', 'EXPLORATION', 'QUALITY', 'HIDDEN'] as const
 
-const STATUS_LABELS: Record<string, string> = {
-  all: 'All',
-  unlocked: '\u2713 Unlocked',
-  in_progress: '\u{1F504} In Progress',
-}
+
 
 export function AchievementsScreen() {
+  const { t } = useTranslation('gamification')
+  const { formatDate } = useFormatters()
   const [achievements, setAchievements] = useState<UserAchievementListDto[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -72,12 +72,12 @@ export function AchievementsScreen() {
       const res = await api.checkAchievements()
       if (res?.newlyUnlocked && res.newlyUnlocked.length > 0) {
         Alert.alert(
-          'Achievement Unlocked!',
-          `You've unlocked: ${res.newlyUnlocked.join(', ')}`,
+          t('achievements.alert.unlockedTitle'),
+          `${t('achievements.alert.unlockedBody')}: ${res.newlyUnlocked.join(', ')}`,
         )
         loadAchievements()
       } else {
-        Alert.alert('No New Achievements', 'Keep going to unlock more!')
+        Alert.alert(t('achievements.alert.noNewTitle'), t('achievements.alert.noNewBody'))
       }
     } catch {
       console.error('Failed to check achievements')
@@ -145,11 +145,11 @@ export function AchievementsScreen() {
         <View style={styles.achievementFooter}>
           <View style={styles.xpLabel}>
             <Ionicons name="sparkles" size={12} color={COLORS.accent} />
-            <Text style={styles.xpText}>+{a.xpReward} XP</Text>
+            <Text style={styles.xpText}>{t('achievements.xpReward', { xp: a.xpReward })}</Text>
           </View>
           {a.isUnlocked && a.earnedAt && (
             <Text style={styles.earnedText}>
-              Earned {new Date(a.earnedAt).toLocaleDateString()}
+              {t('achievements.earned', { date: formatDate(a.earnedAt) })}
             </Text>
           )}
         </View>
@@ -188,18 +188,18 @@ export function AchievementsScreen() {
 
   const ListHeader = useCallback(() => {
     const catLabels = CATEGORIES.map((cat) =>
-      cat === 'ALL' ? 'All' : `${CATEGORY_ICONS[cat] || '\u{1F4CC}'} ${cat}`
+      cat === 'ALL' ? t('achievements.filter.all') : `${CATEGORY_ICONS[cat] || '\u{1F4CC}'} ${t(`achievements.category.${cat}`)}`
     )
     return (
       <>
         <View style={styles.header}>
           <View>
             <Text style={styles.subtitle}>
-              {unlockedCount} of {totalCount} unlocked
+              {t('achievements.subtitle', { unlocked: unlockedCount, total: totalCount })}
             </Text>
           </View>
           <Button
-            title={checking ? 'Checking...' : 'Check'}
+            title={checking ? t('achievements.checking') : t('achievements.check')}
             variant="primary"
             disabled={checking}
             onPress={checkAchievements}
@@ -209,7 +209,7 @@ export function AchievementsScreen() {
 
         <Card padding={14} style={styles.progressCard}>
           <View style={styles.progressHeader}>
-            <Text style={styles.progressLabel}>Overall Progress</Text>
+            <Text style={styles.progressLabel}>{t('achievements.overallProgress')}</Text>
             <Text style={styles.progressPercent}>{overallProgress}%</Text>
           </View>
           <View style={styles.progressBar}>
@@ -241,20 +241,20 @@ export function AchievementsScreen() {
               onPress={() => setFilterStatus(status)}
             >
               <Text style={[styles.statusText, filterStatus === status && styles.statusTextActive]}>
-                {STATUS_LABELS[status]}
+                {t(status === 'all' ? 'achievements.filter.all' : status === 'unlocked' ? 'achievements.filter.unlocked' : 'achievements.filter.inProgress')}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
       </>
     )
-  }, [filterCategory, filterStatus, checking, unlockedCount, totalCount, overallProgress, checkAchievements])
+  }, [filterCategory, filterStatus, checking, unlockedCount, totalCount, overallProgress, checkAchievements, t])
 
   const ListEmpty = useCallback(() => (
     <Card padding={24}>
       <View style={styles.emptyState}>
         <Ionicons name="trophy-outline" size={48} color={COLORS.textLight} />
-        <Text style={styles.emptyTitle}>No achievements match your filters</Text>
+        <Text style={styles.emptyTitle}>{t('achievements.empty')}</Text>
       </View>
     </Card>
   ), [])

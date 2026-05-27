@@ -1,8 +1,8 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { Link, usePathname } from '@/i18n/navigation'
 import { useAuthStore } from '@/lib/authStore'
 
 interface SidebarProps {
@@ -10,27 +10,35 @@ interface SidebarProps {
   onToggle: () => void
 }
 
-const primaryNavItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: '📋' },
-  { href: '/dashboard/capture', label: 'Capture', icon: '📷' },
-  { href: '/dashboard/species', label: 'Species', icon: '🦀' },
-  { href: '/dashboard/analytics', label: 'Analytics', icon: '📈' },
+interface NavItem {
+  href: string
+  labelKey: string
+  icon: string
+  roles?: string[]
+}
+
+const primaryNavItems: NavItem[] = [
+  { href: '/dashboard', labelKey: 'dashboard', icon: '📋' },
+  { href: '/dashboard/capture', labelKey: 'capture', icon: '📷' },
+  { href: '/dashboard/species', labelKey: 'species', icon: '🦀' },
+  { href: '/dashboard/analytics', labelKey: 'analytics', icon: '📈' },
 ]
 
-const communityHubItems = [
-  { href: '/dashboard/leaderboard', label: 'Leaderboard', icon: '🏆' },
-  { href: '/dashboard/missions', label: 'Missions', icon: '🎯' },
-  { href: '/dashboard/achievements', label: 'Achievements', icon: '🎖️' },
-  { href: '/dashboard/community', label: 'Community', icon: '👥' },
+const communityHubItems: NavItem[] = [
+  { href: '/dashboard/leaderboard', labelKey: 'leaderboard', icon: '🏆' },
+  { href: '/dashboard/missions', labelKey: 'missions', icon: '🎯' },
+  { href: '/dashboard/achievements', labelKey: 'achievements', icon: '🎖️' },
+  { href: '/dashboard/community', labelKey: 'community', icon: '👥' },
 ]
 
-const secondaryNavItems = [
-  { href: '/dashboard/researcher', label: 'Researcher', icon: '🔬', roles: ['researcher', 'admin'] },
-  { href: '/dashboard/admin', label: 'Admin', icon: '⚙️', roles: ['admin'] },
-  { href: '/dashboard/about', label: 'About', icon: 'ℹ️' },
+const secondaryNavItems: NavItem[] = [
+  { href: '/dashboard/researcher', labelKey: 'researcher', icon: '🔬', roles: ['researcher', 'admin'] },
+  { href: '/dashboard/admin', labelKey: 'admin', icon: '⚙️', roles: ['admin'] },
+  { href: '/dashboard/about', labelKey: 'about', icon: 'ℹ️' },
 ]
 
 export default function Sidebar({ isOpen, onToggle }: SidebarProps): React.JSX.Element {
+  const t = useTranslations('nav')
   const pathname = usePathname()
   const { user } = useAuthStore()
   const isCommunitySectionActive = communityHubItems.some(item => pathname.startsWith(item.href))
@@ -47,7 +55,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps): React.JSX.E
     return pathname.startsWith(href)
   }
 
-  const canViewItem = (item: { roles?: string[] }) => {
+  const canViewItem = (item: NavItem) => {
     if (!item.roles) return true
     return Boolean(user && item.roles.includes(user.role))
   }
@@ -55,8 +63,9 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps): React.JSX.E
   const visiblePrimaryNavItems = primaryNavItems
   const visibleSecondaryNavItems = secondaryNavItems.filter(canViewItem)
 
-  const renderNavItem = (item: { href: string; label: string; icon: string }) => {
+  const renderNavItem = (item: NavItem) => {
     const active = isActive(item.href)
+    const label = t(item.labelKey)
 
     return (
       <li key={item.href}>
@@ -72,7 +81,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps): React.JSX.E
               ? 'bg-ocean-600 text-white'
               : 'text-ocean-200 hover:bg-ocean-700 hover:text-white'
           }`}
-          aria-label={!isOpen ? item.label : undefined}
+          aria-label={!isOpen ? label : undefined}
           aria-current={active ? 'page' : undefined}
         >
           <span className="text-xl flex-shrink-0" aria-hidden="true">
@@ -80,7 +89,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps): React.JSX.E
           </span>
           {isOpen && (
             <span className="font-medium whitespace-nowrap">
-              {item.label}
+              {label}
             </span>
           )}
         </Link>
@@ -110,7 +119,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps): React.JSX.E
           <button
             onClick={onToggle}
             className="lg:hidden p-1 rounded hover:bg-ocean-700"
-            aria-label={isOpen ? 'Close sidebar' : 'Open sidebar'}
+            aria-label={isOpen ? t('closeSidebar') : t('openSidebar')}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -135,7 +144,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps): React.JSX.E
                   aria-expanded={isCommunityHubOpen}
                 >
                   <span className="text-xl flex-shrink-0" aria-hidden="true">🌊</span>
-                  <span className="font-medium whitespace-nowrap flex-1 text-left">Community Hub</span>
+                  <span className="font-medium whitespace-nowrap flex-1 text-left">{t('communityHub')}</span>
                   <span aria-hidden="true" className="text-sm">{isCommunityHubOpen ? '▾' : '▸'}</span>
                 </button>
               ) : (
@@ -149,7 +158,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps): React.JSX.E
                       ? 'bg-ocean-600 text-white'
                       : 'text-ocean-200 hover:bg-ocean-700 hover:text-white'
                   }`}
-                  aria-label="Community Hub"
+                  aria-label={t('communityHub')}
                   aria-current={isCommunitySectionActive ? 'page' : undefined}
                 >
                   <span className="text-xl flex-shrink-0" aria-hidden="true">🌊</span>
@@ -159,6 +168,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps): React.JSX.E
 
             {isOpen && isCommunityHubOpen && communityHubItems.map((item) => {
               const active = isActive(item.href)
+              const label = t(item.labelKey)
               return (
                 <li key={item.href}>
                   <Link
@@ -174,7 +184,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps): React.JSX.E
                     aria-current={active ? 'page' : undefined}
                   >
                     <span className="text-base flex-shrink-0" aria-hidden="true">{item.icon}</span>
-                    <span className="font-medium whitespace-nowrap">{item.label}</span>
+                    <span className="font-medium whitespace-nowrap">{label}</span>
                   </Link>
                 </li>
               )
@@ -186,7 +196,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps): React.JSX.E
 
         <div className={`border-t border-ocean-700 p-3 ${isOpen ? '' : 'hidden'}`}>
           <p className="text-xs text-ocean-300 text-center">
-            Crab Conservation
+            {t('crabConservation')}
           </p>
         </div>
       </aside>

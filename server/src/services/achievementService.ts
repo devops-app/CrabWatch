@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client'
 import { getContainer } from './container'
 import { awardXP } from './rewardEngine'
 import { sendNotification } from './notificationService'
+import { getServerI18n } from '../config/i18n'
 
 let _prisma: PrismaClient
 function getPrisma(): PrismaClient {
@@ -104,7 +105,7 @@ export async function getAchievementProgress(userId: string, achievementId: stri
   }
 }
 
-export async function checkAndAwardAchievements(userId: string): Promise<string[]> {
+export async function checkAndAwardAchievements(userId: string, locale?: string): Promise<string[]> {
   const newlyUnlocked: string[] = []
   const achievements = await getPrisma().achievement.findMany({
     where: { isActive: true },
@@ -134,15 +135,19 @@ export async function checkAndAwardAchievements(userId: string): Promise<string[
             sourceId: achievement.id,
             idempotencyKey: `achievement:${userId}:${achievement.id}`,
             reason: `Unlocked achievement: ${achievement.name}`,
+            locale,
           }).catch(() => {})
         }
 
+        const i18n = getServerI18n()
+        const lng = locale || 'en'
         sendNotification({
           userId,
-          title: 'Achievement Unlocked!',
-          body: `You've earned "${achievement.name}": ${achievement.description}`,
+          title: i18n.t('notification.achievement.title', { lng }),
+          body: i18n.t('notification.achievement.body', { lng, name: achievement.name, description: achievement.description }),
           channel: 'IN_APP',
           category: 'gamification',
+          locale: lng,
           data: { type: 'achievement_unlock', code: achievement.code, name: achievement.name, rarity: achievement.rarity },
         }).catch(() => {})
 

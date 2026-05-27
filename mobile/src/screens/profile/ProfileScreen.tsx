@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   View,
   Text,
@@ -18,7 +19,7 @@ import { Button } from '../../components/common/Button'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { COLORS, STATUS_COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
-import { formatDate, formatStatus } from '../../utils/formatters'
+import { useFormatters } from '../../hooks/useFormatters'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { ObservationResponse, UserStatsDto } from '@crabwatch/shared'
 import type { RootStackParamList } from '../../navigation/types'
@@ -28,6 +29,8 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>
 export function ProfileScreen() {
   const navigation = useNavigation<NavigationProp>()
   const { user, logout } = useAuth()
+  const { t } = useTranslation('profile')
+  const { formatDate, formatNumber } = useFormatters()
   const [observations, setObservations] = useState<ObservationResponse[]>([])
   const [stats, setStats] = useState<UserStatsDto | null>(null)
   const [loading, setLoading] = useState(true)
@@ -58,6 +61,13 @@ export function ProfileScreen() {
     user: COLORS.primary,
     researcher: COLORS.secondary,
     admin: COLORS.accent,
+  }
+
+  const formatLocalizedStatus = (status: string) => {
+    if (status === 'approved' || status === 'pending' || status === 'rejected') {
+      return t(`status.${status}`)
+    }
+    return status
   }
 
   return (
@@ -97,24 +107,24 @@ export function ProfileScreen() {
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{approvedCount}</Text>
-            <Text style={styles.statLabel}>Approved</Text>
+            <Text style={styles.statLabel}>{t('stats.approved')}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{observations.length}</Text>
-            <Text style={styles.statLabel}>Total</Text>
+            <Text style={styles.statLabel}>{t('stats.total')}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statValue}>
               {observations.filter((o) => o.status === 'pending').length}
             </Text>
-            <Text style={styles.statLabel}>Pending</Text>
+            <Text style={styles.statLabel}>{t('stats.pending')}</Text>
           </View>
         </View>
 
         <View style={styles.engagementSection}>
-          <Text style={styles.sectionTitle}>Gamification</Text>
+          <Text style={styles.sectionTitle}>{t('gamification.title')}</Text>
           <View style={styles.engagementGrid}>
             <TouchableOpacity
               style={styles.engagementCard}
@@ -123,8 +133,8 @@ export function ProfileScreen() {
               <View style={[styles.engagementIcon, { backgroundColor: COLORS.warningLight }]}>
                 <Ionicons name="trophy" size={22} color={COLORS.accent} />
               </View>
-              <Text style={styles.engagementTitle}>Leaderboard</Text>
-              <Text style={styles.engagementDesc}>See top contributors</Text>
+              <Text style={styles.engagementTitle}>{t('gamification.leaderboard')}</Text>
+              <Text style={styles.engagementDesc}>{t('gamification.seeTopContributors')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -134,8 +144,8 @@ export function ProfileScreen() {
               <View style={[styles.engagementIcon, { backgroundColor: COLORS.successLight }]}>
                 <Ionicons name="shield-checkmark" size={22} color={COLORS.success} />
               </View>
-              <Text style={styles.engagementTitle}>Missions</Text>
-              <Text style={styles.engagementDesc}>Daily challenges</Text>
+              <Text style={styles.engagementTitle}>{t('gamification.missions')}</Text>
+              <Text style={styles.engagementDesc}>{t('gamification.dailyChallenges')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -145,8 +155,8 @@ export function ProfileScreen() {
               <View style={[styles.engagementIcon, { backgroundColor: COLORS.primaryLight }]}>
                 <Ionicons name="ribbon" size={22} color={COLORS.primary} />
               </View>
-              <Text style={styles.engagementTitle}>Achievements</Text>
-              <Text style={styles.engagementDesc}>Your badges</Text>
+              <Text style={styles.engagementTitle}>{t('gamification.achievements')}</Text>
+              <Text style={styles.engagementDesc}>{t('gamification.yourBadges')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -160,7 +170,7 @@ export function ProfileScreen() {
               </View>
               <View style={styles.xpValue}>
                 <Ionicons name="sparkles" size={16} color={COLORS.accent} />
-                <Text style={styles.xpNumber}>{stats.totalXP.toLocaleString()}</Text>
+                <Text style={styles.xpNumber}>{formatNumber(stats.totalXP, 0)}</Text>
               </View>
             </View>
 
@@ -168,7 +178,7 @@ export function ProfileScreen() {
               <View style={styles.xpProgress}>
                 <View style={styles.xpProgressHeader}>
                   <Text style={styles.xpProgressText}>
-                    XP Progress
+                    {t('xpProgress')}
                   </Text>
                   <Text style={styles.xpProgressText}>
                     {stats.totalXP % (stats.xpToNextLevel + (stats.level > 0 ? 0 : 0))}/{stats.xpToNextLevel}
@@ -189,19 +199,19 @@ export function ProfileScreen() {
               <View style={styles.xpStat}>
                 <Ionicons name="flame" size={16} color={COLORS.accent} />
                 <Text style={styles.xpStatValue}>{stats.currentStreak}</Text>
-                <Text style={styles.xpStatLabel}>Streak</Text>
+                <Text style={styles.xpStatLabel}>{t('streak')}</Text>
               </View>
               <View style={styles.xpStatDivider} />
               <View style={styles.xpStat}>
                 <Ionicons name="trophy" size={16} color={COLORS.accent} />
                 <Text style={styles.xpStatValue}>{stats.longestStreak}</Text>
-                <Text style={styles.xpStatLabel}>Best</Text>
+                <Text style={styles.xpStatLabel}>{t('best')}</Text>
               </View>
               <View style={styles.xpStatDivider} />
               <View style={styles.xpStat}>
                 <Ionicons name="checkmark-done" size={16} color={COLORS.success} />
                 <Text style={styles.xpStatValue}>{stats.approvedCount}</Text>
-                <Text style={styles.xpStatLabel}>Approved</Text>
+                <Text style={styles.xpStatLabel}>{t('stats.approved')}</Text>
               </View>
             </View>
           </Card>
@@ -209,13 +219,13 @@ export function ProfileScreen() {
 
         <View style={styles.actionsRow}>
           <Button
-            title="Edit Profile"
+            title={t('editProfile')}
             variant="secondary"
             onPress={() => navigation.navigate('EditProfile')}
             style={styles.actionBtn}
           />
           <Button
-            title="Settings"
+            title={t('settings')}
             variant="secondary"
             onPress={() => navigation.navigate('ProfileSettings')}
             style={styles.actionBtn}
@@ -223,18 +233,18 @@ export function ProfileScreen() {
         </View>
 
         <Button
-          title="Sign Out"
+          title={t('signOut')}
           variant="secondary"
           onPress={() => {
-            Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Sign Out', style: 'destructive', onPress: () => logout() },
+            Alert.alert(t('signOut'), t('signOutConfirm'), [
+              { text: t('common.cancel'), style: 'cancel' },
+              { text: t('signOut'), style: 'destructive', onPress: () => logout() },
             ])
           }}
           style={styles.fullWidthBtn}
         />
 
-        <Text style={styles.sectionTitle}>Recent Submissions</Text>
+        <Text style={styles.sectionTitle}>{t('recentSubmissions')}</Text>
 
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -244,9 +254,9 @@ export function ProfileScreen() {
           <Card padding={24}>
             <View style={styles.emptyCard}>
               <Ionicons name="document-outline" size={40} color={COLORS.textLight} />
-              <Text style={styles.emptyTitle}>No observations yet</Text>
+              <Text style={styles.emptyTitle}>{t('noObservationsYet')}</Text>
               <Text style={styles.emptyText}>
-                Start contributing by submitting your first observation
+                {t('startContributing')}
               </Text>
             </View>
           </Card>
@@ -271,12 +281,12 @@ export function ProfileScreen() {
                   ]}
                 >
                   <Text style={styles.obsStatusText}>
-                    {formatStatus(obs.status)}
+                    {formatLocalizedStatus(obs.status)}
                   </Text>
                 </View>
               </View>
               <Text style={styles.obsDetails}>
-                CW: {obs.cw.toFixed(1)}cm | BW: {obs.bw != null ? `${obs.bw.toFixed(0)}g` : 'N/A'} |{' '}
+                CW: {formatNumber(obs.cw, 1)}cm | BW: {obs.bw != null ? `${formatNumber(obs.bw, 0)}g` : 'N/A'} |{' '}
                 {formatDate(obs.createdAt)}
               </Text>
             </TouchableOpacity>

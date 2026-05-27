@@ -121,8 +121,8 @@ Return ONLY valid JSON, no markdown, no explanation. Use this exact structure:
   "maturationStatus": "mature | immature | unknown",
   "detectedCoin": "5 sen | 10 sen | 20 sen | 50 sen | null",
   "coinConfidence": 0.0 to 1.0,
-  "suggestions": ["actionable notes for the field researcher"],
-  "rawAnalysis": "plain English description of observations"
+  "suggestions": ["actionable notes for the field researcher — use the language specified in the LANGUAGE section"],
+  "rawAnalysis": "description of observations — use the language specified in the LANGUAGE section"
 }
 
 Be honest about uncertainty. It is better to say "I'm not confident" with a lower confidence score than to guess incorrectly. If photos are blurry, poorly lit, or the crab is not fully visible, note this in suggestions.`
@@ -241,6 +241,15 @@ export async function uploadAnalysisPhotos(
   return blobUrls
 }
 
+function buildLocaleInstructions(locale: string): string {
+  if (locale === 'ms') {
+    return `## BAHASA
+Return rawAnalysis and suggestions in Bahasa Melayu. Keep speciesName in scientific format (Latin binomial + common name in parentheses).`
+  }
+  return `## LANGUAGE
+Return rawAnalysis and suggestions in English.`
+}
+
 export async function analyzeCrabWithAgent(
   request: CrabAnalysisRequest
 ): Promise<CrabAnalysisResult> {
@@ -265,6 +274,9 @@ export async function analyzeCrabWithAgent(
     promptText += `Researcher-selected coin reference: ${request.coinType}.\n`
   }
   promptText += `Analyze all photos together to give your best assessment.\n\n`
+  if (request.locale) {
+    promptText += `${buildLocaleInstructions(request.locale)}\n\n`
+  }
 
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 45000)

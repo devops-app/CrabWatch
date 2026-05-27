@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigation } from '@react-navigation/native'
+import { useTranslation } from 'react-i18next'
 import { loginSchema, type LoginFormValues } from '../../utils/validators'
 import { authService } from '../../services/authService'
 import { Input } from '../../components/common/Input'
@@ -24,6 +25,7 @@ import type { AuthStackParamList } from '../../navigation/types'
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>
 
 export function LoginScreen() {
+  const { t } = useTranslation()
   const navigation = useNavigation<NavigationProp>()
   const [loading, setLoading] = useState(false)
 
@@ -45,8 +47,8 @@ export function LoginScreen() {
       await authService.login(data.email, data.password)
     } catch (err) {
       Alert.alert(
-        'Login Failed',
-        err instanceof Error ? err.message : 'Invalid credentials'
+        t('login.loginFailed'),
+        err instanceof Error ? err.message : t('login.invalidCredentials')
       )
     } finally {
       setLoading(false)
@@ -61,9 +63,9 @@ export function LoginScreen() {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>CrabWatch</Text>
+          <Text style={styles.title}>{t('login.title')}</Text>
           <Text style={styles.subtitle}>
-            Citizen Science for Crab Conservation
+            {t('login.subtitle')}
           </Text>
         </View>
 
@@ -73,8 +75,8 @@ export function LoginScreen() {
             name="email"
             render={({ field: { onChange, onBlur, value } }) => (
               <Input
-                label="Email"
-                placeholder="your@email.com"
+                label={t('login.email')}
+                placeholder={t('login.emailPlaceholder')}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
@@ -93,8 +95,8 @@ export function LoginScreen() {
             name="password"
             render={({ field: { onChange, onBlur, value } }) => (
               <Input
-                label="Password"
-                placeholder="Enter your password"
+                label={t('login.password')}
+                placeholder={t('login.passwordPlaceholder')}
                 secureTextEntry
                 textContentType="password"
                 value={value}
@@ -107,7 +109,7 @@ export function LoginScreen() {
           />
 
           <Button
-            title="Sign In"
+            title={t('login.signIn')}
             loading={loading}
             onPress={handleSubmit(onSubmit)}
             style={styles.submitBtn}
@@ -117,15 +119,15 @@ export function LoginScreen() {
             style={styles.forgotLink}
             onPress={() => navigation.navigate('ForgotPassword')}
           >
-            <Text style={styles.linkText}>Forgot password?</Text>
+            <Text style={styles.linkText}>{t('login.forgotPassword')}</Text>
           </TouchableOpacity>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
+            <Text style={styles.footerText}>{t('login.noAccount')} </Text>
             <TouchableOpacity
               onPress={() => navigation.navigate('Register')}
             >
-              <Text style={styles.linkText}>Create one</Text>
+              <Text style={styles.linkText}>{t('login.createAccount')}</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -6,6 +6,8 @@ import { getAuthCookie } from './cookieAuth'
 import { config } from '../config'
 import prisma from '../config/database'
 import logger from '../utils/logger'
+import { createTranslator, detectLocale } from './i18n'
+import { translationLocaleStorage } from '../utils/i18n-prisma'
 
 declare module 'express' {
   interface Request {
@@ -18,6 +20,7 @@ declare module 'express' {
       id: string
       role: string
       email: string
+      preferredLocale: string | null
     }
   }
 }
@@ -55,20 +58,21 @@ export function hasPermission(role: UserRole, permission: AdminPermissionKey): b
 // Middleware factory: require specific permission(s)
 export function requirePermission(...permissions: AdminPermissionKey[]) {
   return (req: AuthRequest, res: Response, next: NextFunction): void => {
+    const __ = createTranslator(req)
     if (!req.user) {
-      res.status(401).json({ success: false, error: 'Authentication required' })
+      res.status(401).json({ success: false, error: __('auth.required', 'common') })
       return
     }
 
     const dbRole = req.dbUser?.role as UserRole | undefined
     if (!dbRole) {
-      res.status(403).json({ success: false, error: 'Insufficient permissions' })
+      res.status(403).json({ success: false, error: __('auth.insufficientPermissions', 'common') })
       return
     }
 
     const hasAny = permissions.some(p => hasPermission(dbRole, p))
     if (!hasAny) {
-      res.status(403).json({ success: false, error: 'Insufficient permissions' })
+      res.status(403).json({ success: false, error: __('auth.insufficientPermissions', 'common') })
       return
     }
     next()
@@ -120,14 +124,16 @@ export async function authMiddleware(
     }
     next()
   } catch (err) {
-    _res.status(401).json({ success: false, error: 'Invalid or expired token' })
+    const __ = createTranslator(req)
+    _res.status(401).json({ success: false, error: __('token.invalid', 'auth') })
     return
   }
 }
 
 export function requireAuth(req: AuthRequest, res: Response, next: NextFunction): void {
+  const __ = createTranslator(req)
   if (!req.user) {
-    res.status(401).json({ success: false, error: 'Authentication required' })
+    res.status(401).json({ success: false, error: __('auth.required', 'common') })
     return
   }
   next()
@@ -135,14 +141,15 @@ export function requireAuth(req: AuthRequest, res: Response, next: NextFunction)
 
 export function requireRole(...roles: UserRole[]) {
   return (req: AuthRequest, res: Response, next: NextFunction): void => {
+    const __ = createTranslator(req)
     if (!req.user) {
-      res.status(401).json({ success: false, error: 'Authentication required' })
+      res.status(401).json({ success: false, error: __('auth.required', 'common') })
       return
     }
 
     const dbRole = req.dbUser?.role as UserRole | undefined
     if (!dbRole || !roles.includes(dbRole)) {
-      res.status(403).json({ success: false, error: 'Insufficient permissions' })
+      res.status(403).json({ success: false, error: __('auth.insufficientPermissions', 'common') })
       return
     }
     next()
@@ -159,7 +166,7 @@ export async function resolveUser(
     return
   }
 
-  let user: { id: string; role: string; email: string; blockedAt: Date | null; deletedAt: Date | null } | null = null
+  let user: { id: string; role: string; email: string; blockedAt: Date | null; deletedAt: Date | null; preferredLocale: string | null } | null = null
 
   try {
     const uid = req.user.uid
@@ -173,7 +180,7 @@ export async function resolveUser(
 
     user = await prisma.user.findFirst({
       where,
-      select: { id: true, role: true, email: true, blockedAt: true, deletedAt: true },
+      select: { id: true, role: true, email: true, blockedAt: true, deletedAt: true, preferredLocale: true },
     })
   } catch (err) {
     logger.error({ err, msg: 'resolveUser: UUID lookup failed', requestId: (req as any).requestId })
@@ -183,7 +190,7 @@ export async function resolveUser(
     try {
       user = await prisma.user.findFirst({
         where: { email: req.user.email },
-        select: { id: true, role: true, email: true, blockedAt: true, deletedAt: true },
+        select: { id: true, role: true, email: true, blockedAt: true, deletedAt: true, preferredLocale: true },
       })
     } catch (err) {
       logger.error({ err, msg: 'resolveUser: email lookup failed', requestId: (req as any).requestId })
@@ -191,15 +198,20 @@ export async function resolveUser(
   }
 
   if (user) {
+    const __ = createTranslator(req)
     if (user.deletedAt) {
-      res.status(403).json({ success: false, error: 'Account has been deleted' })
+      res.status(403).json({ success: false, error: __('login.userDeleted', 'auth') })
       return
     }
     if (user.blockedAt) {
-      res.status(403).json({ success: false, error: 'Account has been suspended' })
+      res.status(403).json({ success: false, error: __('login.userSuspended', 'auth') })
       return
     }
-    req.dbUser = { id: user.id, role: user.role, email: user.email }
+    req.dbUser = { id: user.id, role: user.role, email: user.email, preferredLocale: user.preferredLocale }
   }
-  next()
+
+  const locale = detectLocale(req, (req as any).dbUser?.preferredLocale ?? null)
+  translationLocaleStorage.run(locale, () => {
+    next()
+  })
 }

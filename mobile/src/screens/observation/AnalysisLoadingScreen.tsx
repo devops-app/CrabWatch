@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   View,
   Text,
@@ -11,18 +11,12 @@ import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
+import { useTranslation } from 'react-i18next'
 import { analysisService, AnalysisProgress, AnalysisResult } from '../../services/analysisService'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 import { Button } from '../../components/common/Button'
 import { PhotoView } from '@crabwatch/shared'
-
-const STEPS = [
-  { key: 'uploading', label: 'Uploading photos...', icon: 'cloud-upload-outline' },
-  { key: 'identifying', label: 'Identifying species...', icon: 'search' },
-  { key: 'estimating', label: 'Estimating size...', icon: 'resize' },
-  { key: 'complete', label: 'Analysis complete!', icon: 'checkmark-circle' },
-]
 
 interface AnalysisLoadingRouteParams {
   photos: string[]
@@ -41,6 +35,14 @@ export function AnalysisLoadingScreen() {
   const navigation = useNavigation<any>()
   const route = useRoute<any>()
   const { photos, views, sessionId, coinType } = route.params as AnalysisLoadingRouteParams
+  const { t } = useTranslation('analysis')
+
+  const steps = useMemo(() => [
+    { key: 'uploading', label: t('steps.uploading'), icon: 'cloud-upload-outline' },
+    { key: 'identifying', label: t('steps.identifying'), icon: 'search' },
+    { key: 'estimating', label: t('steps.estimating'), icon: 'resize' },
+    { key: 'complete', label: t('steps.complete'), icon: 'checkmark-circle' },
+  ], [t])
 
   const [progress, setProgress] = useState<AnalysisProgress>({
     status: 'uploading',
@@ -179,7 +181,7 @@ export function AnalysisLoadingScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={styles.headerTitle}>AI Analysis</Text>
+          <Text style={styles.headerTitle}>{t('title')}</Text>
           {!isComplete && !isError && (
             <Text style={styles.elapsedTime}>
               <Ionicons name="time-outline" size={12} color={COLORS.textSecondary} />
@@ -189,7 +191,7 @@ export function AnalysisLoadingScreen() {
         </View>
         <TouchableOpacity
           onPress={handleCancel}
-          accessibilityLabel="Cancel analysis"
+          accessibilityLabel={t('cancelAnalysis')}
         >
           <Ionicons name="close-circle" size={24} color={COLORS.textSecondary} />
         </TouchableOpacity>
@@ -203,7 +205,7 @@ export function AnalysisLoadingScreen() {
         </View>
 
         <View style={styles.stepsContainer}>
-          {STEPS.map((step, i) => {
+          {steps.map((step, i) => {
             const isDone = i < currentStepIndex || isComplete
             const isCurrent = i === currentStepIndex && !isComplete && !isError
             return (
@@ -256,28 +258,28 @@ export function AnalysisLoadingScreen() {
         {isError && (
           <View style={styles.errorCard}>
             <Ionicons name="alert-circle" size={24} color={COLORS.error} />
-            <Text style={styles.errorTitle}>Analysis Failed</Text>
+            <Text style={styles.errorTitle}>{t('analysisFailed')}</Text>
             <Text style={styles.errorMessage}>{progress.message}</Text>
             <View style={styles.errorActions}>
               <Button
-                title="Retry"
+                title={t('retry')}
                 onPress={handleRetry}
                 style={styles.retryButton}
-                accessibilityLabel="Retry analysis"
+                accessibilityLabel={t('retryAnalysis')}
               />
               <Button
-                title="Submit Manually"
+                title={t('submitManually')}
                 variant="secondary"
                 onPress={handleSubmitManually}
                 style={styles.manualButton}
-                accessibilityLabel="Submit observation manually without AI analysis"
+                accessibilityLabel={t('submitManuallyA11y')}
               />
               <Button
-                title="Go Back"
+                title={t('goBack')}
                 variant="ghost"
                 onPress={handleCancel}
                 style={styles.backButton}
-                accessibilityLabel="Go back to capture screen"
+                accessibilityLabel={t('goBackA11y')}
               />
             </View>
           </View>

@@ -19,6 +19,7 @@ describe('authStore', () => {
     country: null,
     role: 'user',
     avatar: null,
+    preferredLocale: null,
     deletedAt: null,
     blockedAt: null,
     blockReason: null,

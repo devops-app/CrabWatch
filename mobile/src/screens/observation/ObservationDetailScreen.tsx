@@ -15,24 +15,19 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { useTranslation } from 'react-i18next'
 import { Card } from '../../components/common/Card'
 import { Button } from '../../components/common/Button'
 import { COLORS, STATUS_COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
-import {
-  formatDate,
-  formatCoordinates,
-  formatGender,
-  formatMaturationStatus,
-  formatStatus,
-  formatNumber,
-  formatConditionFactor,
-} from '../../utils/formatters'
+import { useFormatters } from '../../hooks/useFormatters'
 import type { RootStackParamList } from '../../navigation/types'
 
 type ObservationDetailRouteProp = RouteProp<RootStackParamList, 'ObservationDetail'>
 
 export function ObservationDetailScreen() {
+  const { t } = useTranslation('observation')
+  const { formatDate, formatNumber, formatCoordinates, formatConditionFactor } = useFormatters()
   const route = useRoute<ObservationDetailRouteProp>()
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
   const observation = route.params?.observation
@@ -42,7 +37,7 @@ export function ObservationDetailScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.empty}>
-          <Text>Observation not found</Text>
+          <Text>{t('notFound')}</Text>
         </View>
       </SafeAreaView>
     )
@@ -50,6 +45,29 @@ export function ObservationDetailScreen() {
 
   const cf = observation.bw != null ? formatConditionFactor(observation.cw, observation.bw) : 'N/A'
   const statusColor = STATUS_COLORS[observation.status] || COLORS.textSecondary
+
+  const formatLocalizedStatus = (status: string) => {
+    if (status === 'approved' || status === 'pending' || status === 'rejected') {
+      return t(status)
+    }
+    return status
+  }
+
+  const formatLocalizedGender = (gender: string) => {
+    const key = gender.toLowerCase()
+    if (key === 'male' || key === 'female' || key === 'unknown') {
+      return t(`genderValue.${key}`)
+    }
+    return gender
+  }
+
+  const formatLocalizedMaturation = (status: string) => {
+    const key = status.toLowerCase()
+    if (key === 'mature' || key === 'immature' || key === 'unknown') {
+      return t(`maturationValue.${key}`)
+    }
+    return status
+  }
 
   const handlePrint = async () => {
     const html = `
@@ -77,40 +95,40 @@ export function ObservationDetailScreen() {
       <body>
         <h1>${observation.species.commonName}</h1>
         <div class="sci">${observation.species.scientificName}</div>
-        <div class="status status-${observation.status}">${formatStatus(observation.status)}</div>
+        <div class="status status-${observation.status}">${formatLocalizedStatus(observation.status)}</div>
 
-        <div class="section-title">Measurements</div>
+        <div class="section-title">${t('measurements')}</div>
         <table>
-          <tr><td>Carapace Width</td><td>${formatNumber(observation.cw, 2)} cm</td></tr>
-          <tr><td>Body Weight</td><td>${formatNumber(observation.bw, 1)} g</td></tr>
-          <tr><td>Condition Factor</td><td>${cf}</td></tr>
+          <tr><td>${t('carapaceWidth')}</td><td>${formatNumber(observation.cw, 2)} cm</td></tr>
+          <tr><td>${t('bodyWeight')}</td><td>${formatNumber(observation.bw, 1)} g</td></tr>
+          <tr><td>${t('conditionFactor')}</td><td>${cf}</td></tr>
         </table>
 
-        <div class="section-title">Biological Data</div>
+        <div class="section-title">${t('biologicalData')}</div>
         <table>
-          <tr><td>Gender</td><td>${formatGender(observation.gender)}</td></tr>
-          <tr><td>Maturation</td><td>${formatMaturationStatus(observation.maturationStatus)}</td></tr>
-          ${observation.detectedCoin ? `<tr><td>Reference Coin</td><td>${observation.detectedCoin}</td></tr>` : ''}
+          <tr><td>${t('gender')}</td><td>${formatLocalizedGender(observation.gender)}</td></tr>
+          <tr><td>${t('maturation')}</td><td>${formatLocalizedMaturation(observation.maturationStatus)}</td></tr>
+          ${observation.detectedCoin ? `<tr><td>${t('referenceCoin')}</td><td>${observation.detectedCoin}</td></tr>` : ''}
         </table>
 
-        <div class="section-title">Location</div>
+        <div class="section-title">${t('location')}</div>
         <table>
-          <tr><td>Coordinates</td><td>${formatCoordinates(observation.lat, observation.lng)}</td></tr>
-          <tr><td>Method</td><td>${observation.locationMethod === 'gps' ? 'GPS' : 'Manual'}</td></tr>
+          <tr><td>${t('coordinates')}</td><td>${formatCoordinates(observation.lat, observation.lng)}</td></tr>
+          <tr><td>${t('method')}</td><td>${observation.locationMethod === 'gps' ? t('gps') : t('manual')}</td></tr>
         </table>
 
         ${observation.photos.length > 0 ? `
-          <div class="section-title">Photos</div>
+          <div class="section-title">${t('photos')}</div>
           <div class="photos">
-            ${observation.photos.map((url: string) => `<img src="${url}" alt="Photo">`).join('')}
+            ${observation.photos.map((url: string) => `<img src="${url}" alt="${t('photos')}">`).join('')}
           </div>
         ` : ''}
 
-        ${observation.notes ? `<div class="section-title">Notes</div><div class="notes">${observation.notes}</div>` : ''}
+        ${observation.notes ? `<div class="section-title">${t('notes')}</div><div class="notes">${observation.notes}</div>` : ''}
 
         <div class="footer">
-          Submitted: ${formatDate(observation.createdAt)} by ${observation.user.name}
-          ${observation.validatedAt ? ` | Validated: ${formatDate(observation.validatedAt)}` : ''}
+          ${t('submitted')}: ${formatDate(observation.createdAt)} | ${t('submittedBy')}: ${observation.user.name}
+          ${observation.validatedAt ? ` | ${t('validated')}: ${formatDate(observation.validatedAt)}` : ''}
           <br>Generated by CrabWatch
         </div>
       </body>
@@ -122,10 +140,10 @@ export function ObservationDetailScreen() {
         await Print.printAsync({ html })
       } else {
         await Print.printToFileAsync({ html })
-        Alert.alert('PDF Saved', 'The observation has been saved as a PDF to your Downloads folder.')
+        Alert.alert(t('printSaved'), t('printSavedBody'))
       }
     } catch (error) {
-      Alert.alert('Print Failed', 'Could not generate the print document. Please try again.')
+      Alert.alert(t('printFailed'), t('printFailedBody'))
     }
   }
 
@@ -137,38 +155,38 @@ export function ObservationDetailScreen() {
 
         <View style={styles.statusBadge}>
           <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-          <Text style={styles.statusText}>{formatStatus(observation.status)}</Text>
+          <Text style={styles.statusText}>{formatLocalizedStatus(observation.status)}</Text>
         </View>
 
-        <Card padding={16}>
-          <Text style={styles.cardTitle}>Measurements</Text>
-          <DetailRow label="Carapace Width" value={`${formatNumber(observation.cw, 2)} cm`} />
-          <DetailRow label="Body Weight" value={`${formatNumber(observation.bw, 1)} g`} />
-          <DetailRow label="Condition Factor" value={cf} />
+       <Card padding={16}>
+          <Text style={styles.cardTitle}>{t('measurements')}</Text>
+          <DetailRow label={t('carapaceWidth')} value={`${formatNumber(observation.cw, 2)} cm`} />
+          <DetailRow label={t('bodyWeight')} value={`${formatNumber(observation.bw, 1)} g`} />
+          <DetailRow label={t('conditionFactor')} value={cf} />
         </Card>
 
-        <Card padding={16}>
-          <Text style={styles.cardTitle}>Biological Data</Text>
-          <DetailRow label="Gender" value={formatGender(observation.gender)} />
-          <DetailRow label="Maturation" value={formatMaturationStatus(observation.maturationStatus)} />
+       <Card padding={16}>
+          <Text style={styles.cardTitle}>{t('biologicalData')}</Text>
+          <DetailRow label={t('gender')} value={formatLocalizedGender(observation.gender)} />
+          <DetailRow label={t('maturation')} value={formatLocalizedMaturation(observation.maturationStatus)} />
         </Card>
 
-        {observation.detectedCoin && (
+      {observation.detectedCoin && (
           <Card padding={16}>
-            <Text style={styles.cardTitle}>Reference Coin</Text>
-            <DetailRow label="Coin" value={observation.detectedCoin} />
+            <Text style={styles.cardTitle}>{t('referenceCoin')}</Text>
+            <DetailRow label={t('coin')} value={observation.detectedCoin} />
           </Card>
         )}
 
-        <Card padding={16}>
-          <Text style={styles.cardTitle}>Location</Text>
-          <DetailRow label="Coordinates" value={formatCoordinates(observation.lat, observation.lng)} />
-          <DetailRow label="Method" value={observation.locationMethod === 'gps' ? 'GPS' : 'Manual'} />
+      <Card padding={16}>
+          <Text style={styles.cardTitle}>{t('location')}</Text>
+          <DetailRow label={t('coordinates')} value={formatCoordinates(observation.lat, observation.lng)} />
+          <DetailRow label={t('method')} value={observation.locationMethod === 'gps' ? t('gps') : t('manual')} />
         </Card>
 
-        {observation.photos.length > 0 && (
+      {observation.photos.length > 0 && (
           <Card padding={16}>
-            <Text style={styles.cardTitle}>Photos</Text>
+            <Text style={styles.cardTitle}>{t('photos')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoScroll}>
               {observation.photos.map((url: string, i: number) => (
                 <TouchableOpacity
@@ -183,37 +201,37 @@ export function ObservationDetailScreen() {
           </Card>
         )}
 
-        {observation.notes && (
+      {observation.notes && (
           <Card padding={16}>
-            <Text style={styles.cardTitle}>Notes</Text>
+            <Text style={styles.cardTitle}>{t('notes')}</Text>
             <Text style={styles.notesText}>{observation.notes}</Text>
           </Card>
         )}
 
-        <Card padding={16}>
-          <Text style={styles.cardTitle}>Submission Info</Text>
-          <DetailRow label="Submitted" value={formatDate(observation.createdAt)} />
-          <DetailRow label="Submitted By" value={observation.user.name} />
+     <Card padding={16}>
+          <Text style={styles.cardTitle}>{t('submissionInfo')}</Text>
+          <DetailRow label={t('submitted')} value={formatDate(observation.createdAt)} />
+          <DetailRow label={t('submittedBy')} value={observation.user.name} />
           {observation.validatedAt && (
-            <DetailRow label="Validated" value={formatDate(observation.validatedAt)} />
+            <DetailRow label={t('validated')} value={formatDate(observation.validatedAt)} />
           )}
           {observation.rejectionReason && (
             <View style={styles.rejectionBox}>
-              <Text style={styles.rejectionLabel}>Rejection Reason:</Text>
+              <Text style={styles.rejectionLabel}>{t('rejectionReason')}</Text>
               <Text style={styles.rejectionText}>{observation.rejectionReason}</Text>
             </View>
           )}
         </Card>
 
-        <View style={styles.actionRow}>
+      <View style={styles.actionRow}>
           <Button
-            title="Back"
+            title={t('back')}
             variant="secondary"
             onPress={() => navigation.goBack()}
             style={styles.actionBtn}
           />
           <Button
-            title="Print"
+            title={t('print')}
             variant="secondary"
             onPress={handlePrint}
             style={styles.actionBtn}

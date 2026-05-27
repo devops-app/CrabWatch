@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native'
+import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
 import { api } from '../../services/api'
 import { Input } from '../../components/common/Input'
@@ -35,6 +36,7 @@ const resetPasswordSchema = z.object({
 type ResetPasswordValues = z.infer<typeof resetPasswordSchema>
 
 export function ResetPasswordScreen() {
+  const { t } = useTranslation()
   const navigation = useNavigation<NavigationProp>()
   const route = useRoute<RouteParams>()
   const token = route.params?.token
@@ -58,7 +60,7 @@ export function ResetPasswordScreen() {
 
   const onSubmit = async (data: ResetPasswordValues) => {
     if (!token) {
-      Alert.alert('Error', 'Invalid reset link')
+      Alert.alert(t('resetPassword.error'), t('resetPassword.invalidLink'))
       return
     }
     setLoading(true)
@@ -67,8 +69,8 @@ export function ResetPasswordScreen() {
       setSuccess(true)
     } catch (err) {
       Alert.alert(
-        'Error',
-        err instanceof Error ? err.message : 'Failed to reset password'
+        t('resetPassword.error'),
+        err instanceof Error ? err.message : t('resetPassword.failedToReset')
       )
     } finally {
       setLoading(false)
@@ -79,9 +81,9 @@ export function ResetPasswordScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Invalid reset link.</Text>
+          <Text style={styles.errorText}>{t('resetPassword.invalidLink')}</Text>
           <Button
-            title="Back to Login"
+            title={t('resetPassword.backToLogin')}
             onPress={() => navigation.replace('Login')}
             style={styles.backBtn}
           />
@@ -98,9 +100,9 @@ export function ResetPasswordScreen() {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Reset Password</Text>
+          <Text style={styles.title}>{t('resetPassword.title')}</Text>
           <Text style={styles.subtitle}>
-            Enter your new password below.
+            {t('resetPassword.subtitle')}
           </Text>
         </View>
 
@@ -108,10 +110,10 @@ export function ResetPasswordScreen() {
           {success ? (
             <View style={styles.successContainer}>
               <Text style={styles.successText}>
-                Your password has been reset successfully.
+                {t('resetPassword.success')}
               </Text>
               <Button
-                title="Sign In"
+                title={t('resetPassword.signIn')}
                 onPress={() => navigation.replace('Login')}
                 style={styles.backBtn}
               />
@@ -123,8 +125,8 @@ export function ResetPasswordScreen() {
                 name="password"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <Input
-                    label="New Password"
-                    placeholder="At least 8 characters"
+                    label={t('resetPassword.newPassword')}
+                    placeholder={t('resetPassword.passwordPlaceholder')}
                     secureTextEntry
                     textContentType="newPassword"
                     value={value}
@@ -141,8 +143,8 @@ export function ResetPasswordScreen() {
                 name="confirmPassword"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <Input
-                    label="Confirm Password"
-                    placeholder="Re-enter your password"
+                    label={t('resetPassword.confirmPassword')}
+                    placeholder={t('resetPassword.confirmPlaceholder')}
                     secureTextEntry
                     textContentType="newPassword"
                     value={value}
@@ -155,16 +157,16 @@ export function ResetPasswordScreen() {
               />
 
               <Button
-                title="Reset Password"
+                title={t('resetPassword.reset')}
                 loading={loading}
                 onPress={handleSubmit(onSubmit)}
                 style={styles.submitBtn}
               />
 
               <View style={styles.footer}>
-                <Text style={styles.footerText}>Remember your password? </Text>
+                <Text style={styles.footerText}>{t('resetPassword.rememberPassword')} </Text>
                 <TouchableOpacity onPress={() => navigation.replace('Login')}>
-                  <Text style={styles.linkText}>Sign in</Text>
+                  <Text style={styles.linkText}>{t('resetPassword.signInLink')}</Text>
                 </TouchableOpacity>
               </View>
             </>

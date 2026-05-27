@@ -12,6 +12,7 @@ export interface CrabAnalysisRequest {
   photoUrls: string[]
   views: PhotoView[]
   coinType?: string
+  locale?: string
 }
 
 export interface CrabAnalysisResult {

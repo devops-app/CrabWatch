@@ -169,7 +169,7 @@ export const api = {
     return apiRequest('/users/me')
   },
 
-  async updateProfile(data: { name?: string; phoneCode?: string | null; phoneNumber?: string | null; addressLine1?: string | null; addressLine2?: string | null; addressLine3?: string | null; state?: string | null; postcode?: string | null; country?: string | null; avatar?: string | null }): Promise<UserResponse> {
+  async updateProfile(data: { name?: string; phoneCode?: string | null; phoneNumber?: string | null; addressLine1?: string | null; addressLine2?: string | null; addressLine3?: string | null; state?: string | null; postcode?: string | null; country?: string | null; avatar?: string | null; preferredLocale?: 'en' | 'ms' | null }): Promise<UserResponse> {
     return apiRequest('/users/me', {
       method: 'PATCH',
       body: JSON.stringify(data),

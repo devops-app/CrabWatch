@@ -1,10 +1,15 @@
 # CrabWatch — Work Progress Tracker
 
-> **Last Updated**: 2026-05-23
-> **Current Focus**: Observation print feature complete — Web and mobile print support added.
+> **Last Updated**: 2026-05-27
+> **Current Focus**: Web app deployed to Azure. Mobile build and UAT testing next.
 
 ## Goal
 Build an AI-guided crab observation capture flow with fully dynamic species detection. The AI identifies any crab species in photos, and unknown species are auto-created in the database.
+
+### i18n (Phase 1)
+- Extract and translate all static UI strings for web, mobile, and server layers
+- Support English (en) and Bahasa Melayu (ms)
+- Web: `next-intl` v4.12.0, Mobile: `i18next` + `react-i18next`, Server: `i18next`
 
 ## Constraints & Preferences
 - Maintain strict type safety across all packages (`tsc --noEmit`)
@@ -177,17 +182,138 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Verified: `tsc --noEmit` passes cleanly for all packages (server, shared, mobile, web)
 - Verified: `npm test` — all 57 tests run, 33 pass, 24 pre-existing failures (DI container / asyncHandler refactoring), zero new failures
 
+### Completed (i18n Analytics)
+- Completed: Added missing `analytics.*` translation keys to `en.json` and `ms.json` (`filters.date`, `filters.allSpecies`, `filters.allTime`, `dateRanges.*`, `map.*`, `gender.subtitle/ratio`, `size.subtitle`, `cw50.subtitle/ci/sample`, `condition.*`, `speciesDist.subtitle/observations`, `trends.subtitle/observationsLine`, `noDataYet`, `mapLoading`, `selectTab`)
+- Completed: Refactored `analytics/client.tsx`: imported `useTranslations`, replaced `dateRangeLabels`/`dateRangeLabel` with `t.raw()`/`t()`, replaced filter labels, tab labels, and clear filters button
+- Completed: Refactored `analytics/map-tab.tsx`: imported `useTranslations('analytics.map')`, replaced title, subtitle, gender filter options, loading text, and filter labels
+- Completed: Refactored `analytics/chart-tabs.tsx`: imported `useTranslations('analytics')`, replaced all chart titles, subtitles, labels, and "No data available yet" messages across Size, Gender, CW50, Condition, Species, and Trends tabs
+- Completed: Fixed `map-section.tsx` build error — extracted `loading` callback into proper `MapLoading` component to satisfy React hooks rules
+- Verified: `next build` passes cleanly with zero new errors
+
+### Completed (i18n Mobile Review + GPS + Picker)
+- Completed: `AIReviewScreen.tsx` fully refactored to `useTranslation('review')` — all form labels, section titles, alerts, GPS UI, fullscreen modal, and accessibility labels translated
+- Completed: Dynamic `GENDER_OPTIONS` and `MATURATION_OPTIONS` via `useMemo([t])`, replacing imported hardcoded constants
+- Completed: `GPSCapture.tsx` fully refactored to `useTranslation('gps')` — GPS errors, manual mode toggle, map instructions, capture button, accuracy text
+- Completed: `PickerWithAlert` uses internal `useTranslation('picker')` for cancel button, accepts optional `cancelLabel` prop override
+- Completed: Added `notes`, `aiCW`, `aiGender`, `aiMaturation`, `submitObservationA11y` keys to `en.json` and `ms.json`
+- Verified: `tsc --noEmit` passes cleanly for all packages (mobile, shared, server)
+
+### Completed (i18n Mobile Capture)
+- Completed: `GuidedCaptureScreen.tsx` fully refactored to `useTranslation('capture')` with `useMemo` for `CAPTURE_STEPS` and `COIN_SERIES`
+- Completed: Replaced `CAPTURE_STEPS` constant with `CAPTURE_STEP_KEYS` + dynamic labels via `t()`
+- Completed: Replaced `COIN_SERIES` constant with `COIN_SERIES_RAW` + dynamic labels via `t()`
+- Completed: All Alert.alert strings, accessibility labels, and UI text translated
+- Completed: `en.json` & `ms.json` expanded with `capture.*` keys including `coins.*`, `steps.*`, `alert*`, `*A11y` keys
+- Verified: `tsc --noEmit` passes cleanly for all packages (mobile, shared, server)
+
+### Completed (i18n Admin Engagement)
+- Completed: Refactored `admin/components.tsx` (~1800 lines) — all 10 engagement sub-tabs fully i18n'ed: `EngagementAdminTab`, `XPRulesTab`, `LevelsTab`, `XPAdjustTab`, `CampaignAdminSubTab`, `AuditAdminSubTab`, `AbuseAdminSubTab`, `AchievementsAdminSubTab`, `MissionsAdminSubTab`, `MetricsAdminSubTab`, `SeasonsAdminSubTab`
+- Completed: Fixed duplicate JSX blocks in `MetricsAdminSubTab` from earlier edit
+- Completed: Fixed `activeStreaks` vs `usersWithStreak` type mismatch on `EngagementMetricsDto`
+- Completed: Added comprehensive `admin.engagement.*` translation keys to `en.json` and `ms.json` with all sub-namespaces (xpRules, levels, adjustments, recalculation, campaigns, auditLog, abuse, achievements, missions, metrics, seasons)
+- Completed: Added `useTranslations('admin.engagement.metrics')` and `useTranslations('admin')` to `MetricsAdminSubTab`
+- Completed: Added `useTranslations('admin.engagement.seasons')` and `useTranslations('admin')` to `SeasonsAdminSubTab`
+- Verified: `next build` passes cleanly with zero new errors
+
+### Completed (i18n Mobile Gamification)
+- Completed: `LeaderboardScreen.tsx` fully refactored to `useTranslation('gamification')` — all strings translated via `t()` calls
+- Completed: `MissionsScreen.tsx` fully refactored — tab labels, claim/complete buttons, alerts, empty state, onboarding section strings, progress/Done labels all translated
+- Completed: `AchievementsScreen.tsx` fully refactored — alert messages, status/category filters, subtitle, check button, progress label, empty state, earned date, XP reward all translated
+- Completed: Removed `STATUS_LABELS` constant in `AchievementsScreen.tsx`; status filter labels now inline `t()` calls
+- Completed: Added `gamification.achievements.*` keys to `en.json` and `ms.json` (subtitle, check/checking, overallProgress, empty, earned, xpReward, filter.all/unlocked/inProgress, category.*, alert.*)
+- Completed: Synced `ms.json` with mission keys (`emptyHint`, `claiming`, `claimFailed`, `stepFailed`, `progress`, `done`, `doneLoading`)
+- Verified: `tsc --noEmit` passes cleanly for all packages (mobile, shared, server)
+
+### Completed (i18n Server Services)
+- Completed: `rewardEngine.ts` refactored to accept `locale` in `AwardXPParams` and `updateStreak()` — level-up and streak notifications now use `serverI18n` for translated push/email templates
+- Completed: `achievementService.ts` refactored — `checkAndAwardAchievements` accepts `locale`, achievement unlock notification translated via `serverI18n`
+- Completed: `notificationService.ts` — `NotificationPayload` includes `locale`; `sendPushNotification` passes locale to FCM fallback message
+- Completed: `observationController.ts` threads `detectLocale(req)` to all `awardXP`, `updateStreak`, and `checkAndAwardAchievements` calls (both `createObservation` and `validateObservation`)
+- Completed: `engagementRoutes.ts` threads `detectLocale(req)` to `checkAndAwardAchievements` in `/achievements/check` endpoint
+- Verified: `pnpm typecheck` passes cleanly for all packages
+
+### Completed (i18n Mobile Remaining Screens)
+- Completed: `ObservationDetailScreen.tsx` fully refactored to `useTranslation('observation')` — all labels, section titles, and print alert strings translated
+- Completed: `ResearcherScreen.tsx` fully refactored to `useTranslation('researcher')` — all card labels, modal detail labels, alert messages, and action buttons translated
+- Completed: `CountryPicker.tsx` fully refactored to `useTranslation('picker')` — placeholder, modal title translated
+- Completed: `PhoneCodePicker.tsx` fully refactored to `useTranslation('picker')` — placeholder, modal title translated
+- Verified: `pnpm typecheck` passes cleanly for all packages
+
+### Completed (i18n User Locale Preference — Phase 2.1/2.4/3.5)
+- Completed: Added `preferredLocale String? @default("en")` to `User` model and `Translation` model in `schema.prisma`; schema pushed to DB.
+- Completed: Updated shared types (`User`, `UpdateUserProfileInput`, `UserResponse`) with `preferredLocale`.
+- Completed: Updated `updateUserSchema` to validate `preferredLocale` with `z.enum(['en', 'ms'])`.
+- Completed: Updated `detectLocale` to accept and prioritize `userLocale` over `Accept-Language`.
+- Completed: Wired `createTranslator` to pass `req.dbUser?.preferredLocale` to `detectLocale`.
+- Completed: Updated `userController.ts` to handle `preferredLocale` in profile updates and auto-detect locale during registration.
+- Completed: Updated test mocks in `authStore.test.ts` (web + mobile) and `observationController.test.ts`.
+- Completed: Updated `web/src/lib/api.ts` and `mobile/src/services/api.ts` `updateProfile` signatures to include `preferredLocale`.
+- Completed: Added language selector to web `settings/client.tsx` with locale buttons, saving state, and error handling.
+- Completed: Added language picker to mobile `EditProfileScreen.tsx` using `PickerWithAlert`, synced with `localeStore` and server.
+- Completed: Added `settings.language.*` translation keys to `web/messages/en.json` and `ms.json`.
+- Completed: Added `editProfile.language` and `common.select/english/bahasaMelayu` keys to `mobile/src/locales/en.json` and `ms.json`.
+- Verified: `pnpm typecheck` passes cleanly for all packages.
+- Verified: `next build` passes cleanly for web.
+
+### Completed (i18n Full Integration — Phases 1-4)
+- Completed: Phase 1 — All UI static strings extracted and translated for web, mobile, and server layers
+- Completed: Phase 2 — DB Translation Table with Prisma middleware, Malay seed (72 records), admin translation CRUD, centralized `translation-tab.tsx` UI
+- Completed: Phase 3 — AI locale injection, translated insights/emails, `preferredLocale` threading, language selector UI
+- Completed: Phase 4 — Date/time/number formatting (16 files), pluralization (8 keys), full build + test verification
+- Completed: Added `formatCurrency` to both web and mobile `useFormatters` hooks (defaults to `MYR`, 2 decimal places)
+- Completed: Fixed invite email namespace bug — `inviteController.ts` uses `'invite'` ns; `authController.ts` uses `'auth'` ns
+- Completed: Added missing password reset email keys and invite email role key to server locale files
+- Completed: Added translation coverage summary to `translation-tab.tsx` with progress bars per locale
+- Completed: Updated `i18n-plan.md` with all 4 phases marked COMPLETED, body checkmarks updated to match actual state
+- Verified: `pnpm typecheck` passes cleanly across all 4 packages
+- Verified: `next build` passes cleanly for web (pre-existing lint warnings only)
+- Verified: `pnpm -r test` — all 80 failures are pre-existing Jest infrastructure issues, zero new failures from i18n changes
+
+### Completed (i18n Malay Translation Seed — Phase 2.3)
+- Completed: Created `server/src/services/seedMalayTranslations.ts` to bulk-seed Malay translations for existing DB content
+- Completed: Seeds LevelConfig (12 titles), Achievement (19 names + 19 descriptions), MissionDefinition (4 names + 4 descriptions), OnboardingFlow (1 name + 5 steps), Species (4 common names + descriptions + key features)
+- Completed: Added `db:seed:i18n:ms` npm script in `server/package.json`
+- Completed: Total 72 Malay translation records seeded into `Translation` table
+- Verified: `pnpm typecheck` passes cleanly for all packages
+
+### Completed (Campaign Locale-Awareness)
+- Completed: Added `resolveContentForLocale()` helper to `campaignService.ts` — supports both legacy flat `{ title, body }` and locale-map `{ en: { title, body }, ms: { title, body } }` formats with EN fallback
+- Completed: Updated `launchCampaign` to select `User.preferredLocale` and resolve content per user before creating `NotificationDelivery` records
+- Completed: Updated `sendTestCampaign` to resolve content for the test user's locale
+- Completed: Updated `CampaignCreateInput` in `shared/src/types/admin.ts` to accept both legacy and locale-map content formats
+- Completed: Updated `CampaignAdminSubTab` form in `admin/components.tsx` with separate EN/MS title and body fields, building locale-map payload on creation
+- Completed: Added `campaigns.*` translation keys to `web/messages/en.json` and `ms.json` (`count`, `new`, `code`, `channel`, `channelPush`, `channelEmail`, `channelInApp`, `minLevel`, `titleEn`, `bodyEn`, `titleMs`, `bodyMs`, `createBtn`, `status`, `created`, `actions`, `launch`, `test`, `delete`, `testUserId`)
+- Verified: `pnpm typecheck` passes cleanly for all packages
+- Verified: `next build` passes cleanly with zero new errors
+- Verified: `pnpm -r test` — all 80 failures are pre-existing Jest infrastructure issues, zero new failures
+
+### Completed (Web Navigation Locale Fix)
+- Completed: Fixed `router.push()` locale stripping in `dashboard/profile/client.tsx` — replaced `next/navigation` `useRouter` with `@/i18n/navigation` `useRouter`
+- Completed: Fixed `router.replace()` locale stripping in `dashboard/settings/client.tsx` — replaced `next/navigation` `useRouter` with `@/i18n/navigation` `useRouter`
+- Completed: Fixed root cause — changed `localePrefix` from `'as-needed'` to `'always'` in `routing.ts` so locale prefix (`/en` or `/ms`) is always visible in URL, preventing navigation stripping
+- Verified: `Header.tsx`, `login/page.tsx`, `register/page.tsx` already used locale-aware router from previous fix
+- Verified: `observation/[id]/client.tsx` only uses `router.back()` (history-based, locale-safe)
+- Verified: `capture/client.tsx` only uses `usePathname()` for comparison, no navigation calls
+- Verified: `pnpm typecheck` passes cleanly for all packages
+- Verified: `next build` compiles successfully with zero new errors
+
+### Completed (Web Deployment)
+- Completed: Fixed `no-unsafe-finally` lint error in `settings/client.tsx` — moved navigation logic outside `finally` block
+- Completed: Deployed web app to Azure App Service (`crabwatch-web.azurewebsites.net`) via `scripts/deploy-web.ps1`
+- Completed: Configured app settings: `BACKEND_URL`, `SCM_DO_BUILD_DURING_DEPLOYMENT=false`, `ENABLE_ORYX_BUILD=false`, `WEBSITE_NODE_DEFAULT_VERSION=22`
+- Verified: Web app responds with HTTP 200 at `https://crabwatch-web.azurewebsites.net`
+
 ### Blocked
 - (none)
 
 ## Next Steps
-- Deploy web app to Azure App Service (`scripts/deploy-web.ps1`)
 - Build and publish mobile via EAS Build (`eas.projectId` already configured)
 - Test researcher observation approval/rejection flow end-to-end on mobile
 - Test admin user management, backup, and invite flows on mobile
 - Investigate web observation image display (SAS URL refresh on server restart)
 - End-to-end testing of full engagement flow (submission -> XP -> level up -> achievements -> notifications)
-- Run UAT test cases (223 cases across 17 modules) to verify all features
+- Run UAT test cases (240 cases across 19 modules) to verify all features
+- Close out i18n integration project
 
 ## Key Decisions
 - **Dynamic species**: AI identifies any crab species; server auto-creates via `upsert` on `speciesName`
@@ -225,6 +351,7 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - **Mobile navigation**: Conditionally renders Researcher/Admin tabs based on `useAuthStore` role to keep UI clean for standard users.
 - **Admin panel navigation**: Simplified to 3 top-level tabs (Species, Users, Backup) with sub-navigation for user management to reduce clutter.
 - **Deployment stack**: Azure all-in-one — PostgreSQL Flexible Server (DB), App Service (API + Web), EAS Build (mobile). No Vercel, no Terraform, no Docker.
+- **Web deployment**: Uses `scripts/deploy-web.ps1` which builds Next.js standalone output, zips with `tar`, and deploys via Azure CLI. App settings configured with `SCM_DO_BUILD_DURING_DEPLOYMENT=false`, `ENABLE_ORYX_BUILD=false`, `WEBSITE_NODE_DEFAULT_VERSION=22`.
 - **Azure `generateSasUrl`**: Returns full URL (not just query string). Use `refreshed.push(sasUrl)` directly — do NOT prepend `blobClient.url`.
 - **App Insights monitoring**: `@azure/monitor-opentelemetry` auto-instrumentation captures Express routes, outgoing HTTP calls (Foundry, Blob, Resend, Firebase, PostgreSQL), unhandled exceptions, and host metrics with zero extra code. Frontend React errors POSTed to `/api/v1/telemetry/error` to unify logs in a single App Insights resource.
 - **Engagement system**: XP-based gamification with 24 models, 11 enums, 8 services. Split XP award (submission + approval). Global permanent leaderboard (no resets).
@@ -266,6 +393,8 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - **Lightweight DI approach**: Singleton container pattern with `createContainer()`, `getContainer()`, `resetContainer()`, `getPrisma()`, `getConfig()` functions. Services define local lazy `getPrisma()` to avoid module-load-time failures.
 - **Error handling**: Controllers use `asyncHandler` from `utils/errors.ts` to eliminate repetitive inline `try/catch` blocks, throwing `AppError`/`ValidationError` instead.
 - **Error middleware AI status codes**: `middleware/error.ts` catches "timed out" (504) and "not configured" (503) messages from `foundryAgent.ts` to preserve correct HTTP status codes after removing inline handler catches.
+- **Server i18n services**: `rewardEngine.ts`, `achievementService.ts`, and `notificationService.ts` receive `locale: string` from controllers to generate translated notification payloads. `User` model lacks a `locale` field, so locale is passed explicitly via `detectLocale(req)` from the request's `Accept-Language` header.
+- **Campaign locale-awareness**: `campaignService.ts` uses `resolveContentForLocale()` to select content per `User.preferredLocale`. Supports both legacy flat `{ title, body }` and locale-map `{ en: {...}, ms: {...} }` formats with EN fallback. Admin form in `CampaignAdminSubTab` accepts separate EN/MS fields, building locale-map payload.
 
 ## Critical Context
 - **Stack**: Expo SDK 54, React 19, RN 0.81.5, Zustand, React Navigation, Express, Prisma, Azure Storage, Azure AI Foundry
@@ -283,6 +412,9 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - **Backend observation photos**: `refreshPhotoUrls` regenerates Azure Blob SAS URLs on every observation fetch. Handles varying SAS URL formats with `slice(1).join('/')` after container name split.
 - **Azure SDK `generateSasUrl`**: Returns full URL already. Do NOT prepend `blobClient.url` — this causes doubled URLs.
 - **Analytics lazy-loading**: `next/dynamic()` with `ssr: false` for both `map-tab.tsx` and `chart-tabs.tsx`. Mapbox token must be available in browser env for the map chunk to render. Chart data is pre-fetched by the shell; lazy components receive data as props.
+- **Server i18n**: `i18next` instance initialized on startup via `initServerI18n()` in `server/src/index.ts`. Locale detection middleware in `server/src/middleware/i18n.ts` uses `Accept-Language` header with `en` fallback. `createTranslator` returns `(key, ns?, options?) => string` with `WeakMap` caching per namespace.
+- **Server notification templates**: `server/src/locales/en.json` and `ms.json` contain `notification.*` keys (`levelUp`, `streakWarning`, `streakLost`, `achievement`, `fcm.noTokens`). `rewardEngine.ts`, `achievementService.ts`, and `notificationService.ts` use `getServerI18n()` to translate push/email templates.
+- **Web navigation locale fix**: `router.push()`/`router.replace()` from `next/navigation` strips locale prefix. Must use `useRouter()` from `@/i18n/navigation` to preserve `/en` or `/ms`. `router.back()` is history-based and locale-safe. `localePrefix` changed from `'as-needed'` to `'always'` in `routing.ts` so locale prefix is always visible in URL.
 
 ## Relevant Files
 ### AI Analysis
@@ -342,6 +474,13 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - `server/src/routes/gamificationRoutes.ts` — `/api/v1/gamification` routes
 - `server/src/routes/engagementRoutes.ts` — `/api/v1/engagement` routes
 - `server/src/routes/adminEngagementRoutes.ts` — `/api/v1/admin/engagement` routes
+- `server/src/config/i18n.ts` — Server i18next instance initialization and namespace mapping
+- `server/src/middleware/i18n.ts` — Locale detection utility and translator factory using `WeakMap` caching per namespace
+- `server/src/locales/en.json` — English translations for 11 namespaces (including `notification.*` keys)
+- `server/src/locales/ms.json` — Malay translations for 11 namespaces (including `notification.*` keys)
+- `server/src/services/rewardEngine.ts` — Refactored to accept `locale` for translated level-up/streak notifications
+- `server/src/services/achievementService.ts` — Refactored to accept `locale` for translated achievement notifications
+- `server/src/services/notificationService.ts` — `NotificationPayload` includes `locale`; FCM fallback translated via `serverI18n`
 
 ### Web
 - `web/src/app/dashboard/capture/page.tsx` — Server Component pre-fetching species list

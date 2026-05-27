@@ -1,0 +1,1228 @@
+{
+  "tabs": {
+    "home": "Home",
+    "new": "New",
+    "analytics": "Analytics",
+    "review": "Review",
+    "admin": "Admin",
+    "profile": "Profile"
+  },
+  "home": {
+    "greeting": "Welcome, {{name}}",
+    "subtitle": "Track crab populations across Malaysia",
+    "stats": {
+      "observations": "Observations",
+      "approved": "Approved",
+      "species": "Species",
+      "contributors": "Contributors"
+    },
+    "quickActions": "Quick Actions",
+    "newObservation": "New Observation",
+    "analytics": "Analytics",
+    "gamification": "Gamification",
+    "leaderboard": "Leaderboard",
+    "missions": "Missions",
+    "achievements": "Achievements",
+    "about": "About CrabWatch",
+    "aboutText": "CrabWatch is a citizen science platform helping to conserve crab populations in Malaysia. Your observations help researchers understand population health and inform conservation policies."
+  },
+  "login": {
+    "title": "CrabWatch",
+    "subtitle": "Citizen Science for Crab Conservation",
+    "email": "Email",
+    "emailPlaceholder": "your@email.com",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "signIn": "Sign In",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "createAccount": "Create one",
+    "loginFailed": "Login Failed",
+    "invalidCredentials": "Invalid credentials"
+  },
+  "register": {
+    "title": "Join CrabWatch",
+    "subtitle": "Help conserve crabs in Malaysia",
+    "fullName": "Full Name *",
+    "namePlaceholder": "Your name",
+    "email": "Email *",
+    "emailPlaceholder": "your@email.com",
+    "country": "Country *",
+    "countryCode": "Country Code *",
+    "phoneNumber": "Phone Number *",
+    "phonePlaceholder": "123456789",
+    "addressLine1": "Address Line 1 *",
+    "addressPlaceholder1": "Street address",
+    "addressLine2": "Address Line 2 (optional)",
+    "addressPlaceholder2": "Apartment, suite, etc.",
+    "addressLine3": "Address Line 3 (optional)",
+    "addressPlaceholder3": "Additional address info",
+    "state": "State *",
+    "statePlaceholder": "State",
+    "postcode": "Postcode *",
+    "postcodePlaceholder": "Postcode",
+    "password": "Password *",
+    "passwordPlaceholder": "At least 8 characters",
+    "confirmPassword": "Confirm Password *",
+    "confirmPlaceholder": "Re-enter your password",
+    "createAccount": "Create Account",
+    "hasAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "registrationFailed": "Registration Failed",
+    "couldNotCreate": "Could not create account"
+  },
+  "forgotPassword": {
+    "title": "Forgot Password",
+    "subtitle": "Enter your email and we'll send you a link to reset your password.",
+    "email": "Email",
+    "emailPlaceholder": "your@email.com",
+    "sendLink": "Send Reset Link",
+    "success": "If an account exists with that email, a password reset link has been sent. Check your inbox.",
+    "backToLogin": "Back to Login",
+    "rememberPassword": "Remember your password?",
+    "signIn": "Sign in",
+    "error": "Error",
+    "failedToSend": "Failed to send reset email"
+  },
+  "resetPassword": {
+    "title": "Reset Password",
+    "subtitle": "Enter your new password below.",
+    "newPassword": "New Password",
+    "passwordPlaceholder": "At least 8 characters",
+    "confirmPassword": "Confirm Password",
+    "confirmPlaceholder": "Re-enter your password",
+    "reset": "Reset Password",
+    "success": "Your password has been reset successfully.",
+    "signIn": "Sign In",
+    "rememberPassword": "Remember your password?",
+    "signInLink": "Sign in",
+    "invalidLink": "Invalid reset link.",
+    "backToLogin": "Back to Login",
+    "error": "Error",
+    "failedToReset": "Failed to reset password",
+    "passwordMismatch": "Passwords do not match",
+    "minLength": "At least 8 characters"
+  },
+  "about": {
+    "appName": "CrabWatch",
+    "about": "About",
+    "aboutText": "CrabWatch is a citizen science platform for monitoring crab populations across Malaysia. Researchers and citizens can capture crab observations with AI-powered species identification, size estimation, and data analytics to support conservation efforts.",
+    "madeBy": "Made By",
+    "creator": "DsignCodeHub",
+    "support": "Support",
+    "features": "Features",
+    "feature1": "AI-powered crab species identification",
+    "feature2": "Size estimation with coin reference",
+    "feature3": "Real-time observation tracking",
+    "feature4": "Interactive species map",
+    "feature5": "Research-grade analytics dashboard",
+    "rights": "{{year}} DsignCodeHub. All rights reserved."
+  },
+  "profile": {
+    "title": "Profile",
+    "level": "Level {{level}}",
+    "totalXp": "Total XP",
+    "streak": "Current Streak",
+    "streakDays_one": "{{count}} day",
+    "streakDays_other": "{{count}} days",
+    "streakDay1": "Day 1!",
+    "streakNone": "No streak yet",
+    "viewLeaderboard": "View Leaderboard",
+    "viewMissions": "View Missions",
+    "viewAchievements": "View Achievements",
+    "editProfile": "Edit Profile",
+    "settings": "Settings",
+    "signOut": "Sign Out",
+    "signOutConfirm": "Are you sure you want to sign out?",
+    "signOutTitle": "Sign Out",
+    "signOutMessage": "Are you sure you want to sign out?",
+    "cancel": "Cancel",
+    "yes": "Yes",
+    "xpProgress": "XP Progress",
+    "best": "Best",
+    "recentSubmissions": "Recent Submissions",
+    "noObservationsYet": "No observations yet",
+    "startContributing": "Start contributing by adding your first observation.",
+    "stats": {
+      "approved": "Approved",
+      "total": "Total",
+      "pending": "Pending"
+    },
+    "status": {
+      "approved": "Approved",
+      "pending": "Pending",
+      "rejected": "Rejected"
+    },
+    "gamification": {
+      "title": "Gamification",
+      "leaderboard": "Leaderboard",
+      "seeTopContributors": "See top contributors",
+      "missions": "Missions",
+      "dailyChallenges": "Complete daily challenges",
+      "achievements": "Achievements",
+      "yourBadges": "Track your badges"
+    }
+  },
+  "editProfile": {
+    "title": "Edit Profile",
+    "name": "Name",
+    "displayName": "Display Name",
+    "yourName": "Your name",
+    "tapToChangePhoto": "Tap to change photo",
+    "nameMin": "At least 2 characters",
+    "email": "Email",
+    "countryCode": "Country Code",
+    "phoneNumber": "Phone Number",
+    "phonePlaceholder": "123456789",
+    "emailInvalid": "Invalid email",
+    "phone": "Phone (optional)",
+    "address": "Address (optional)",
+    "addressLine1": "Address Line 1",
+    "streetAddress": "Street address",
+    "addressLine2": "Address Line 2",
+    "aptSuite": "Apartment, suite, etc.",
+    "addressLine3": "Address Line 3",
+    "additionalAddressInfo": "Additional address info",
+    "state": "State",
+    "postcode": "Postcode",
+    "country": "Country",
+    "addressTooLong": "Too long",
+    "save": "Save Changes",
+    "saveChanges": "Save Changes",
+    "saving": "saving",
+    "saved": "Profile saved",
+    "updated": "Profile updated successfully",
+    "updateFailed": "Failed to update profile",
+    "savedTitle": "Saved",
+    "emailCannotChange": "Email cannot be changed",
+    "ok": "OK",
+    "error": "Failed to save profile",
+    "errorTitle": "Error",
+    "cancel": "Cancel",
+    "changePassword": "Change Password",
+    "language": "Language",
+    "languageSaving": "Saving language preference...",
+    "languageSaved": "Language preference saved",
+    "languageSaveFailed": "Failed to save language preference",
+    "password": {
+      "changePassword": "Change Password",
+      "current": "Current Password",
+      "currentPlaceholder": "Enter current password",
+      "new": "New Password",
+      "newPlaceholder": "At least 8 characters",
+      "confirm": "Confirm New Password",
+      "confirmPlaceholder": "Re-enter new password",
+      "updatePassword": "Update Password",
+      "fillAllFields": "Please fill in all password fields",
+      "minLength": "Password must be at least 8 characters",
+      "notMatch": "New password and confirmation do not match",
+      "updated": "Password Updated",
+      "signInAgain": "Please sign in again with your new password.",
+      "updateFailed": "Failed to update password"
+    }
+  },
+  "analytics": {
+    "title": "Analytics",
+    "subtitle": "Population trends and health indicators",
+    "total": "Total",
+    "approved": "Approved",
+    "pending": "Pending",
+    "species": "Species",
+    "contributors": "Contributors",
+    "states": "States",
+    "tabs": {
+      "gender": "Gender",
+      "size": "Size",
+      "cw50": "CW50",
+      "condition": "Condition",
+      "species": "Species",
+      "trends": "Trends"
+    },
+    "observations": " observations",
+    "contributorsCount": " contributors",
+    "speciesCount": " species",
+    "noData": "No data available",
+    "pullToRefresh": "Pull to refresh",
+    "loadFailed": "Failed to load analytics",
+    "stats": {
+      "total": "Total",
+      "approved": "Approved",
+      "pending": "Pending",
+      "species": "Species",
+      "contributors": "Contributors",
+      "states": "States"
+    },
+    "empty": {
+      "gender": "No gender data available",
+      "size": "No size data available",
+      "cw50": "No CW50 data available",
+      "condition": "No condition index data available",
+      "species": "No species distribution data available",
+      "trends": "No trends data available"
+    },
+    "gender": {
+      "male": "Male",
+      "female": "Female",
+      "unknown": "Unknown",
+      "ratio": "Male/Female ratio"
+    },
+    "size": {
+      "title": "Size Frequency"
+    },
+    "cw50": {
+      "title": "CW50 by Species",
+      "desc": "Estimated carapace width at 50% maturity",
+      "ci": "Confidence Interval",
+      "sample": "Sample"
+    },
+    "condition": {
+      "title": "Condition Index (K)",
+      "desc": "Health indicator: K = (BW / CW^3) x 100 - higher values indicate healthier crabs",
+      "meanK": "Mean K",
+      "medianK": "Median K",
+      "minK": "Min K",
+      "maxK": "Max K",
+      "meanCW": "Mean CW",
+      "meanBW": "Mean BW",
+      "stdDev": "Std Dev",
+      "sample": "Sample"
+    }
+  },
+  "capture": {
+    "title": "Take Photo",
+    "headerTitle": "AI Crab Capture",
+    "stepOf": "Step {{current}} of {{total}}",
+    "retake": "Retake",
+    "next": "Next",
+    "continue": "Continue",
+    "back": "Back",
+    "skip": "Skip",
+    "analyzeWithAI": "Analyze with AI",
+    "photoGuide": "Photo Guide",
+    "photoTips": "Photo Tips",
+    "tipCoin": "Place the coin flat next to the crab",
+    "tipFrame": "Ensure the entire crab fits in the frame",
+    "tipLight": "Use natural light when possible",
+    "tipSteady": "Hold your phone steady before shooting",
+    "overlayHints": {
+      "dorsal": "Center crab + coin in the frame",
+      "ventral": "Show the underside clearly",
+      "closeup": "Zoom in on shell pattern"
+    },
+    "overlayStatus": {
+      "ready": "Ready",
+      "holdStill": "Hold Still",
+      "align": "Align"
+    },
+    "assistMessages": {
+      "focusLocked": "Focus locked",
+      "lightingTooDark": "Lighting too dark - move to brighter area",
+      "lightingLow": "Lighting is low - try near a window",
+      "holdStill": "Hold still - too much movement",
+      "holdSteadier": "Try to hold steadier"
+    },
+    "photoGuidance": {
+      "dorsal": {
+        "title": "Dorsal View (Top)",
+        "step1": "Place crab on flat surface, shell facing up",
+        "step2": "Position coin beside the crab",
+        "step3": "Hold phone directly above crab",
+        "step4": "Keep crab centered in frame"
+      },
+      "ventral": {
+        "title": "Ventral View (Underside)",
+        "step1": "Gently flip crab onto its back",
+        "step2": "Keep coin in same position",
+        "step3": "Photograph the underside",
+        "step4": "Look for abdomen shape (gender ID)"
+      },
+      "closeup": {
+        "title": "Shell Close-up",
+        "step1": "Zoom in on the carapace (shell)",
+        "step2": "Focus on shell pattern and texture",
+        "step3": "Good lighting helps species ID",
+        "step4": "Coin not required for this shot"
+      },
+      "coinSelected": "Coin selected",
+      "coinHere": "Coin here",
+      "tipLight": "Good light",
+      "tipSteady": "Hold steady",
+      "tipFrame": "Fill frame"
+    },
+    "steps": {
+      "dorsal": {
+        "title": "Dorsal View",
+        "label": "Dorsal View",
+        "hint": "Hold phone above the crab",
+        "placeholder": "Photograph the crab from above with coin beside it",
+        "orientation": "portrait"
+      },
+      "ventral": {
+        "title": "Ventral View",
+        "label": "Ventral View",
+        "hint": "Show the underside",
+        "placeholder": "Flip the crab and photograph the underside",
+        "orientation": "portrait"
+      },
+      "closeup": {
+        "title": "Close-up (optional)",
+        "label": "Shell Close-up",
+        "hint": "Focus on distinctive features",
+        "placeholder": "Zoom in on the shell pattern",
+        "orientation": "portrait"
+      }
+    },
+    "addPhotos": "Add photos",
+    "photoCount": "Photos ({{count}}/{{max}})",
+    "takePhoto": "Take Photo",
+    "chooseLibrary": "Choose from Library",
+    "chooseSource": "Choose a source",
+    "useCamera": "Use Camera",
+    "useLibrary": "Use Library",
+    "coinReference": "Coin Reference",
+    "coinDesc": "Place a coin next to the crab for size estimation. Which coin are you using?",
+    "letAiDetect": "Let AI detect",
+    "letAiDetectA11y": "Let AI detect coin automatically",
+    "aiWillDetect": "AI will detect coin",
+    "change": "Change",
+    "changeCoinA11y": "Change coin selection",
+    "selectCoin": "Select coin",
+    "toggleCoinA11y": "Toggle {{series}} coin options",
+    "selectCoinA11y": "Select {{label}}",
+    "whyCoin": "Why a coin?",
+    "whyCoinAnswer": "Coin helps AI estimate size",
+    "assistance": "Assistance",
+    "shake": "Shake: {{level}}",
+    "shakeSlight": "Slight",
+    "shakeHeavy": "Heavy",
+    "lighting": "Lighting: {{level}}",
+    "lightingLow": "Low",
+    "lightingGood": "Good",
+    "rotatePortrait": "Rotate to portrait",
+    "focus": "Focus: {{status}}",
+    "focusSearching": "Searching",
+    "focusLocked": "Locked",
+    "viewWarning": "View Warning",
+    "possibleIssue": "Possible Issue",
+    "possibleIssues": "Possible issues",
+    "viewHint": "AI will verify the view during analysis. Retake if unsure.",
+    "checkingView": "Checking view...",
+    "confirm": "Confirm",
+    "confirmPhotoA11y": "Confirm photo",
+    "retakePhotoA11y": "Retake photo",
+    "closeCameraA11y": "Close camera",
+    "takePhotoA11y": "Take photo",
+    "proceedA11y": "Proceed to AI analysis",
+    "nextA11y": "Go to next step",
+    "continueA11y": "Continue to photo capture",
+    "switchA11y": "Switch to {{mode}}",
+    "tapFocus": "Tap frame to focus",
+    "ready": "Ready",
+    "ok": "OK",
+    "alertCameraTitle": "Camera permission required",
+    "alertCameraMessage": "Please allow camera access to capture crab photos.",
+    "alertCameraUnavailable": "Camera unavailable",
+    "alertCaptureFailed": "Capture failed",
+    "alertCaptureFailedMessage": "Unable to capture photo. Please try again.",
+    "alertPhotoRequired": "Photo Required",
+    "alertPhotoRequiredMessage": "Please take a {{view}} view photo before continuing.",
+    "alertPhotoRequiredDorsal": "Please take at least the dorsal view photo.",
+    "alertCoinRequired": "Coin Required",
+    "alertCoinRequiredMessage": "Please select a coin type or choose \"Let AI detect\" before continuing.",
+    "alertCoinRequiredFinal": "Please select a coin type or choose \"Let AI detect\".",
+    "limitReached": "Limit Reached",
+    "maxPhotos": "Maximum {{max}} photos allowed",
+    "coins": {
+      "third5sen": "5 sen (Third Series)",
+      "third10sen": "10 sen (Third Series)",
+      "third20sen": "20 sen (Third Series)",
+      "third50sen": "50 sen (Third Series)",
+      "second5sen": "5 sen (Second Series)",
+      "second10sen": "10 sen (Second Series)",
+      "second20sen": "20 sen (Second Series)",
+      "second50sen": "50 sen (Second Series)",
+      "thirdSeries": "Third Series (Current)",
+      "secondSeries": "Second Series (1989-2011)",
+      "third5": "5 sen (17.78mm)",
+      "third10": "10 sen (18.80mm)",
+      "third20": "20 sen (20.60mm)",
+      "third50": "50 sen (22.65mm)",
+      "second5": "5 sen (16.20mm)",
+      "second10": "10 sen (19.40mm)",
+      "second20": "20 sen (23.59mm)",
+      "second50": "50 sen (27.76mm)"
+    }
+  },
+  "analysis": {
+    "title": "Analyzing...",
+    "headerTitle": "AI Analysis",
+    "uploading": "Uploading photos",
+    "analyzing": "Analyzing with AI",
+    "almostDone": "Almost done",
+    "starting": "Starting analysis...",
+    "retrying": "Retrying...",
+    "steps": {
+      "uploading": "Uploading photos...",
+      "identifying": "Identifying species...",
+      "estimating": "Estimating size...",
+      "complete": "Analysis complete!"
+    },
+    "error": "Analysis Failed",
+    "errorMessage": "Could not analyze photos. Check your connection and try again.",
+    "retry": "Retry",
+    "submitManually": "Submit Manually",
+    "goBack": "Go Back",
+    "cancelAnalysis": "Cancel analysis",
+    "analysisFailed": "Analysis Failed",
+    "retryAnalysis": "Retry analysis",
+    "submitManuallyA11y": "Submit observation manually without AI analysis",
+    "goBackA11y": "Go back to capture screen",
+    "manualFallback": "AI analysis failed. Please fill in all fields manually.",
+    "unknownSpecies": "Unknown Species",
+    "retryLabel": "Retry analysis",
+    "manualLabel": "Submit observation manually without AI analysis",
+    "backLabel": "Go back to capture screen"
+  },
+  "review": {
+    "title": "Review",
+    "aiFindings": "AI Findings",
+    "species": "Species",
+    "gender": "Gender",
+    "size": "Size",
+    "weight": "Weight",
+    "confidence": "Confidence",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+    "coinReference": "Coin Reference",
+    "selectCoin": "Select coin",
+    "bodyWeight": "Body Weight (g)",
+    "weightPlaceholder": "Enter weight in grams",
+    "carapaceWidth": "Carapace Width (cm)",
+    "carapaceLength": "Carapace Length (mm)",
+    "male": "Male",
+    "female": "Female",
+    "unknown": "Unknown",
+    "location": "Location",
+    "pickMap": "Pick on map",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "submit": "Submit",
+    "submitting": "submitting",
+    "submitSuccess": "Observation submitted!",
+    "submitError": "Failed to submit observation",
+    "error": "Error",
+    "ok": "OK",
+    "awesome": "Awesome!",
+    "reviewAIResults": "Review AI Results",
+    "manualEntry": "Manual Entry",
+    "goBackA11y": "Go back",
+    "aiAnalysisResults": "AI Analysis Results",
+    "confidenceLabel": "{{level}} confidence",
+    "manualFallback": "AI analysis unavailable. Please fill in all fields manually.",
+    "viewPhotoA11y": "View photo {{index}} in fullscreen",
+    "referenceCoin": "Reference coin:",
+    "aiDetected": "AI detected",
+    "aiDetectedLabel": "AI detected: {{coin}}",
+    "speciesSection": "Species",
+    "selectSpecies": "Select species...",
+    "measurements": "Measurements",
+    "cwPlaceholder": "e.g. 8.5",
+    "bwPlaceholder": "Optional — weigh manually",
+    "biologicalData": "Biological Data",
+    "maturation": "Maturation",
+    "notesLabel": "Notes (Optional)",
+    "notesPlaceholder": "Add any additional notes...",
+    "retakePhotos": "Retake Photos",
+    "retakePhotosA11y": "Go back and retake photos",
+    "submitA11y": "Submit observation",
+    "closeFullscreenA11y": "Close fullscreen image",
+    "observationSubmitted": "Observation Submitted",
+    "submittedMessage": "Your AI-assisted observation has been queued for review.",
+    "captureAnother": "Capture Another",
+    "captureAnotherA11y": "Capture another observation",
+    "levelUpTitle": "Level Up!",
+    "levelUpMessage": "You're now level {{level}} ({{title}})",
+    "xpEarnedTitle": "XP Earned",
+    "xpEarnedMessage": "+{{xp}} XP earned!",
+    "alertLocationTitle": "Location Required",
+    "alertLocationMessage": "Please capture your GPS location.",
+    "offlineQueuedTitle": "Offline Queued",
+    "offlineQueuedMessage": "No network connection. Observation saved locally and will sync later.",
+    "genderOptions": {
+      "male": "Male",
+      "female": "Female",
+      "unknown": "Unknown"
+    },
+    "maturationOptions": {
+      "mature": "Mature",
+      "immature": "Immature",
+      "unknown": "Unknown"
+    },
+    "notes": "Notes (Optional)",
+    "aiCW": "AI: {{cw}} cm",
+    "aiGender": "AI: {{gender}}",
+    "aiMaturation": "AI: {{status}}",
+    "submitObservationA11y": "Submit observation"
+  },
+  "observation": {
+    "title": "Observation Detail",
+    "notFound": "Observation not found",
+    "species": "Species",
+    "scientificName": "Scientific Name",
+    "status": "Status",
+    "approved": "Approved",
+    "pending": "Pending",
+    "rejected": "Rejected",
+    "measurements": "Measurements",
+    "carapaceWidth": "Carapace Width",
+    "carapaceLength": "Carapace Length",
+    "bodyWeight": "Body Weight",
+    "conditionFactor": "Condition Factor",
+    "biologicalData": "Biological Data",
+    "gender": "Gender",
+    "maturation": "Maturation",
+    "genderValue": {
+      "male": "Male",
+      "female": "Female",
+      "unknown": "Unknown"
+    },
+    "maturationValue": {
+      "mature": "Mature",
+      "immature": "Immature",
+      "unknown": "Unknown"
+    },
+    "referenceCoin": "Reference Coin",
+    "coin": "Coin",
+    "location": "Location",
+    "coordinates": "Coordinates",
+    "method": "Method",
+    "gps": "GPS",
+    "manual": "Manual",
+    "photos": "Photos",
+    "photoCount_one": "{{count}} photo",
+    "photoCount_other": "{{count}} photos",
+    "notes": "Notes",
+    "submissionInfo": "Submission Info",
+    "submitted": "Submitted",
+    "submittedBy": "Submitted By",
+    "validated": "Validated",
+    "rejectionReason": "Rejection Reason:",
+    "print": "Print",
+    "printSaved": "PDF Saved",
+    "printSavedBody": "The observation has been saved as a PDF to your Downloads folder.",
+    "printFailed": "Print Failed",
+    "printFailedBody": "Could not generate the print document. Please try again.",
+    "back": "Back",
+    "mm": "mm",
+    "g": "g"
+  },
+  "newObservation": {
+    "sections": {
+      "species": "Species",
+      "measurements": "Measurements",
+      "biologicalData": "Biological Data",
+      "location": "Location",
+      "photos": "Photos",
+      "notes": "Notes (Optional)"
+    },
+    "fields": {
+      "species": "Species",
+      "selectSpecies": "Select species...",
+      "cwLabel": "Carapace Width (cm, max {{max}})",
+      "cwPlaceholder": "e.g. 8.5",
+      "bwLabel": "Body Weight (g, max {{max}})",
+      "bwPlaceholder": "e.g. 350",
+      "gender": "Gender",
+      "maturationStatus": "Maturation Status",
+      "notesPlaceholder": "Add any additional notes..."
+    },
+    "genderOptions": {
+      "male": "Male",
+      "female": "Female",
+      "unknown": "Unknown"
+    },
+    "maturationOptions": {
+      "mature": "Mature",
+      "immature": "Immature",
+      "unknown": "Unknown"
+    },
+    "offlineQueued_one": "{{count}} observation queued offline",
+    "offlineQueued_other": "{{count}} observations queued offline",
+    "submit": "Submit Observation",
+    "ok": "OK",
+    "alerts": {
+      "locationRequiredTitle": "Location Required",
+      "locationRequiredBody": "Please capture your GPS location.",
+      "photosRequiredTitle": "Photos Required",
+      "photosRequiredBody": "Please add at least one photo.",
+      "successTitle": "Success",
+      "successBody": "Observation submitted for review!",
+      "offlineQueuedTitle": "Offline Queued",
+      "offlineQueuedBody": "No network connection. Observation saved locally and will sync later."
+    }
+  },
+  "speciesList": {
+    "searchPlaceholder": "Search species...",
+    "empty": {
+      "searchTitle": "No species found",
+      "searchMessage": "Try a different search term",
+      "defaultTitle": "No species available",
+      "defaultMessage": "Species data will appear here when added by admins"
+    }
+  },
+  "speciesDetail": {
+    "notFound": "Species not found",
+    "goBack": "Go Back",
+    "description": "Description",
+    "keyFeatures": "Key Features",
+    "distributionZones_one": "Distribution Zone ({{count}})",
+    "distributionZones_other": "Distribution Zones ({{count}})",
+    "backToSpecies": "Back to Species"
+  },
+  "profileSettings": {
+    "menu": {
+      "about": "About",
+      "notifications": "Notifications",
+      "deleteAccount": "Delete Account"
+    },
+    "delete": {
+      "title": "Delete Account",
+      "body": "This will delete your account. You have 30 days to restore it by logging in again. All your data will be permanently removed after 30 days.",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "successTitle": "Account Deleted",
+      "successBody": "Your account has been deleted. You have 30 days to restore it.",
+      "errorTitle": "Error",
+      "errorBody": "Failed to delete account"
+    }
+  },
+  "notificationSettings": {
+    "permission": {
+      "title": "Push Permission",
+      "openSettings": "Open system settings",
+      "status": {
+        "granted": {
+          "title": "Enabled",
+          "description": "This device can receive push notifications."
+        },
+        "denied": {
+          "title": "Blocked",
+          "description": "Push notifications are blocked in system settings."
+        },
+        "undetermined": {
+          "title": "Not Set",
+          "description": "Permission has not been requested on this device yet."
+        }
+      }
+    },
+    "preferences": {
+      "title": "Notification Preferences",
+      "description": "Choose which notifications you receive by channel."
+    },
+    "categories": {
+      "mission_reminders": "Mission Reminders",
+      "streak_warnings": "Streak Warnings",
+      "milestone_alerts": "Milestone Alerts",
+      "community_updates": "Community Updates"
+    },
+    "channels": {
+      "push": "Push",
+      "email": "Email",
+      "inApp": "In-App"
+    },
+    "actions": {
+      "enablePush": "Enable Push",
+      "unlinkDevice": "Unlink Device",
+      "savePreferences": "Save Preferences",
+      "loading": "Loading..."
+    },
+    "alerts": {
+      "savedTitle": "Saved",
+      "savedBody": "Notification preferences updated successfully.",
+      "errorTitle": "Error",
+      "saveFailed": "Failed to save preferences.",
+      "pushEnabledTitle": "Push Enabled",
+      "pushEnabledBody": "Push notifications are enabled for this device.",
+      "pushNotEnabledTitle": "Push Not Enabled",
+      "enableFailed": "Failed to enable push notifications.",
+      "unlinkedTitle": "Device Unlinked",
+      "unlinkedBody": "This device is no longer registered for push notifications.",
+      "unlinkFailed": "Failed to unlink this device."
+    }
+  },
+  "navigation": {
+    "editProfile": "Edit Profile",
+    "about": "About CrabWatch",
+    "leaderboard": "Leaderboard",
+    "missions": "Missions",
+    "achievements": "Achievements",
+    "notifications": "Notifications",
+    "settings": "Settings",
+    "auth": {
+      "signIn": "Sign In",
+      "createAccount": "Create Account",
+      "forgotPassword": "Forgot Password",
+      "resetPassword": "Reset Password"
+    }
+  },
+  "researcher": {
+    "title": "Researcher",
+    "pending": "Pending",
+    "rejected": "Rejected",
+    "noPending": "No pending observations",
+    "noRejected": "No rejected observations",
+    "allCaughtUp": "All Caught Up!",
+    "allCaughtUpHint": "No pending observations to review.",
+    "validate": "Validate",
+    "reject": "Reject",
+    "approveTitle": "Approve Observation",
+    "approveBody": "Approve submission by {{name}}?",
+    "rejectTitle": "Reject Observation",
+    "rejectBody": "Reject submission by {{name}}?",
+    "cancel": "Cancel",
+    "success": "Success",
+    "approvedSuccess": "Observation approved successfully",
+    "rejectedSuccess": "Observation rejected successfully",
+    "error": "Error",
+    "failedAction": "Failed to {{action}} observation",
+    "reviewTitle": "Review Observation",
+    "photos": "Photos",
+    "species": "Species",
+    "scientificName": "Scientific Name",
+    "submitter": "Submitter",
+    "carapaceWidth": "Carapace Width",
+    "bodyWeight": "Body Weight",
+    "gender": "Gender",
+    "maturation": "Maturation",
+    "location": "Location",
+    "locationMethod": "Location Method",
+    "coinReference": "Coin Reference",
+    "notes": "Notes",
+    "rejectionReason": "Rejection Reason (optional)",
+    "rejectionPlaceholder": "Enter reason for rejection...",
+    "close": "Close",
+    "reason": "Reason (required)",
+    "reasonPlaceholder": "Enter rejection reason",
+    "reasonRequired": "Reason is required",
+    "validated": "Observation validated",
+    "ok": "OK",
+    "submitter": "Submitter",
+    "cw": "CW",
+    "submitted": "Submitted",
+    "photoCount_one": "{{count}} photo",
+    "photoCount_other": "{{count}} photos",
+    "loading": "Loading...",
+    "errorLoading": "Error loading observations",
+    "pullToRefresh": "Pull to refresh"
+  },
+  "admin": {
+    "tab": {
+      "species": "Species",
+      "users": "Users",
+      "backup": "Backup",
+      "engagement": "Engagement"
+    },
+    "species": {
+      "add": "Add Species",
+      "addTitle": "Add Species",
+      "editTitle": "Edit Species",
+      "commonNamePlaceholder": "Common name",
+      "scientificNamePlaceholder": "Scientific name",
+      "descriptionPlaceholder": "Description",
+      "save": "Save"
+    },
+    "users": {
+      "subTab": {
+        "active": "Active",
+        "deleted": "Deleted",
+        "invites": "Invites"
+      },
+      "role": {
+        "user": "User",
+        "researcher": "Researcher",
+        "admin": "Admin"
+      },
+      "status": {
+        "deleted": "Deleted"
+      },
+      "action": {
+        "block": "Block",
+        "unblock": "Unblock",
+        "restore": "Restore"
+      },
+      "cleanup": {
+        "title": "Cleanup Expired"
+      }
+    },
+    "invite": {
+      "send": "Send Invite",
+      "resend": "Resend",
+      "emailPlaceholder": "user@email.com",
+      "error": {
+        "emailRequired": "Email is required"
+      },
+      "status": {
+        "pending": "Pending",
+        "used": "Used",
+        "expires": "Expires {{date}}"
+      }
+    },
+    "backup": {
+      "create": "Create Backup"
+    },
+    "rules": {
+      "add": "Add Rule",
+      "addTitle": "Add XP Rule",
+      "editTitle": "Edit XP Rule",
+      "namePlaceholder": "Rule name",
+      "actionTypePlaceholder": "Action type",
+      "xpRewardPlaceholder": "XP reward",
+      "descriptionPlaceholder": "Description",
+      "save": "Save",
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "action": {
+        "enable": "Enable",
+        "disable": "Disable"
+      }
+    },
+    "levels": {
+      "add": "Add Level",
+      "addTitle": "Add Level",
+      "editTitle": "Edit Level",
+      "levelPlaceholder": "Level",
+      "titlePlaceholder": "Title",
+      "xpThresholdPlaceholder": "XP threshold",
+      "descriptionPlaceholder": "Description",
+      "save": "Save",
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "xpThreshold": "XP threshold",
+      "thresholdSuffix": "XP"
+    },
+    "xpAdjust": {
+      "title": "XP Adjustments",
+      "userIdPlaceholder": "User ID",
+      "deltaXpPlaceholder": "Delta XP",
+      "reasonPlaceholder": "Reason",
+      "adjust": "Adjust",
+      "recalcTitle": "Recalculate XP",
+      "recalcUserIdPlaceholder": "User ID (optional)",
+      "recalcReasonPlaceholder": "Reason",
+      "recalcRun": "Run Recalculation",
+      "recalcModeDry": "Dry Run",
+      "recalcModeExecute": "Execute",
+      "recalcResultUsers": "Users affected",
+      "recalcResultMode": "Mode",
+      "jobStatus": "Job Status",
+      "jobIdPlaceholder": "Job ID",
+      "checkJob": "Check Job",
+      "jobProcessed": "Processed",
+      "jobUpdated": "Updated",
+      "unknown": "Unknown"
+    },
+    "campaigns": {
+      "title": "Campaigns",
+      "create": "Create Campaign",
+      "createTitle": "Create Campaign",
+      "namePlaceholder": "Campaign name",
+      "titlePlaceholder": "Push title",
+      "bodyPlaceholder": "Push body",
+      "codePlaceholder": "Code",
+      "minLevelPlaceholder": "Min level",
+      "launch": "Launch",
+      "sendTest": "Send Test"
+    },
+    "audit": {
+      "title": "Audit Log",
+      "total": "Total Entries",
+      "xpAdjustments": "XP Adjustments",
+      "campaignLaunches": "Campaign Launches",
+      "abuseResolutions": "Abuse Resolutions",
+      "system": "System",
+      "unknownAction": "Unknown",
+      "none": "None",
+      "noDetails": "No details"
+    },
+    "abuse": {
+      "user": "User",
+      "risk": "Risk",
+      "resolved": "Resolved",
+      "noOpenSignals": "No open signals",
+      "resolve": "Resolve"
+    },
+    "metrics": {
+      "title": "Engagement Metrics",
+      "dailyActive": "Daily Active",
+      "weeklyActive": "Weekly Active",
+      "monthlyActive": "Monthly Active",
+      "avgXP": "Avg XP",
+      "streakUsers": "Users with Streak",
+      "unavailable": "Unavailable",
+      "na": "N/A"
+    },
+    "engagement": {
+      "subTab": {
+        "xpRules": "XP Rules",
+        "levels": "Levels",
+        "xpOps": "XP Ops",
+        "campaigns": "Campaigns",
+        "audit": "Audit",
+        "abuse": "Abuse",
+        "metrics": "Metrics"
+      }
+    },
+    "alerts": {
+      "backup": {
+        "title": "Create Backup",
+        "message": "This will export all database data. Continue?",
+        "confirm": "Create"
+      },
+      "cleanup": {
+        "title": "Cleanup Expired Users",
+        "message": "Permanently delete all users past the 30-day retention period. This cannot be undone.",
+        "confirm": "Cleanup"
+      },
+      "changeRole": {
+        "title": "Change Role",
+        "message": "Change {{name}}'s role to {{role}}?",
+        "confirm": "Change"
+      },
+      "deleteUser": {
+        "title": "Delete User",
+        "message": "Soft-delete {{name}}?",
+        "confirm": "Delete"
+      },
+      "restoreUser": {
+        "title": "Restore User",
+        "message": "Restore {{name}}?",
+        "confirm": "Restore"
+      },
+      "blockUser": {
+        "title": "Block User",
+        "message": "Block {{name}}?",
+        "confirm": "Block"
+      },
+      "unblockUser": {
+        "title": "Unblock User",
+        "message": "Unblock {{name}}?",
+        "confirm": "Unblock"
+      },
+      "sendInvite": {
+        "title": "Send Invite",
+        "message": "Send invite to {{email}} with role {{role}}?",
+        "confirm": "Send"
+      },
+      "resendInvite": {
+        "title": "Resend Invite",
+        "message": "Resend invite to {{email}} with role {{role}}?",
+        "confirm": "Resend"
+      },
+      "deleteSpecies": {
+        "title": "Delete Species",
+        "message": "Delete species \"{{name}}\"? This cannot be undone.",
+        "confirm": "Delete"
+      },
+      "deleteXpRule": {
+        "title": "Delete XP Rule",
+        "message": "Delete rule \"{{name}}\"? This cannot be undone."
+      },
+      "deleteLevel": {
+        "title": "Delete Level",
+        "message": "Delete level {{level}} ({{title}})? This cannot be undone."
+      },
+      "launchCampaign": {
+        "title": "Launch Campaign",
+        "message": "Launch campaign \"{{name}}\" to all eligible users?",
+        "confirm": "Launch"
+      },
+      "deleteCampaign": {
+        "title": "Delete Campaign",
+        "message": "Delete campaign \"{{name}}\"?"
+      }
+    },
+    "flash": {
+      "backupCreated": "Backup created: {{file}}",
+      "backupFailed": "Backup failed",
+      "cleanupDone_one": "Cleanup complete. {{count}} user permanently deleted.",
+      "cleanupDone_other": "Cleanup complete. {{count}} users permanently deleted.",
+      "cleanupFailed": "Cleanup failed",
+      "roleUpdated": "Role updated to {{role}}",
+      "roleUpdateFailed": "Role update failed",
+      "userDeleted": "User deleted",
+      "userDeleteFailed": "User deletion failed",
+      "userRestored": "User restored",
+      "userRestoreFailed": "User restore failed",
+      "userBlocked": "User blocked",
+      "userBlockFailed": "User block failed",
+      "userUnblocked": "User unblocked",
+      "userUnblockFailed": "User unblock failed",
+      "inviteSent": "Invite sent",
+      "inviteSendFailed": "Invite send failed",
+      "inviteResent": "Invite resent",
+      "inviteResendFailed": "Invite resend failed",
+      "speciesDeleted": "Species deleted",
+      "speciesDeleteFailed": "Species deletion failed",
+      "speciesUpdated": "Species updated",
+      "speciesCreated": "Species created",
+      "speciesSaveFailed": "Species save failed",
+      "namesRequired": "Common and scientific names are required",
+      "xpRuleUpdated": "XP rule updated",
+      "xpRuleCreated": "XP rule created",
+      "xpRuleSaveFailed": "XP rule save failed",
+      "xpRuleDeleted": "XP rule deleted",
+      "xpRuleDeleteFailed": "XP rule deletion failed",
+      "actionNameRequired": "Action and name are required",
+      "ruleEnabled": "Rule enabled",
+      "ruleDisabled": "Rule disabled",
+      "ruleUpdateFailed": "Rule update failed",
+      "levelUpdated": "Level updated",
+      "levelCreated": "Level created",
+      "levelSaveFailed": "Level save failed",
+      "levelTitleRequired": "Level and title are required",
+      "levelDeleted": "Level deleted",
+      "levelDeleteFailed": "Level deletion failed",
+      "xpAdjusted": "XP adjusted",
+      "xpAdjustFailed": "XP adjustment failed",
+      "xpAdjustRequired": "User ID and delta XP are required",
+      "recalculationCompleted": "Recalculation completed",
+      "recalculationFailed": "Recalculation failed",
+      "enterJobId": "Enter a job ID",
+      "jobStatusUpdated": "Job status updated",
+      "jobStatusFailed": "Job status check failed",
+      "campaignCreated": "Campaign created",
+      "campaignCreateFailed": "Campaign creation failed",
+      "campaignFieldsRequired": "Name, title, and body are required",
+      "campaignLaunched": "Campaign launched",
+      "campaignLaunchFailed": "Campaign launch failed",
+      "campaignDeleted": "Campaign deleted",
+      "campaignDeleteFailed": "Campaign deletion failed",
+      "testCampaignSent": "Test campaign sent",
+      "testCampaignFailed": "Test campaign failed",
+      "testUserIdRequired": "Test user ID is required",
+      "abuseResolved": "Signal resolved",
+      "abuseResolveFailed": "Resolve failed"
+    }
+  },
+  "picker": {
+    "selectCountry": "Select country",
+    "selectCode": "Select code",
+    "search": "Search",
+    "searchPlaceholder": "Search...",
+    "cancel": "Cancel",
+    "countryTitle": "Select Country",
+    "phoneCodeTitle": "Phone Code"
+  },
+  "gps": {
+    "label": "Location",
+    "manual": "Manual",
+    "gpsAuto": "GPS Auto",
+    "gpsErrorTitle": "GPS Error",
+    "gpsErrorMessage": "Failed to capture location. Try again or use manual mode.",
+    "enableLocation": "Enable Location Access",
+    "selectedLocation": "Selected Location",
+    "recenter": "Recenter",
+    "acquiring": "Acquiring GPS...",
+    "noLocation": "No location captured",
+    "accuracy": "Accuracy: {{accuracy}}m",
+    "capturing": "Capturing...",
+    "captureLocation": "Capture Location"
+  },
+  "gamification": {
+    "leaderboard": {
+      "title": "Leaderboard",
+      "scope": {
+        "allTime": "All Time",
+        "seasonal": "Seasonal"
+      },
+      "rank": "Rank",
+      "points": "points",
+      "empty": "No entries yet",
+      "emptyHint": "Submit your first observation to appear on the leaderboard!",
+      "you": "You",
+      "loadMore": "Load More",
+      "goToProfile": "Go to Profile"
+    },
+    "achievements": {
+      "title": "Achievements",
+      "subtitle": "{{unlocked}} of {{total}} unlocked",
+      "check": "Check",
+      "checking": "Checking...",
+      "overallProgress": "Overall Progress",
+      "empty": "No achievements match your filters",
+      "earned": "Earned {{date}}",
+      "xpReward": "+{{xp}} XP",
+      "filter": {
+        "all": "All",
+        "unlocked": "\u2713 Unlocked",
+        "inProgress": "\u{1F504} In Progress"
+      },
+      "category": {
+        "OBSERVATION": "Observation",
+        "SPECIES": "Species",
+        "EXPLORATION": "Exploration",
+        "QUALITY": "Quality",
+        "HIDDEN": "Hidden"
+      },
+      "alert": {
+        "unlockedTitle": "Achievement Unlocked!",
+        "unlockedBody": "You've unlocked",
+        "noNewTitle": "No New Achievements",
+        "noNewBody": "Keep going to unlock more!"
+      }
+    },
+    "missions": {
+      "title": "Missions",
+      "tab": {
+        "active": "Active Missions",
+        "onboarding": "Onboarding"
+      },
+      "empty": "No active missions",
+      "onboardingEmpty": "Complete onboarding for bonus XP",
+      "accept": "Accept",
+      "complete": "Complete",
+      "onboardingSteps": "Onboarding Steps",
+      "steps": "steps",
+      "accepted": "Mission accepted!",
+      "rejected": "Mission rejected!",
+      "acceptedMessage": "Claimed. Complete the mission to earn XP.",
+      "rejectedMessage": "Claim another mission later.",
+      "noDescription": "No description",
+      "emptyHint": "Check back tomorrow for new missions!",
+      "claiming": "Claiming...",
+      "claimFailed": "Failed to claim mission",
+      "stepFailed": "Failed to complete step",
+      "progress": "Progress",
+      "done": "Done",
+      "doneLoading": "..."
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done",
+    "error": "Error",
+    "ok": "OK",
+    "email": "Email",
+    "somethingWrong": "Something went wrong",
+    "unexpectedError": "An unexpected error occurred",
+    "tryAgain": "Try again",
+    "noData": "No data available",
+    "pullToRefresh": "Pull to refresh",
+    "select": "Select",
+    "english": "English",
+    "bahasaMelayu": "Bahasa Melayu"
+  }
+}

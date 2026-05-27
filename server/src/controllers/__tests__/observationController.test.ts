@@ -40,7 +40,7 @@ describe('Observation Controller', () => {
       body: {},
       query: {},
       params: {},
-      dbUser: { id: 'user-1', role: 'RESEARCHER', email: 'test@test.com' },
+      dbUser: { id: 'user-1', role: 'RESEARCHER', email: 'test@test.com', preferredLocale: null },
     }
     res = mockRes()
   })
@@ -136,7 +136,7 @@ describe('Observation Controller', () => {
     })
 
     it('should filter by user for USER role', async () => {
-      req.dbUser = { id: 'user-1', role: 'USER', email: 'test@test.com' }
+      req.dbUser = { id: 'user-1', role: 'USER', email: 'test@test.com', preferredLocale: null }
       mockPrisma.observation.findMany.mockResolvedValue([])
       mockPrisma.observation.count.mockResolvedValue(0)
 
@@ -198,7 +198,7 @@ describe('Observation Controller', () => {
         species: { id: 'species-1', scientificName: 'Scylla serrata', commonName: 'Blue Mud Crab' },
       }
       mockPrisma.observation.findUnique.mockResolvedValue(mockObs)
-      req.dbUser = { id: 'user-1', role: 'USER', email: 'test@test.com' }
+      req.dbUser = { id: 'user-1', role: 'USER', email: 'test@test.com', preferredLocale: null }
       req.params = { id: 'obs-1' }
 
       await getObservation(req as unknown as AuthRequest, res as unknown as Response)

@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { getContainer } from './container'
+import { getServerI18n } from '../config/i18n'
 
 let _prisma: PrismaClient
 function getPrisma(): PrismaClient {
@@ -22,8 +23,10 @@ export interface Insight {
   expiresAt: Date
 }
 
-export async function generateInsights(userId: string): Promise<Insight[]> {
+export async function generateInsights(userId: string, locale?: string): Promise<Insight[]> {
   const insights: Insight[] = []
+  const i18n = getServerI18n()
+  const lng = locale || 'en'
   const user = await getPrisma().user.findUnique({
     where: { id: userId },
     select: {
@@ -51,9 +54,9 @@ export async function generateInsights(userId: string): Promise<Insight[]> {
       insights.push({
         id: `streak-warning-${userId}`,
         type: 'STREAK_WARNING',
-        title: '⚠️ Your streak is at risk!',
-        description: `You have a ${user.currentStreak}-day streak. Submit an observation today to keep it going!`,
-        actionText: 'Submit Observation',
+        title: i18n.t('insights.streakWarning.title', { lng }),
+        description: i18n.t('insights.streakWarning.description', { lng, streak: user.currentStreak }),
+        actionText: i18n.t('insights.streakWarning.actionText', { lng }),
         actionUrl: '/dashboard/capture',
         priority: 'high',
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -70,9 +73,9 @@ export async function generateInsights(userId: string): Promise<Insight[]> {
     insights.push({
       id: `milestone-${userId}-${nextMilestone}`,
       type: 'MILESTONE',
-      title: `🎯 ${remaining} observations to ${nextMilestone} milestone!`,
-      description: `You're ${progress}% of the way there. Keep contributing to crab science!`,
-      actionText: 'Submit Observation',
+      title: i18n.t('insights.milestone.title', { lng, remaining, milestone: nextMilestone }),
+      description: i18n.t('insights.milestone.description', { lng, progress }),
+      actionText: i18n.t('insights.milestone.actionText', { lng }),
       actionUrl: '/dashboard/capture',
       priority: progress > 80 ? 'high' : 'medium',
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
@@ -90,8 +93,8 @@ export async function generateInsights(userId: string): Promise<Insight[]> {
     insights.push({
       id: `diversity-${userId}`,
       type: 'SUGGESTION',
-      title: '🦀 Explore more species!',
-      description: `You've documented ${speciesCount} species so far. Try to find different crab species to boost your diversity score!`,
+      title: i18n.t('insights.diversity.title', { lng }),
+      description: i18n.t('insights.diversity.description', { lng, count: speciesCount }),
       priority: 'low',
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     })
@@ -113,9 +116,9 @@ export async function generateInsights(userId: string): Promise<Insight[]> {
     insights.push({
       id: `activity-drop-${userId}`,
       type: 'SUGGESTION',
-      title: '📉 Activity decreased this week',
-      description: `You submitted ${lastWeekCount} observations this week vs ${prevWeekCount} last week. Get back out there!`,
-      actionText: 'Submit Observation',
+      title: i18n.t('insights.activityDrop.title', { lng }),
+      description: i18n.t('insights.activityDrop.description', { lng, current: lastWeekCount, previous: prevWeekCount }),
+      actionText: i18n.t('insights.activityDrop.actionText', { lng }),
       actionUrl: '/dashboard/capture',
       priority: 'medium',
       expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),

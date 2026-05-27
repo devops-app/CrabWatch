@@ -9,6 +9,7 @@ import {
   Keyboard,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { useTranslation } from 'react-i18next'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 import { COUNTRIES, CountryOption } from '@crabwatch/shared'
@@ -21,6 +22,7 @@ interface CountryPickerProps {
 }
 
 export function CountryPicker({ label, selectedCode, onSelect, error }: CountryPickerProps) {
+  const { t } = useTranslation('picker')
   const [visible, setVisible] = useState(false)
   const selected = COUNTRIES.find((c) => c.code === selectedCode) || COUNTRIES.find((c) => c.name === selectedCode)
 
@@ -36,7 +38,7 @@ export function CountryPicker({ label, selectedCode, onSelect, error }: CountryP
         <Text style={styles.label}>{label}</Text>
         <View style={styles.valueRow}>
           <Text style={[styles.value, !selected && styles.placeholder]}>
-            {selected ? selected.name : 'Select country'}
+            {selected ? selected.name : t('selectCountry')}
           </Text>
           <Ionicons name="chevron-down" size={18} color={COLORS.textSecondary} />
         </View>
@@ -56,7 +58,7 @@ export function CountryPicker({ label, selectedCode, onSelect, error }: CountryP
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Country</Text>
+              <Text style={styles.modalTitle}>{t('countryTitle')}</Text>
               <TouchableOpacity onPress={() => setVisible(false)}>
                 <Ionicons name="close" size={24} color={COLORS.text} />
               </TouchableOpacity>

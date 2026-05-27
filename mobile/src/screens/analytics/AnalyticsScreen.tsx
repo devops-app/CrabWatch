@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   View,
   Text,
@@ -14,6 +15,7 @@ import { Card } from '../../components/common/Card'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
+import { useFormatters } from '../../hooks/useFormatters'
 import type {
   GenderRatioData,
   SizeFrequencyData,
@@ -25,6 +27,8 @@ import type {
 } from '@crabwatch/shared'
 
 export function AnalyticsScreen() {
+  const { t } = useTranslation('analytics')
+  const { formatNumber, formatPercent } = useFormatters()
   const [loading, setLoading] = useState(true)
   const [genderData, setGenderData] = useState<GenderRatioData[]>([])
   const [sizeData, setSizeData] = useState<SizeFrequencyData[]>([])
@@ -61,7 +65,7 @@ export function AnalyticsScreen() {
       setSpeciesData(Array.isArray(species) ? species : [])
       setStats(dashboardStats ?? null)
     } catch {
-      setError('Failed to load analytics data')
+      setError(t('loadFailed'))
     } finally {
       setLoading(false)
     }
@@ -85,8 +89,8 @@ export function AnalyticsScreen() {
           <RefreshControl refreshing={loading} onRefresh={onRefresh} tintColor={COLORS.primary} />
         }
       >
-        <Text style={styles.headerTitle}>Analytics</Text>
-        <Text style={styles.headerSub}>Population insights from observations</Text>
+      <Text style={styles.headerTitle}>{t('title')}</Text>
+         <Text style={styles.headerSub}>{t('subtitle')}</Text>
 
         {error && (
           <View style={styles.errorContainer}>
@@ -100,37 +104,37 @@ export function AnalyticsScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll}>
           <View style={styles.tabs}>
             <TabButton
-              label="Gender"
+              label={t('tabs.gender')}
               icon="male-female"
               active={activeSection === 'gender'}
               onPress={() => setActiveSection('gender')}
             />
             <TabButton
-              label="Size"
+              label={t('tabs.size')}
               icon="resize"
               active={activeSection === 'size'}
               onPress={() => setActiveSection('size')}
             />
             <TabButton
-              label="CW50"
+              label={t('tabs.cw50')}
               icon="pencil"
               active={activeSection === 'cw50'}
               onPress={() => setActiveSection('cw50')}
             />
             <TabButton
-              label="Condition"
+              label={t('tabs.condition')}
               icon="heart"
               active={activeSection === 'condition'}
               onPress={() => setActiveSection('condition')}
             />
             <TabButton
-              label="Species"
+              label={t('tabs.species')}
               icon="earth"
               active={activeSection === 'species'}
               onPress={() => setActiveSection('species')}
             />
             <TabButton
-              label="Trends"
+              label={t('tabs.trends')}
               icon="trending-up"
               active={activeSection === 'temporal'}
               onPress={() => setActiveSection('temporal')}
@@ -181,8 +185,10 @@ function TabButton({
 }
 
 function GenderSection({ data }: { data: GenderRatioData[] }) {
+  const { t } = useTranslation('analytics')
+  const { formatNumber, formatPercent } = useFormatters()
   if (data.length === 0) {
-    return <EmptyState message="No gender ratio data available yet" />
+    return <EmptyState message={t('empty.gender')} />
   }
 
   return (
@@ -196,7 +202,7 @@ function GenderSection({ data }: { data: GenderRatioData[] }) {
         const malePct = total > 0 ? (maleCount / total) * 100 : 0
         const femalePct = total > 0 ? (femaleCount / total) * 100 : 0
         const ratioLabel =
-          ratioRaw == null ? 'N/A' : Number.isFinite(Number(ratioRaw)) ? Number(ratioRaw).toFixed(2) : '∞'
+          ratioRaw == null ? 'N/A' : Number.isFinite(Number(ratioRaw)) ? formatNumber(Number(ratioRaw), 2) : '∞'
 
         return (
           <Card key={index} padding={16}>
@@ -225,20 +231,20 @@ function GenderSection({ data }: { data: GenderRatioData[] }) {
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: COLORS.primary }]} />
                 <Text style={styles.legendText}>
-                  Male ({maleCount}) — {malePct.toFixed(1)}%
+                  {t('gender.male')} ({maleCount}) — {formatPercent(malePct, 1)}
                 </Text>
               </View>
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: COLORS.accent }]} />
                 <Text style={styles.legendText}>
-                  Female ({femaleCount}) — {femalePct.toFixed(1)}%
+                  {t('gender.female')} ({femaleCount}) — {formatPercent(femalePct, 1)}
                 </Text>
               </View>
             </View>
             {unknownCount > 0 && (
-              <Text style={styles.unknownText}>Unknown: {unknownCount}</Text>
+              <Text style={styles.unknownText}>{t('gender.unknown')}: {unknownCount}</Text>
             )}
-            <Text style={styles.ratioText}>M:F Ratio = {ratioLabel}</Text>
+            <Text style={styles.ratioText}>{t('gender.ratio')} = {ratioLabel}</Text>
           </Card>
         )
       })}
@@ -247,8 +253,9 @@ function GenderSection({ data }: { data: GenderRatioData[] }) {
 }
 
 function SizeSection({ data }: { data: SizeFrequencyData[] }) {
+  const { t } = useTranslation('analytics')
   if (data.length === 0) {
-    return <EmptyState message="No size frequency data available yet" />
+    return <EmptyState message={t('empty.size')} />
   }
 
   const maxCount = Math.max(...data.map((d) => d.count))
@@ -256,7 +263,7 @@ function SizeSection({ data }: { data: SizeFrequencyData[] }) {
   return (
     <View style={styles.section}>
       <Card padding={16}>
-        <Text style={styles.sectionTitle}>Carapace Width Distribution</Text>
+        <Text style={styles.sectionTitle}>{t('size.title')}</Text>
         <View style={styles.chartContainer}>
           {data.map((item, index) => {
             const height = maxCount > 0 ? (item.count / maxCount) * 150 : 0
@@ -282,8 +289,9 @@ function SizeSection({ data }: { data: SizeFrequencyData[] }) {
 }
 
 function TemporalSection({ data }: { data: TemporalTrendData[] }) {
+  const { t } = useTranslation('analytics')
   if (data.length === 0) {
-    return <EmptyState message="No temporal trend data available yet" />
+    return <EmptyState message={t('empty.trends')} />
   }
 
   const maxCount = Math.max(...data.map((d) => d.count))
@@ -315,14 +323,15 @@ function TemporalSection({ data }: { data: TemporalTrendData[] }) {
 }
 
 function StatsCards({ stats }: { stats: DashboardStats }) {
+  const { t } = useTranslation('analytics')
   return (
     <View style={styles.statsGrid}>
-      <StatCard label="Total" value={stats.totalObservations} icon="eye" color={COLORS.primary} />
-      <StatCard label="Approved" value={stats.approvedObservations} icon="checkmark-circle" color={COLORS.success} />
-      <StatCard label="Pending" value={stats.pendingObservations} icon="time" color={COLORS.warning} />
-      <StatCard label="Species" value={stats.totalSpecies} icon="earth" color={COLORS.accent} />
-      <StatCard label="Contributors" value={stats.totalContributors} icon="people" color="#8b5cf6" />
-      <StatCard label="States" value={stats.statesCovered} icon="location" color="#ec4899" />
+      <StatCard label={t('stats.total')} value={stats.totalObservations} icon="eye" color={COLORS.primary} />
+      <StatCard label={t('stats.approved')} value={stats.approvedObservations} icon="checkmark-circle" color={COLORS.success} />
+      <StatCard label={t('stats.pending')} value={stats.pendingObservations} icon="time" color={COLORS.warning} />
+      <StatCard label={t('stats.species')} value={stats.totalSpecies} icon="earth" color={COLORS.accent} />
+      <StatCard label={t('stats.contributors')} value={stats.totalContributors} icon="people" color="#8b5cf6" />
+      <StatCard label={t('stats.states')} value={stats.statesCovered} icon="location" color="#ec4899" />
     </View>
   )
 }
@@ -340,17 +349,18 @@ function StatCard({ label, value, icon, color }: { label: string; value: number;
 }
 
 function CW50Section({ data }: { data: CW50Data[] }) {
+  const { t } = useTranslation('analytics')
   if (data.length === 0) {
-    return <EmptyState message="No CW50 maturity data available yet" />
+    return <EmptyState message={t('empty.cw50')} />
   }
 
   return (
     <View style={styles.section}>
       <Card padding={16}>
-        <Text style={styles.sectionTitle}>Size at Gender Maturity (CW50)</Text>
-        <Text style={styles.sectionDesc}>
-          Carapace width at which 50% of the population is mature
-        </Text>
+    <Text style={styles.sectionTitle}>{t('cw50.title')}</Text>
+         <Text style={styles.sectionDesc}>
+           {t('cw50.desc')}
+         </Text>
       </Card>
       {data.map((item, index) => (
         <Card key={index} padding={16}>
@@ -362,9 +372,9 @@ function CW50Section({ data }: { data: CW50Data[] }) {
             </View>
             <View style={styles.cw50Meta}>
               <Text style={styles.cw50MetaText}>
-                CI: {item.confidenceInterval[0]} – {item.confidenceInterval[1]} cm
+                {t('cw50.ci')}: {item.confidenceInterval[0]} – {item.confidenceInterval[1]} cm
               </Text>
-              <Text style={styles.cw50MetaText}>n = {item.sampleSize}</Text>
+              <Text style={styles.cw50MetaText}>{t('cw50.sample')} = {item.sampleSize}</Text>
             </View>
           </View>
         </Card>
@@ -374,16 +384,18 @@ function CW50Section({ data }: { data: CW50Data[] }) {
 }
 
 function ConditionSection({ data }: { data: ConditionIndexAggregatedData[] }) {
+  const { t } = useTranslation('analytics')
+  const { formatNumber } = useFormatters()
   if (data.length === 0) {
-    return <EmptyState message="No condition index data available yet" />
+    return <EmptyState message={t('empty.condition')} />
   }
 
   return (
     <View style={styles.section}>
       <Card padding={16}>
-        <Text style={styles.sectionTitle}>Condition Index (K)</Text>
+        <Text style={styles.sectionTitle}>{t('condition.title')}</Text>
         <Text style={styles.sectionDesc}>
-          Health indicator: K = (BW / CW³) × 100 — higher values indicate healthier crabs
+          {t('condition.desc')}
         </Text>
       </Card>
       {data.map((item, index) => (
@@ -391,35 +403,35 @@ function ConditionSection({ data }: { data: ConditionIndexAggregatedData[] }) {
           <Text style={styles.speciesName}>{item.species}</Text>
           <View style={styles.conditionGrid}>
             <View style={styles.conditionCell}>
-              <Text style={styles.conditionLabel}>Mean K</Text>
-              <Text style={styles.conditionValue}>{item.meanConditionFactor.toFixed(3)}</Text>
+              <Text style={styles.conditionLabel}>{t('condition.meanK')}</Text>
+              <Text style={styles.conditionValue}>{formatNumber(item.meanConditionFactor, 3)}</Text>
             </View>
             <View style={styles.conditionCell}>
-              <Text style={styles.conditionLabel}>Median K</Text>
-              <Text style={styles.conditionValue}>{item.medianConditionFactor.toFixed(3)}</Text>
+              <Text style={styles.conditionLabel}>{t('condition.medianK')}</Text>
+              <Text style={styles.conditionValue}>{formatNumber(item.medianConditionFactor, 3)}</Text>
             </View>
             <View style={styles.conditionCell}>
-              <Text style={styles.conditionLabel}>Min K</Text>
-              <Text style={[styles.conditionValue, { color: COLORS.warning }]}>{item.minConditionFactor.toFixed(3)}</Text>
+              <Text style={styles.conditionLabel}>{t('condition.minK')}</Text>
+              <Text style={[styles.conditionValue, { color: COLORS.warning }]}>{formatNumber(item.minConditionFactor, 3)}</Text>
             </View>
             <View style={styles.conditionCell}>
-              <Text style={styles.conditionLabel}>Max K</Text>
-              <Text style={[styles.conditionValue, { color: COLORS.success }]}>{item.maxConditionFactor.toFixed(3)}</Text>
+              <Text style={styles.conditionLabel}>{t('condition.maxK')}</Text>
+              <Text style={[styles.conditionValue, { color: COLORS.success }]}>{formatNumber(item.maxConditionFactor, 3)}</Text>
             </View>
             <View style={styles.conditionCell}>
-              <Text style={styles.conditionLabel}>Mean CW</Text>
-              <Text style={styles.conditionValueSecondary}>{item.meanCW.toFixed(1)} cm</Text>
+              <Text style={styles.conditionLabel}>{t('condition.meanCW')}</Text>
+              <Text style={styles.conditionValueSecondary}>{formatNumber(item.meanCW, 1)} cm</Text>
             </View>
             <View style={styles.conditionCell}>
-              <Text style={styles.conditionLabel}>Mean BW</Text>
-              <Text style={styles.conditionValueSecondary}>{item.meanBW.toFixed(1)} g</Text>
+              <Text style={styles.conditionLabel}>{t('condition.meanBW')}</Text>
+              <Text style={styles.conditionValueSecondary}>{formatNumber(item.meanBW, 1)} g</Text>
             </View>
             <View style={styles.conditionCell}>
-              <Text style={styles.conditionLabel}>Std Dev</Text>
-              <Text style={styles.conditionValueSecondary}>{item.stdDevConditionFactor.toFixed(3)}</Text>
+              <Text style={styles.conditionLabel}>{t('condition.stdDev')}</Text>
+              <Text style={styles.conditionValueSecondary}>{formatNumber(item.stdDevConditionFactor, 3)}</Text>
             </View>
             <View style={styles.conditionCell}>
-              <Text style={styles.conditionLabel}>Sample</Text>
+              <Text style={styles.conditionLabel}>{t('condition.sample')}</Text>
               <Text style={styles.conditionValueSecondary}>n = {item.count}</Text>
             </View>
           </View>
@@ -430,8 +442,9 @@ function ConditionSection({ data }: { data: ConditionIndexAggregatedData[] }) {
 }
 
 function SpeciesSection({ data }: { data: SpeciesDistributionData[] }) {
+  const { t } = useTranslation('analytics')
   if (data.length === 0) {
-    return <EmptyState message="No species distribution data available yet" />
+    return <EmptyState message={t('empty.species')} />
   }
 
   const maxCount = Math.max(...data.map((d) => d.count))

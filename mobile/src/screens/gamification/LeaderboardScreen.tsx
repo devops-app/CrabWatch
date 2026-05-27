@@ -9,18 +9,22 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../hooks/useAuth'
 import { api } from '../../services/api'
 import { Card } from '../../components/common/Card'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
+import { useFormatters } from '../../hooks/useFormatters'
 import type { LeaderboardEntryDto } from '@crabwatch/shared'
 
 type Scope = 'ALL_TIME' | 'SEASONAL'
 
 export function LeaderboardScreen() {
+  const { t } = useTranslation('gamification')
   const { user } = useAuth()
+  const { formatNumber } = useFormatters()
   const [entries, setEntries] = useState<LeaderboardEntryDto[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -91,7 +95,7 @@ export function LeaderboardScreen() {
               onPress={() => setScope(s)}
             >
               <Text style={[styles.scopeText, scope === s && styles.scopeTextActive]}>
-                {s === 'ALL_TIME' ? 'All Time' : 'Seasonal'}
+                {t(`leaderboard.scope.${s === 'ALL_TIME' ? 'allTime' : 'seasonal'}`)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -101,9 +105,9 @@ export function LeaderboardScreen() {
           <Card padding={24}>
             <View style={styles.emptyState}>
               <Ionicons name="trophy-outline" size={48} color={COLORS.textLight} />
-              <Text style={styles.emptyTitle}>No entries yet</Text>
+              <Text style={styles.emptyTitle}>{t('leaderboard.empty')}</Text>
               <Text style={styles.emptyText}>
-                Submit your first observation to appear on the leaderboard!
+                {t('leaderboard.emptyHint')}
               </Text>
             </View>
           </Card>
@@ -135,7 +139,7 @@ export function LeaderboardScreen() {
                         </Text>
                         {isMe && (
                           <View style={styles.meBadge}>
-                            <Text style={styles.meBadgeText}>You</Text>
+                            <Text style={styles.meBadgeText}>{t('leaderboard.you')}</Text>
                           </View>
                         )}
                       </View>
@@ -146,7 +150,7 @@ export function LeaderboardScreen() {
                       <View style={styles.levelBadge}>
                         <Text style={styles.levelText}>Lv.{entry.level}</Text>
                       </View>
-                      <Text style={styles.xpText}>{entry.totalXP.toLocaleString()}</Text>
+                      <Text style={styles.xpText}>{formatNumber(entry.totalXP, 0)}</Text>
                     </View>
                   </View>
 
@@ -168,7 +172,7 @@ export function LeaderboardScreen() {
 
             {page < totalPages && (
               <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMore}>
-                <Text style={styles.loadMoreText}>Load More</Text>
+                <Text style={styles.loadMoreText}>{t('leaderboard.loadMore')}</Text>
                 <Ionicons name="chevron-down" size={18} color={COLORS.primary} />
               </TouchableOpacity>
             )}

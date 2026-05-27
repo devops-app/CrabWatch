@@ -25,6 +25,7 @@ export const updateUserSchema = z.object({
   postcode: z.string().max(20).optional().nullable(),
   country: z.string().max(100).optional().nullable(),
   avatar: z.string().url().nullable().optional(),
+  preferredLocale: z.enum(['en', 'ms']).optional().nullable(),
 })
 
 export const updateRoleSchema = z.object({
@@ -139,4 +140,21 @@ export const claimMissionSchema = z.object({
 export const updateMissionProgressSchema = z.object({
   missionId: z.string().uuid(),
   progress: z.number().min(0),
+})
+
+// Translation CRUD schemas
+export const createTranslationSchema = z.object({
+  locale: z.enum(['en', 'ms']),
+  resourceType: z.enum(['Species', 'Achievement', 'MissionDefinition', 'LevelConfig', 'OnboardingFlow']),
+  resourceId: z.string().min(1),
+  field: z.string().min(1),
+  value: z.string().min(1),
+})
+
+export const updateTranslationSchema = z.object({
+  value: z.string().min(1),
+})
+
+export const bulkCreateTranslationSchema = z.object({
+  translations: z.array(createTranslationSchema).min(1).max(500),
 })

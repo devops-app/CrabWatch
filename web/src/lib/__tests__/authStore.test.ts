@@ -15,6 +15,7 @@ const mockUser = (overrides = {}) => ({
   role: 'user' as const,
   avatar: null,
   firebaseUid: '',
+  preferredLocale: null,
   createdAt: new Date(),
   ...overrides,
 })

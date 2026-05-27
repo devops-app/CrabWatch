@@ -108,7 +108,7 @@ function Install-ProductionDependencies {
 
   Invoke-KuduCommandWithRetry -ApiName $ApiName -Headers $Headers -Command 'bash -lc "rm -f /home/site/install-deps.exitcode /home/LogFiles/install-deps.log"' | Out-Null
 
-  $startResult = Invoke-KuduCommandWithRetry -ApiName $ApiName -Headers $Headers -Command 'bash -lc "nohup sh -c ''cd /home/site/wwwroot && npm install --omit=dev --no-audit --no-fund > /home/LogFiles/install-deps.log 2>&1; echo $? > /home/site/install-deps.exitcode'' >/dev/null 2>&1 & echo INSTALL_STARTED"'
+  $startResult = Invoke-KuduCommandWithRetry -ApiName $ApiName -Headers $Headers -Command 'bash -lc "nohup sh -c ''status=0; ts=$(date +%s); if [ -d /home/site/wwwroot/node_modules ]; then mv /home/site/wwwroot/node_modules /home/site/node_modules.$ts.bak || true; fi; cd /home/site/wwwroot && npm install --omit=dev --no-audit --no-fund --no-package-lock > /home/LogFiles/install-deps.log 2>&1 || status=$?; if [ $status -eq 0 ]; then node -e \"require.resolve(\\\"compression\\\"); require.resolve(\\\"bcryptjs\\\"); require.resolve(\\\"@azure/monitor-opentelemetry\\\"); console.log(\\\"Dependency verification passed\\\")\" >> /home/LogFiles/install-deps.log 2>&1 || status=$?; fi; echo $status > /home/site/install-deps.exitcode'' >/dev/null 2>&1 & echo INSTALL_STARTED"'
   if ($startResult.ExitCode -ne 0) {
     throw "Failed to start production dependency install: $($startResult.Error)"
   }
@@ -207,6 +207,10 @@ try {
     throw "server TypeScript build failed"
   }
 
+  $distLocalesDir = Join-Path $serverDir "dist/server/src/locales"
+  New-Item -ItemType Directory -Force -Path $distLocalesDir | Out-Null
+  Copy-Item -Path (Join-Path $serverDir "src/locales/*.json") -Destination $distLocalesDir -Force
+
   tar -a -cf $ZipPath -C $serverDir dist package.json prisma
   if ($LASTEXITCODE -ne 0) {
     throw "Packaging failed for $ZipPath"
@@ -215,6 +219,11 @@ try {
   $seedEntry = tar -tf $ZipPath | Select-String -Pattern "dist/server/src/services/seedEngagement.js" -SimpleMatch
   if (-not $seedEntry) {
     throw "Package verification failed: dist/server/src/services/seedEngagement.js is missing from $ZipPath"
+  }
+
+  $localeEntry = tar -tf $ZipPath | Select-String -Pattern "dist/server/src/locales/en.json" -SimpleMatch
+  if (-not $localeEntry) {
+    throw "Package verification failed: dist/server/src/locales/en.json is missing from $ZipPath"
   }
 
   Write-Host "Package ready: $ZipPath"

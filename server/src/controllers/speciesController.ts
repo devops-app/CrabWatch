@@ -2,6 +2,7 @@ import { Response } from 'express'
 import { Prisma } from '@prisma/client'
 import { AuthRequest } from '../middleware/auth'
 import { asyncHandler, NotFoundError } from '../utils/errors'
+import { createTranslator } from '../middleware/i18n'
 import { getPrisma } from '../services/container'
 import { SpeciesResponse, KeyFeature, DistributionZone } from '@crabwatch/shared'
 import { getFromCache, setCache, clearCache } from '../utils/cache'
@@ -49,11 +50,12 @@ export const listSpecies = asyncHandler(async (_req: AuthRequest, res: Response)
 })
 
 export const getSpecies = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const __ = createTranslator(req)
   const { id } = req.params
   const species = await getPrisma().species.findUnique({ where: { id } })
 
   if (!species) {
-    throw new NotFoundError('Species not found')
+    throw new NotFoundError(__('species.notFound', 'species'))
   }
 
   const data: SpeciesResponse = {

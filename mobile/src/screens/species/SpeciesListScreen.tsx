@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   View,
   FlatList,
@@ -18,6 +19,7 @@ import type { RootStackParamList } from '../../navigation/types'
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>
 
 export function SpeciesListScreen() {
+  const { t } = useTranslation('speciesList')
   const navigation = useNavigation<NavigationProp>()
   const { species, loading, loadSpecies } = useSpeciesStore()
   const [search, setSearch] = useState('')
@@ -46,7 +48,7 @@ export function SpeciesListScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.searchBar}>
         <Input
-          placeholder="Search species..."
+          placeholder={t('searchPlaceholder')}
           value={search}
           onChangeText={setSearch}
           containerStyle={styles.searchInput}
@@ -56,11 +58,11 @@ export function SpeciesListScreen() {
       {filteredSpecies.length === 0 ? (
         <EmptyState
           icon="search"
-          title={search ? 'No species found' : 'No species available'}
+          title={search ? t('empty.searchTitle') : t('empty.defaultTitle')}
           message={
             search
-              ? 'Try a different search term'
-              : 'Species data will appear here when added by admins'
+              ? t('empty.searchMessage')
+              : t('empty.defaultMessage')
           }
         />
       ) : (

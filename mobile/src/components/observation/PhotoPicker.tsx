@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native'
 import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
@@ -19,9 +20,11 @@ export function PhotoPicker({
   onRemove,
   max = MAX_PHOTOS,
 }: PhotoPickerProps) {
+  const { t } = useTranslation()
+
   const handleTakePhoto = async () => {
     if (photos.length >= max) {
-      Alert.alert('Limit Reached', `Maximum ${max} photos allowed`)
+      Alert.alert(t('capture.limitReached'), t('capture.maxPhotos', { max }))
       return
     }
     const uri = await photoService.takePhoto()
@@ -31,7 +34,7 @@ export function PhotoPicker({
   const handlePickPhotos = async () => {
     const remaining = max - photos.length
     if (remaining <= 0) {
-      Alert.alert('Limit Reached', `Maximum ${max} photos allowed`)
+      Alert.alert(t('capture.limitReached'), t('capture.maxPhotos', { max }))
       return
     }
     const uris = await photoService.pickFromLibrary(remaining)
@@ -40,19 +43,19 @@ export function PhotoPicker({
 
   const handleShowOptions = () => {
     Alert.alert(
-      'Add Photos',
-      'Choose a source',
+      t('capture.addPhotos'),
+      t('capture.chooseSource'),
       [
-        { text: 'Take Photo', onPress: handleTakePhoto },
-        { text: 'Choose from Library', onPress: handlePickPhotos },
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('capture.takePhoto'), onPress: handleTakePhoto },
+        { text: t('capture.chooseLibrary'), onPress: handlePickPhotos },
+        { text: t('common.cancel'), style: 'cancel' },
       ]
     )
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Photos ({photos.length}/{max})</Text>
+      <Text style={styles.label}>{t('capture.photoCount', { count: photos.length, max })}</Text>
       <View style={styles.grid}>
         {photos.map((uri, index) => (
           <View key={index} style={styles.photoWrapper}>

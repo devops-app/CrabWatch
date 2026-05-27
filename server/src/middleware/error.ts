@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { AppError, ValidationError } from '../utils/errors'
+import { createTranslator } from './i18n'
 import logger from '../utils/logger'
 
 export function errorHandler(
@@ -8,6 +9,7 @@ export function errorHandler(
   res: Response,
   _next: NextFunction
 ): void {
+  const __ = createTranslator(req)
   const requestId = (req as any).requestId || 'unknown'
 
   if (err instanceof AppError) {
@@ -43,7 +45,7 @@ export function errorHandler(
     })
     res.status(500).json({
       success: false,
-      error: 'Internal server error',
+      error: __('common.internalError', 'common'),
     })
     return
   }
@@ -59,7 +61,7 @@ export function errorHandler(
     })
     res.status(504).json({
       success: false,
-      error: err.message,
+      error: __('analysis.analysis.timeout', 'analysis'),
     })
     return
   }
@@ -75,7 +77,7 @@ export function errorHandler(
     })
     res.status(503).json({
       success: false,
-      error: 'AI analysis service not configured',
+      error: __('analysis.analysis.notConfigured', 'analysis'),
     })
     return
   }
@@ -91,7 +93,7 @@ export function errorHandler(
 
   const message =
     process.env.NODE_ENV === 'production'
-      ? 'Internal server error'
+      ? __('common.internalError', 'common')
       : err.message
 
   res.status(500).json({
@@ -104,6 +106,7 @@ export function notFoundHandler(
   req: Request,
   res: Response
 ): void {
+  const __ = createTranslator(req)
   const requestId = (req as any).requestId || 'unknown'
   logger.info({
     requestId,
@@ -113,6 +116,6 @@ export function notFoundHandler(
   })
   res.status(404).json({
     success: false,
-    error: 'Route not found',
+    error: __('common.routeNotFound', 'common'),
   })
 }

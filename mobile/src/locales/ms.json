@@ -1,0 +1,1223 @@
+{
+  "tabs": {
+    "home": "Laman Utama",
+    "new": "Baru",
+    "analytics": "Analitik",
+    "review": "Semakan",
+    "admin": "Admin",
+    "profile": "Profil"
+  },
+  "home": {
+    "greeting": "Selamat datang, {{name}}",
+    "subtitle": "Jejak populasi ketam di seluruh Malaysia",
+    "stats": {
+      "observations": "Pemerhatian",
+      "approved": "Disahkan",
+      "species": "Spesies",
+      "contributors": "Penyumbang"
+    },
+    "quickActions": "Tindakan Pantas",
+    "newObservation": "Pemerhatian Baru",
+    "analytics": "Analitik",
+    "gamification": "Gamifikasi",
+    "leaderboard": "Papan Pendahulu",
+    "missions": "Misi",
+    "achievements": "Pencapaian",
+    "about": "Tentang CrabWatch",
+    "aboutText": "CrabWatch ialah platform sains rakyat yang membantu memulihara populasi ketam di Malaysia. Pemerhatian anda membantu penyelidik memahami kesihatan populasi dan membentuk dasar pemuliharaan."
+  },
+  "login": {
+    "title": "CrabWatch",
+    "subtitle": "Sains Rakyat untuk Pemuliharaan Ketam",
+    "email": "E-mel",
+    "emailPlaceholder": "anda@email.com",
+    "password": "Kata Laluan",
+    "passwordPlaceholder": "Masukkan kata laluan anda",
+    "signIn": "Log Masuk",
+    "forgotPassword": "Lupa kata laluan?",
+    "noAccount": "Belum ada akaun?",
+    "createAccount": "Cipta akaun",
+    "loginFailed": "Log Masuk Gagal",
+    "invalidCredentials": "Kredensial tidak sah"
+  },
+  "register": {
+    "title": "Sertai CrabWatch",
+    "subtitle": "Bantu pulihara ketam di Malaysia",
+    "fullName": "Nama Penuh *",
+    "namePlaceholder": "Nama anda",
+    "email": "E-mel *",
+    "emailPlaceholder": "anda@email.com",
+    "country": "Negara *",
+    "countryCode": "Kod Negara *",
+    "phoneNumber": "Nombor Telefon *",
+    "phonePlaceholder": "123456789",
+    "addressLine1": "Alamat Baris 1 *",
+    "addressPlaceholder1": "Alamat jalan",
+    "addressLine2": "Alamat Baris 2 (pilihan)",
+    "addressPlaceholder2": "Pangsapuri, suite, dll.",
+    "addressLine3": "Alamat Baris 3 (pilihan)",
+    "addressPlaceholder3": "Maklumat alamat tambahan",
+    "state": "Negeri *",
+    "statePlaceholder": "Negeri",
+    "postcode": "Poskod *",
+    "postcodePlaceholder": "Poskod",
+    "password": "Kata Laluan *",
+    "passwordPlaceholder": "Sekurang-kurangnya 8 aksara",
+    "confirmPassword": "Sahkan Kata Laluan *",
+    "confirmPlaceholder": "Masukkan semula kata laluan anda",
+    "createAccount": "Cipta Akaun",
+    "hasAccount": "Sudah ada akaun?",
+    "signIn": "Log masuk",
+    "registrationFailed": "Pendaftaran Gagal",
+    "couldNotCreate": "Tidak dapat mencipta akaun"
+  },
+  "forgotPassword": {
+    "title": "Lupa Kata Laluan",
+    "subtitle": "Masukkan e-mel anda dan kami akan menghantar pautan untuk menetapkan semula kata laluan anda.",
+    "email": "E-mel",
+    "emailPlaceholder": "anda@email.com",
+    "sendLink": "Hantar Pautan Tetapan Semula",
+    "success": "Jika akaun wujud dengan e-mel tersebut, pautan penetapan semula kata laluan telah dihantar. Semak peti masuk anda.",
+    "backToLogin": "Kembali ke Log Masuk",
+    "rememberPassword": "Ingat kata laluan anda?",
+    "signIn": "Log masuk",
+    "error": "Ralat",
+    "failedToSend": "Gagal menghantar e-mel penetapan semula"
+  },
+  "resetPassword": {
+    "title": "Tetapkan Semula Kata Laluan",
+    "subtitle": "Masukkan kata laluan baru anda di bawah.",
+    "newPassword": "Kata Laluan Baru",
+    "passwordPlaceholder": "Sekurang-kurangnya 8 aksara",
+    "confirmPassword": "Sahkan Kata Laluan",
+    "confirmPlaceholder": "Masukkan semula kata laluan anda",
+    "reset": "Tetapkan Semula Kata Laluan",
+    "success": "Kata laluan anda telah ditetapkan semula dengan berjaya.",
+    "signIn": "Log Masuk",
+    "rememberPassword": "Ingat kata laluan anda?",
+    "signInLink": "Log masuk",
+    "invalidLink": "Pautan penetapan semula tidak sah.",
+    "backToLogin": "Kembali ke Log Masuk",
+    "error": "Ralat",
+    "failedToReset": "Gagal menetapkan semula kata laluan",
+    "passwordMismatch": "Kata laluan tidak sepadan",
+    "minLength": "Sekurang-kurangnya 8 aksara"
+  },
+  "about": {
+    "appName": "CrabWatch",
+    "about": "Tentang",
+    "aboutText": "CrabWatch ialah platform sains rakyat untuk memantau populasi ketam di seluruh Malaysia. Penyelidik dan rakyat boleh menangkap pemerhatian ketam dengan pengenalpastian spesies berkuasa AI, anggaran saiz, dan analitik data untuk menyokong usaha pemuliharaan.",
+    "madeBy": "Dibuat Oleh",
+    "creator": "DsignCodeHub",
+    "support": "Sokongan",
+    "features": "Ciri-ciri",
+    "feature1": "Pengenalpastian spesies ketam berkuasa AI",
+    "feature2": "Anggaran saiz dengan rujukan syiling",
+    "feature3": "Penjejakan pemerhatian masa nyata",
+    "feature4": "Peta spesies interaktif",
+    "feature5": "Papan pemuka analitik gred penyelidikan",
+    "rights": "{{year}} DsignCodeHub. Hak cipta terpelihara."
+  },
+  "profile": {
+    "title": "Profil",
+    "level": "Arah {{level}}",
+    "totalXp": "Jumlah XP",
+    "streak": "Siri Semasa",
+    "streakDays_one": "{{count}} hari",
+    "streakDays_other": "{{count}} hari",
+    "streakDay1": "Hari 1!",
+    "streakNone": "Belum ada siri",
+    "viewLeaderboard": "Lihat Papan Pendahulu",
+    "viewMissions": "Lihat Misi",
+    "viewAchievements": "Lihat Pencapaian",
+    "editProfile": "Sunting Profil",
+    "settings": "Tetapan",
+    "signOut": "Log Keluar",
+    "signOutConfirm": "Adakah anda pasti ingin log keluar?",
+    "signOutTitle": "Log Keluar",
+    "signOutMessage": "Adakah anda pasti ingin log keluar?",
+    "cancel": "Batal",
+    "yes": "Ya",
+    "xpProgress": "Kemajuan XP",
+    "best": "Terbaik",
+    "recentSubmissions": "Hantaran Terkini",
+    "noObservationsYet": "Belum ada pemerhatian",
+    "startContributing": "Mulakan sumbangan dengan menambah pemerhatian pertama anda.",
+    "stats": {
+      "approved": "Disahkan",
+      "total": "Jumlah",
+      "pending": "Menunggu"
+    },
+    "status": {
+      "approved": "Disahkan",
+      "pending": "Menunggu",
+      "rejected": "Ditolak"
+    },
+    "gamification": {
+      "title": "Gamifikasi",
+      "leaderboard": "Papan Pendahulu",
+      "seeTopContributors": "Lihat penyumbang teratas",
+      "missions": "Misi",
+      "dailyChallenges": "Selesaikan cabaran harian",
+      "achievements": "Pencapaian",
+      "yourBadges": "Jejak lencana anda"
+    }
+  },
+  "editProfile": {
+    "title": "Sunting Profil",
+    "name": "Nama",
+    "displayName": "Nama Paparan",
+    "yourName": "Nama anda",
+    "tapToChangePhoto": "Ketik untuk tukar foto",
+    "nameMin": "Sekurang-kurangnya 2 aksara",
+    "email": "E-mel",
+    "countryCode": "Kod Negara",
+    "phoneNumber": "Nombor Telefon",
+    "phonePlaceholder": "123456789",
+    "emailInvalid": "E-mel tidak sah",
+    "phone": "Telefon (pilihan)",
+    "address": "Alamat (pilihan)",
+    "addressLine1": "Alamat Baris 1",
+    "streetAddress": "Alamat jalan",
+    "addressLine2": "Alamat Baris 2",
+    "aptSuite": "Pangsapuri, suite, dll.",
+    "addressLine3": "Alamat Baris 3",
+    "additionalAddressInfo": "Maklumat alamat tambahan",
+    "state": "Negeri",
+    "postcode": "Poskod",
+    "country": "Negara",
+    "addressTooLong": "Terlalu panjang",
+    "save": "Simpan Perubahan",
+    "saveChanges": "Simpan Perubahan",
+    "saving": "menyimpan",
+    "saved": "Profil disimpan",
+    "updated": "Profil berjaya dikemas kini",
+    "updateFailed": "Gagal mengemas kini profil",
+    "savedTitle": "Disimpan",
+    "emailCannotChange": "E-mel tidak boleh ditukar",
+    "ok": "OK",
+    "error": "Gagal menyimpan profil",
+    "errorTitle": "Ralat",
+    "cancel": "Batal",
+    "changePassword": "Tukar Kata Laluan",
+    "language": "Bahasa",
+    "languageSaving": "Menyimpan pilihan bahasa...",
+    "languageSaved": "Pilihan bahasa disimpan",
+    "languageSaveFailed": "Gagal menyimpan pilihan bahasa",
+    "password": {
+      "changePassword": "Tukar Kata Laluan",
+      "current": "Kata Laluan Semasa",
+      "currentPlaceholder": "Masukkan kata laluan semasa",
+      "new": "Kata Laluan Baharu",
+      "newPlaceholder": "Sekurang-kurangnya 8 aksara",
+      "confirm": "Sahkan Kata Laluan Baharu",
+      "confirmPlaceholder": "Masukkan semula kata laluan baharu",
+      "updatePassword": "Kemas Kini Kata Laluan",
+      "fillAllFields": "Sila isi semua medan kata laluan",
+      "minLength": "Kata laluan mesti sekurang-kurangnya 8 aksara",
+      "notMatch": "Kata laluan baharu dan pengesahan tidak sepadan",
+      "updated": "Kata Laluan Dikemas Kini",
+      "signInAgain": "Sila log masuk semula dengan kata laluan baharu anda.",
+      "updateFailed": "Gagal mengemas kini kata laluan"
+    }
+  },
+  "analytics": {
+    "title": "Analitik",
+    "subtitle": "Trend populasi dan penunjuk kesihatan",
+    "total": "Jumlah",
+    "approved": "Disahkan",
+    "pending": "Menunggu",
+    "species": "Spesies",
+    "contributors": "Penyumbang",
+    "states": "Negeri",
+    "tabs": {
+      "gender": "Jantina",
+      "size": "Saiz",
+      "cw50": "CW50",
+      "condition": "Kondisi",
+      "species": "Spesies",
+      "trends": "Trend"
+    },
+    "observations": " pemerhatian",
+    "contributorsCount": " penyumbang",
+    "speciesCount": " spesies",
+    "noData": "Tiada data tersedia",
+    "pullToRefresh": "Tarik untuk segar semula",
+    "loadFailed": "Gagal memuatkan analitik",
+    "stats": {
+      "total": "Jumlah",
+      "approved": "Disahkan",
+      "pending": "Menunggu",
+      "species": "Spesies",
+      "contributors": "Penyumbang",
+      "states": "Negeri"
+    },
+    "empty": {
+      "gender": "Tiada data jantina tersedia",
+      "size": "Tiada data saiz tersedia",
+      "cw50": "Tiada data CW50 tersedia",
+      "condition": "Tiada data indeks kondisi tersedia",
+      "species": "Tiada data taburan spesies tersedia",
+      "trends": "Tiada data trend tersedia"
+    },
+    "gender": {
+      "male": "Jantan",
+      "female": "Betina",
+      "unknown": "Tidak Diketahui",
+      "ratio": "Nisbah Jantan/Betina"
+    },
+    "size": {
+      "title": "Kekerapan Saiz"
+    },
+    "cw50": {
+      "title": "CW50 Mengikut Spesies",
+      "desc": "Anggaran lebar karapas pada 50% kematangan",
+      "ci": "Julat Keyakinan",
+      "sample": "Sampel"
+    },
+    "condition": {
+      "title": "Indeks Kondisi (K)",
+      "desc": "Penunjuk kesihatan: K = (BW / CW^3) x 100 - nilai lebih tinggi menunjukkan ketam lebih sihat",
+      "meanK": "Purata K",
+      "medianK": "Median K",
+      "minK": "K Min",
+      "maxK": "K Maks",
+      "meanCW": "Purata CW",
+      "meanBW": "Purata BW",
+      "stdDev": "Sisihan Piawai",
+      "sample": "Sampel"
+    }
+  },
+  "capture": {
+    "title": "Ambil Foto",
+    "headerTitle": "Tangkapan Ketam AI",
+    "stepOf": "Langkah {{current}} daripada {{total}}",
+    "retake": "Ambik Semula",
+    "next": "Seterusnya",
+    "continue": "Teruskan",
+    "back": "Kembali",
+    "analyzeWithAI": "Analisis dengan AI",
+    "photoGuide": "Panduan Foto",
+    "photoTips": "Petua Foto",
+    "tipCoin": "Letakkan syiling rata di sebelah ketam",
+    "tipFrame": "Pastikan seluruh ketam muat dalam bingkai",
+    "tipLight": "Gunakan cahaya semula jadi jika boleh",
+    "tipSteady": "Pegang telefon dengan stabil sebelum memotret",
+    "overlayHints": {
+      "dorsal": "Letakkan ketam dan syiling di tengah bingkai",
+      "ventral": "Tunjukkan bahagian bawah dengan jelas",
+      "closeup": "Zum masuk pada corak cengkerang"
+    },
+    "overlayStatus": {
+      "ready": "Sedia",
+      "holdStill": "Pegang Stabil",
+      "align": "Selaraskan"
+    },
+    "assistMessages": {
+      "focusLocked": "Fokus terkunci",
+      "lightingTooDark": "Pencahayaan terlalu gelap - pergi ke kawasan lebih terang",
+      "lightingLow": "Pencahayaan rendah - cuba berhampiran tingkap",
+      "holdStill": "Pegang stabil - pergerakan terlalu banyak",
+      "holdSteadier": "Cuba pegang lebih stabil"
+    },
+    "photoGuidance": {
+      "dorsal": {
+        "title": "Pandangan Dorsal (Atas)",
+        "step1": "Letakkan ketam di permukaan rata, cengkerang menghadap atas",
+        "step2": "Letakkan syiling di sebelah ketam",
+        "step3": "Pegang telefon tepat di atas ketam",
+        "step4": "Pastikan ketam berada di tengah bingkai"
+      },
+      "ventral": {
+        "title": "Pandangan Ventral (Bawah)",
+        "step1": "Terbalikkan ketam dengan perlahan",
+        "step2": "Kekalkan syiling pada kedudukan sama",
+        "step3": "Ambil gambar bahagian bawah",
+        "step4": "Lihat bentuk abdomen (ID jantina)"
+      },
+      "closeup": {
+        "title": "Zuum Dekat Cengkerang",
+        "step1": "Zum masuk pada karapas (cengkerang)",
+        "step2": "Fokus pada corak dan tekstur cengkerang",
+        "step3": "Pencahayaan baik bantu pengecaman spesies",
+        "step4": "Syiling tidak diperlukan untuk gambar ini"
+      },
+      "coinSelected": "Syiling dipilih",
+      "coinHere": "Syiling di sini",
+      "tipLight": "Cahaya baik",
+      "tipSteady": "Pegang stabil",
+      "tipFrame": "Penuhkan bingkai"
+    },
+    "steps": {
+      "dorsal": {
+        "title": "Pandangan dorsal",
+        "label": "Pandangan Dorsal",
+        "hint": "Pegang telefon di atas ketam",
+        "placeholder": "Potret ketam dari atas dengan syiling di sebelahnya",
+        "orientation": "portrait"
+      },
+      "ventral": {
+        "title": "Pandangan ventral",
+        "label": "Pandangan Ventral",
+        "hint": "Tunjukkan bahagian bawah",
+        "placeholder": "Balikkan ketam dan potret bahagian bawah",
+        "orientation": "portrait"
+      },
+      "closeup": {
+        "title": "Zuum dekat (pilihan)",
+        "label": "Zuum Dekat Cengkerang",
+        "hint": "Fokus pada ciri-ciri khusus",
+        "placeholder": "Zum pada corak cengkerang",
+        "orientation": "portrait"
+      }
+    },
+    "addPhotos": "Tambah foto",
+    "photoCount": "Foto ({{count}}/{{max}})",
+    "takePhoto": "Ambil Foto",
+    "chooseLibrary": "Pilih dari Perpustakaan",
+    "chooseSource": "Pilih sumber",
+    "useCamera": "Gunakan Kamera",
+    "useLibrary": "Gunakan Perpustakaan",
+    "coinReference": "Rujukan Syiling",
+    "coinDesc": "Letakkan syiling di sebelah ketam untuk anggaran saiz. Syiling apa yang anda gunakan?",
+    "letAiDetect": "Biarkan AI mengesan",
+    "letAiDetectA11y": "Biarkan AI mengesan syiling secara automatik",
+    "aiWillDetect": "AI akan mengesan syiling",
+    "change": "Tukar",
+    "changeCoinA11y": "Tukar pilihan syiling",
+    "selectCoin": "Pilih syiling",
+    "toggleCoinA11y": "Togol pilihan syiling {{series}}",
+    "selectCoinA11y": "Pilih {{label}}",
+    "whyCoin": "Mengapa syiling?",
+    "whyCoinAnswer": "Syiling membantu AI anggaran saiz",
+    "assistance": "Bantuan",
+    "shake": "Goncangan: {{level}}",
+    "shakeSlight": "Sedikit",
+    "shakeHeavy": "Berat",
+    "lighting": "Pencahayaan: {{level}}",
+    "lightingLow": "Rendah",
+    "lightingGood": "Baik",
+    "rotatePortrait": "Putar ke potret",
+    "focus": "Fokus: {{status}}",
+    "focusSearching": "Mencari",
+    "focusLocked": "Terkunci",
+    "viewWarning": "Amaran Pandangan",
+    "possibleIssue": "Masalah Mungkin",
+    "possibleIssues": "Masalah yang mungkin",
+    "viewHint": "AI akan mengesahkan pandangan semasa analisis. Ambil semula jika tidak pasti.",
+    "checkingView": "Menyemak pandangan...",
+    "confirm": "Sahkan",
+    "confirmPhotoA11y": "Sahkan foto",
+    "retakePhotoA11y": "Ambil semula foto",
+    "closeCameraA11y": "Tutup kamera",
+    "takePhotoA11y": "Ambil foto",
+    "proceedA11y": "Teruskan ke analisis AI",
+    "nextA11y": "Pergi ke langkah seterusnya",
+    "continueA11y": "Teruskan ke tangkapan foto",
+    "switchA11y": "Tukar ke {{mode}}",
+    "tapFocus": "Ketik bingkai untuk fokus",
+    "ready": "Sedia",
+    "ok": "OK",
+    "alertCameraTitle": "Kebenaran kamera diperlukan",
+    "alertCameraMessage": "Sila benarkan akses kamera untuk mengambil foto ketam.",
+    "alertCameraUnavailable": "Kamera tidak tersedia",
+    "alertCaptureFailed": "Tangkapan gagal",
+    "alertCaptureFailedMessage": "Tidak dapat mengambil foto. Sila cuba lagi.",
+    "alertPhotoRequired": "Foto Diperlukan",
+    "alertPhotoRequiredMessage": "Sila ambil foto pandangan {{view}} sebelum teruskan.",
+    "alertPhotoRequiredDorsal": "Sila ambil sekurang-kurangnya foto pandangan dorsal.",
+    "alertCoinRequired": "Syiling Diperlukan",
+    "alertCoinRequiredMessage": "Sila pilih jenis syiling atau pilih \"Biarkan AI mengesan\" sebelum teruskan.",
+    "alertCoinRequiredFinal": "Sila pilih jenis syiling atau pilih \"Biarkan AI mengesan\".",
+    "limitReached": "Had Dicapai",
+    "maxPhotos": "Maksimum {{max}} foto dibenarkan",
+    "coins": {
+      "third5sen": "5 sen (Siri Ketiga)",
+      "third10sen": "10 sen (Siri Ketiga)",
+      "third20sen": "20 sen (Siri Ketiga)",
+      "third50sen": "50 sen (Siri Ketiga)",
+      "second5sen": "5 sen (Siri Kedua)",
+      "second10sen": "10 sen (Siri Kedua)",
+      "second20sen": "20 sen (Siri Kedua)",
+      "second50sen": "50 sen (Siri Kedua)",
+      "thirdSeries": "Siri Ketiga (Sekarang)",
+      "secondSeries": "Siri Kedua (1989-2011)",
+      "third5": "5 sen (17.78mm)",
+      "third10": "10 sen (18.80mm)",
+      "third20": "20 sen (20.60mm)",
+      "third50": "50 sen (22.65mm)",
+      "second5": "5 sen (16.20mm)",
+      "second10": "10 sen (19.40mm)",
+      "second20": "20 sen (23.59mm)",
+      "second50": "50 sen (27.76mm)"
+    }
+  },
+  "analysis": {
+    "title": "Menganalisis...",
+    "headerTitle": "Analisis AI",
+    "uploading": "Memuat naik foto",
+    "analyzing": "Menganalisis dengan AI",
+    "almostDone": "Hampir selesai",
+    "starting": "Memulakan analisis...",
+    "retrying": "Mencuba lagi...",
+    "steps": {
+      "uploading": "Memuat naik foto...",
+      "identifying": "Mengenal pasti spesies...",
+      "estimating": "Menganggar saiz...",
+      "complete": "Analisis selesai!"
+    },
+    "error": "Analisis Gagal",
+    "errorMessage": "Tidak dapat menganalisis foto. Semak sambungan anda dan cuba lagi.",
+    "retry": "Cuba Lagi",
+    "submitManually": "Hantar Secara Manual",
+    "goBack": "Kembali",
+    "cancelAnalysis": "Batalkan analisis",
+    "analysisFailed": "Analisis Gagal",
+    "retryAnalysis": "Cuba analisis semula",
+    "submitManuallyA11y": "Hantar pemerhatian secara manual tanpa analisis AI",
+    "goBackA11y": "Kembali ke skrin tangkapan",
+    "manualFallback": "Analisis AI gagal. Sila isi semua medan secara manual.",
+    "unknownSpecies": "Spesies Tidak Diketahui"
+  },
+  "review": {
+    "title": "Semakan",
+    "aiFindings": "Penemuan AI",
+    "species": "Spesies",
+    "gender": "Jantina",
+    "size": "Saiz",
+    "weight": "Berat",
+    "confidence": "Keyakinan",
+    "high": "Tinggi",
+    "medium": "Sederhana",
+    "low": "Rendah",
+    "coinReference": "Rujukan Syiling",
+    "selectCoin": "Pilih syiling",
+    "bodyWeight": "Berat Badan (g)",
+    "weightPlaceholder": "Masukkan berat dalam gram",
+    "carapaceWidth": "Lebar Carapace (cm)",
+    "carapaceLength": "Panjang Carapace (mm)",
+    "male": "Jantan",
+    "female": "Betina",
+    "unknown": "Tidak Diketahui",
+    "location": "Lokasi",
+    "pickMap": "Pilih pada peta",
+    "latitude": "Latitud",
+    "longitude": "Longitud",
+    "submit": "Hantar",
+    "submitting": "menghantar",
+    "submitSuccess": "Pemerhatian dihantar!",
+    "submitError": "Gagal menghantar pemerhatian",
+    "error": "Ralat",
+    "ok": "OK",
+    "awesome": "Hebat!",
+    "reviewAIResults": "Semak Hasil AI",
+    "manualEntry": "Entri Manual",
+    "goBackA11y": "Kembali",
+    "aiAnalysisResults": "Hasil Analisis AI",
+    "confidenceLabel": "keyakinan {{level}}",
+    "manualFallback": "Analisis AI tidak tersedia. Sila isi semua medan secara manual.",
+    "viewPhotoA11y": "Lihat foto {{index}} dalam skrin penuh",
+    "referenceCoin": "Syiling rujukan:",
+    "aiDetected": "Dikesan AI",
+    "aiDetectedLabel": "Dikesan AI: {{coin}}",
+    "speciesSection": "Spesies",
+    "selectSpecies": "Pilih spesies...",
+    "measurements": "Ukuran",
+    "cwPlaceholder": "cth. 8.5",
+    "bwPlaceholder": "Pilihan — timbang secara manual",
+    "biologicalData": "Data Biologi",
+    "maturation": "Pewarisan",
+    "notesLabel": "Nota (Pilihan)",
+    "notesPlaceholder": "Tambah sebarang nota tambahan...",
+    "retakePhotos": "Ambil Semula Foto",
+    "retakePhotosA11y": "Kembali dan ambil semula foto",
+    "submitA11y": "Hantar pemerhatian",
+    "closeFullscreenA11y": "Tutup imej skrin penuh",
+    "observationSubmitted": "Pemerhatian Dihantar",
+    "submittedMessage": "Pemerhatian ber bantuan AI anda telah dimasukkan ke dalam barisan untuk semakan.",
+    "captureAnother": "Ambil Lagi",
+    "captureAnotherA11y": "Ambil pemerhatian lain",
+    "levelUpTitle": "Naik Tahap!",
+    "levelUpMessage": "Anda sekarang tahap {{level}} ({{title}})",
+    "xpEarnedTitle": "XP Diperoleh",
+    "xpEarnedMessage": "+{{xp}} XP diperoleh!",
+    "alertLocationTitle": "Lokasi Diperlukan",
+    "alertLocationMessage": "Sila tangkap lokasi GPS anda.",
+    "offlineQueuedTitle": "Baruan Larian Talian",
+    "offlineQueuedMessage": "Tiada sambungan rangkaian. Pemerhatian disimpan secara tempatan dan akan disinkronkan kemudian.",
+    "genderOptions": {
+      "male": "Jantan",
+      "female": "Betina",
+      "unknown": "Tidak Diketahui"
+    },
+    "maturationOptions": {
+      "mature": "Dewasa",
+      "immature": "Belum Dewasa",
+      "unknown": "Tidak Diketahui"
+    },
+    "notes": "Nota (Pilihan)",
+    "aiCW": "AI: {{cw}} cm",
+    "aiGender": "AI: {{gender}}",
+    "aiMaturation": "AI: {{status}}",
+    "submitObservationA11y": "Hantar pemerhatian"
+  },
+  "observation": {
+    "title": "Butiran Pemerhatian",
+    "notFound": "Pemerhatian tidak dijumpai",
+    "species": "Spesies",
+    "scientificName": "Nama Saintifik",
+    "status": "Status",
+    "approved": "Disahkan",
+    "pending": "Menunggu",
+    "rejected": "Ditolak",
+    "measurements": "Pengukuran",
+    "carapaceWidth": "Lebar Carapace",
+    "carapaceLength": "Panjang Carapace",
+    "bodyWeight": "Berat Badan",
+    "conditionFactor": "Faktor Keadaan",
+    "biologicalData": "Data Biologi",
+    "gender": "Jantina",
+    "maturation": "Pematangan",
+    "genderValue": {
+      "male": "Jantan",
+      "female": "Betina",
+      "unknown": "Tidak Diketahui"
+    },
+    "maturationValue": {
+      "mature": "Dewasa",
+      "immature": "Belum Dewasa",
+      "unknown": "Tidak Diketahui"
+    },
+    "referenceCoin": "Rujukan Syiling",
+    "coin": "Syiling",
+    "location": "Lokasi",
+    "coordinates": "Koordinat",
+    "method": "Kaedah",
+    "gps": "GPS",
+    "manual": "Manual",
+    "photos": "Foto",
+    "photoCount_one": "{{count}} foto",
+    "photoCount_other": "{{count}} foto",
+    "notes": "Nota",
+    "submissionInfo": "Maklumat Hantaran",
+    "submitted": "Dihantar",
+    "submittedBy": "Dihantar Oleh",
+    "validated": "Disahkan",
+    "rejectionReason": "Sebab Penolakan:",
+    "print": "Cetak",
+    "printSaved": "PDF Disimpan",
+    "printSavedBody": "Pemerhatian telah disimpan sebagai PDF dalam folder Muat Turun anda.",
+    "printFailed": "Gagal Mencetak",
+    "printFailedBody": "Tidak dapat menjana dokumen cetak. Sila cuba lagi.",
+    "back": "Kembali",
+    "mm": "mm",
+    "g": "g"
+  },
+  "newObservation": {
+    "sections": {
+      "species": "Spesies",
+      "measurements": "Pengukuran",
+      "biologicalData": "Data Biologi",
+      "location": "Lokasi",
+      "photos": "Foto",
+      "notes": "Nota (Pilihan)"
+    },
+    "fields": {
+      "species": "Spesies",
+      "selectSpecies": "Pilih spesies...",
+      "cwLabel": "Lebar Karapas (cm, maks {{max}})",
+      "cwPlaceholder": "cth. 8.5",
+      "bwLabel": "Berat Badan (g, maks {{max}})",
+      "bwPlaceholder": "cth. 350",
+      "gender": "Jantina",
+      "maturationStatus": "Status Kematangan",
+      "notesPlaceholder": "Tambah nota tambahan..."
+    },
+    "genderOptions": {
+      "male": "Jantan",
+      "female": "Betina",
+      "unknown": "Tidak Diketahui"
+    },
+    "maturationOptions": {
+      "mature": "Dewasa",
+      "immature": "Belum Dewasa",
+      "unknown": "Tidak Diketahui"
+    },
+    "offlineQueued_one": "{{count}} pemerhatian disimpan luar talian",
+    "offlineQueued_other": "{{count}} pemerhatian disimpan luar talian",
+    "submit": "Hantar Pemerhatian",
+    "ok": "OK",
+    "alerts": {
+      "locationRequiredTitle": "Lokasi Diperlukan",
+      "locationRequiredBody": "Sila tangkap lokasi GPS anda.",
+      "photosRequiredTitle": "Foto Diperlukan",
+      "photosRequiredBody": "Sila tambah sekurang-kurangnya satu foto.",
+      "successTitle": "Berjaya",
+      "successBody": "Pemerhatian dihantar untuk semakan!",
+      "offlineQueuedTitle": "Beratur Luar Talian",
+      "offlineQueuedBody": "Tiada sambungan rangkaian. Pemerhatian disimpan secara tempatan dan akan disegerakkan kemudian."
+    }
+  },
+  "speciesList": {
+    "searchPlaceholder": "Cari spesies...",
+    "empty": {
+      "searchTitle": "Tiada spesies ditemui",
+      "searchMessage": "Cuba kata carian lain",
+      "defaultTitle": "Tiada spesies tersedia",
+      "defaultMessage": "Data spesies akan muncul di sini apabila ditambah oleh admin"
+    }
+  },
+  "speciesDetail": {
+    "notFound": "Spesies tidak dijumpai",
+    "goBack": "Kembali",
+    "description": "Penerangan",
+    "keyFeatures": "Ciri Utama",
+    "distributionZones_one": "Zon Taburan ({{count}})",
+    "distributionZones_other": "Zon Taburan ({{count}})",
+    "backToSpecies": "Kembali ke Spesies"
+  },
+  "profileSettings": {
+    "menu": {
+      "about": "Tentang",
+      "notifications": "Pemberitahuan",
+      "deleteAccount": "Padam Akaun"
+    },
+    "delete": {
+      "title": "Padam Akaun",
+      "body": "Ini akan memadam akaun anda. Anda mempunyai 30 hari untuk memulihkannya dengan log masuk semula. Semua data anda akan dipadamkan secara kekal selepas 30 hari.",
+      "cancel": "Batal",
+      "confirm": "Padam",
+      "successTitle": "Akaun Dipadam",
+      "successBody": "Akaun anda telah dipadamkan. Anda mempunyai 30 hari untuk memulihkannya.",
+      "errorTitle": "Ralat",
+      "errorBody": "Gagal memadam akaun"
+    }
+  },
+  "notificationSettings": {
+    "permission": {
+      "title": "Kebenaran Push",
+      "openSettings": "Buka tetapan sistem",
+      "status": {
+        "granted": {
+          "title": "Diaktifkan",
+          "description": "Peranti ini boleh menerima pemberitahuan push."
+        },
+        "denied": {
+          "title": "Disekat",
+          "description": "Pemberitahuan push disekat dalam tetapan sistem."
+        },
+        "undetermined": {
+          "title": "Belum Ditetapkan",
+          "description": "Kebenaran belum diminta pada peranti ini."
+        }
+      }
+    },
+    "preferences": {
+      "title": "Keutamaan Pemberitahuan",
+      "description": "Pilih pemberitahuan yang anda terima mengikut saluran."
+    },
+    "categories": {
+      "mission_reminders": "Peringatan Misi",
+      "streak_warnings": "Amaran Streak",
+      "milestone_alerts": "Amaran Pencapaian",
+      "community_updates": "Kemas Kini Komuniti"
+    },
+    "channels": {
+      "push": "Push",
+      "email": "E-mel",
+      "inApp": "Dalam Aplikasi"
+    },
+    "actions": {
+      "enablePush": "Aktifkan Push",
+      "unlinkDevice": "Nyahpaut Peranti",
+      "savePreferences": "Simpan Keutamaan",
+      "loading": "Memuatkan..."
+    },
+    "alerts": {
+      "savedTitle": "Disimpan",
+      "savedBody": "Keutamaan pemberitahuan berjaya dikemas kini.",
+      "errorTitle": "Ralat",
+      "saveFailed": "Gagal menyimpan keutamaan.",
+      "pushEnabledTitle": "Push Diaktifkan",
+      "pushEnabledBody": "Pemberitahuan push diaktifkan untuk peranti ini.",
+      "pushNotEnabledTitle": "Push Tidak Diaktifkan",
+      "enableFailed": "Gagal mengaktifkan pemberitahuan push.",
+      "unlinkedTitle": "Peranti Dinyahpaut",
+      "unlinkedBody": "Peranti ini tidak lagi didaftarkan untuk pemberitahuan push.",
+      "unlinkFailed": "Gagal nyahpaut peranti ini."
+    }
+  },
+  "navigation": {
+    "editProfile": "Sunting Profil",
+    "about": "Tentang CrabWatch",
+    "leaderboard": "Papan Pendahulu",
+    "missions": "Misi",
+    "achievements": "Pencapaian",
+    "notifications": "Pemberitahuan",
+    "settings": "Tetapan",
+    "auth": {
+      "signIn": "Log Masuk",
+      "createAccount": "Cipta Akaun",
+      "forgotPassword": "Lupa Kata Laluan",
+      "resetPassword": "Tetapkan Semula Kata Laluan"
+    }
+  },
+  "researcher": {
+    "title": "Penyelidik",
+    "pending": "Menunggu",
+    "rejected": "Ditolak",
+    "noPending": "Tiada pemerhatian menunggu",
+    "noRejected": "Tiada pemerhatian ditolak",
+    "allCaughtUp": "Semua Selesai!",
+    "allCaughtUpHint": "Tiada pemerhatian menunggu untuk disemak.",
+    "validate": "Sahkan",
+    "reject": "Tolak",
+    "approveTitle": "Sahkan Pemerhatian",
+    "approveBody": "Sahkan hantaran oleh {{name}}?",
+    "rejectTitle": "Tolak Pemerhatian",
+    "rejectBody": "Tolak hantaran oleh {{name}}?",
+    "cancel": "Batal",
+    "success": "Berjaya",
+    "approvedSuccess": "Pemerhatian disahkan dengan berjaya",
+    "rejectedSuccess": "Pemerhatian ditolak dengan berjaya",
+    "error": "Ralat",
+    "failedAction": "Gagal {{action}} pemerhatian",
+    "reviewTitle": "Semak Pemerhatian",
+    "photos": "Foto",
+    "species": "Spesies",
+    "scientificName": "Nama Saintifik",
+    "submitter": "Penghantar",
+    "carapaceWidth": "Lebar Carapace",
+    "bodyWeight": "Berat Badan",
+    "gender": "Jantina",
+    "maturation": "Pematangan",
+    "location": "Lokasi",
+    "locationMethod": "Kaedah Lokasi",
+    "coinReference": "Rujukan Syiling",
+    "notes": "Nota",
+    "rejectionReason": "Sebab Penolakan (pilihan)",
+    "rejectionPlaceholder": "Masukkan sebab penolakan...",
+    "close": "Tutup",
+    "reason": "Sebab (diperlukan)",
+    "reasonPlaceholder": "Masukkan sebab penolakan",
+    "reasonRequired": "Sebab diperlukan",
+    "validated": "Pemerhatian disahkan",
+    "ok": "OK",
+    "cw": "CW",
+    "submitted": "Dihantar",
+    "photoCount_one": "{{count}} foto",
+    "photoCount_other": "{{count}} foto",
+    "loading": "Memuatkan...",
+    "errorLoading": "Ralat memuatkan pemerhatian",
+    "pullToRefresh": "Tarik untuk segar semula"
+  },
+  "admin": {
+    "tab": {
+      "species": "Spesies",
+      "users": "Pengguna",
+      "backup": "Sandaran",
+      "engagement": "Kelibatan"
+    },
+    "species": {
+      "add": "Tambah Spesies",
+      "addTitle": "Tambah Spesies",
+      "editTitle": "Sunting Spesies",
+      "commonNamePlaceholder": "Nama biasa",
+      "scientificNamePlaceholder": "Nama saintifik",
+      "descriptionPlaceholder": "Penerangan",
+      "save": "Simpan"
+    },
+    "users": {
+      "subTab": {
+        "active": "Aktif",
+        "deleted": "Dipadam",
+        "invites": "Jemputan"
+      },
+      "role": {
+        "user": "Pengguna",
+        "researcher": "Penyelidik",
+        "admin": "Admin"
+      },
+      "status": {
+        "deleted": "Dipadam"
+      },
+      "action": {
+        "block": "Sekat",
+        "unblock": "Buka Sekat",
+        "restore": "Pulihkan"
+      },
+      "cleanup": {
+        "title": "Bersihkan Kadaluarsa"
+      }
+    },
+    "invite": {
+      "send": "Hantar Jemputan",
+      "resend": "Hantar Semula",
+      "emailPlaceholder": "pengguna@email.com",
+      "error": {
+        "emailRequired": "E-mel diperlukan"
+      },
+      "status": {
+        "pending": "Menunggu",
+        "used": "Digunakan",
+        "expires": "Kadaluarsa {{date}}"
+      }
+    },
+    "backup": {
+      "create": "Cipta Sandaran"
+    },
+    "rules": {
+      "add": "Tambah Peraturan",
+      "addTitle": "Tambah Peraturan XP",
+      "editTitle": "Sunting Peraturan XP",
+      "namePlaceholder": "Nama peraturan",
+      "actionTypePlaceholder": "Jenis tindakan",
+      "xpRewardPlaceholder": "Hadiah XP",
+      "descriptionPlaceholder": "Penerangan",
+      "save": "Simpan",
+      "status": {
+        "active": "Aktif",
+        "inactive": "Tidak Aktif"
+      },
+      "action": {
+        "enable": "Dayakan",
+        "disable": "Lumpuhkan"
+      }
+    },
+    "levels": {
+      "add": "Tambah Tahap",
+      "addTitle": "Tambah Tahap",
+      "editTitle": "Sunting Tahap",
+      "levelPlaceholder": "Tahap",
+      "titlePlaceholder": "Tajuk",
+      "xpThresholdPlaceholder": "Ambang XP",
+      "descriptionPlaceholder": "Penerangan",
+      "save": "Simpan",
+      "status": {
+        "active": "Aktif",
+        "inactive": "Tidak Aktif"
+      },
+      "xpThreshold": "Ambang XP",
+      "thresholdSuffix": "XP"
+    },
+    "xpAdjust": {
+      "title": "Pelarasan XP",
+      "userIdPlaceholder": "ID Pengguna",
+      "deltaXpPlaceholder": "Delta XP",
+      "reasonPlaceholder": "Sebab",
+      "adjust": "Laras",
+      "recalcTitle": "Kira Semula XP",
+      "recalcUserIdPlaceholder": "ID Pengguna (pilihan)",
+      "recalcReasonPlaceholder": "Sebab",
+      "recalcRun": "Jalankan Pengiraan Semula",
+      "recalcModeDry": "Larian Kering",
+      "recalcModeExecute": "Laksanakan",
+      "recalcResultUsers": "Pengguna terjejas",
+      "recalcResultMode": "Mod",
+      "jobStatus": "Status Tugas",
+      "jobIdPlaceholder": "ID Tugas",
+      "checkJob": "Semak Tugas",
+      "jobProcessed": "Diproses",
+      "jobUpdated": "Dikemas kini",
+      "unknown": "Tidak Diketahui"
+    },
+    "campaigns": {
+      "title": "Kempen",
+      "create": "Cipta Kempen",
+      "createTitle": "Cipta Kempen",
+      "namePlaceholder": "Nama kempen",
+      "titlePlaceholder": "Tajuk tolakan",
+      "bodyPlaceholder": "Badan tolakan",
+      "codePlaceholder": "Kod",
+      "minLevelPlaceholder": "Tahap minimum",
+      "launch": "Lancarkan",
+      "sendTest": "Hantar Ujian"
+    },
+    "audit": {
+      "title": "Log Audit",
+      "total": "Jumlah Entri",
+      "xpAdjustments": "Pelarasan XP",
+      "campaignLaunches": "Pelancaran Kempen",
+      "abuseResolutions": "Penyelesaian Penyalahgunaan",
+      "system": "Sistem",
+      "unknownAction": "Tidak Diketahui",
+      "none": "Tiada",
+      "noDetails": "Tiada butiran"
+    },
+    "abuse": {
+      "user": "Pengguna",
+      "risk": "Risiko",
+      "resolved": "Diselesaikan",
+      "noOpenSignals": "Tiada isyarat terbuka",
+      "resolve": "Selesaikan"
+    },
+    "metrics": {
+      "title": "Metrik Kelibatan",
+      "dailyActive": "Aktif Harian",
+      "weeklyActive": "Aktif Mingguan",
+      "monthlyActive": "Aktif Bulanan",
+      "avgXP": "Purata XP",
+      "streakUsers": "Pengguna dengan Siri",
+      "unavailable": "Tidak Tersedia",
+      "na": "N/A"
+    },
+    "engagement": {
+      "subTab": {
+        "xpRules": "Peraturan XP",
+        "levels": "Tahap",
+        "xpOps": "Operasi XP",
+        "campaigns": "Kempen",
+        "audit": "Audit",
+        "abuse": "Penyalahgunaan",
+        "metrics": "Metrik"
+      }
+    },
+    "alerts": {
+      "backup": {
+        "title": "Cipta Sandaran",
+        "message": "Ini akan mengeksport semua data pangkalan data. Teruskan?",
+        "confirm": "Cipta"
+      },
+      "cleanup": {
+        "title": "Bersihkan Pengguna Kadaluarsa",
+        "message": "Padam secara kekal semua pengguna yang melebihi tempoh penahanan 30 hari. Tindakan ini tidak boleh dibatalkan.",
+        "confirm": "Bersihkan"
+      },
+      "changeRole": {
+        "title": "Tukar Peranan",
+        "message": "Tukar peranan {{name}} kepada {{role}}?",
+        "confirm": "Tukar"
+      },
+      "deleteUser": {
+        "title": "Padam Pengguna",
+        "message": "Padam lembut {{name}}?",
+        "confirm": "Padam"
+      },
+      "restoreUser": {
+        "title": "Pulihkan Pengguna",
+        "message": "Pulihkan {{name}}?",
+        "confirm": "Pulihkan"
+      },
+      "blockUser": {
+        "title": "Sekat Pengguna",
+        "message": "Sekat {{name}}?",
+        "confirm": "Sekat"
+      },
+      "unblockUser": {
+        "title": "Buka Sekat Pengguna",
+        "message": "Buka sekat {{name}}?",
+        "confirm": "Buka Sekat"
+      },
+      "sendInvite": {
+        "title": "Hantar Jemputan",
+        "message": "Hantar jemputan kepada {{email}} dengan peranan {{role}}?",
+        "confirm": "Hantar"
+      },
+      "resendInvite": {
+        "title": "Hantar Semula Jemputan",
+        "message": "Hantar semula jemputan kepada {{email}} dengan peranan {{role}}?",
+        "confirm": "Hantar Semula"
+      },
+      "deleteSpecies": {
+        "title": "Padam Spesies",
+        "message": "Padam spesies \"{{name}}\"? Tindakan ini tidak boleh dibatalkan.",
+        "confirm": "Padam"
+      },
+      "deleteXpRule": {
+        "title": "Padam Peraturan XP",
+        "message": "Padam peraturan \"{{name}}\"? Tindakan ini tidak boleh dibatalkan."
+      },
+      "deleteLevel": {
+        "title": "Padam Tahap",
+        "message": "Padam tahap {{level}} ({{title}})? Tindakan ini tidak boleh dibatalkan."
+      },
+      "launchCampaign": {
+        "title": "Lancarkan Kempen",
+        "message": "Lancarkan kempen \"{{name}}\" kepada semua pengguna yang layak?",
+        "confirm": "Lancarkan"
+      },
+      "deleteCampaign": {
+        "title": "Padam Kempen",
+        "message": "Padam kempen \"{{name}}\"?"
+      }
+    },
+    "flash": {
+      "backupCreated": "Sandaran dicipta: {{file}}",
+      "backupFailed": "Sandaran gagal",
+      "cleanupDone_one": "Pembersihan selesai. {{count}} pengguna dipadam secara kekal.",
+      "cleanupDone_other": "Pembersihan selesai. {{count}} pengguna dipadam secara kekal.",
+      "cleanupFailed": "Pembersihan gagal",
+      "roleUpdated": "Peranan dikemas kini kepada {{role}}",
+      "roleUpdateFailed": "Kemaskini peranan gagal",
+      "userDeleted": "Pengguna dipadam",
+      "userDeleteFailed": "Pemadaman pengguna gagal",
+      "userRestored": "Pengguna dipulihkan",
+      "userRestoreFailed": "Pemulihan pengguna gagal",
+      "userBlocked": "Pengguna disekat",
+      "userBlockFailed": "Pengekangan pengguna gagal",
+      "userUnblocked": "Pengguna dibuka sekat",
+      "userUnblockFailed": "Pembukaan sekat pengguna gagal",
+      "inviteSent": "Jemputan dihantar",
+      "inviteSendFailed": "Penghantaran jemputan gagal",
+      "inviteResent": "Jemputan dihantar semula",
+      "inviteResendFailed": "Penghantaran semula jemputan gagal",
+      "speciesDeleted": "Spesies dipadam",
+      "speciesDeleteFailed": "Pemadaman spesies gagal",
+      "speciesUpdated": "Spesies dikemas kini",
+      "speciesCreated": "Spesies dicipta",
+      "speciesSaveFailed": "Penyimpanan spesies gagal",
+      "namesRequired": "Nama biasa dan saintifik diperlukan",
+      "xpRuleUpdated": "Peraturan XP dikemas kini",
+      "xpRuleCreated": "Peraturan XP dicipta",
+      "xpRuleSaveFailed": "Penyimpanan peraturan XP gagal",
+      "xpRuleDeleted": "Peraturan XP dipadam",
+      "xpRuleDeleteFailed": "Pemadaman peraturan XP gagal",
+      "actionNameRequired": "Tindakan dan nama diperlukan",
+      "ruleEnabled": "Peraturan didayakan",
+      "ruleDisabled": "Peraturan dilumpuhkan",
+      "ruleUpdateFailed": "Kemaskini peraturan gagal",
+      "levelUpdated": "Tahap dikemas kini",
+      "levelCreated": "Tahap dicipta",
+      "levelSaveFailed": "Penyimpanan tahap gagal",
+      "levelTitleRequired": "Tahap dan tajuk diperlukan",
+      "levelDeleted": "Tahap dipadam",
+      "levelDeleteFailed": "Pemadaman tahap gagal",
+      "xpAdjusted": "XP dilaras",
+      "xpAdjustFailed": "Pelarasan XP gagal",
+      "xpAdjustRequired": "ID Pengguna dan delta XP diperlukan",
+      "recalculationCompleted": "Pengiraan semula selesai",
+      "recalculationFailed": "Pengiraan semula gagal",
+      "enterJobId": "Masukkan ID tugas",
+      "jobStatusUpdated": "Status tugas dikemas kini",
+      "jobStatusFailed": "Semakan status tugas gagal",
+      "campaignCreated": "Kempen dicipta",
+      "campaignCreateFailed": "Penciptaan kempen gagal",
+      "campaignFieldsRequired": "Nama, tajuk, dan badan diperlukan",
+      "campaignLaunched": "Kempen dilancarkan",
+      "campaignLaunchFailed": "Pelancaran kempen gagal",
+      "campaignDeleted": "Kempen dipadam",
+      "campaignDeleteFailed": "Pemadaman kempen gagal",
+      "testCampaignSent": "Ujian kempen dihantar",
+      "testCampaignFailed": "Ujian kempen gagal",
+      "testUserIdRequired": "ID pengguna ujian diperlukan",
+      "abuseResolved": "Isyarat diselesaikan",
+      "abuseResolveFailed": "Penyelesaian gagal"
+    }
+  },
+  "picker": {
+    "selectCountry": "Pilih negara",
+    "selectCode": "Pilih kod",
+    "search": "Cari",
+    "searchPlaceholder": "Cari...",
+    "cancel": "Batal",
+    "countryTitle": "Pilih Negara",
+    "phoneCodeTitle": "Kod Telefon"
+  },
+  "gps": {
+    "label": "Lokasi",
+    "manual": "Manual",
+    "gpsAuto": "GPS Auto",
+    "gpsErrorTitle": "Ralat GPS",
+    "gpsErrorMessage": "Gagal menangkap lokasi. Cuba lagi atau gunakan mod manual.",
+    "enableLocation": "Dayakan Akses Lokasi",
+    "selectedLocation": "Lokasi Dipilih",
+    "recenter": "Pusat Semula",
+    "acquiring": "Mendapat GPS...",
+    "noLocation": "Tiada lokasi ditangkap",
+    "accuracy": "Ketepatan: {{accuracy}}m",
+    "capturing": "Menangkap...",
+    "captureLocation": "Tangkap Lokasi"
+  },
+  "gamification": {
+    "leaderboard": {
+      "title": "Papan Pendahulu",
+      "scope": {
+        "allTime": "Sepanjang Masa",
+        "seasonal": "Musiman"
+      },
+      "rank": "Peringkat",
+      "points": "mata",
+      "empty": "Belum ada entri",
+      "emptyHint": "Hantar pemerhatian pertama anda untuk muncul di papan pendahulu!",
+      "you": "Anda",
+      "loadMore": "Muat Lebih",
+      "goToProfile": "Pergi ke Profil"
+    },
+    "achievements": {
+      "title": "Pencapaian",
+      "subtitle": "{{unlocked}} daripada {{total}} dibuka",
+      "check": "Semak",
+      "checking": "Menyemak...",
+      "overallProgress": "Kemajuan Keseluruhan",
+      "empty": "Tiada pencapaian sepadan dengan penapis anda",
+      "earned": "Diperoleh {{date}}",
+      "xpReward": "+{{xp}} XP",
+      "filter": {
+        "all": "Semua",
+        "unlocked": "\u2713 Dibuka",
+        "inProgress": "\u{1F504} Dalam Proses"
+      },
+      "category": {
+        "OBSERVATION": "Pemerhatian",
+        "SPECIES": "Spesies",
+        "EXPLORATION": "Penerokaan",
+        "QUALITY": "Kualiti",
+        "HIDDEN": "Tersembunyi"
+      },
+      "alert": {
+        "unlockedTitle": "Pencapaian Dibuka!",
+        "unlockedBody": "Anda telah membuka",
+        "noNewTitle": "Tiada Pencapaian Baru",
+        "noNewBody": "Teruskan untuk membuka lebih banyak!"
+      }
+    },
+    "missions": {
+      "title": "Misi",
+      "tab": {
+        "active": "Misi Aktif",
+        "onboarding": "Onboarding"
+      },
+      "empty": "Tiada misi aktif",
+      "onboardingEmpty": "Selesaikan onboarding untuk bonus XP",
+      "accept": "Terima",
+      "complete": "Selesaikan",
+      "onboardingSteps": "Langkah Onboarding",
+      "steps": "langkah",
+      "accepted": "Misi diterima!",
+      "rejected": "Misi ditolak!",
+      "acceptedMessage": "Diklaim. Selesaikan misi untuk memperoleh XP.",
+      "rejectedMessage": "Klaim misi lain nanti.",
+      "noDescription": "Tiada penerangan",
+      "emptyHint": "Semak esok untuk misi baru!",
+      "claiming": "Mengklaim...",
+      "claimFailed": "Gagal mengklaim misi",
+      "stepFailed": "Gagal melengkapkan langkah",
+      "progress": "Kemajuan",
+      "done": "Selesai",
+      "doneLoading": "..."
+    }
+  },
+  "common": {
+    "loading": "Memuatkan...",
+    "success": "Berjaya",
+    "cancel": "Batal",
+    "confirm": "Sahkan",
+    "save": "Simpan",
+    "delete": "Padam",
+    "edit": "Sunting",
+    "back": "Kembali",
+    "next": "Seterusnya",
+    "done": "Selesai",
+    "error": "Ralat",
+    "ok": "OK",
+    "email": "E-mel",
+    "somethingWrong": "Ada yang tidak kena",
+    "unexpectedError": "Ralat tidak dijangka berlaku",
+    "tryAgain": "Cuba lagi",
+    "noData": "Tiada data tersedia",
+    "pullToRefresh": "Tarik untuk segar semula",
+    "select": "Pilih",
+    "english": "English",
+    "bahasaMelayu": "Bahasa Melayu"
+  }
+}

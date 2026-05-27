@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react'
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
+import { useTranslation } from 'react-i18next'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import * as ScreenOrientation from 'expo-screen-orientation'
 import { photoService } from '../../services/photoService'
@@ -26,25 +27,25 @@ import { useCaptureAssistance } from '../../hooks/useCaptureAssistance'
 import { analyzeView } from '../../utils/viewAnalysis'
 import { PhotoView } from '@crabwatch/shared'
 
-const COIN_SERIES = {
+const COIN_SERIES_RAW = {
   'Third Series (Current)': [
-    { label: '5 sen (17.78mm)', value: '5 sen (Third Series, 17.78 mm)' },
-    { label: '10 sen (18.80mm)', value: '10 sen (Third Series, 18.80 mm)' },
-    { label: '20 sen (20.60mm)', value: '20 sen (Third Series, 20.60 mm)' },
-    { label: '50 sen (22.65mm)', value: '50 sen (Third Series, 22.65 mm)' },
+    { labelKey: 'coins.third5', value: '5 sen (Third Series, 17.78 mm)' },
+    { labelKey: 'coins.third10', value: '10 sen (Third Series, 18.80 mm)' },
+    { labelKey: 'coins.third20', value: '20 sen (Third Series, 20.60 mm)' },
+    { labelKey: 'coins.third50', value: '50 sen (Third Series, 22.65 mm)' },
   ],
   'Second Series (1989-2011)': [
-    { label: '5 sen (16.20mm)', value: '5 sen (Second Series, 16.20 mm)' },
-    { label: '10 sen (19.40mm)', value: '10 sen (Second Series, 19.40 mm)' },
-    { label: '20 sen (23.59mm)', value: '20 sen (Second Series, 23.59 mm)' },
-    { label: '50 sen (27.76mm)', value: '50 sen (Second Series, 27.76 mm)' },
+    { labelKey: 'coins.second5', value: '5 sen (Second Series, 16.20 mm)' },
+    { labelKey: 'coins.second10', value: '10 sen (Second Series, 19.40 mm)' },
+    { labelKey: 'coins.second20', value: '20 sen (Second Series, 23.59 mm)' },
+    { labelKey: 'coins.second50', value: '50 sen (Second Series, 27.76 mm)' },
   ],
 }
 
-const CAPTURE_STEPS: { key: PhotoView; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { key: 'dorsal', label: 'Dorsal View', icon: 'eye' },
-  { key: 'ventral', label: 'Ventral View', icon: 'swap-horizontal' },
-  { key: 'carapace-closeup', label: 'Shell Close-up', icon: 'expand' },
+const CAPTURE_STEP_KEYS: { key: PhotoView; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { key: 'dorsal', icon: 'eye' },
+  { key: 'ventral', icon: 'swap-horizontal' },
+  { key: 'carapace-closeup', icon: 'expand' },
 ]
 
 function createUploadSessionId(): string {
@@ -59,6 +60,7 @@ function createUploadSessionId(): string {
 }
 
 export function GuidedCaptureScreen() {
+  const { t } = useTranslation('capture')
   const navigation = useNavigation<any>()
   const cameraRef = useRef<CameraView | null>(null)
   const [cameraPermission, requestCameraPermission] = useCameraPermissions()
@@ -84,6 +86,23 @@ export function GuidedCaptureScreen() {
   const [analyzingView, setAnalyzingView] = useState(false)
 
   const { quality, setFocused } = useCaptureAssistance()
+
+  const CAPTURE_STEPS = useMemo(() => CAPTURE_STEP_KEYS.map((s) => ({
+    ...s,
+    label: t(`steps.${s.key}.label`),
+  })), [t])
+
+  const COIN_SERIES = useMemo(() => {
+    const result: Record<string, { label: string; value: string }[]> = {}
+    for (const [seriesKey, options] of Object.entries(COIN_SERIES_RAW)) {
+      const seriesLabel = t(`coins.${seriesKey === 'Third Series (Current)' ? 'thirdSeries' : 'secondSeries'}`)
+      result[seriesLabel] = options.map((o) => ({
+        label: t(o.labelKey),
+        value: o.value,
+      }))
+    }
+    return result
+  }, [t])
 
   useFocusEffect(
     useCallback(() => {
@@ -134,8 +153,9 @@ export function GuidedCaptureScreen() {
     }
   }, [cameraVisible])
 
-  const currentView = CAPTURE_STEPS[currentStep]?.key || 'dorsal'
-  const isLastStep = currentStep === CAPTURE_STEPS.length - 1
+  const currentView = CAPTURE_STEP_KEYS[currentStep]?.key || 'dorsal'
+  const isLastStep = currentStep === CAPTURE_STEP_KEYS.length - 1
+  const currentStepLabel = CAPTURE_STEPS[currentStep]?.label || ''
 
   const handleCoinSelect = (value: string) => {
     setCoinType(value)
@@ -159,7 +179,7 @@ export function GuidedCaptureScreen() {
         }
 
         if (!granted) {
-          Alert.alert('Camera permission required', 'Please allow camera access to capture crab photos.')
+          Alert.alert(t('alertCameraTitle'), t('alertCameraMessage'))
           return
         }
 
@@ -168,7 +188,7 @@ export function GuidedCaptureScreen() {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to open camera.'
-      Alert.alert('Camera unavailable', message)
+      Alert.alert(t('alertCameraUnavailable'), message)
     }
   }
 
@@ -205,7 +225,7 @@ export function GuidedCaptureScreen() {
         setAnalyzingView(false)
       }
     } catch {
-      Alert.alert('Capture failed', 'Unable to capture photo. Please try again.')
+      Alert.alert(t('alertCaptureFailed'), t('alertCaptureFailedMessage'))
     } finally {
       setCapturing(false)
     }
@@ -224,16 +244,16 @@ export function GuidedCaptureScreen() {
 
   const handleNext = () => {
     if (!photos[currentView] && currentView !== 'carapace-closeup') {
-      Alert.alert('Photo Required', `Please take a ${currentView} view photo before continuing.`)
+      Alert.alert(t('alertPhotoRequired'), t('alertPhotoRequiredMessage', { view: currentView }))
       return
     }
 
     if (currentView !== 'carapace-closeup' && !coinSelected) {
-      Alert.alert('Coin Required', 'Please select a coin type or choose "Let AI detect" before continuing.')
+      Alert.alert(t('alertCoinRequired'), t('alertCoinRequiredMessage'))
       return
     }
 
-    if (currentStep < CAPTURE_STEPS.length - 1) {
+    if (currentStep < CAPTURE_STEP_KEYS.length - 1) {
       setCurrentStep((prev) => prev + 1)
       setShowPreview(false)
     }
@@ -252,12 +272,12 @@ export function GuidedCaptureScreen() {
     const closeupPhoto = photos['carapace-closeup']
 
     if (!dorsalPhoto) {
-      Alert.alert('Photo Required', 'Please take at least the dorsal view photo.')
+      Alert.alert(t('alertPhotoRequired'), t('alertPhotoRequiredDorsal'))
       return
     }
 
     if (!coinSelected) {
-      Alert.alert('Coin Required', 'Please select a coin type or choose "Let AI detect".')
+      Alert.alert(t('alertCoinRequired'), t('alertCoinRequiredFinal'))
       return
     }
 
@@ -279,30 +299,30 @@ export function GuidedCaptureScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>AI Crab Capture</Text>
+        <Text style={styles.headerTitle}>{t('headerTitle')}</Text>
         <Text style={styles.headerSubtitle}>
-          Step {currentStep + 1} of {CAPTURE_STEPS.length}
+          {t('stepOf', { current: currentStep + 1, total: CAPTURE_STEP_KEYS.length })}
         </Text>
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         {currentView !== 'carapace-closeup' && (
           <View style={[styles.tipsCard, { marginBottom: 16 }]}>
-            <Text style={styles.tipsTitle}>Photo Tips</Text>
-            <Text style={styles.tipBullet}>\u2022 Place the coin flat next to the crab</Text>
-            <Text style={styles.tipBullet}>\u2022 Ensure the entire crab fits in the frame</Text>
-            <Text style={styles.tipBullet}>\u2022 Use natural light when possible</Text>
-            <Text style={styles.tipBullet}>\u2022 Hold your phone steady before shooting</Text>
+           <Text style={styles.tipsTitle}>{t('photoTips')}</Text>
+             <Text style={styles.tipBullet}>\u2022 {t('tipCoin')}</Text>
+             <Text style={styles.tipBullet}>\u2022 {t('tipFrame')}</Text>
+             <Text style={styles.tipBullet}>\u2022 {t('tipLight')}</Text>
+             <Text style={styles.tipBullet}>\u2022 {t('tipSteady')}</Text>
           </View>
         )}
         {!coinSelected && currentStep === 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              <Ionicons name="pricetag" size={18} color={COLORS.accent} /> Coin Reference
-            </Text>
-            <Text style={styles.sectionDescription}>
-              Place a coin next to the crab for size estimation. Which coin are you using?
-            </Text>
+             <Ionicons name="pricetag" size={18} color={COLORS.accent} /> {t('coinReference')}
+             </Text>
+             <Text style={styles.sectionDescription}>
+               {t('coinDesc')}
+             </Text>
 
             <TouchableOpacity
               style={[
@@ -310,12 +330,12 @@ export function GuidedCaptureScreen() {
                 styles.aiDetectButton,
               ]}
               onPress={() => handleCoinSelect('')}
-              accessibilityLabel="Let AI detect coin automatically"
+              accessibilityLabel={t('letAiDetectA11y')}
             >
               <Ionicons name="sparkles" size={18} color={COLORS.accent} />
               <Text style={[styles.coinButtonText, styles.aiDetectText]}>
-                Let AI detect
-              </Text>
+                 {t('letAiDetect')}
+               </Text>
             </TouchableOpacity>
 
             {Object.entries(COIN_SERIES).map(([series, options]) => (
@@ -323,7 +343,7 @@ export function GuidedCaptureScreen() {
                 <TouchableOpacity
                   style={styles.seriesHeader}
                   onPress={() => setExpandedSeries(expandedSeries === series ? null : series)}
-                  accessibilityLabel={`Toggle ${series} coin options`}
+                  accessibilityLabel={t('toggleCoinA11y', { series })}
                   accessibilityRole="button"
                 >
                   <Text style={styles.seriesTitle}>{series}</Text>
@@ -340,7 +360,7 @@ export function GuidedCaptureScreen() {
                         key={option.value}
                         style={styles.coinButton}
                         onPress={() => handleCoinSelect(option.value)}
-                        accessibilityLabel={`Select ${option.label}`}
+                        accessibilityLabel={t('selectCoinA11y', { label: option.label })}
                       >
                         <Text style={styles.coinButtonText}>{option.label}</Text>
                       </TouchableOpacity>
@@ -356,16 +376,16 @@ export function GuidedCaptureScreen() {
           <View style={styles.coinInfo}>
             <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
             <Text style={styles.coinInfoText}>
-              {coinType || 'AI will detect coin'}
-            </Text>
+               {coinType || t('aiWillDetect')}
+             </Text>
             <TouchableOpacity
               onPress={() => {
                 setCoinSelected(false)
                 setExpandedSeries(null)
               }}
-              accessibilityLabel="Change coin selection"
+              accessibilityLabel={t('changeCoinA11y')}
             >
-              <Text style={styles.changeLink}>Change</Text>
+              <Text style={styles.changeLink}>{t('change')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -373,10 +393,10 @@ export function GuidedCaptureScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
             <Ionicons
-              name={CAPTURE_STEPS[currentStep]?.icon || 'camera'}
+              name={CAPTURE_STEP_KEYS[currentStep]?.icon || 'camera'}
               size={18}
               color={COLORS.primary}
-            /> {CAPTURE_STEPS[currentStep]?.label || 'Capture'}
+            /> {currentStepLabel}
           </Text>
 
           {photos[currentView] && showPreview ? (
@@ -386,7 +406,7 @@ export function GuidedCaptureScreen() {
                 {analyzingView && (
                   <View style={styles.analyzingOverlay}>
                     <ActivityIndicator color="#ffffff" size="small" />
-                    <Text style={styles.analyzingText}>Checking view...</Text>
+                    <Text style={styles.analyzingText}>{t('checkingView')}</Text>
                   </View>
                 )}
                 <View style={styles.previewActions}>
@@ -396,35 +416,35 @@ export function GuidedCaptureScreen() {
                       viewWarnings.length > 0 && styles.confirmButtonWarning,
                     ]}
                     onPress={handleConfirmPhoto}
-                    accessibilityLabel="Confirm photo"
+                    accessibilityLabel={t('confirmPhotoA11y')}
                   >
                     <Ionicons
                       name={viewWarnings.length > 0 ? 'warning' : 'checkmark-circle'}
                       size={20}
                       color="#ffffff"
                     />
-                    <Text style={styles.confirmText}>Confirm</Text>
+                    <Text style={styles.confirmText}>{t('confirm')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.retakeButton}
                     onPress={() => handleRetakePhoto(currentView)}
-                    accessibilityLabel="Retake photo"
+                    accessibilityLabel={t('retakePhotoA11y')}
                   >
                     <Ionicons name="refresh" size={20} color="#ffffff" />
-                    <Text style={styles.retakeText}>Retake</Text>
+                    <Text style={styles.retakeText}>{t('retake')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
               {viewWarnings.length > 0 && (
                 <View style={styles.viewWarningsCard}>
                   <Text style={styles.viewWarningsTitle}>
-                    <Ionicons name="warning" size={16} color="#f59e0b" /> Possible Issue
+                    <Ionicons name="warning" size={16} color="#f59e0b" /> {t('possibleIssue')}
                   </Text>
                   {viewWarnings.map((warning, i) => (
                     <Text key={i} style={styles.viewWarningText}>• {warning}</Text>
                   ))}
                   <Text style={styles.viewWarningHint}>
-                    AI will verify the view during analysis. Retake if unsure.
+                    {t('viewHint')}
                   </Text>
                 </View>
               )}
@@ -435,10 +455,10 @@ export function GuidedCaptureScreen() {
               <TouchableOpacity
                 style={styles.retakeButton}
                 onPress={() => handleRetakePhoto(currentView)}
-                accessibilityLabel="Retake photo"
+                accessibilityLabel={t('retakePhotoA11y')}
               >
                 <Ionicons name="refresh" size={20} color="#ffffff" />
-                <Text style={styles.retakeText}>Retake</Text>
+                <Text style={styles.retakeText}>{t('retake')}</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -446,15 +466,15 @@ export function GuidedCaptureScreen() {
               <View style={styles.capturePlaceholder}>
                 <Ionicons name="camera-outline" size={48} color={COLORS.textLight} />
                 <Text style={styles.capturePlaceholderText}>
-                  {currentView === 'dorsal' && 'Photograph the crab from above with coin beside it'}
-                  {currentView === 'ventral' && 'Flip the crab and photograph the underside'}
-                  {currentView === 'carapace-closeup' && 'Zoom in on the shell pattern'}
+                  {currentView === 'dorsal' && t('steps.dorsal.placeholder')}
+                  {currentView === 'ventral' && t('steps.ventral.placeholder')}
+                  {currentView === 'carapace-closeup' && t('steps.closeup.placeholder')}
                 </Text>
               </View>
 
               <View style={styles.captureButtons}>
                 <Button
-                  title={usePicker[currentView] ? 'Choose from Library' : 'Take Photo'}
+                  title={usePicker[currentView] ? t('useLibrary') : t('useCamera')}
                   onPress={() => handleTakePhoto(currentView)}
                   style={styles.takePhotoButton}
                 />
@@ -464,16 +484,16 @@ export function GuidedCaptureScreen() {
                   onPress={() =>
                     setUsePicker((prev) => ({ ...prev, [currentView]: !prev[currentView] }))
                   }
-                  accessibilityLabel={`Switch to ${usePicker[currentView] ? 'camera' : 'library'}`}
+                  accessibilityLabel={t('switchA11y', { mode: usePicker[currentView] ? t('useCamera').toLowerCase() : t('useLibrary').toLowerCase() })}
                 >
                   <Ionicons
                     name={usePicker[currentView] ? 'camera-outline' : 'image-outline'}
                     size={18}
                     color={COLORS.primary}
                   />
-                  <Text style={styles.switchCaptureText}>
-                    {usePicker[currentView] ? 'Use Camera' : 'Use Library'}
-                  </Text>
+                 <Text style={styles.switchCaptureText}>
+                     {usePicker[currentView] ? t('useCamera') : t('useLibrary')}
+                   </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -484,27 +504,27 @@ export function GuidedCaptureScreen() {
       <View style={styles.footer}>
         {currentStep > 0 && (
           <Button
-            title="Back"
-            variant="ghost"
-            onPress={handleBack}
-            style={styles.navButton}
-          />
+             title={t('back')}
+             variant="ghost"
+             onPress={handleBack}
+             style={styles.navButton}
+           />
         )}
 
         {isLastStep ? (
-          <Button
-            title="Analyze with AI"
-            onPress={handleProceedToAnalysis}
-            style={styles.analyzeButton}
-            accessibilityLabel="Proceed to AI analysis"
-          />
+         <Button
+             title={t('analyzeWithAI')}
+             onPress={handleProceedToAnalysis}
+             style={styles.analyzeButton}
+             accessibilityLabel={t('proceedA11y')}
+           />
         ) : (
-          <Button
-            title={photos[currentView] ? 'Next' : 'Continue'}
-            onPress={handleNext}
-            style={styles.navButton}
-            accessibilityLabel={photos[currentView] ? 'Go to next step' : 'Continue to photo capture'}
-          />
+         <Button
+             title={photos[currentView] ? t('next') : t('continue')}
+             onPress={handleNext}
+             style={styles.navButton}
+             accessibilityLabel={photos[currentView] ? t('nextA11y') : t('continueA11y')}
+           />
         )}
       </View>
 
@@ -513,13 +533,13 @@ export function GuidedCaptureScreen() {
           <View style={styles.cameraHeader}>
             <TouchableOpacity
               onPress={() => setCameraVisible(false)}
-              accessibilityLabel="Close camera"
+              accessibilityLabel={t('closeCameraA11y')}
               style={styles.closeButton}
             >
               <Ionicons name="close" size={28} color="#ffffff" />
             </TouchableOpacity>
             <Text style={styles.cameraTitleCenter}>
-              {CAPTURE_STEPS.find((step) => step.key === capturingView)?.label}
+              {CAPTURE_STEPS.find((step) => step.key === capturingView)?.label || currentStepLabel}
             </Text>
             <View style={{ width: 28 }} />
           </View>
@@ -544,7 +564,7 @@ export function GuidedCaptureScreen() {
               ]}
               onPress={handleCaptureFromCamera}
               disabled={capturing}
-              accessibilityLabel="Take photo"
+              accessibilityLabel={t('takePhotoA11y')}
             >
               <View
                 style={[
@@ -554,7 +574,7 @@ export function GuidedCaptureScreen() {
               />
             </TouchableOpacity>
             <Text style={styles.captureHint}>
-              Tap frame to focus{quality.overallReady ? ' • Ready' : ''}
+              {t('tapFocus')}{quality.overallReady ? ` • ${t('ready')}` : ''}
             </Text>
           </View>
         </SafeAreaView>

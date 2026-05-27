@@ -2,18 +2,20 @@ import { Response } from 'express'
 import { AuthRequest } from '../middleware/auth'
 import { asyncHandler, AppError } from '../utils/errors'
 import { getConfig } from '../services/container'
+import { createTranslator } from '../middleware/i18n'
 import { getUserStats } from '../services/rewardEngine'
 import { getLeaderboard, getXPHistory } from '../services/leaderboardService'
 
 export const getMyStats = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const __ = createTranslator(req)
   if (!getConfig().engagement.enabled) {
-    res.status(501).json({ success: false, error: 'Gamification not enabled' })
+    res.status(501).json({ success: false, error: __('engagement.notEnabled', 'engagement') })
     return
   }
 
   const userId = req.dbUser?.id
   if (!userId) {
-    throw new AppError('Authentication required', 401)
+    throw new AppError(__('common.auth.required', 'common'), 401)
   }
 
   const stats = await getUserStats(userId)
@@ -21,14 +23,15 @@ export const getMyStats = asyncHandler(async (req: AuthRequest, res: Response) =
 })
 
 export const getXPHistoryEndpoint = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const __ = createTranslator(req)
   if (!getConfig().engagement.enabled) {
-    res.status(501).json({ success: false, error: 'Gamification not enabled' })
+    res.status(501).json({ success: false, error: __('engagement.notEnabled', 'engagement') })
     return
   }
 
   const userId = req.dbUser?.id
   if (!userId) {
-    throw new AppError('Authentication required', 401)
+    throw new AppError(__('common.auth.required', 'common'), 401)
   }
 
   const page = parseInt(req.query.page as string) || 1
@@ -39,8 +42,9 @@ export const getXPHistoryEndpoint = asyncHandler(async (req: AuthRequest, res: R
 })
 
 export const getLeaderboardEndpoint = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const __ = createTranslator(req)
   if (!getConfig().engagement.enabled) {
-    res.status(501).json({ success: false, error: 'Gamification not enabled' })
+    res.status(501).json({ success: false, error: __('engagement.notEnabled', 'engagement') })
     return
   }
 

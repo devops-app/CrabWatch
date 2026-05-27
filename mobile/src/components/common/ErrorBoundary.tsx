@@ -2,6 +2,7 @@ import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
+import i18n from '../../lib/i18n'
 
 interface ErrorBoundaryProps {
   children: React.ReactNode
@@ -35,12 +36,12 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       return (
         <View style={styles.container}>
           <Text style={styles.icon}>⚠️</Text>
-          <Text style={styles.title}>Something went wrong</Text>
+          <Text style={styles.title}>{i18n.t('common.somethingWrong')}</Text>
           <Text style={styles.message}>
-            {this.state.error?.message || 'An unexpected error occurred'}
+            {this.state.error?.message || i18n.t('common.unexpectedError')}
           </Text>
           <TouchableOpacity style={styles.button} onPress={this.handleReset}>
-            <Text style={styles.buttonText}>Try Again</Text>
+            <Text style={styles.buttonText}>{i18n.t('common.tryAgain')}</Text>
           </TouchableOpacity>
         </View>
       )

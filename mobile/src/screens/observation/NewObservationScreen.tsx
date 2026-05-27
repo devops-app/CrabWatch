@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   View,
   Text,
@@ -19,8 +20,6 @@ import {
 import { useObservation } from '../../hooks/useObservation'
 import { useSpeciesStore } from '../../store/speciesStore'
 import {
-  GENDER_OPTIONS,
-  MATURATION_OPTIONS,
   COLORS,
   CW_MAX,
   BW_MAX,
@@ -46,7 +45,16 @@ const DEFAULT_VALUES: Partial<ObservationFormValues> = {
   notes: '',
 }
 
+function sanitizeDecimalInput(value: string): string {
+  const normalized = value.replace(',', '.').replace(/[^\d.]/g, '')
+  const [intPart = '', ...fractionParts] = normalized.split('.')
+  if (fractionParts.length === 0) return intPart
+  const fraction = fractionParts.join('').slice(0, 2)
+  return `${intPart}.${fraction}`
+}
+
 export function NewObservationScreen() {
+  const { t } = useTranslation('newObservation')
   const { submitObservation, submitting, error: submitError } = useObservation()
   const { species, loadSpecies } = useSpeciesStore()
   const pendingCount = useObservationStore((s) => s.pendingObservations.length)
@@ -55,6 +63,8 @@ export function NewObservationScreen() {
   const [latitude, setLatitude] = useState<number | null>(null)
   const [longitude, setLongitude] = useState<number | null>(null)
   const [manualLocation, setManualLocation] = useState(false)
+  const [rawCW, setRawCW] = useState('')
+  const [rawBW, setRawBW] = useState('')
 
   const {
     control,
@@ -65,6 +75,18 @@ export function NewObservationScreen() {
     resolver: zodResolver(observationSchema),
     defaultValues: DEFAULT_VALUES,
   })
+
+  const genderOptions = useMemo(() => [
+    { label: t('genderOptions.male'), value: 'male' },
+    { label: t('genderOptions.female'), value: 'female' },
+    { label: t('genderOptions.unknown'), value: 'unknown' },
+  ], [t])
+
+  const maturationOptions = useMemo(() => [
+    { label: t('maturationOptions.mature'), value: 'mature' },
+    { label: t('maturationOptions.immature'), value: 'immature' },
+    { label: t('maturationOptions.unknown'), value: 'unknown' },
+  ], [t])
 
   useFocusEffect(
     React.useCallback(() => {
@@ -79,18 +101,19 @@ export function NewObservationScreen() {
 
   const onSubmit = async (data: ObservationFormValues) => {
     if (latitude == null || longitude == null) {
-      Alert.alert('Location Required', 'Please capture your GPS location.')
+      Alert.alert(t('alerts.locationRequiredTitle'), t('alerts.locationRequiredBody'))
       return
     }
 
     if (photoUris.length === 0) {
-      Alert.alert('Photos Required', 'Please add at least one photo.')
+      Alert.alert(t('alerts.photosRequiredTitle'), t('alerts.photosRequiredBody'))
       return
     }
 
     const payload = {
       ...data,
-      bw: data.bw ?? null,
+      cw: parseFloat(sanitizeDecimalInput(rawCW)) || 0,
+      bw: rawBW === '' ? null : parseFloat(sanitizeDecimalInput(rawBW)) || null,
       lat: latitude,
       lng: longitude,
       locationMethod: (manualLocation ? 'manual' : 'gps') as 'manual' | 'gps',
@@ -100,11 +123,13 @@ export function NewObservationScreen() {
     const result = await submitObservation(payload)
 
     if (result) {
-      Alert.alert('Success', 'Observation submitted for review!', [
+      Alert.alert(t('alerts.successTitle'), t('alerts.successBody'), [
         {
-          text: 'OK',
+          text: t('ok'),
           onPress: () => {
             reset(DEFAULT_VALUES)
+            setRawCW('')
+            setRawBW('')
             setPhotoUris([])
             setLatitude(null)
             setLongitude(null)
@@ -114,8 +139,8 @@ export function NewObservationScreen() {
       ])
     } else {
       Alert.alert(
-        'Offline Queued',
-        'No network connection. Observation saved locally and will sync later.'
+        t('alerts.offlineQueuedTitle'),
+        t('alerts.offlineQueuedBody')
       )
     }
   }
@@ -133,20 +158,20 @@ export function NewObservationScreen() {
           {pendingCount > 0 && (
             <View style={styles.offlineBanner}>
               <Text style={styles.offlineText}>
-                {pendingCount} observation{pendingCount > 1 ? 's' : ''} queued offline
+                {t('offlineQueued', { count: pendingCount })}
               </Text>
             </View>
           )}
 
-          <Text style={styles.sectionTitle}>Species</Text>
+          <Text style={styles.sectionTitle}>{t('sections.species')}</Text>
           <Controller
             control={control}
             name="speciesId"
             render={({ field: { onChange, value } }) => (
               <PickerWithAlert
-                label="Species"
+                label={t('fields.species')}
                 options={[
-                  { label: 'Select species...', value: '' },
+                  { label: t('fields.selectSpecies'), value: '' },
                   ...species.map((s) => ({
                     label: `${s.commonName} (${s.scientificName})`,
                     value: s.id,
@@ -159,18 +184,25 @@ export function NewObservationScreen() {
             )}
           />
 
-          <Text style={styles.sectionTitle}>Measurements</Text>
+          <Text style={styles.sectionTitle}>{t('sections.measurements')}</Text>
           <Controller
             control={control}
             name="cw"
-            render={({ field: { onChange, onBlur, value } }) => (
+            render={({ field: { onChange, onBlur } }) => (
               <Input
-                label={`Carapace Width (cm, max ${CW_MAX})`}
-                placeholder="e.g. 8.5"
+                label={t('fields.cwLabel', { max: CW_MAX })}
+                placeholder={t('fields.cwPlaceholder')}
                 keyboardType="decimal-pad"
-                value={value?.toString() || ''}
-                onBlur={onBlur}
-                onChangeText={(v) => onChange(parseFloat(v) || 0)}
+                value={rawCW}
+                onBlur={() => {
+                  onChange(parseFloat(sanitizeDecimalInput(rawCW)) || 0)
+                  onBlur()
+                }}
+                onChangeText={(v) => {
+                  const sanitized = sanitizeDecimalInput(v)
+                  setRawCW(sanitized)
+                  onChange(parseFloat(sanitized) || 0)
+                }}
                 error={errors.cw?.message}
               />
             )}
@@ -179,27 +211,35 @@ export function NewObservationScreen() {
           <Controller
             control={control}
             name="bw"
-            render={({ field: { onChange, onBlur, value } }) => (
+            render={({ field: { onChange, onBlur } }) => (
               <Input
-                label={`Body Weight (g, max ${BW_MAX})`}
-                placeholder="e.g. 350"
+                label={t('fields.bwLabel', { max: BW_MAX })}
+                placeholder={t('fields.bwPlaceholder')}
                 keyboardType="decimal-pad"
-                value={value?.toString() || ''}
-                onBlur={onBlur}
-                onChangeText={(v) => onChange(parseFloat(v) || 0)}
+                value={rawBW}
+                onBlur={() => {
+                  const sanitized = sanitizeDecimalInput(rawBW)
+                  onChange(sanitized === '' ? undefined : parseFloat(sanitized) || 0)
+                  onBlur()
+                }}
+                onChangeText={(v) => {
+                  const sanitized = sanitizeDecimalInput(v)
+                  setRawBW(sanitized)
+                  onChange(sanitized === '' ? undefined : parseFloat(sanitized) || 0)
+                }}
                 error={errors.bw?.message}
               />
             )}
           />
 
-          <Text style={styles.sectionTitle}>Biological Data</Text>
+          <Text style={styles.sectionTitle}>{t('sections.biologicalData')}</Text>
           <Controller
             control={control}
              name="gender"
             render={({ field: { onChange, value } }) => (
               <PickerWithAlert
-               label="Gender"
-                  options={GENDER_OPTIONS}
+                label={t('fields.gender')}
+                   options={genderOptions}
                 selectedValue={value}
                 onValueChange={onChange}
                 error={errors.gender?.message}
@@ -212,8 +252,8 @@ export function NewObservationScreen() {
             name="maturationStatus"
             render={({ field: { onChange, value } }) => (
               <PickerWithAlert
-                label="Maturation Status"
-                options={MATURATION_OPTIONS}
+                label={t('fields.maturationStatus')}
+                options={maturationOptions}
                 selectedValue={value}
                 onValueChange={onChange}
                 error={errors.maturationStatus?.message}
@@ -221,7 +261,7 @@ export function NewObservationScreen() {
             )}
           />
 
-          <Text style={styles.sectionTitle}>Location</Text>
+          <Text style={styles.sectionTitle}>{t('sections.location')}</Text>
           <GPSCapture
             latitude={latitude}
             longitude={longitude}
@@ -230,7 +270,7 @@ export function NewObservationScreen() {
             onManualToggle={() => setManualLocation((v) => !v)}
           />
 
-          <Text style={styles.sectionTitle}>Photos</Text>
+          <Text style={styles.sectionTitle}>{t('sections.photos')}</Text>
           <PhotoPicker
             photos={photoUris}
             onAdd={(uris) => setPhotoUris((prev) => [...prev, ...uris])}
@@ -239,13 +279,13 @@ export function NewObservationScreen() {
             }
           />
 
-          <Text style={styles.sectionTitle}>Notes (Optional)</Text>
+          <Text style={styles.sectionTitle}>{t('sections.notes')}</Text>
           <Controller
             control={control}
             name="notes"
             render={({ field: { onChange, onBlur, value } }) => (
               <Input
-                placeholder="Add any additional notes..."
+                placeholder={t('fields.notesPlaceholder')}
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
@@ -265,7 +305,7 @@ export function NewObservationScreen() {
           )}
 
           <Button
-            title="Submit Observation"
+            title={t('submit')}
             loading={submitting}
             onPress={handleSubmit(onSubmit)}
             style={styles.submitBtn}

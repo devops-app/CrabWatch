@@ -1,4 +1,8 @@
+import createNextIntlPlugin from 'next-intl/plugin'
+
 const isDev = process.env.NODE_ENV !== 'production'
+
+const withNextIntl = createNextIntlPlugin('./i18n.ts')
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -50,4 +54,4 @@ const nextConfig = {
   },
 }
 
-export default nextConfig
+export default withNextIntl(nextConfig)

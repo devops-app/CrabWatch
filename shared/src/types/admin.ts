@@ -69,7 +69,7 @@ export interface CampaignCreateInput {
   name: string
   channel: string
   audienceFilter: Record<string, unknown>
-  content: { title: string; body: string; payload?: Record<string, unknown> }
+  content: { title: string; body: string; payload?: Record<string, unknown> } | Record<string, { title: string; body: string; payload?: Record<string, unknown> }>
   scheduleAt?: string
 }
 
@@ -83,4 +83,42 @@ export interface AdminManualAwardRequest {
   userId: string
   achievementId: string
   reason: string
+}
+
+// Translation CRUD
+export interface TranslationDto {
+  id: string
+  locale: string
+  resourceType: string
+  resourceId: string
+  field: string
+  value: string
+  createdBy: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateTranslationInput {
+  locale: string
+  resourceType: string
+  resourceId: string
+  field: string
+  value: string
+}
+
+export interface UpdateTranslationInput {
+  value: string
+}
+
+export interface BulkCreateTranslationInput {
+  translations: CreateTranslationInput[]
+}
+
+export interface TranslationListFilters {
+  locale?: string
+  resourceType?: string
+  resourceId?: string
+  field?: string
+  page?: number
+  limit?: number
 }

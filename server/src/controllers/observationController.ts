@@ -14,6 +14,7 @@ import { checkAndAwardAchievements } from '../services/achievementService'
 import { sendNotification } from '../services/notificationService'
 import { getPrisma, getConfig } from '../services/container'
 import { asyncHandler, NotFoundError, ForbiddenError, ValidationError } from '../utils/errors'
+import { createTranslator, detectLocale } from '../middleware/i18n'
 
 type DbUser = { id: string; role: string; email: string }
 
@@ -99,6 +100,7 @@ export const createObservation = asyncHandler(async (req: AuthRequest, res: Resp
   if (cfg.engagement.enabled) {
     const userId = dbUser.id
     const obsId = observation.id
+    const locale = detectLocale(req)
 
     incrementSubmissions(userId).catch(() => {})
 
@@ -108,6 +110,7 @@ export const createObservation = asyncHandler(async (req: AuthRequest, res: Resp
       sourceType: 'Observation',
       sourceId: obsId,
       idempotencyKey: generateIdempotencyKey(userId, 'OBSERVATION_SUBMIT', obsId),
+      locale,
     }).catch(() => {})
 
     if (await isFirstObservation(userId)) {
@@ -118,6 +121,7 @@ export const createObservation = asyncHandler(async (req: AuthRequest, res: Resp
         sourceId: obsId,
         reason: 'First observation bonus',
         idempotencyKey: generateIdempotencyKey(userId, 'FIRST_OBSERVATION', 'once'),
+        locale,
       }).catch(() => {})
 
       if (cfg.engagement.missionsEnabled) {
@@ -153,13 +157,14 @@ export const createObservation = asyncHandler(async (req: AuthRequest, res: Resp
         sourceId: obsId,
         reason: `New species: ${speciesId}`,
         idempotencyKey: generateIdempotencyKey(userId, 'NEW_SPECIES', speciesId),
+        locale,
       }).catch(() => {})
     }
 
-    updateStreak(userId).catch(() => {})
+    updateStreak(userId, locale).catch(() => {})
 
     if (cfg.engagement.enabled) {
-      checkAndAwardAchievements(userId).catch(() => {})
+      checkAndAwardAchievements(userId, locale).catch(() => {})
     }
 
     if (cfg.engagement.missionsEnabled) {
@@ -249,6 +254,7 @@ export const listObservations = asyncHandler(async (req: AuthRequest, res: Respo
 })
 
 export const getObservation = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const __ = createTranslator(req)
   const { id } = req.params
   const dbUser = getDbUser(req)
 
@@ -259,11 +265,11 @@ export const getObservation = asyncHandler(async (req: AuthRequest, res: Respons
   })
 
   if (!observation) {
-    throw new NotFoundError('Observation not found')
+    throw new NotFoundError(__('observation.notFound', 'observation'))
   }
 
   if (dbUser.role === 'USER' && observation.userId !== dbUser.id) {
-    throw new ForbiddenError('Access denied')
+    throw new ForbiddenError(__('common.auth.insufficientPermissions', 'common'))
   }
 
   res.json({ success: true, data: await formatObservation(observation) })
@@ -291,6 +297,7 @@ export const validateObservation = asyncHandler(async (req: AuthRequest, res: Re
   const cfg = getConfig()
   if (cfg.engagement.enabled && normalizedStatus === 'approved') {
     const authorId = observation.userId
+    const locale = detectLocale(req)
 
     awardXP({
       userId: authorId,
@@ -299,6 +306,7 @@ export const validateObservation = asyncHandler(async (req: AuthRequest, res: Re
       sourceId: id,
       reason: 'Observation approved by researcher',
       idempotencyKey: generateIdempotencyKey(authorId, 'OBSERVATION_APPROVED', id),
+      locale,
     }).catch(() => {})
 
     incrementApproved(authorId).catch(() => {})
@@ -310,11 +318,12 @@ export const validateObservation = asyncHandler(async (req: AuthRequest, res: Re
       sourceId: id,
       reason: 'Validated observation',
       idempotencyKey: generateIdempotencyKey(dbUser.id, 'VALIDATION', id),
+      locale,
     }).catch(() => {})
 
     if (cfg.engagement.enabled) {
-      checkAndAwardAchievements(authorId).catch(() => {})
-      checkAndAwardAchievements(dbUser.id).catch(() => {})
+      checkAndAwardAchievements(authorId, locale).catch(() => {})
+      checkAndAwardAchievements(dbUser.id, locale).catch(() => {})
     }
 
     if (cfg.engagement.missionsEnabled) {

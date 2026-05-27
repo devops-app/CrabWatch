@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, Text, StyleSheet, Dimensions } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { useTranslation } from 'react-i18next'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 
@@ -15,36 +16,38 @@ interface PhotoGuidanceOverlayProps {
 }
 
 export function PhotoGuidanceOverlay({ viewType, coinSelected, onCoinTap }: PhotoGuidanceOverlayProps) {
+  const { t } = useTranslation('capture')
+
   const getViewInstructions = () => {
     switch (viewType) {
       case 'dorsal':
         return {
-          title: 'Dorsal View (Top)',
+          title: t('photoGuidance.dorsal.title'),
           steps: [
-            'Place crab on flat surface, shell facing up',
-            'Position coin beside the crab',
-            'Hold phone directly above crab',
-            'Keep crab centered in frame',
+            t('photoGuidance.dorsal.step1'),
+            t('photoGuidance.dorsal.step2'),
+            t('photoGuidance.dorsal.step3'),
+            t('photoGuidance.dorsal.step4'),
           ],
         }
       case 'ventral':
         return {
-          title: 'Ventral View (Underside)',
+          title: t('photoGuidance.ventral.title'),
           steps: [
-            'Gently flip crab onto its back',
-            'Keep coin in same position',
-            'Photograph the underside',
-            'Look for abdomen shape (gender ID)',
+            t('photoGuidance.ventral.step1'),
+            t('photoGuidance.ventral.step2'),
+            t('photoGuidance.ventral.step3'),
+            t('photoGuidance.ventral.step4'),
           ],
         }
       case 'carapace-closeup':
         return {
-          title: 'Shell Close-up',
+          title: t('photoGuidance.closeup.title'),
           steps: [
-            'Zoom in on the carapace (shell)',
-            'Focus on shell pattern & texture',
-            'Good lighting helps species ID',
-            'Coin not required for this shot',
+            t('photoGuidance.closeup.step1'),
+            t('photoGuidance.closeup.step2'),
+            t('photoGuidance.closeup.step3'),
+            t('photoGuidance.closeup.step4'),
           ],
         }
     }
@@ -85,7 +88,7 @@ export function PhotoGuidanceOverlay({ viewType, coinSelected, onCoinTap }: Phot
               color={coinSelected ? COLORS.success : COLORS.warning}
             />
             <Text style={styles.coinZoneText}>
-              {coinSelected ? 'Coin ✓' : 'Coin here'}
+              {coinSelected ? t('photoGuidance.coinSelected') : t('photoGuidance.coinHere')}
             </Text>
           </View>
         )}
@@ -95,15 +98,15 @@ export function PhotoGuidanceOverlay({ viewType, coinSelected, onCoinTap }: Phot
         <View style={styles.tipsRow}>
           <View style={styles.tipItem}>
             <Ionicons name="flash" size={16} color={COLORS.accent} />
-            <Text style={styles.tipText}>Good light</Text>
+            <Text style={styles.tipText}>{t('photoGuidance.tipLight')}</Text>
           </View>
           <View style={styles.tipItem}>
             <Ionicons name="resize" size={16} color={COLORS.primary} />
-            <Text style={styles.tipText}>Hold steady</Text>
+            <Text style={styles.tipText}>{t('photoGuidance.tipSteady')}</Text>
           </View>
           <View style={styles.tipItem}>
             <Ionicons name="eye" size={16} color={COLORS.secondary} />
-            <Text style={styles.tipText}>Fill frame</Text>
+            <Text style={styles.tipText}>{t('photoGuidance.tipFrame')}</Text>
           </View>
         </View>
       </View>

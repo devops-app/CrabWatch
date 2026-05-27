@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../hooks/useAuth'
 import { api } from '../../services/api'
 import { Card } from '../../components/common/Card'
@@ -33,6 +34,7 @@ interface SectionData {
 }
 
 export function HomeScreen() {
+  const { t } = useTranslation()
   const tabNav = useNavigation<TabNavigation>()
   const { user } = useAuth()
 
@@ -73,14 +75,16 @@ export function HomeScreen() {
     return items
   }, [stats])
 
+  const firstName = user?.name?.split(' ')[0] || t('home.contributor')
+
   const renderHeader = useCallback(() => (
     <>
       <View style={styles.header}>
         <Text style={styles.greeting}>
-          Welcome, {user?.name?.split(' ')[0] || 'Contributor'}
+          {t('home.greeting', { name: firstName })}
         </Text>
         <Text style={styles.subheader}>
-          Track crab populations across Malaysia
+          {t('home.subtitle')}
         </Text>
       </View>
 
@@ -88,28 +92,28 @@ export function HomeScreen() {
         <View style={styles.statsGrid}>
           <StatCard
             icon="fish"
-            label="Observations"
+            label={t('home.stats.observations')}
             value={stats.totalObservations}
           />
           <StatCard
             icon="checkmark-circle"
-            label="Approved"
+            label={t('home.stats.approved')}
             value={stats.approvedObservations}
           />
           <StatCard
             icon="earth"
-            label="Species"
+            label={t('home.stats.species')}
             value={stats.totalSpecies}
           />
           <StatCard
             icon="people"
-            label="Contributors"
+            label={t('home.stats.contributors')}
             value={stats.totalContributors}
           />
         </View>
       )}
     </>
-  ), [user, stats])
+  ), [user, stats, t, firstName])
 
   const renderSection = useCallback(({ item }: ListRenderItemInfo<SectionData>) => {
     switch (item.type) {
@@ -117,14 +121,14 @@ export function HomeScreen() {
         return (
           <Card padding={20}>
             <View style={styles.quickActions}>
-              <Text style={styles.sectionTitle}>Quick Actions</Text>
+              <Text style={styles.sectionTitle}>{t('home.quickActions')}</Text>
               <TouchableOpacity style={styles.actionBtn} onPress={() => tabNav.navigate('New')}>
                 <Ionicons name="add-circle" size={22} color={COLORS.primary} />
-                <Text style={styles.actionText}>New Observation</Text>
+                <Text style={styles.actionText}>{t('home.newObservation')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionBtn} onPress={() => tabNav.navigate('Analytics')}>
                 <Ionicons name="analytics" size={22} color={COLORS.secondary} />
-                <Text style={styles.actionText}>Analytics</Text>
+                <Text style={styles.actionText}>{t('home.analytics')}</Text>
               </TouchableOpacity>
             </View>
           </Card>
@@ -134,18 +138,18 @@ export function HomeScreen() {
         return (
           <Card padding={20}>
             <View style={styles.quickActions}>
-              <Text style={styles.sectionTitle}>Gamification</Text>
+              <Text style={styles.sectionTitle}>{t('home.gamification')}</Text>
               <TouchableOpacity style={styles.actionBtn} onPress={() => navigateToGamification('Leaderboard')}>
                 <Ionicons name="trophy" size={22} color={COLORS.accent} />
-                <Text style={styles.actionText}>Leaderboard</Text>
+                <Text style={styles.actionText}>{t('home.leaderboard')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionBtn} onPress={() => navigateToGamification('Missions')}>
                 <Ionicons name="shield-checkmark" size={22} color={COLORS.success} />
-                <Text style={styles.actionText}>Missions</Text>
+                <Text style={styles.actionText}>{t('home.missions')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionBtn} onPress={() => navigateToGamification('Achievements')}>
                 <Ionicons name="ribbon" size={22} color={COLORS.primary} />
-                <Text style={styles.actionText}>Achievements</Text>
+                <Text style={styles.actionText}>{t('home.achievements')}</Text>
               </TouchableOpacity>
             </View>
           </Card>
@@ -156,18 +160,15 @@ export function HomeScreen() {
           <Card padding={20}>
             <View style={styles.mission}>
               <Ionicons name="information-circle" size={24} color={COLORS.primary} />
-              <Text style={styles.missionTitle}>About CrabWatch</Text>
+              <Text style={styles.missionTitle}>{t('home.about')}</Text>
               <Text style={styles.missionText}>
-                CrabWatch is a citizen science platform helping to conserve
-                crab populations in Malaysia. Your observations help
-                researchers understand population health and inform
-                conservation policies.
+                {t('home.aboutText')}
               </Text>
             </View>
           </Card>
         )
     }
-  }, [tabNav])
+  }, [tabNav, t])
 
   if (loading && !stats) {
     return <LoadingSpinner fullScreen />

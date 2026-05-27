@@ -2,19 +2,21 @@ import { Response } from 'express'
 import { AuthRequest } from '../middleware/auth'
 import { getPrisma, getConfig } from '../services/container'
 import { asyncHandler, UnauthorizedError, ValidationError, NotFoundError } from '../utils/errors'
+import { createTranslator } from '../middleware/i18n'
 
 // ==================== ONBOARDING ====================
 
 export const getOnboardingStatus = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const __ = createTranslator(req)
   const cfg = getConfig()
   if (!cfg.engagement.missionsEnabled) {
-    res.status(501).json({ success: false, error: 'Missions not enabled' })
+    res.status(501).json({ success: false, error: __('engagement.missionsNotEnabled', 'engagement') })
     return
   }
 
   const userId = req.dbUser?.id
   if (!userId) {
-    throw new UnauthorizedError('Authentication required')
+    throw new UnauthorizedError(__('common.auth.required', 'common'))
   }
 
   const db = getPrisma()
@@ -61,20 +63,21 @@ export const getOnboardingStatus = asyncHandler(async (req: AuthRequest, res: Re
 })
 
 export const completeOnboardingStep = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const __ = createTranslator(req)
   const cfg = getConfig()
   if (!cfg.engagement.missionsEnabled) {
-    res.status(501).json({ success: false, error: 'Missions not enabled' })
+    res.status(501).json({ success: false, error: __('engagement.missionsNotEnabled', 'engagement') })
     return
   }
 
   const userId = req.dbUser?.id
   if (!userId) {
-    throw new UnauthorizedError('Authentication required')
+    throw new UnauthorizedError(__('common.auth.required', 'common'))
   }
 
   const { step: stepKey } = req.body
   if (!stepKey) {
-    throw new ValidationError('Step is required')
+    throw new ValidationError(__('engagement.onboarding.stepRequired', 'engagement'))
   }
 
   const db = getPrisma()
@@ -93,7 +96,7 @@ export const completeOnboardingStep = asyncHandler(async (req: AuthRequest, res:
   }
 
   if (!matchedFlow) {
-    throw new NotFoundError('Onboarding step not found')
+    throw new NotFoundError(__('engagement.onboarding.stepNotFound', 'engagement'))
   }
 
   const progress = await db.onboardingProgress.upsert({
@@ -125,15 +128,16 @@ export const completeOnboardingStep = asyncHandler(async (req: AuthRequest, res:
 // ==================== MISSIONS ====================
 
 export const getActiveMissions = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const __ = createTranslator(req)
   const cfg = getConfig()
   if (!cfg.engagement.missionsEnabled) {
-    res.status(501).json({ success: false, error: 'Missions not enabled' })
+    res.status(501).json({ success: false, error: __('engagement.missionsNotEnabled', 'engagement') })
     return
   }
 
   const userId = req.dbUser?.id
   if (!userId) {
-    throw new UnauthorizedError('Authentication required')
+    throw new UnauthorizedError(__('common.auth.required', 'common'))
   }
 
   const db = getPrisma()
@@ -180,20 +184,21 @@ export const getActiveMissions = asyncHandler(async (req: AuthRequest, res: Resp
 })
 
 export const claimMission = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const __ = createTranslator(req)
   const cfg = getConfig()
   if (!cfg.engagement.missionsEnabled) {
-    res.status(501).json({ success: false, error: 'Missions not enabled' })
+    res.status(501).json({ success: false, error: __('engagement.missionsNotEnabled', 'engagement') })
     return
   }
 
   const userId = req.dbUser?.id
   if (!userId) {
-    throw new UnauthorizedError('Authentication required')
+    throw new UnauthorizedError(__('common.auth.required', 'common'))
   }
 
   const { missionCode } = req.body
   if (!missionCode) {
-    throw new ValidationError('Mission code is required')
+    throw new ValidationError(__('engagement.mission.codeRequired', 'engagement'))
   }
 
   const db = getPrisma()
@@ -202,7 +207,7 @@ export const claimMission = asyncHandler(async (req: AuthRequest, res: Response)
   })
 
   if (!mission) {
-    throw new NotFoundError('Mission not found')
+    throw new NotFoundError(__('engagement.mission.notFound', 'engagement'))
   }
 
   const now = new Date()
@@ -236,20 +241,21 @@ export const claimMission = asyncHandler(async (req: AuthRequest, res: Response)
 })
 
 export const updateMissionProgress = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const __ = createTranslator(req)
   const cfg = getConfig()
   if (!cfg.engagement.missionsEnabled) {
-    res.status(501).json({ success: false, error: 'Missions not enabled' })
+    res.status(501).json({ success: false, error: __('engagement.missionsNotEnabled', 'engagement') })
     return
   }
 
   const userId = req.dbUser?.id
   if (!userId) {
-    throw new UnauthorizedError('Authentication required')
+    throw new UnauthorizedError(__('common.auth.required', 'common'))
   }
 
   const { missionCode, increment } = req.body
   if (!missionCode) {
-    throw new ValidationError('Mission code is required')
+    throw new ValidationError(__('engagement.mission.codeRequired', 'engagement'))
   }
 
   const now = new Date()
@@ -261,7 +267,7 @@ export const updateMissionProgress = asyncHandler(async (req: AuthRequest, res: 
   })
 
   if (!mission) {
-    throw new NotFoundError('Mission not found')
+    throw new NotFoundError(__('engagement.mission.notFound', 'engagement'))
   }
 
   const criteria = (mission.criteria as any[]) || []

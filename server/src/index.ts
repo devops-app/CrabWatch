@@ -1,6 +1,12 @@
-// Application Insights auto-instrumentation (MUST be first import)
-import { useAzureMonitor } from '@azure/monitor-opentelemetry'
-useAzureMonitor()
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { useAzureMonitor } = require('@azure/monitor-opentelemetry') as {
+    useAzureMonitor: () => void
+  }
+  useAzureMonitor()
+} catch (err) {
+  console.warn('[STARTUP] Azure Monitor auto-instrumentation disabled:', err)
+}
 
 import express from 'express'
 import cors from 'cors'
@@ -32,6 +38,7 @@ import prisma from './config/database'
 import { createContainer } from './services/container'
 import admin from './config/firebase'
 import { getBlobService } from './services/upload'
+import { initServerI18n } from './config/i18n'
 
 // Initialize DI container before any services are used
 createContainer(prisma, config, admin, getBlobService)
@@ -193,6 +200,14 @@ function scheduleJob(fn: () => Promise<any>, name: string, getNextRun: () => Dat
 const server = app.listen(config.port, config.host, async () => {
   console.log(`CrabWatch API running on http://${config.host}:${config.port}`)
   console.log(`Environment: ${config.nodeEnv}`)
+
+  // Initialize server i18n
+  try {
+    await initServerI18n()
+    console.log('[STARTUP] Server i18n initialized')
+  } catch (err) {
+    console.error('[STARTUP] Failed to initialize server i18n:', err)
+  }
 
   // Seed engagement defaults (idempotent)
   if (process.env.SEED_ENGAGEMENT_ON_STARTUP !== 'false') {

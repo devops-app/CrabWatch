@@ -8,8 +8,9 @@ import {
   downloadBackup,
 } from '../controllers/adminController'
 import { createInvite, listInvites, validateInvite } from '../controllers/inviteController'
+import * as translationCtrl from '../controllers/translationController'
 import { authMiddleware, requireAuth, resolveUser, requireRole } from '../middleware/auth'
-import { createInviteSchema, validateInviteSchema } from '../utils/schemas'
+import { createInviteSchema, validateInviteSchema, createTranslationSchema, updateTranslationSchema, bulkCreateTranslationSchema } from '../utils/schemas'
 import { validate } from '../middleware/validation'
 
 const router: Router = Router()
@@ -180,5 +181,15 @@ router.post('/invite', requireAuth, resolveUser, requireRole('ADMIN'), validate(
  *         description: List of invites
  */
 router.get('/invites', requireAuth, resolveUser, requireRole('ADMIN'), listInvites)
+
+// Translation CRUD
+router.get('/translations/models', requireAuth, resolveUser, requireRole('ADMIN'), translationCtrl.getTranslatableModels)
+router.get('/translations', requireAuth, resolveUser, requireRole('ADMIN'), translationCtrl.listTranslations)
+router.get('/translations/:id', requireAuth, resolveUser, requireRole('ADMIN'), translationCtrl.getTranslationById)
+router.post('/translations', requireAuth, resolveUser, requireRole('ADMIN'), validate(createTranslationSchema), translationCtrl.createTranslation)
+router.post('/translations/bulk', requireAuth, resolveUser, requireRole('ADMIN'), validate(bulkCreateTranslationSchema), translationCtrl.bulkCreateTranslations)
+router.post('/translations/upsert', requireAuth, resolveUser, requireRole('ADMIN'), validate(createTranslationSchema), translationCtrl.upsertTranslation)
+router.patch('/translations/:id', requireAuth, resolveUser, requireRole('ADMIN'), validate(updateTranslationSchema), translationCtrl.updateTranslation)
+router.delete('/translations/:id', requireAuth, resolveUser, requireRole('ADMIN'), translationCtrl.deleteTranslation)
 
 export default router

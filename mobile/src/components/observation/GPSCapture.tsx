@@ -1,11 +1,12 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native'
 import MapView, { Marker as MapMarker } from 'react-native-maps'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocation } from '../../hooks/useLocation'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
-import { formatCoordinates } from '../../utils/formatters'
+import { useFormatters } from '../../hooks/useFormatters'
 
 const MALAYSIA_REGION = {
   latitude: 4.2105,
@@ -29,6 +30,8 @@ export function GPSCapture({
   manualMode = false,
   onManualToggle,
 }: GPSCaptureProps) {
+  const { t } = useTranslation('gps')
+  const { formatCoordinates } = useFormatters()
   const { location, loading, error, hasPermission, refresh } = useLocation()
   const [capturing, setCapturing] = useState(false)
   const mapRef = useRef<MapView | null>(null)
@@ -39,7 +42,7 @@ export function GPSCapture({
     try {
       await refresh()
     } catch {
-      Alert.alert('GPS Error', 'Failed to capture location. Try again or use manual mode.')
+      Alert.alert(t('gpsErrorTitle'), t('gpsErrorMessage'))
     } finally {
       setCapturing(false)
     }
@@ -104,10 +107,10 @@ export function GPSCapture({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.label}>Location</Text>
+        <Text style={styles.label}>{t('label')}</Text>
         <TouchableOpacity onPress={onManualToggle} style={styles.toggle}>
           <Text style={[styles.toggleText, manualMode && styles.toggleActive]}>
-            {manualMode ? 'Manual' : 'GPS Auto'}
+            {manualMode ? t('manual') : t('gpsAuto')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -121,7 +124,7 @@ export function GPSCapture({
 
       {!hasPermission && !error && (
         <TouchableOpacity style={styles.permissionBtn} onPress={refresh}>
-          <Text style={styles.permissionText}>Enable Location Access</Text>
+          <Text style={styles.permissionText}>{t('enableLocation')}</Text>
         </TouchableOpacity>
       )}
 
@@ -140,21 +143,21 @@ export function GPSCapture({
             {latitude != null && longitude != null && (
               <MapMarker
                 coordinate={{ latitude, longitude }}
-                title="Selected Location"
+                title={t('selectedLocation')}
                 description={formatCoordinates(latitude, longitude)}
               />
             )}
           </MapView>
           <TouchableOpacity style={styles.recenterBtn} onPress={handleRecenter}>
             <Ionicons name="locate" size={14} color="#ffffff" />
-            <Text style={styles.recenterText}>Recenter</Text>
+            <Text style={styles.recenterText}>{t('recenter')}</Text>
           </TouchableOpacity>
         </View>
       )}
 
       <View style={styles.coordsBox}>
         {loading || capturing ? (
-          <Text style={styles.coordsText}>Acquiring GPS...</Text>
+          <Text style={styles.coordsText}>{t('acquiring')}</Text>
         ) : latitude != null && longitude != null ? (
           <>
             <Ionicons name="location" size={18} color={COLORS.success} />
@@ -163,12 +166,12 @@ export function GPSCapture({
             </Text>
             {location && !manualMode && (
               <Text style={styles.accuracyText}>
-                Accuracy: {Math.round(location.accuracy)}m
+                {t('accuracy', { accuracy: Math.round(location.accuracy) })}
               </Text>
             )}
           </>
         ) : (
-          <Text style={styles.coordsText}>No location captured</Text>
+          <Text style={styles.coordsText}>{t('noLocation')}</Text>
         )}
       </View>
 
@@ -180,7 +183,7 @@ export function GPSCapture({
         >
           <Ionicons name="locate" size={18} color="#ffffff" />
           <Text style={styles.captureText}>
-            {capturing ? 'Capturing...' : 'Capture Location'}
+            {capturing ? t('capturing') : t('captureLocation')}
           </Text>
         </TouchableOpacity>
       )}

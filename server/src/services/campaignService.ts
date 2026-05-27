@@ -16,8 +16,23 @@ export interface CampaignCreateInput {
   name: string
   channel: string
   audienceFilter: any
-  content: { title: string; body: string; payload?: any }
+  content: { title: string; body: string; payload?: any } | Record<string, { title: string; body: string; payload?: any }>
   scheduleAt?: string
+}
+
+/**
+ * Resolve campaign content for a specific locale.
+ * Supports both legacy format ({ title, body }) and locale-map format
+ * ({ en: { title, body }, ms: { title, body } }).
+ * Falls back to English if the requested locale is not available.
+ */
+function resolveContentForLocale(content: any, locale: string): { title: string; body: string; payload?: any } {
+  if (content.en || content.ms) {
+    const localized = content[locale]
+    if (localized && localized.title) return localized
+    return content.en || { title: '', body: '' }
+  }
+  return { title: content.title || '', body: content.body || '', payload: content.payload }
 }
 
 export async function createCampaign(input: CampaignCreateInput, adminId: string): Promise<any> {
@@ -131,7 +146,7 @@ export async function launchCampaign(id: string, adminId: string): Promise<{ sen
 
   const users = await getPrisma().user.findMany({
     where,
-    select: { id: true, name: true },
+    select: { id: true, name: true, preferredLocale: true },
   })
 
   let sent = 0
@@ -139,15 +154,17 @@ export async function launchCampaign(id: string, adminId: string): Promise<{ sen
 
   for (const user of users) {
     try {
+      const userLocale = user.preferredLocale || 'en'
+      const resolved = resolveContentForLocale(content, userLocale)
       await getPrisma().notificationDelivery.create({
         data: {
           campaignId: campaign.id,
           userId: user.id,
           channel: campaign.channel,
           category: 'campaign',
-          title: content.title,
-          body: content.body,
-          payload: content.payload || null,
+          title: resolved.title,
+          body: resolved.body,
+          payload: resolved.payload || null,
           status: 'SENT',
           sentAt: new Date(),
         },
@@ -208,18 +225,19 @@ export async function sendTestCampaign(
 
   const content = campaign.content as any
 
-  const user = await getPrisma().user.findUnique({ where: { id: userId } })
+  const user = await getPrisma().user.findUnique({ where: { id: userId }, select: { id: true, preferredLocale: true } })
   if (!user) throw new Error('User not found')
 
+  const resolved = resolveContentForLocale(content, user.preferredLocale || 'en')
   await getPrisma().notificationDelivery.create({
     data: {
       campaignId: campaign.id,
       userId,
       channel: campaign.channel,
       category: 'campaign-test',
-      title: content.title,
-      body: content.body,
-      payload: content.payload || null,
+      title: resolved.title,
+      body: resolved.body,
+      payload: resolved.payload || null,
       status: 'SENT',
       sentAt: new Date(),
     },

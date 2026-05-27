@@ -157,6 +157,7 @@ export const api = {
     postcode?: string | null
     country?: string | null
     avatar?: string | null
+    preferredLocale?: 'en' | 'ms' | null
   }) =>
     request<User>('/api/v1/users/me', {
       method: 'PATCH',
@@ -758,4 +759,93 @@ getInsights: (signal?: AbortSignal) => request('/api/v1/engagement/insights/me',
     }).catch(() => {
       /* telemetry failure should never crash the app */
     }),
+
+  // Admin Translations
+  listTranslations: (params?: {
+    locale?: string
+    resourceType?: string
+    resourceId?: string
+    field?: string
+    page?: number
+    limit?: number
+  }) => {
+    const query = new URLSearchParams()
+    if (params?.locale) query.set('locale', params.locale)
+    if (params?.resourceType) query.set('resourceType', params.resourceType)
+    if (params?.resourceId) query.set('resourceId', params.resourceId)
+    if (params?.field) query.set('field', params.field)
+    if (params?.page) query.set('page', params.page.toString())
+    if (params?.limit) query.set('limit', params.limit.toString())
+
+    const token = useAuthStore.getState().token
+    return fetch(`${API_URL}/api/v1/admin/translations${query.toString() ? `?${query}` : ''}`, {
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    }).then(async (response) => {
+      const payload = await response.json() as ApiResponse<unknown> & {
+        pagination?: { page: number; limit: number; total: number; totalPages: number }
+      }
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error || 'Request failed')
+      }
+      return {
+        data: Array.isArray(payload.data) ? payload.data : [],
+        pagination: payload.pagination || { page: params?.page || 1, limit: params?.limit || 50, total: 0, totalPages: 1 },
+      }
+    })
+  },
+  getTranslation: (id: string) =>
+    request(`/api/v1/admin/translations/${id}`),
+  createTranslation: (body: {
+    locale: string
+    resourceType: string
+    resourceId: string
+    field: string
+    value: string
+  }) =>
+    request('/api/v1/admin/translations', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  updateTranslation: (
+    id: string,
+    body: { value: string },
+  ) =>
+    request(`/api/v1/admin/translations/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+  deleteTranslation: (id: string) =>
+    request(`/api/v1/admin/translations/${id}`, {
+      method: 'DELETE',
+    }),
+  bulkCreateTranslations: (body: {
+    translations: {
+      locale: string
+      resourceType: string
+      resourceId: string
+      field: string
+      value: string
+    }[]
+  }) =>
+    request('/api/v1/admin/translations/bulk', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  upsertTranslation: (body: {
+    locale: string
+    resourceType: string
+    resourceId: string
+    field: string
+    value: string
+  }) =>
+    request('/api/v1/admin/translations/upsert', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  getTranslatableModels: () =>
+    request('/api/v1/admin/translations/models'),
 }

@@ -1,5 +1,6 @@
 import React from 'react'
 import { View, Text, StyleSheet, Alert } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 
@@ -15,6 +16,7 @@ interface PickerProps {
   onValueChange: (value: string) => void
   placeholder?: string
   error?: string
+  cancelLabel?: string
 }
 
 export function Picker({
@@ -46,7 +48,9 @@ export function PickerWithAlert({
   onValueChange,
   placeholder = 'Select...',
   error,
+  cancelLabel,
 }: PickerProps) {
+  const { t } = useTranslation('picker')
   const displayValue = options.find((o) => o.value === selectedValue)?.label || placeholder
 
   const handlePress = () => {
@@ -55,7 +59,7 @@ export function PickerWithAlert({
         text: option.label,
         onPress: () => onValueChange(option.value),
       })),
-      { text: 'Cancel', style: 'cancel' },
+      { text: cancelLabel ?? t('cancel'), style: 'cancel' },
     ])
   }
 

@@ -3,6 +3,7 @@ import { BlobSASPermissions } from '@azure/storage-blob'
 import { AuthRequest } from '../middleware/auth'
 import { randomUUID } from 'crypto'
 import { asyncHandler, AppError } from '../utils/errors'
+import { createTranslator } from '../middleware/i18n'
 import { getBlobService } from '../services/upload'
 import { sanitizeInput } from '../utils/sanitize'
 import { buildObservationBlobPath } from '../utils/blobPath'
@@ -21,15 +22,16 @@ interface MulterFile {
 const ALLOWED_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic']
 
 export const getUploadUrlHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const __ = createTranslator(req)
   const { fileName, contentType, sessionId, photoIndex } = req.body
   if (!fileName || !contentType) {
-    throw new AppError('fileName and contentType are required', 400)
+    throw new AppError(__('upload.fileNameContentTypeRequired', 'upload'), 400)
   }
 
   const dbUser = req.dbUser
   const safeContentType = sanitizeInput(contentType, 50)
   if (!ALLOWED_CONTENT_TYPES.includes(safeContentType)) {
-    throw new AppError('Invalid file type. Allowed: JPEG, PNG, WebP', 400)
+    throw new AppError(__('upload.invalidFileType', 'upload'), 400)
   }
 
   const blobPath = sessionId
@@ -58,24 +60,25 @@ export const getUploadUrlHandler = asyncHandler(async (req: AuthRequest, res: Re
 })
 
 export const uploadPhoto = asyncHandler(async (req: AuthRequest & { file?: MulterFile }, res: Response) => {
+  const __ = createTranslator(req)
   const file = req.file
   const fileName = req.body.fileName
   const contentType = req.body.contentType || file?.mimetype
   const { sessionId, photoIndex } = req.body
 
   if (!file || !fileName || !contentType) {
-    throw new AppError('file, fileName, and contentType are required', 400)
+    throw new AppError(__('upload.fileRequired', 'upload'), 400)
   }
 
   const dbUser = req.dbUser
   const safeContentType = sanitizeInput(contentType, 50)
   if (!ALLOWED_CONTENT_TYPES.includes(safeContentType)) {
-    throw new AppError('Invalid file type. Allowed: JPEG, PNG, WebP', 400)
+    throw new AppError(__('upload.invalidFileType', 'upload'), 400)
   }
 
   const fileBuffer = Buffer.isBuffer(file.buffer) ? file.buffer : Buffer.from(file.buffer)
   if (fileBuffer.length > MAX_UPLOAD_SIZE) {
-    throw new AppError(`File too large. Maximum size: ${MAX_UPLOAD_SIZE / 1024 / 1024}MB`, 400)
+    throw new AppError(__('upload.fileTooLarge', 'upload', { maxSize: MAX_UPLOAD_SIZE / 1024 / 1024 }), 400)
   }
 
   const blobPath = sessionId

@@ -9,6 +9,7 @@ import {
   Keyboard,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { useTranslation } from 'react-i18next'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 import { COUNTRIES } from '@crabwatch/shared'
@@ -31,6 +32,7 @@ interface PhoneCodePickerProps {
 }
 
 export function PhoneCodePicker({ label, selectedCode, onSelect, error }: PhoneCodePickerProps) {
+  const { t } = useTranslation('picker')
   const [visible, setVisible] = useState(false)
 
   return (
@@ -45,7 +47,7 @@ export function PhoneCodePicker({ label, selectedCode, onSelect, error }: PhoneC
       >
         <View style={styles.valueRow}>
           <Text style={[styles.value, !selectedCode && styles.placeholder]}>
-            {selectedCode || '+60'}
+            {selectedCode || t('selectCode')}
           </Text>
           <Ionicons name="chevron-down" size={18} color={COLORS.textSecondary} />
         </View>
@@ -65,7 +67,7 @@ export function PhoneCodePicker({ label, selectedCode, onSelect, error }: PhoneC
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Phone Code</Text>
+              <Text style={styles.modalTitle}>{t('phoneCodeTitle')}</Text>
               <TouchableOpacity onPress={() => setVisible(false)}>
                 <Ionicons name="close" size={24} color={COLORS.text} />
               </TouchableOpacity>

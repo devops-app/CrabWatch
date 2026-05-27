@@ -1,5 +1,9 @@
 import { z } from 'zod'
 
+const hasAtMostTwoDecimals = (value: number): boolean => {
+  return Math.abs(value * 100 - Math.round(value * 100)) < 1e-8
+}
+
 export const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
@@ -25,8 +29,15 @@ export const registerSchema = z.object({
 
 export const observationSchema = z.object({
   speciesId: z.string().min(1, 'Please select a species'),
-  cw: z.number().positive('Carapace width must be positive').max(50, 'Maximum carapace width is 50 cm'),
-  bw: z.number().positive('Body weight must be positive').max(5000, 'Maximum body weight is 5000 g').optional(),
+  cw: z.number()
+    .positive('Carapace width must be positive')
+    .max(50, 'Maximum carapace width is 50 cm')
+    .refine(hasAtMostTwoDecimals, 'Carapace width supports up to 2 decimal places'),
+  bw: z.number()
+    .positive('Body weight must be positive')
+    .max(5000, 'Maximum body weight is 5000 g')
+    .refine(hasAtMostTwoDecimals, 'Body weight supports up to 2 decimal places')
+    .optional(),
   gender: z.enum(['male', 'female', 'unknown'], {
     errorMap: () => ({ message: 'Please select the gender' }),
   }),

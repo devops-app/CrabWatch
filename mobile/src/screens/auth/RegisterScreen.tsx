@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigation } from '@react-navigation/native'
+import { useTranslation } from 'react-i18next'
 import { registerSchema, type RegisterFormValues } from '../../utils/validators'
 import { authService } from '../../services/authService'
 import { Input } from '../../components/common/Input'
@@ -28,6 +29,7 @@ import type { AuthStackParamList } from '../../navigation/types'
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>
 
 export function RegisterScreen() {
+  const { t } = useTranslation()
   const navigation = useNavigation<NavigationProp>()
   const [loading, setLoading] = useState(false)
 
@@ -77,8 +79,8 @@ export function RegisterScreen() {
       )
     } catch (err) {
       Alert.alert(
-        'Registration Failed',
-        err instanceof Error ? err.message : 'Could not create account'
+        t('register.registrationFailed'),
+        err instanceof Error ? err.message : t('register.couldNotCreate')
       )
     } finally {
       setLoading(false)
@@ -97,9 +99,9 @@ export function RegisterScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <Text style={styles.title}>Join CrabWatch</Text>
+            <Text style={styles.title}>{t('register.title')}</Text>
             <Text style={styles.subtitle}>
-              Help conserve crabs in Malaysia
+              {t('register.subtitle')}
             </Text>
           </View>
 
@@ -109,8 +111,8 @@ export function RegisterScreen() {
               name="name"
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input
-                  label="Full Name *"
-                  placeholder="Your name"
+                  label={t('register.fullName')}
+                  placeholder={t('register.namePlaceholder')}
                   autoCapitalize="words"
                   textContentType="name"
                   value={value}
@@ -127,8 +129,8 @@ export function RegisterScreen() {
               name="email"
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input
-                  label="Email *"
-                  placeholder="your@email.com"
+                  label={t('register.email')}
+                  placeholder={t('register.emailPlaceholder')}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoComplete="email"
@@ -147,7 +149,7 @@ export function RegisterScreen() {
               name="country"
               render={({ field: { value } }) => (
                 <CountryPicker
-                  label="Country *"
+                  label={t('register.country')}
                   selectedCode={value}
                   onSelect={handleCountrySelect}
                   error={errors.country?.message}
@@ -162,7 +164,7 @@ export function RegisterScreen() {
                     name="phoneCode"
                     render={({ field: { onChange, value } }) => (
                       <PhoneCodePicker
-                        label="Country Code *"
+                        label={t('register.countryCode')}
                         selectedCode={value}
                         onSelect={onChange}
                         error={errors.phoneCode?.message}
@@ -176,8 +178,8 @@ export function RegisterScreen() {
                   name="phoneNumber"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <Input
-                      label="Phone Number *"
-                      placeholder="123456789"
+                      label={t('register.phoneNumber')}
+                      placeholder={t('register.phonePlaceholder')}
                       keyboardType="phone-pad"
                       autoCapitalize="none"
                       textContentType="telephoneNumber"
@@ -197,8 +199,8 @@ export function RegisterScreen() {
               name="addressLine1"
               render={({ field: { onChange, onBlur, value } }) => (
                <Input
-                    label="Address Line 1 *"
-                    placeholder="Street address"
+                    label={t('register.addressLine1')}
+                    placeholder={t('register.addressPlaceholder1')}
                     autoCapitalize="words"
                     textContentType="streetAddressLine1"
                     value={value}
@@ -215,8 +217,8 @@ export function RegisterScreen() {
               name="addressLine2"
               render={({ field: { onChange, onBlur, value } }) => (
               <Input
-                    label="Address Line 2 (optional)"
-                    placeholder="Apartment, suite, etc."
+                    label={t('register.addressLine2')}
+                    placeholder={t('register.addressPlaceholder2')}
                     autoCapitalize="words"
                     textContentType="streetAddressLine2"
                     value={value}
@@ -233,8 +235,8 @@ export function RegisterScreen() {
               name="addressLine3"
               render={({ field: { onChange, onBlur, value } }) => (
              <Input
-                    label="Address Line 3 (optional)"
-                    placeholder="Additional address info"
+                    label={t('register.addressLine3')}
+                    placeholder={t('register.addressPlaceholder3')}
                     autoCapitalize="words"
                     textContentType="streetAddressLine1"
                     value={value}
@@ -253,8 +255,8 @@ export function RegisterScreen() {
                   name="state"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <Input
-                      label="State *"
-                      placeholder="State"
+                      label={t('register.state')}
+                      placeholder={t('register.statePlaceholder')}
                       autoCapitalize="words"
                       textContentType="addressState"
                       value={value}
@@ -272,8 +274,8 @@ export function RegisterScreen() {
                   name="postcode"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <Input
-                      label="Postcode *"
-                      placeholder="Postcode"
+                      label={t('register.postcode')}
+                      placeholder={t('register.postcodePlaceholder')}
                       keyboardType="number-pad"
                       textContentType="postalCode"
                       value={value}
@@ -292,8 +294,8 @@ export function RegisterScreen() {
               name="password"
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input
-                  label="Password *"
-                  placeholder="At least 8 characters"
+                  label={t('register.password')}
+                  placeholder={t('register.passwordPlaceholder')}
                   secureTextEntry
                   textContentType="newPassword"
                   value={value}
@@ -310,8 +312,8 @@ export function RegisterScreen() {
               name="confirmPassword"
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input
-                  label="Confirm Password *"
-                  placeholder="Re-enter your password"
+                  label={t('register.confirmPassword')}
+                  placeholder={t('register.confirmPlaceholder')}
                   secureTextEntry
                   textContentType="newPassword"
                   value={value}
@@ -324,16 +326,16 @@ export function RegisterScreen() {
             />
 
             <Button
-              title="Create Account"
+              title={t('register.createAccount')}
               loading={loading}
               onPress={handleSubmit(onSubmit)}
               style={styles.submitBtn}
             />
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>Already have an account? </Text>
+              <Text style={styles.footerText}>{t('register.hasAccount')} </Text>
               <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                <Text style={styles.linkText}>Sign in</Text>
+                <Text style={styles.linkText}>{t('register.signIn')}</Text>
               </TouchableOpacity>
             </View>
           </View>

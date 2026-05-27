@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { View, Text, StyleSheet, Dimensions, Animated } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { useTranslation } from 'react-i18next'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
+import type { CaptureMessageKey } from '../../hooks/useCaptureAssistance'
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
 const FRAME_WIDTH = SCREEN_WIDTH * 0.72
@@ -16,7 +18,7 @@ interface CaptureFrameOverlayProps {
   shakeLevel: 'none' | 'slight' | 'heavy'
   brightnessLevel: 'dark' | 'low' | 'good' | 'bright'
   isFocused: boolean
-  messages: string[]
+  messages: CaptureMessageKey[]
 }
 
 export function CaptureFrameOverlay({
@@ -27,6 +29,7 @@ export function CaptureFrameOverlay({
   isFocused,
   messages,
 }: CaptureFrameOverlayProps) {
+  const { t } = useTranslation('capture')
   const cornerAnim = useState(new Animated.Value(0))[0]
   const [pulseKey, setPulseKey] = useState(0)
 
@@ -56,20 +59,20 @@ export function CaptureFrameOverlay({
       case 'dorsal':
         return {
           icon: 'eye-outline',
-          title: 'Dorsal View',
-          hint: 'Center crab + coin in the frame',
+          title: t('steps.dorsal.label'),
+          hint: t('overlayHints.dorsal'),
         }
       case 'ventral':
         return {
           icon: 'swap-horizontal-outline',
-          title: 'Ventral View',
-          hint: 'Show the underside clearly',
+          title: t('steps.ventral.label'),
+          hint: t('overlayHints.ventral'),
         }
       case 'carapace-closeup':
         return {
           icon: 'expand-outline',
-          title: 'Shell Close-up',
-          hint: 'Zoom in on shell pattern',
+          title: t('steps.closeup.label'),
+          hint: t('overlayHints.closeup'),
         }
     }
   }
@@ -179,9 +182,9 @@ export function CaptureFrameOverlay({
       {messages.length > 0 && (
         <View style={styles.warningsContainer} key={pulseKey}>
           {messages.map((msg, i) => {
-            const isWarning = msg.includes('Hold') || msg.includes('steadier') || msg.includes('movement')
-            const isDark = msg.includes('dark')
-            const isLow = msg.includes('low')
+            const isWarning = msg === 'holdStill' || msg === 'holdSteadier'
+            const isDark = msg === 'lightingTooDark'
+            const isLow = msg === 'lightingLow'
             const iconColor = isWarning ? '#f59e0b' : isDark || isLow ? '#f97316' : COLORS.success
             const iconName = isWarning
               ? 'warning'
@@ -194,7 +197,7 @@ export function CaptureFrameOverlay({
             return (
               <View key={i} style={styles.warningChip}>
                 <Ionicons name={iconName as any} size={14} color={iconColor} />
-                <Text style={styles.warningText}>{msg}</Text>
+                <Text style={styles.warningText}>{t(`assistMessages.${msg}`)}</Text>
               </View>
             )
           })}
@@ -220,7 +223,7 @@ export function CaptureFrameOverlay({
           color="#ffffff"
         />
         <Text style={styles.readinessText}>
-          {isReady ? 'Ready' : shakeLevel === 'heavy' ? 'Hold Still' : 'Align'}
+          {isReady ? t('overlayStatus.ready') : shakeLevel === 'heavy' ? t('overlayStatus.holdStill') : t('overlayStatus.align')}
         </Text>
       </View>
 

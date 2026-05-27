@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   View,
   Text,
@@ -23,6 +24,7 @@ import type { RootStackParamList } from '../../navigation/types'
 type SpeciesDetailRouteProp = RouteProp<RootStackParamList, 'SpeciesDetail'>
 
 export function SpeciesDetailScreen() {
+  const { t } = useTranslation('speciesDetail')
   const route = useRoute<SpeciesDetailRouteProp>()
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
   const { speciesId } = route.params
@@ -52,9 +54,9 @@ export function SpeciesDetailScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.empty}>
-          <Text>Species not found</Text>
+          <Text>{t('notFound')}</Text>
           <Button
-            title="Go Back"
+            title={t('goBack')}
             variant="secondary"
             onPress={() => navigation.goBack()}
             style={{ marginTop: 16 }}
@@ -84,13 +86,13 @@ export function SpeciesDetailScreen() {
         )}
 
         <Card padding={16}>
-          <Text style={styles.cardTitle}>Description</Text>
+          <Text style={styles.cardTitle}>{t('description')}</Text>
           <Text style={styles.description}>{species.description}</Text>
         </Card>
 
         {species.keyFeatures.length > 0 && (
           <Card padding={16}>
-            <Text style={styles.cardTitle}>Key Features</Text>
+            <Text style={styles.cardTitle}>{t('keyFeatures')}</Text>
             {species.keyFeatures.map((feature: { trait: string; value: string }, i: number) => (
               <View key={i} style={styles.featureRow}>
                 <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
@@ -106,7 +108,7 @@ export function SpeciesDetailScreen() {
         {species.distributionZones.length > 0 && (
           <Card padding={16}>
             <Text style={styles.cardTitle}>
-              Distribution Zones ({species.distributionZones.length})
+              {t('distributionZones', { count: species.distributionZones.length })}
             </Text>
             {species.distributionZones.map((zone: { name: string }, i: number) => (
               <View key={i} style={styles.zoneRow}>
@@ -118,7 +120,7 @@ export function SpeciesDetailScreen() {
         )}
 
         <Button
-          title="Back to Species"
+          title={t('backToSpecies')}
           variant="secondary"
           onPress={() => navigation.goBack()}
           style={styles.backBtn}

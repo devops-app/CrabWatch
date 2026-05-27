@@ -5,6 +5,7 @@ import { getPrisma, getConfig } from '../services/container'
 import { recalculateXP as recalculateXPService } from '../services/recalculationService'
 import { getEngagementMetrics } from '../services/metricsService'
 import { invalidateLeaderboardCache } from '../services/leaderboardService'
+import { createTranslator } from '../middleware/i18n'
 
 // Audit log helper
 async function writeAuditLog(req: AuthRequest, action: string, resourceType: string, resourceId: string | null, beforeState: any, afterState: any, reason?: string): Promise<void> {
@@ -27,21 +28,22 @@ async function writeAuditLog(req: AuthRequest, action: string, resourceType: str
 }
 
 class EngagementDisabledError extends AppError {
-  constructor() {
-    super('Gamification not enabled', 501)
+  constructor(message: string) {
+    super(message, 501)
   }
 }
 
-function checkEngagement(): void {
+function checkEngagement(req: AuthRequest): void {
   if (!getConfig().engagement.enabled) {
-    throw new EngagementDisabledError()
+    const __ = createTranslator(req)
+    throw new EngagementDisabledError(__('admin.engagement.disabled', 'admin'))
   }
 }
 
 // ==================== GAMIFICATION RULES ====================
 
 export const listGamificationRules = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
   const db = getPrisma()
   const rules = await db.gamificationRule.findMany({
     orderBy: { actionType: 'asc' },
@@ -50,7 +52,7 @@ export const listGamificationRules = asyncHandler(async (req: AuthRequest, res: 
 })
 
 export const createGamificationRule = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
   const db = getPrisma()
   const { actionType, name, description, xpReward, active, startsAt, endsAt, maxPerDay, maxPerUserPerDay, cooldownHours, roleScope, platformScope, metadata } = req.body
   const rule = await db.gamificationRule.create({
@@ -75,12 +77,13 @@ export const createGamificationRule = asyncHandler(async (req: AuthRequest, res:
 })
 
 export const updateGamificationRule = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
+  const __ = createTranslator(req)
   const db = getPrisma()
   const { id } = req.params
   const before = await db.gamificationRule.findUnique({ where: { id } })
   if (!before) {
-    throw new NotFoundError('Rule not found')
+    throw new NotFoundError(__('admin.rule.notFound', 'admin'))
   }
 
   const { actionType, name, description, xpReward, active, startsAt, endsAt, maxPerDay, maxPerUserPerDay, cooldownHours, roleScope, platformScope, metadata } = req.body
@@ -107,12 +110,13 @@ export const updateGamificationRule = asyncHandler(async (req: AuthRequest, res:
 })
 
 export const deleteGamificationRule = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
+  const __ = createTranslator(req)
   const db = getPrisma()
   const { id } = req.params
   const before = await db.gamificationRule.findUnique({ where: { id } })
   if (!before) {
-    throw new NotFoundError('Rule not found')
+    throw new NotFoundError(__('admin.rule.notFound', 'admin'))
   }
   await db.gamificationRule.delete({ where: { id } })
   await writeAuditLog(req, 'DELETE', 'GamificationRule', id, before, null, 'Admin deleted gamification rule')
@@ -122,7 +126,7 @@ export const deleteGamificationRule = asyncHandler(async (req: AuthRequest, res:
 // ==================== LEVEL CONFIGS ====================
 
 export const listLevelConfigs = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
   const db = getPrisma()
   const levels = await db.levelConfig.findMany({
     orderBy: { xpThreshold: 'asc' },
@@ -131,7 +135,7 @@ export const listLevelConfigs = asyncHandler(async (req: AuthRequest, res: Respo
 })
 
 export const createLevelConfig = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
   const db = getPrisma()
   const { level, xpThreshold, title, description, active } = req.body
   const lvl = await db.levelConfig.create({
@@ -148,12 +152,13 @@ export const createLevelConfig = asyncHandler(async (req: AuthRequest, res: Resp
 })
 
 export const updateLevelConfig = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
+  const __ = createTranslator(req)
   const db = getPrisma()
   const { id } = req.params
   const before = await db.levelConfig.findUnique({ where: { id } })
   if (!before) {
-    throw new NotFoundError('Level config not found')
+    throw new NotFoundError(__('admin.level.notFound', 'admin'))
   }
 
   const { level, xpThreshold, title, description, active } = req.body
@@ -172,12 +177,13 @@ export const updateLevelConfig = asyncHandler(async (req: AuthRequest, res: Resp
 })
 
 export const deleteLevelConfig = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
+  const __ = createTranslator(req)
   const db = getPrisma()
   const { id } = req.params
   const before = await db.levelConfig.findUnique({ where: { id } })
   if (!before) {
-    throw new NotFoundError('Level config not found')
+    throw new NotFoundError(__('admin.level.notFound', 'admin'))
   }
   await db.levelConfig.delete({ where: { id } })
   await writeAuditLog(req, 'DELETE', 'LevelConfig', id, before, null, 'Admin deleted level config')
@@ -187,16 +193,17 @@ export const deleteLevelConfig = asyncHandler(async (req: AuthRequest, res: Resp
 // ==================== XP ADJUSTMENT ====================
 
 export const adjustXP = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
+  const __ = createTranslator(req)
   const db = getPrisma()
   const { userId, deltaXP, reason } = req.body
   if (!userId || !deltaXP || !reason) {
-    throw new ValidationError('userId, deltaXP, and reason are required')
+    throw new ValidationError(__('admin.xp.adjust.required', 'admin'))
   }
 
   const user = await db.user.findUnique({ where: { id: userId } })
   if (!user) {
-    throw new NotFoundError('User not found')
+    throw new NotFoundError(__('admin.user.notFound', 'admin'))
   }
 
   const beforeXP = user.totalXP
@@ -228,10 +235,11 @@ export const adjustXP = asyncHandler(async (req: AuthRequest, res: Response) => 
 // ==================== RECALCULATE ====================
 
 export const recalculateXP = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
+  const __ = createTranslator(req)
   const { mode, userId, reason } = req.body
   if (!mode || !['dry-run', 'execute'].includes(mode)) {
-    throw new ValidationError('mode must be dry-run or execute')
+    throw new ValidationError(__('admin.recalculation.modeInvalid', 'admin'))
   }
 
   const result = await recalculateXPService(
@@ -249,7 +257,7 @@ export const recalculateXP = asyncHandler(async (req: AuthRequest, res: Response
 // ==================== ACHIEVEMENTS ====================
 
 export const listAchievements = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
   const db = getPrisma()
   const achievements = await db.achievement.findMany({
     orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }],
@@ -258,11 +266,12 @@ export const listAchievements = asyncHandler(async (req: AuthRequest, res: Respo
 })
 
 export const createAchievement = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
+  const __ = createTranslator(req)
   const db = getPrisma()
   const { code, name, description, category, rarity, iconUrl, requirements, xpReward, isHidden, isActive, startsAt, endsAt } = req.body
   if (!code || !name || !description || !category) {
-    throw new ValidationError('code, name, description, and category are required')
+    throw new ValidationError(__('admin.achievement.create.required', 'admin'))
   }
   const achievement = await db.achievement.create({
     data: {
@@ -285,12 +294,13 @@ export const createAchievement = asyncHandler(async (req: AuthRequest, res: Resp
 })
 
 export const updateAchievement = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
+  const __ = createTranslator(req)
   const db = getPrisma()
   const { id } = req.params
   const before = await db.achievement.findUnique({ where: { id } })
   if (!before) {
-    throw new NotFoundError('Achievement not found')
+    throw new NotFoundError(__('admin.achievement.notFound', 'admin'))
   }
   const { code, name, description, category, rarity, iconUrl, requirements, xpReward, isHidden, isActive, startsAt, endsAt } = req.body
   const achievement = await db.achievement.update({
@@ -315,12 +325,13 @@ export const updateAchievement = asyncHandler(async (req: AuthRequest, res: Resp
 })
 
 export const deleteAchievement = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
+  const __ = createTranslator(req)
   const db = getPrisma()
   const { id } = req.params
   const before = await db.achievement.findUnique({ where: { id } })
   if (!before) {
-    throw new NotFoundError('Achievement not found')
+    throw new NotFoundError(__('admin.achievement.notFound', 'admin'))
   }
   await db.achievement.delete({ where: { id } })
   await writeAuditLog(req, 'DELETE', 'Achievement', id, before, null, 'Admin deleted achievement')
@@ -328,11 +339,12 @@ export const deleteAchievement = asyncHandler(async (req: AuthRequest, res: Resp
 })
 
 export const awardAchievement = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
+  const __ = createTranslator(req)
   const { id } = req.params
   const { userId, reason } = req.body
   if (!userId || !reason) {
-    throw new ValidationError('userId and reason are required')
+    throw new ValidationError(__('admin.achievement.award.required', 'admin'))
   }
   const { awardAchievementManually } = await import('../services/achievementService')
   try {
@@ -350,7 +362,7 @@ export const awardAchievement = asyncHandler(async (req: AuthRequest, res: Respo
 // ==================== MISSION DEFINITIONS ====================
 
 export const listMissions = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
   const db = getPrisma()
   const missions = await db.missionDefinition.findMany({
     orderBy: [{ active: 'desc' }, { createdAt: 'desc' }],
@@ -359,11 +371,12 @@ export const listMissions = asyncHandler(async (req: AuthRequest, res: Response)
 })
 
 export const createMission = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
+  const __ = createTranslator(req)
   const db = getPrisma()
   const { code, name, description, cadence, criteria, xpReward, maxClaimsPerUser, active, startsAt, endsAt } = req.body
   if (!code || !name || !description || !cadence || !criteria) {
-    throw new ValidationError('code, name, description, cadence, and criteria are required')
+    throw new ValidationError(__('admin.mission.create.required', 'admin'))
   }
   const mission = await db.missionDefinition.create({
     data: {
@@ -384,12 +397,13 @@ export const createMission = asyncHandler(async (req: AuthRequest, res: Response
 })
 
 export const updateMission = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
+  const __ = createTranslator(req)
   const db = getPrisma()
   const { id } = req.params
   const before = await db.missionDefinition.findUnique({ where: { id } })
   if (!before) {
-    throw new NotFoundError('Mission not found')
+    throw new NotFoundError(__('admin.mission.notFound', 'admin'))
   }
   const { code, name, description, cadence, criteria, xpReward, maxClaimsPerUser, active, startsAt, endsAt } = req.body
   const mission = await db.missionDefinition.update({
@@ -412,12 +426,13 @@ export const updateMission = asyncHandler(async (req: AuthRequest, res: Response
 })
 
 export const deleteMission = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
+  const __ = createTranslator(req)
   const db = getPrisma()
   const { id } = req.params
   const before = await db.missionDefinition.findUnique({ where: { id } })
   if (!before) {
-    throw new NotFoundError('Mission not found')
+    throw new NotFoundError(__('admin.mission.notFound', 'admin'))
   }
   await db.missionDefinition.delete({ where: { id } })
   await writeAuditLog(req, 'DELETE', 'MissionDefinition', id, before, null, 'Admin deleted mission')
@@ -427,7 +442,7 @@ export const deleteMission = asyncHandler(async (req: AuthRequest, res: Response
 // ==================== SEASONS ====================
 
 export const listSeasons = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
   const db = getPrisma()
   const seasons = await db.season.findMany({
     orderBy: [{ isActive: 'desc' }, { startsAt: 'desc' }],
@@ -441,11 +456,12 @@ export const listSeasons = asyncHandler(async (req: AuthRequest, res: Response) 
 })
 
 export const createSeason = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
+  const __ = createTranslator(req)
   const db = getPrisma()
   const { code, name, description, startsAt, endsAt } = req.body
   if (!code || !name || !startsAt || !endsAt) {
-    throw new ValidationError('code, name, startsAt, and endsAt are required')
+    throw new ValidationError(__('admin.season.create.required', 'admin'))
   }
   const season = await db.season.create({
     data: {
@@ -462,12 +478,13 @@ export const createSeason = asyncHandler(async (req: AuthRequest, res: Response)
 })
 
 export const updateSeason = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
+  const __ = createTranslator(req)
   const db = getPrisma()
   const { id } = req.params
   const before = await db.season.findUnique({ where: { id } })
   if (!before) {
-    throw new NotFoundError('Season not found')
+    throw new NotFoundError(__('admin.season.notFound', 'admin'))
   }
   const { code, name, description, startsAt, endsAt } = req.body
   const season = await db.season.update({
@@ -485,12 +502,13 @@ export const updateSeason = asyncHandler(async (req: AuthRequest, res: Response)
 })
 
 export const deleteSeason = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
+  const __ = createTranslator(req)
   const db = getPrisma()
   const { id } = req.params
   const before = await db.season.findUnique({ where: { id } })
   if (!before) {
-    throw new NotFoundError('Season not found')
+    throw new NotFoundError(__('admin.season.notFound', 'admin'))
   }
   await db.season.delete({ where: { id } })
   await writeAuditLog(req, 'DELETE', 'Season', id, before, null, 'Admin deleted season')
@@ -498,12 +516,13 @@ export const deleteSeason = asyncHandler(async (req: AuthRequest, res: Response)
 })
 
 export const activateSeason = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
+  const __ = createTranslator(req)
   const db = getPrisma()
   const { id } = req.params
   const before = await db.season.findUnique({ where: { id } })
   if (!before) {
-    throw new NotFoundError('Season not found')
+    throw new NotFoundError(__('admin.season.notFound', 'admin'))
   }
   await db.season.updateMany({
     where: { isActive: true },
@@ -520,7 +539,7 @@ export const activateSeason = asyncHandler(async (req: AuthRequest, res: Respons
 // ==================== METRICS ====================
 
 export const getEngagementMetricsEndpoint = asyncHandler(async (req: AuthRequest, res: Response) => {
-  checkEngagement()
+  checkEngagement(req)
   const metrics = await getEngagementMetrics()
   res.json({ success: true, data: metrics })
 })

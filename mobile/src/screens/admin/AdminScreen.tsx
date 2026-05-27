@@ -10,18 +10,61 @@ import {
   TextInput as RNTextInput,
   RefreshControl,
 } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { api } from '../../services/api'
 import { Button } from '../../components/common/Button'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
+import { useFormatters } from '../../hooks/useFormatters'
 import type { UserResponse, SpeciesResponse, Invite, GamificationRuleDto, LevelConfigDto, CampaignDto, AdminAuditLogDto, AbuseSignalDto, EngagementMetricsDto, RecalculationJobDto } from '@crabwatch/shared'
 
 type Tab = 'users' | 'species' | 'backup' | 'engagement'
 type UserSubTab = 'active' | 'deleted' | 'invites'
 type EngagementSubTab = 'xp-rules' | 'levels' | 'xp-adjust' | 'campaigns' | 'audit' | 'abuse' | 'metrics'
 
+type AuditStats = {
+  total: number
+  byAction: Record<string, number>
+  byResourceType: Record<string, number>
+}
+
+function toNumber(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0
+}
+
+function normalizeAuditStats(raw: unknown): AuditStats | null {
+  if (!raw || typeof raw !== 'object') {
+    return null
+  }
+
+  const value = raw as Record<string, unknown>
+  const byAction = value.byAction && typeof value.byAction === 'object'
+    ? { ...(value.byAction as Record<string, number>) }
+    : {}
+
+  if (Array.isArray(value.topActions)) {
+    for (const item of value.topActions as Array<Record<string, unknown>>) {
+      const action = typeof item.action === 'string' ? item.action : ''
+      if (!action) continue
+      byAction[action] = toNumber(item.count)
+    }
+  }
+
+  const byResourceType = value.byResourceType && typeof value.byResourceType === 'object'
+    ? { ...(value.byResourceType as Record<string, number>) }
+    : {}
+
+  return {
+    total: toNumber(value.total ?? value.totalLogs),
+    byAction,
+    byResourceType,
+  }
+}
+
 export function AdminScreen() {
+  const { t } = useTranslation('admin')
+  const { formatDate, formatDateTime, formatFileSize, formatNumber } = useFormatters()
   const [activeTab, setActiveTab] = useState<Tab>('users')
   const [userSubTab, setUserSubTab] = useState<UserSubTab>('active')
   const [users, setUsers] = useState<UserResponse[]>([])
@@ -33,7 +76,7 @@ export function AdminScreen() {
   const [levels, setLevels] = useState<LevelConfigDto[]>([])
   const [campaigns, setCampaigns] = useState<CampaignDto[]>([])
   const [auditLogs, setAuditLogs] = useState<AdminAuditLogDto[]>([])
-  const [auditStats, setAuditStats] = useState<{ total: number; byAction: Record<string, number>; byResourceType: Record<string, number> } | null>(null)
+  const [auditStats, setAuditStats] = useState<AuditStats | null>(null)
   const [abuseSignals, setAbuseSignals] = useState<AbuseSignalDto[]>([])
   const [metrics, setMetrics] = useState<EngagementMetricsDto | null>(null)
   const [inviteEmail, setInviteEmail] = useState('')
@@ -123,7 +166,7 @@ export function AdminScreen() {
           const normalizedLogs = Array.isArray(logsData) ? logsData : []
           setCampaigns(Array.isArray(campaignsData) ? campaignsData : [])
           setAuditLogs(normalizedLogs)
-          setAuditStats(statsData)
+          setAuditStats(normalizeAuditStats(statsData))
           setAbuseSignals(Array.isArray(abuseData) ? abuseData : [])
           break
         }
@@ -148,20 +191,20 @@ export function AdminScreen() {
 
   const handleBackup = () => {
     Alert.alert(
-      'Backup Database',
-      'This will export all data to a backup file. Continue?',
+      t('alerts.backup.title'),
+      t('alerts.backup.message'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Backup',
+          text: t('alerts.backup.confirm'),
           onPress: async () => {
             setActionLoading(true)
             try {
               const result = await api.backupDatabase()
-              flash(`Backup created: ${result.fileName}`, 'success')
+              flash(t('flash.backupCreated', { file: result.fileName }), 'success')
               loadTabData('backup')
             } catch (err) {
-              flash(err instanceof Error ? err.message : 'Backup failed', 'error')
+              flash(err instanceof Error ? err.message : t('flash.backupFailed'), 'error')
             } finally {
               setActionLoading(false)
             }
@@ -173,21 +216,21 @@ export function AdminScreen() {
 
   const handleCleanup = () => {
     Alert.alert(
-      'Cleanup Deleted Users',
-      'This will permanently delete all users past the 30-day retention period. This cannot be undone.',
+      t('alerts.cleanup.title'),
+      t('alerts.cleanup.message'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Cleanup',
+          text: t('alerts.cleanup.confirm'),
           style: 'destructive',
           onPress: async () => {
             setActionLoading(true)
             try {
               const result = await api.cleanupDeletedUsers()
-              flash(`${result.deletedCount} user(s) permanently deleted`, 'success')
+              flash(t('flash.cleanupDone', { count: result.deletedCount }), 'success')
               loadTabData('users', 'deleted')
             } catch (err) {
-              flash(err instanceof Error ? err.message : 'Cleanup failed', 'error')
+              flash(err instanceof Error ? err.message : t('flash.cleanupFailed'), 'error')
             } finally {
               setActionLoading(false)
             }
@@ -199,20 +242,20 @@ export function AdminScreen() {
 
   const handleRoleChange = (user: UserResponse, newRole: string) => {
     Alert.alert(
-      'Change Role',
-      `Change ${user.name}'s role to ${newRole}?`,
+      t('alerts.changeRole.title'),
+      t('alerts.changeRole.message', { name: user.name, role: newRole }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Change',
+          text: t('alerts.changeRole.confirm'),
           onPress: async () => {
             setActionLoading(true)
             try {
               await api.updateUserRole(user.id, newRole)
-              flash(`Role updated to ${newRole}`, 'success')
+              flash(t('flash.roleUpdated', { role: newRole }), 'success')
               loadTabData('users', 'active')
             } catch (err) {
-              flash(err instanceof Error ? err.message : 'Failed to update role', 'error')
+              flash(err instanceof Error ? err.message : t('flash.roleUpdateFailed'), 'error')
             } finally {
               setActionLoading(false)
             }
@@ -224,21 +267,21 @@ export function AdminScreen() {
 
   const handleSoftDelete = (user: UserResponse) => {
     Alert.alert(
-      'Delete User',
-      `Soft-delete ${user.name}? They will be permanently removed after 30 days.`,
+      t('alerts.deleteUser.title'),
+      t('alerts.deleteUser.message', { name: user.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('alerts.deleteUser.confirm'),
           style: 'destructive',
           onPress: async () => {
             setActionLoading(true)
             try {
               await api.softDeleteUser(user.id)
-              flash('User deleted', 'success')
+              flash(t('flash.userDeleted'), 'success')
               loadTabData('users', 'active')
             } catch (err) {
-              flash(err instanceof Error ? err.message : 'Failed to delete user', 'error')
+              flash(err instanceof Error ? err.message : t('flash.userDeleteFailed'), 'error')
             } finally {
               setActionLoading(false)
             }
@@ -250,20 +293,20 @@ export function AdminScreen() {
 
   const handleRestore = (user: UserResponse) => {
     Alert.alert(
-      'Restore User',
-      `Restore ${user.name}?`,
+      t('alerts.restoreUser.title'),
+      t('alerts.restoreUser.message', { name: user.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Restore',
+          text: t('alerts.restoreUser.confirm'),
           onPress: async () => {
             setActionLoading(true)
             try {
               await api.restoreUser(user.id)
-              flash('User restored', 'success')
+              flash(t('flash.userRestored'), 'success')
               loadTabData('users', 'deleted')
             } catch (err) {
-              flash(err instanceof Error ? err.message : 'Failed to restore user', 'error')
+              flash(err instanceof Error ? err.message : t('flash.userRestoreFailed'), 'error')
             } finally {
               setActionLoading(false)
             }
@@ -275,21 +318,21 @@ export function AdminScreen() {
 
   const handleBlock = (user: UserResponse) => {
     Alert.alert(
-      'Block User',
-      `Block ${user.name}?`,
+      t('alerts.blockUser.title'),
+      t('alerts.blockUser.message', { name: user.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Block',
+          text: t('alerts.blockUser.confirm'),
           style: 'destructive',
           onPress: async () => {
             setActionLoading(true)
             try {
               await api.blockUser(user.id)
-              flash('User blocked', 'success')
+              flash(t('flash.userBlocked'), 'success')
               loadTabData('users', 'active')
             } catch (err) {
-              flash(err instanceof Error ? err.message : 'Failed to block user', 'error')
+              flash(err instanceof Error ? err.message : t('flash.userBlockFailed'), 'error')
             } finally {
               setActionLoading(false)
             }
@@ -301,20 +344,20 @@ export function AdminScreen() {
 
   const handleUnblock = (user: UserResponse) => {
     Alert.alert(
-      'Unblock User',
-      `Unblock ${user.name}?`,
+      t('alerts.unblockUser.title'),
+      t('alerts.unblockUser.message', { name: user.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Unblock',
+          text: t('alerts.unblockUser.confirm'),
           onPress: async () => {
             setActionLoading(true)
             try {
               await api.unblockUser(user.id)
-              flash('User unblocked', 'success')
+              flash(t('flash.userUnblocked'), 'success')
               loadTabData('users', 'active')
             } catch (err) {
-              flash(err instanceof Error ? err.message : 'Failed to unblock user', 'error')
+              flash(err instanceof Error ? err.message : t('flash.userUnblockFailed'), 'error')
             } finally {
               setActionLoading(false)
             }
@@ -326,20 +369,20 @@ export function AdminScreen() {
 
   const handleInvite = (email: string, role: string) => {
     Alert.alert(
-      'Send Invite',
-      `Send ${role} invite to ${email}?`,
+      t('alerts.sendInvite.title'),
+      t('alerts.sendInvite.message', { role, email }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Send',
+          text: t('alerts.sendInvite.confirm'),
           onPress: async () => {
             setActionLoading(true)
             try {
               await api.createInvite(email, role)
-              flash('Invite sent', 'success')
+              flash(t('flash.inviteSent'), 'success')
               loadTabData('users', 'invites')
             } catch (err) {
-              flash(err instanceof Error ? err.message : 'Failed to send invite', 'error')
+              flash(err instanceof Error ? err.message : t('flash.inviteSendFailed'), 'error')
             } finally {
               setActionLoading(false)
             }
@@ -351,20 +394,20 @@ export function AdminScreen() {
 
   const handleResendInvite = (email: string, role: string) => {
     Alert.alert(
-      'Resend Invite',
-      `Resend ${role} invite to ${email}?`,
+      t('alerts.resendInvite.title'),
+      t('alerts.resendInvite.message', { role, email }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Resend',
+          text: t('alerts.resendInvite.confirm'),
           onPress: async () => {
             setActionLoading(true)
             try {
               await api.createInvite(email, role)
-              flash('Invite resent', 'success')
+              flash(t('flash.inviteResent'), 'success')
               loadTabData('users', 'invites')
             } catch (err) {
-              flash(err instanceof Error ? err.message : 'Failed to resend invite', 'error')
+              flash(err instanceof Error ? err.message : t('flash.inviteResendFailed'), 'error')
             } finally {
               setActionLoading(false)
             }
@@ -376,21 +419,21 @@ export function AdminScreen() {
 
   const handleDeleteSpecies = (s: SpeciesResponse) => {
     Alert.alert(
-      'Delete Species',
-      `Delete ${s.commonName}?`,
+      t('alerts.deleteSpecies.title'),
+      t('alerts.deleteSpecies.message', { name: s.commonName }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('alerts.deleteSpecies.confirm'),
           style: 'destructive',
           onPress: async () => {
             setActionLoading(true)
             try {
               await api.deleteSpecies(s.id)
-              flash('Species deleted', 'success')
+              flash(t('flash.speciesDeleted'), 'success')
               loadTabData('species')
             } catch (err) {
-              flash(err instanceof Error ? err.message : 'Failed to delete species', 'error')
+              flash(err instanceof Error ? err.message : t('flash.speciesDeleteFailed'), 'error')
             } finally {
               setActionLoading(false)
             }
@@ -416,7 +459,7 @@ export function AdminScreen() {
 
   const handleSaveSpecies = async () => {
     if (!speciesDraft.commonName.trim() || !speciesDraft.scientificName.trim()) {
-      flash('Common and scientific names are required', 'error')
+      flash(t('flash.namesRequired'), 'error')
       return
     }
 
@@ -428,7 +471,7 @@ export function AdminScreen() {
           scientificName: speciesDraft.scientificName.trim(),
           description: speciesDraft.description.trim() || undefined,
         })
-        flash('Species updated', 'success')
+        flash(t('flash.speciesUpdated'), 'success')
       } else {
         await api.createSpecies({
           commonName: speciesDraft.commonName.trim(),
@@ -438,13 +481,13 @@ export function AdminScreen() {
           images: [],
           distributionZones: [],
         })
-        flash('Species created', 'success')
+        flash(t('flash.speciesCreated'), 'success')
       }
 
       resetSpeciesDraft()
       loadTabData('species')
     } catch (err) {
-      flash(err instanceof Error ? err.message : 'Failed to save species', 'error')
+      flash(err instanceof Error ? err.message : t('flash.speciesSaveFailed'), 'error')
     } finally {
       setActionLoading(false)
     }
@@ -468,7 +511,7 @@ export function AdminScreen() {
 
   const handleSaveRule = async () => {
     if (!ruleDraft.actionType.trim() || !ruleDraft.name.trim()) {
-      flash('Action type and name are required', 'error')
+      flash(t('flash.actionNameRequired'), 'error')
       return
     }
 
@@ -484,35 +527,35 @@ export function AdminScreen() {
 
       if (editingRuleId) {
         await api.updateGamificationRule(editingRuleId, createPayload)
-        flash('XP rule updated', 'success')
+        flash(t('flash.xpRuleUpdated'), 'success')
       } else {
         await api.createGamificationRule(createPayload)
-        flash('XP rule created', 'success')
+        flash(t('flash.xpRuleCreated'), 'success')
       }
 
       resetRuleDraft()
       loadTabData('engagement')
     } catch (err) {
-      flash(err instanceof Error ? err.message : 'Failed to save XP rule', 'error')
+      flash(err instanceof Error ? err.message : t('flash.xpRuleSaveFailed'), 'error')
     } finally {
       setActionLoading(false)
     }
   }
 
   const handleDeleteRule = (rule: any) => {
-    Alert.alert('Delete XP Rule', `Delete "${rule.name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('alerts.deleteXpRule.title'), t('alerts.deleteXpRule.message', { name: rule.name }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: async () => {
           setActionLoading(true)
           try {
             await api.deleteGamificationRule(rule.id)
-            flash('XP rule deleted', 'success')
+            flash(t('flash.xpRuleDeleted'), 'success')
             loadTabData('engagement')
           } catch (err) {
-            flash(err instanceof Error ? err.message : 'Failed to delete XP rule', 'error')
+            flash(err instanceof Error ? err.message : t('flash.xpRuleDeleteFailed'), 'error')
           } finally {
             setActionLoading(false)
           }
@@ -525,10 +568,10 @@ export function AdminScreen() {
     setActionLoading(true)
     try {
       await api.updateGamificationRule(rule.id, { active: !rule.active })
-      flash(rule.active ? 'Rule disabled' : 'Rule enabled', 'success')
+      flash(rule.active ? t('flash.ruleDisabled') : t('flash.ruleEnabled'), 'success')
       loadTabData('engagement')
     } catch (err) {
-      flash(err instanceof Error ? err.message : 'Failed to update rule', 'error')
+      flash(err instanceof Error ? err.message : t('flash.ruleUpdateFailed'), 'error')
     } finally {
       setActionLoading(false)
     }
@@ -552,7 +595,7 @@ export function AdminScreen() {
 
   const handleSaveLevel = async () => {
     if (!levelDraft.title.trim()) {
-      flash('Level title is required', 'error')
+      flash(t('flash.levelTitleRequired'), 'error')
       return
     }
 
@@ -568,35 +611,35 @@ export function AdminScreen() {
 
       if (editingLevelId) {
         await api.updateLevelConfig(editingLevelId, payload)
-        flash('Level updated', 'success')
+        flash(t('flash.levelUpdated'), 'success')
       } else {
         await api.createLevelConfig(payload)
-        flash('Level created', 'success')
+        flash(t('flash.levelCreated'), 'success')
       }
 
       resetLevelDraft()
       loadTabData('engagement')
     } catch (err) {
-      flash(err instanceof Error ? err.message : 'Failed to save level', 'error')
+      flash(err instanceof Error ? err.message : t('flash.levelSaveFailed'), 'error')
     } finally {
       setActionLoading(false)
     }
   }
 
   const handleDeleteLevel = (level: any) => {
-    Alert.alert('Delete Level', `Delete level ${level.level} (${level.title})?`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('alerts.deleteLevel.title'), t('alerts.deleteLevel.message', { level: level.level, title: level.title }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: async () => {
           setActionLoading(true)
           try {
             await api.deleteLevelConfig(level.id)
-            flash('Level deleted', 'success')
+            flash(t('flash.levelDeleted'), 'success')
             loadTabData('engagement')
           } catch (err) {
-            flash(err instanceof Error ? err.message : 'Failed to delete level', 'error')
+            flash(err instanceof Error ? err.message : t('flash.levelDeleteFailed'), 'error')
           } finally {
             setActionLoading(false)
           }
@@ -607,18 +650,18 @@ export function AdminScreen() {
 
   const handleAdjustXP = async () => {
     if (!adjUserId.trim() || !adjReason.trim() || adjDeltaXP === 0) {
-      flash('User ID, non-zero delta XP, and reason are required', 'error')
+      flash(t('flash.xpAdjustRequired'), 'error')
       return
     }
     setActionLoading(true)
     try {
       await api.adjustXP({ userId: adjUserId.trim(), deltaXP: adjDeltaXP, reason: adjReason.trim() })
-      flash('XP adjusted successfully', 'success')
+      flash(t('flash.xpAdjusted'), 'success')
       setAdjReason('')
       setAdjDeltaXP(0)
       loadTabData('engagement')
     } catch (err) {
-      flash(err instanceof Error ? err.message : 'Failed to adjust XP', 'error')
+      flash(err instanceof Error ? err.message : t('flash.xpAdjustFailed'), 'error')
     } finally {
       setActionLoading(false)
     }
@@ -637,10 +680,10 @@ export function AdminScreen() {
         setRecalcJobStatus(result)
         setRecalcJobIdInput(result.id)
       }
-      flash('Recalculation completed', 'success')
+      flash(t('flash.recalculationCompleted'), 'success')
       loadTabData('engagement')
     } catch (err) {
-      flash(err instanceof Error ? err.message : 'Failed to recalculate', 'error')
+      flash(err instanceof Error ? err.message : t('flash.recalculationFailed'), 'error')
     } finally {
       setActionLoading(false)
     }
@@ -648,16 +691,16 @@ export function AdminScreen() {
 
   const handleCheckRecalcJob = async () => {
     if (!recalcJobIdInput.trim()) {
-      flash('Enter a job ID', 'error')
+      flash(t('flash.enterJobId'), 'error')
       return
     }
     setActionLoading(true)
     try {
       const status = await api.getRecalculationJobStatus(recalcJobIdInput.trim())
       setRecalcJobStatus(status)
-      flash('Job status updated', 'success')
+      flash(t('flash.jobStatusUpdated'), 'success')
     } catch (err) {
-      flash(err instanceof Error ? err.message : 'Failed to check job status', 'error')
+      flash(err instanceof Error ? err.message : t('flash.jobStatusFailed'), 'error')
     } finally {
       setActionLoading(false)
     }
@@ -665,7 +708,7 @@ export function AdminScreen() {
 
   const handleCreateCampaign = async () => {
     if (!campaignDraft.code.trim() || !campaignDraft.name.trim() || !campaignDraft.title.trim() || !campaignDraft.body.trim()) {
-      flash('Code, name, title and body are required', 'error')
+      flash(t('flash.campaignFieldsRequired'), 'error')
       return
     }
     setActionLoading(true)
@@ -677,29 +720,29 @@ export function AdminScreen() {
         audienceFilter: { minLevel: campaignDraft.minLevel },
         content: { title: campaignDraft.title.trim(), body: campaignDraft.body.trim() },
       })
-      flash('Campaign created', 'success')
+      flash(t('flash.campaignCreated'), 'success')
       setCampaignDraft({ code: '', name: '', channel: 'PUSH', title: '', body: '', minLevel: 1 })
       loadTabData('engagement')
     } catch (err) {
-      flash(err instanceof Error ? err.message : 'Failed to create campaign', 'error')
+      flash(err instanceof Error ? err.message : t('flash.campaignCreateFailed'), 'error')
     } finally {
       setActionLoading(false)
     }
   }
 
   const handleLaunchCampaign = (campaign: any) => {
-    Alert.alert('Launch Campaign', `Launch ${campaign.name}?`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('alerts.launchCampaign.title'), t('alerts.launchCampaign.message', { name: campaign.name }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Launch',
+        text: t('alerts.launchCampaign.confirm'),
         onPress: async () => {
           setActionLoading(true)
           try {
             const result = await api.launchCampaign(campaign.id)
-            flash('Campaign launched successfully', 'success')
+            flash(t('flash.campaignLaunched'), 'success')
             loadTabData('engagement')
           } catch (err) {
-            flash(err instanceof Error ? err.message : 'Failed to launch campaign', 'error')
+            flash(err instanceof Error ? err.message : t('flash.campaignLaunchFailed'), 'error')
           } finally {
             setActionLoading(false)
           }
@@ -710,35 +753,35 @@ export function AdminScreen() {
 
   const handleSendTestCampaign = async (campaignId: string) => {
     if (!campaignTestUserId.trim()) {
-      flash('Test user ID is required', 'error')
+      flash(t('flash.testUserIdRequired'), 'error')
       return
     }
     setActionLoading(true)
     try {
       await api.sendTestCampaign(campaignId, campaignTestUserId.trim())
-      flash('Test campaign sent', 'success')
+      flash(t('flash.testCampaignSent'), 'success')
       setCampaignTestUserId('')
     } catch (err) {
-      flash(err instanceof Error ? err.message : 'Failed to send test campaign', 'error')
+      flash(err instanceof Error ? err.message : t('flash.testCampaignFailed'), 'error')
     } finally {
       setActionLoading(false)
     }
   }
 
   const handleDeleteCampaign = (campaign: any) => {
-    Alert.alert('Delete Campaign', `Delete ${campaign.name}?`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('alerts.deleteCampaign.title'), t('alerts.deleteCampaign.message', { name: campaign.name }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: async () => {
           setActionLoading(true)
           try {
             await api.deleteCampaign(campaign.id)
-            flash('Campaign deleted', 'success')
+            flash(t('flash.campaignDeleted'), 'success')
             loadTabData('engagement')
           } catch (err) {
-            flash(err instanceof Error ? err.message : 'Failed to delete campaign', 'error')
+            flash(err instanceof Error ? err.message : t('flash.campaignDeleteFailed'), 'error')
           } finally {
             setActionLoading(false)
           }
@@ -751,32 +794,15 @@ export function AdminScreen() {
     setActionLoading(true)
     try {
       await api.resolveAbuseSignal(signal.id, 'Resolved via mobile admin panel')
-      flash('Abuse signal resolved', 'success')
+      flash(t('flash.abuseResolved'), 'success')
       loadTabData('engagement')
     } catch (err) {
-      flash(err instanceof Error ? err.message : 'Failed to resolve signal', 'error')
+      flash(err instanceof Error ? err.message : t('flash.abuseResolveFailed'), 'error')
     } finally {
       setActionLoading(false)
     }
   }
 
-  const formatDate = (dateStr: string) => {
-    try {
-      return new Date(dateStr).toLocaleDateString('en-MY', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      })
-    } catch {
-      return dateStr
-    }
-  }
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-  }
 
   // --- Renders ---
 
@@ -812,13 +838,13 @@ export function AdminScreen() {
                     style={[styles.actionBtn, styles.roleChangeBtn]}
                     onPress={() => handleRoleChange(item, 'researcher')}
                   >
-                    <Text style={styles.actionBtnText}>Researcher</Text>
+                    <Text style={styles.actionBtnText}>{t('users.role.researcher')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.actionBtn, styles.roleChangeBtn]}
                     onPress={() => handleRoleChange(item, 'user')}
                   >
-                    <Text style={styles.actionBtnText}>User</Text>
+                    <Text style={styles.actionBtnText}>{t('users.role.user')}</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -827,21 +853,21 @@ export function AdminScreen() {
                   style={[styles.actionBtn, styles.unblockBtn]}
                   onPress={() => handleUnblock(item)}
                 >
-                  <Text style={styles.actionBtnText}>Unblock</Text>
+                  <Text style={styles.actionBtnText}>{t('users.action.unblock')}</Text>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
                   style={[styles.actionBtn, styles.blockBtn]}
                   onPress={() => handleBlock(item)}
                 >
-                  <Text style={styles.actionBtnText}>Block</Text>
+                  <Text style={styles.actionBtnText}>{t('users.action.block')}</Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity
                 style={[styles.actionBtn, styles.deleteBtn]}
                 onPress={() => handleSoftDelete(item)}
               >
-                <Text style={styles.actionBtnText}>Delete</Text>
+                <Text style={styles.actionBtnText}>{t('common.delete')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -856,7 +882,7 @@ export function AdminScreen() {
     <View style={{ flex: 1 }}>
       <View style={styles.toolbar}>
         <Button
-          title="Cleanup Expired"
+          title={t('users.cleanup.title')}
           onPress={handleCleanup}
           loading={actionLoading}
           variant="danger"
@@ -874,7 +900,7 @@ export function AdminScreen() {
                   <Text style={styles.userEmail}>{item.email}</Text>
                 </View>
                 <View style={styles.deletedBadge}>
-                  <Text style={styles.deletedText}>DELETED</Text>
+                  <Text style={styles.deletedText}>{t('users.status.deleted').toUpperCase()}</Text>
                 </View>
               </View>
               <View style={styles.cardActions}>
@@ -882,7 +908,7 @@ export function AdminScreen() {
                   style={[styles.actionBtn, styles.restoreBtn]}
                   onPress={() => handleRestore(item)}
                 >
-                  <Text style={styles.actionBtnText}>Restore</Text>
+                  <Text style={styles.actionBtnText}>{t('users.action.restore')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -899,7 +925,7 @@ export function AdminScreen() {
       <View style={styles.inviteForm}>
         <RNTextInput
           style={styles.input}
-          placeholder="Email address"
+          placeholder={t('invite.emailPlaceholder')}
           value={inviteEmail}
           onChangeText={setInviteEmail}
           autoCapitalize="none"
@@ -912,7 +938,7 @@ export function AdminScreen() {
             onPress={() => setInviteRole('researcher')}
           >
             <Text style={[styles.roleOptionText, inviteRole === 'researcher' && styles.roleOptionTextActive]}>
-              Researcher
+              {t('users.role.researcher')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -920,18 +946,18 @@ export function AdminScreen() {
             onPress={() => setInviteRole('admin')}
           >
             <Text style={[styles.roleOptionText, inviteRole === 'admin' && styles.roleOptionTextActive]}>
-              Admin
+              {t('users.role.admin')}
             </Text>
           </TouchableOpacity>
         </View>
         <Button
-          title="Send Invite"
+          title={t('invite.send')}
           onPress={() => {
             if (inviteEmail.trim()) {
               handleInvite(inviteEmail.trim(), inviteRole)
               setInviteEmail('')
             } else {
-              flash('Please enter an email address', 'error')
+              flash(t('invite.error.emailRequired'), 'error')
             }
           }}
           loading={actionLoading}
@@ -947,11 +973,11 @@ export function AdminScreen() {
                 <View>
                   <Text style={styles.inviteEmail}>{item.email}</Text>
                   <Text style={styles.inviteMeta}>
-                    {item.role} • {item.used ? 'Used' : `Expires ${formatDate(item.expiresAt)}`}
+                    {item.role} • {item.used ? t('invite.status.used') : `${t('invite.status.expires')} ${formatDate(item.expiresAt)}`}
                   </Text>
                 </View>
                 <View style={[styles.statusBadge, item.used ? styles.usedBadge : styles.pendingBadge]}>
-                  <Text style={styles.statusText}>{item.used ? 'USED' : 'PENDING'}</Text>
+                  <Text style={styles.statusText}>{item.used ? t('invite.status.used').toUpperCase() : t('invite.status.pending').toUpperCase()}</Text>
                 </View>
               </View>
               {!item.used && (
@@ -961,7 +987,7 @@ export function AdminScreen() {
                     onPress={() => handleResendInvite(item.email, item.role)}
                     disabled={actionLoading}
                   >
-                    <Text style={styles.actionBtnText}>Resend</Text>
+                    <Text style={styles.actionBtnText}>{t('invite.resend')}</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -982,7 +1008,7 @@ export function AdminScreen() {
           onPress={() => setUserSubTab('active')}
         >
           <Text style={[styles.subTabText, userSubTab === 'active' && styles.subTabTextActive]}>
-            Active
+            {t('users.subTab.active')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -990,7 +1016,7 @@ export function AdminScreen() {
           onPress={() => setUserSubTab('deleted')}
         >
           <Text style={[styles.subTabText, userSubTab === 'deleted' && styles.subTabTextActive]}>
-            Deleted
+            {t('users.subTab.deleted')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -998,7 +1024,7 @@ export function AdminScreen() {
           onPress={() => setUserSubTab('invites')}
         >
           <Text style={[styles.subTabText, userSubTab === 'invites' && styles.subTabTextActive]}>
-            Invites
+            {t('users.subTab.invites')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -1009,36 +1035,37 @@ export function AdminScreen() {
   const renderSpecies = () => (
     <View style={{ flex: 1 }}>
       <View style={styles.formCard}>
-        <Text style={styles.formTitle}>{editingSpeciesId ? 'Edit Species' : 'Add Species'}</Text>
+        <Text style={styles.formTitle}>{editingSpeciesId ? t('species.editTitle') : t('species.addTitle')}</Text>
         <RNTextInput
           style={styles.input}
-          placeholder="Common name"
+          placeholder={t('species.commonNamePlaceholder')}
           value={speciesDraft.commonName}
           onChangeText={(v) => setSpeciesDraft((prev) => ({ ...prev, commonName: v }))}
           placeholderTextColor={COLORS.textLight}
         />
         <RNTextInput
           style={styles.input}
-          placeholder="Scientific name"
+          placeholder={t('species.scientificNamePlaceholder')}
           value={speciesDraft.scientificName}
           onChangeText={(v) => setSpeciesDraft((prev) => ({ ...prev, scientificName: v }))}
           placeholderTextColor={COLORS.textLight}
         />
         <RNTextInput
           style={styles.input}
-          placeholder="Description (optional)"
+          placeholder={t('species.descriptionPlaceholder')}
           value={speciesDraft.description}
           onChangeText={(v) => setSpeciesDraft((prev) => ({ ...prev, description: v }))}
           placeholderTextColor={COLORS.textLight}
         />
         <View style={styles.inlineActions}>
           <Button
-            title={editingSpeciesId ? 'Save Species' : 'Add Species'}
+            title={editingSpeciesId ? t('species.save') : t('species.add')}
             onPress={handleSaveSpecies}
             loading={actionLoading}
           />
           {editingSpeciesId ? (
-            <Button title="Cancel" onPress={resetSpeciesDraft} variant="secondary" />
+         <Button title={t('common.cancel')} onPress={resetSpeciesDraft}
+variant="secondary" />
           ) : null}
         </View>
       </View>
@@ -1055,13 +1082,13 @@ export function AdminScreen() {
               </View>
               <View style={styles.inlineActions}>
                 <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => handleEditSpecies(item)}>
-                  <Text style={styles.actionBtnText}>Edit</Text>
+                  <Text style={styles.actionBtnText}>{t('common.edit')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.actionBtn, styles.deleteBtn]}
                   onPress={() => handleDeleteSpecies(item)}
                 >
-                  <Text style={styles.actionBtnText}>Delete</Text>
+                  <Text style={styles.actionBtnText}>{t('common.delete')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -1081,40 +1108,41 @@ export function AdminScreen() {
   const renderRules = () => (
     <ScrollView contentContainerStyle={styles.listContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <View style={styles.formCardInScroll}>
-        <Text style={styles.formTitle}>{editingRuleId ? 'Edit XP Rule' : 'Add XP Rule'}</Text>
+        <Text style={styles.formTitle}>{editingRuleId ? t('rules.editTitle') : t('rules.addTitle')}</Text>
         <RNTextInput
           style={styles.input}
-          placeholder="Action type"
+          placeholder={t('rules.actionTypePlaceholder')}
           value={ruleDraft.actionType}
           onChangeText={(v) => setRuleDraft((prev) => ({ ...prev, actionType: v }))}
           placeholderTextColor={COLORS.textLight}
         />
         <RNTextInput
           style={styles.input}
-          placeholder="Name"
+          placeholder={t('rules.namePlaceholder')}
           value={ruleDraft.name}
           onChangeText={(v) => setRuleDraft((prev) => ({ ...prev, name: v }))}
           placeholderTextColor={COLORS.textLight}
         />
         <RNTextInput
           style={styles.input}
-          placeholder="Description (optional)"
+          placeholder={t('rules.descriptionPlaceholder')}
           value={ruleDraft.description}
           onChangeText={(v) => setRuleDraft((prev) => ({ ...prev, description: v }))}
           placeholderTextColor={COLORS.textLight}
         />
         <RNTextInput
           style={styles.input}
-          placeholder="XP reward"
+          placeholder={t('rules.xpRewardPlaceholder')}
           keyboardType="numeric"
           value={String(ruleDraft.xpReward)}
           onChangeText={(v) => setRuleDraft((prev) => ({ ...prev, xpReward: parseInt(v, 10) || 0 }))}
           placeholderTextColor={COLORS.textLight}
         />
         <View style={styles.inlineActions}>
-          <Button title={editingRuleId ? 'Save Rule' : 'Add Rule'} onPress={handleSaveRule} loading={actionLoading} />
+          <Button title={editingRuleId ? t('rules.save') : t('rules.add')} onPress={handleSaveRule} loading={actionLoading} />
           {editingRuleId ? (
-            <Button title="Cancel" onPress={resetRuleDraft} variant="secondary" />
+         <Button title={t('common.cancel')} onPress={resetRuleDraft}
+variant="secondary" />
           ) : null}
         </View>
       </View>
@@ -1127,19 +1155,19 @@ export function AdminScreen() {
               <Text style={styles.userEmail}>{item.actionType} • {item.xpReward} XP</Text>
             </View>
             <View style={[styles.statusBadge, item.active ? styles.activeBadge : styles.inactiveBadge]}>
-              <Text style={styles.statusText}>{item.active ? 'ACTIVE' : 'INACTIVE'}</Text>
+              <Text style={styles.statusText}>{item.active ? t('rules.status.active').toUpperCase() : t('rules.status.inactive').toUpperCase()}</Text>
             </View>
           </View>
           {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
           <View style={styles.cardActions}>
             <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => handleEditRule(item)}>
-              <Text style={styles.actionBtnText}>Edit</Text>
+              <Text style={styles.actionBtnText}>{t('common.edit')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.actionBtn, styles.roleChangeBtn]} onPress={() => handleToggleRule(item)}>
-              <Text style={styles.actionBtnText}>{item.active ? 'Disable' : 'Enable'}</Text>
+              <Text style={styles.actionBtnText}>{item.active ? t('rules.action.disable') : t('rules.action.enable')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => handleDeleteRule(item)}>
-              <Text style={styles.actionBtnText}>Delete</Text>
+              <Text style={styles.actionBtnText}>{t('common.delete')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1150,10 +1178,10 @@ export function AdminScreen() {
   const renderLevels = () => (
     <ScrollView contentContainerStyle={styles.listContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <View style={styles.formCardInScroll}>
-        <Text style={styles.formTitle}>{editingLevelId ? 'Edit Level' : 'Add Level'}</Text>
+        <Text style={styles.formTitle}>{editingLevelId ? t('levels.editTitle') : t('levels.addTitle')}</Text>
         <RNTextInput
           style={styles.input}
-          placeholder="Level"
+          placeholder={t('levels.levelPlaceholder')}
           keyboardType="numeric"
           value={String(levelDraft.level)}
           onChangeText={(v) => setLevelDraft((prev) => ({ ...prev, level: parseInt(v, 10) || 1 }))}
@@ -1161,7 +1189,7 @@ export function AdminScreen() {
         />
         <RNTextInput
           style={styles.input}
-          placeholder="XP threshold"
+          placeholder={t('levels.xpThresholdPlaceholder')}
           keyboardType="numeric"
           value={String(levelDraft.xpThreshold)}
           onChangeText={(v) => setLevelDraft((prev) => ({ ...prev, xpThreshold: parseInt(v, 10) || 0 }))}
@@ -1169,22 +1197,23 @@ export function AdminScreen() {
         />
         <RNTextInput
           style={styles.input}
-          placeholder="Title"
+          placeholder={t('levels.titlePlaceholder')}
           value={levelDraft.title}
           onChangeText={(v) => setLevelDraft((prev) => ({ ...prev, title: v }))}
           placeholderTextColor={COLORS.textLight}
         />
         <RNTextInput
           style={styles.input}
-          placeholder="Description (optional)"
+          placeholder={t('levels.descriptionPlaceholder')}
           value={levelDraft.description}
           onChangeText={(v) => setLevelDraft((prev) => ({ ...prev, description: v }))}
           placeholderTextColor={COLORS.textLight}
         />
         <View style={styles.inlineActions}>
-          <Button title={editingLevelId ? 'Save Level' : 'Add Level'} onPress={handleSaveLevel} loading={actionLoading} />
+          <Button title={editingLevelId ? t('levels.save') : t('levels.add')} onPress={handleSaveLevel} loading={actionLoading} />
           {editingLevelId ? (
-            <Button title="Cancel" onPress={resetLevelDraft} variant="secondary" />
+         <Button title={t('common.cancel')} onPress={resetLevelDraft}
+variant="secondary" />
           ) : null}
         </View>
       </View>
@@ -1194,19 +1223,19 @@ export function AdminScreen() {
           <View style={styles.cardHeader}>
             <View>
               <Text style={styles.userName}>Level {item.level} - {item.title}</Text>
-              <Text style={styles.userEmail}>{item.xpThreshold} XP threshold</Text>
+              <Text style={styles.userEmail}>{item.xpThreshold} {t('levels.thresholdSuffix')}</Text>
             </View>
             <View style={[styles.statusBadge, item.active ? styles.activeBadge : styles.inactiveBadge]}>
-              <Text style={styles.statusText}>{item.active ? 'ACTIVE' : 'INACTIVE'}</Text>
+              <Text style={styles.statusText}>{item.active ? t('levels.status.active').toUpperCase() : t('levels.status.inactive').toUpperCase()}</Text>
             </View>
           </View>
           {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
           <View style={styles.cardActions}>
             <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => handleEditLevel(item)}>
-              <Text style={styles.actionBtnText}>Edit</Text>
+              <Text style={styles.actionBtnText}>{t('common.edit')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => handleDeleteLevel(item)}>
-              <Text style={styles.actionBtnText}>Delete</Text>
+              <Text style={styles.actionBtnText}>{t('common.delete')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1217,15 +1246,15 @@ export function AdminScreen() {
   const renderMetrics = () => (
     <ScrollView contentContainerStyle={styles.listContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       {!metrics ? (
-        <Text style={styles.userEmail}>Metrics unavailable</Text>
+        <Text style={styles.userEmail}>{t('metrics.unavailable')}</Text>
       ) : (
         <View style={styles.card}>
-          <Text style={styles.formTitle}>Engagement Metrics</Text>
-          <Text style={styles.description}>Daily active users: {metrics.activeUsers1d ?? 'N/A'}</Text>
-          <Text style={styles.description}>Weekly active users: {metrics.activeUsers7d ?? 'N/A'}</Text>
-          <Text style={styles.description}>Monthly active users: {metrics.activeUsers30d ?? 'N/A'}</Text>
-          <Text style={styles.description}>Avg XP per user: {metrics.avgXP ?? 'N/A'}</Text>
-          <Text style={styles.description}>Active streak users: {metrics.usersWithStreak ?? 'N/A'}</Text>
+          <Text style={styles.formTitle}>{t('metrics.title')}</Text>
+          <Text style={styles.description}>{t('metrics.dailyActive')}: {metrics.activeUsers1d ?? t('metrics.na')}</Text>
+          <Text style={styles.description}>{t('metrics.weeklyActive')}: {metrics.activeUsers7d ?? t('metrics.na')}</Text>
+          <Text style={styles.description}>{t('metrics.monthlyActive')}: {metrics.activeUsers30d ?? t('metrics.na')}</Text>
+          <Text style={styles.description}>{t('metrics.avgXP')}: {metrics.avgXP ?? t('metrics.na')}</Text>
+          <Text style={styles.description}>{t('metrics.streakUsers')}: {metrics.usersWithStreak ?? t('metrics.na')}</Text>
         </View>
       )}
     </ScrollView>
@@ -1234,17 +1263,17 @@ export function AdminScreen() {
   const renderXPAdjust = () => (
     <ScrollView contentContainerStyle={styles.listContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <View style={styles.formCardInScroll}>
-        <Text style={styles.formTitle}>Manual XP Adjustment</Text>
+        <Text style={styles.formTitle}>{t('xpAdjust.title')}</Text>
         <RNTextInput
           style={styles.input}
-          placeholder="User ID"
+          placeholder={t('xpAdjust.userIdPlaceholder')}
           value={adjUserId}
           onChangeText={setAdjUserId}
           placeholderTextColor={COLORS.textLight}
         />
         <RNTextInput
           style={styles.input}
-          placeholder="Delta XP (+/-)"
+          placeholder={t('xpAdjust.deltaXpPlaceholder')}
           keyboardType="numeric"
           value={String(adjDeltaXP)}
           onChangeText={(v) => setAdjDeltaXP(parseInt(v, 10) || 0)}
@@ -1252,67 +1281,67 @@ export function AdminScreen() {
         />
         <RNTextInput
           style={styles.input}
-          placeholder="Reason"
+          placeholder={t('xpAdjust.reasonPlaceholder')}
           value={adjReason}
           onChangeText={setAdjReason}
           placeholderTextColor={COLORS.textLight}
         />
-        <Button title="Adjust XP" onPress={handleAdjustXP} loading={actionLoading} />
+        <Button title={t('xpAdjust.adjust')} onPress={handleAdjustXP} loading={actionLoading} />
       </View>
 
       <View style={styles.formCardInScroll}>
-        <Text style={styles.formTitle}>XP Recalculation</Text>
+        <Text style={styles.formTitle}>{t('xpAdjust.recalcTitle')}</Text>
         <View style={styles.roleSelector}>
           <TouchableOpacity
             style={[styles.roleOption, recalcMode === 'dry-run' && styles.roleOptionActive]}
             onPress={() => setRecalcMode('dry-run')}
           >
-            <Text style={[styles.roleOptionText, recalcMode === 'dry-run' && styles.roleOptionTextActive]}>Dry Run</Text>
+            <Text style={[styles.roleOptionText, recalcMode === 'dry-run' && styles.roleOptionTextActive]}>{t('xpAdjust.recalcModeDry')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.roleOption, recalcMode === 'execute' && styles.roleOptionActive]}
             onPress={() => setRecalcMode('execute')}
           >
-            <Text style={[styles.roleOptionText, recalcMode === 'execute' && styles.roleOptionTextActive]}>Execute</Text>
+            <Text style={[styles.roleOptionText, recalcMode === 'execute' && styles.roleOptionTextActive]}>{t('xpAdjust.recalcModeExecute')}</Text>
           </TouchableOpacity>
         </View>
         <RNTextInput
           style={styles.input}
-          placeholder="User ID (optional)"
+          placeholder={t('xpAdjust.recalcUserIdPlaceholder')}
           value={recalcUserId}
           onChangeText={setRecalcUserId}
           placeholderTextColor={COLORS.textLight}
         />
         <RNTextInput
           style={styles.input}
-          placeholder="Reason"
+          placeholder={t('xpAdjust.recalcReasonPlaceholder')}
           value={recalcReason}
           onChangeText={setRecalcReason}
           placeholderTextColor={COLORS.textLight}
         />
-        <Button title="Run Recalculation" onPress={handleRecalculate} loading={actionLoading} />
+        <Button title={t('xpAdjust.recalcRun')} onPress={handleRecalculate} loading={actionLoading} />
 
         {recalcResults ? (
           <View style={styles.mutedBox}>
-            <Text style={styles.userEmail}>Mode: {String(recalcResults.mode ?? 'N/A')}</Text>
-            <Text style={styles.userEmail}>Users: {String(recalcResults.totalUsers ?? 'N/A')}</Text>
+            <Text style={styles.userEmail}>{t('xpAdjust.recalcResultMode')}: {String(recalcResults.mode ?? t('metrics.na'))}</Text>
+            <Text style={styles.userEmail}>{t('xpAdjust.recalcResultUsers')}: {String(recalcResults.totalUsers ?? t('metrics.na'))}</Text>
           </View>
         ) : null}
 
         <RNTextInput
           style={styles.input}
-          placeholder="Job ID"
+          placeholder={t('xpAdjust.jobIdPlaceholder')}
           value={recalcJobIdInput}
           onChangeText={setRecalcJobIdInput}
           placeholderTextColor={COLORS.textLight}
         />
-        <Button title="Check Job Status" onPress={handleCheckRecalcJob} loading={actionLoading} variant="secondary" />
+        <Button title={t('xpAdjust.checkJob')} onPress={handleCheckRecalcJob} loading={actionLoading} variant="secondary" />
 
         {recalcJobStatus ? (
           <View style={styles.mutedBox}>
-            <Text style={styles.userEmail}>Status: {String(recalcJobStatus.status ?? 'unknown')}</Text>
-            <Text style={styles.userEmail}>Processed: {String(recalcJobStatus.processed ?? 0)}</Text>
-            <Text style={styles.userEmail}>Updated: {recalcJobStatus.updatedAt ? formatDate(recalcJobStatus.updatedAt) : 'N/A'}</Text>
+            <Text style={styles.userEmail}>{t('xpAdjust.jobStatus')}: {String(recalcJobStatus.status ?? t('xpAdjust.unknown'))}</Text>
+            <Text style={styles.userEmail}>{t('xpAdjust.jobProcessed')}: {String(recalcJobStatus.processed ?? 0)}</Text>
+            <Text style={styles.userEmail}>{t('xpAdjust.jobUpdated')}: {recalcJobStatus.updatedAt ? formatDate(recalcJobStatus.updatedAt) : t('metrics.na')}</Text>
           </View>
         ) : null}
       </View>
@@ -1322,17 +1351,17 @@ export function AdminScreen() {
   const renderCampaigns = () => (
     <ScrollView contentContainerStyle={styles.listContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <View style={styles.formCardInScroll}>
-        <Text style={styles.formTitle}>Create Campaign</Text>
+        <Text style={styles.formTitle}>{t('campaigns.createTitle')}</Text>
         <RNTextInput
           style={styles.input}
-          placeholder="Code"
+          placeholder={t('campaigns.codePlaceholder')}
           value={campaignDraft.code}
           onChangeText={(v) => setCampaignDraft((prev) => ({ ...prev, code: v }))}
           placeholderTextColor={COLORS.textLight}
         />
         <RNTextInput
           style={styles.input}
-          placeholder="Name"
+          placeholder={t('campaigns.namePlaceholder')}
           value={campaignDraft.name}
           onChangeText={(v) => setCampaignDraft((prev) => ({ ...prev, name: v }))}
           placeholderTextColor={COLORS.textLight}
@@ -1350,27 +1379,27 @@ export function AdminScreen() {
         </View>
         <RNTextInput
           style={styles.input}
-          placeholder="Title"
+          placeholder={t('campaigns.titlePlaceholder')}
           value={campaignDraft.title}
           onChangeText={(v) => setCampaignDraft((prev) => ({ ...prev, title: v }))}
           placeholderTextColor={COLORS.textLight}
         />
         <RNTextInput
           style={styles.input}
-          placeholder="Body"
+          placeholder={t('campaigns.bodyPlaceholder')}
           value={campaignDraft.body}
           onChangeText={(v) => setCampaignDraft((prev) => ({ ...prev, body: v }))}
           placeholderTextColor={COLORS.textLight}
         />
         <RNTextInput
           style={styles.input}
-          placeholder="Minimum level"
+          placeholder={t('campaigns.minLevelPlaceholder')}
           keyboardType="numeric"
           value={String(campaignDraft.minLevel)}
           onChangeText={(v) => setCampaignDraft((prev) => ({ ...prev, minLevel: parseInt(v, 10) || 1 }))}
           placeholderTextColor={COLORS.textLight}
         />
-        <Button title="Create Campaign" onPress={handleCreateCampaign} loading={actionLoading} />
+        <Button title={t('campaigns.create')} onPress={handleCreateCampaign} loading={actionLoading} />
       </View>
 
       {campaigns.map((campaign) => (
@@ -1387,19 +1416,19 @@ export function AdminScreen() {
           <View style={styles.cardActions}>
             {campaign.status === 'DRAFT' ? (
               <TouchableOpacity style={[styles.actionBtn, styles.roleChangeBtn]} onPress={() => handleLaunchCampaign(campaign)}>
-                <Text style={styles.actionBtnText}>Launch</Text>
+                <Text style={styles.actionBtnText}>{t('campaigns.launch')}</Text>
               </TouchableOpacity>
             ) : null}
             <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => handleSendTestCampaign(campaign.id)}>
-              <Text style={styles.actionBtnText}>Send Test</Text>
+              <Text style={styles.actionBtnText}>{t('campaigns.sendTest')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => handleDeleteCampaign(campaign)}>
-              <Text style={styles.actionBtnText}>Delete</Text>
+              <Text style={styles.actionBtnText}>{t('common.delete')}</Text>
             </TouchableOpacity>
           </View>
           <RNTextInput
             style={[styles.input, { marginTop: 8 }]}
-            placeholder="Test User ID"
+            placeholder={t('campaigns.testUserIdPlaceholder')}
             value={campaignTestUserId}
             onChangeText={setCampaignTestUserId}
             placeholderTextColor={COLORS.textLight}
@@ -1413,21 +1442,21 @@ export function AdminScreen() {
     <ScrollView contentContainerStyle={styles.listContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       {auditStats ? (
         <View style={styles.card}>
-          <Text style={styles.formTitle}>Audit Stats</Text>
-          <Text style={styles.description}>Total: {auditStats.total ?? 0}</Text>
-          <Text style={styles.description}>XP adjustments: {auditStats.byAction['XP_ADJUSTMENT'] ?? 0}</Text>
-          <Text style={styles.description}>Campaign launches: {auditStats.byAction['CAMPAIGN_LAUNCH'] ?? 0}</Text>
-          <Text style={styles.description}>Abuse resolutions: {auditStats.byAction['ABUSE_RESOLVED'] ?? 0}</Text>
+          <Text style={styles.formTitle}>{t('audit.title')}</Text>
+          <Text style={styles.description}>{t('audit.total')}: {auditStats.total ?? 0}</Text>
+          <Text style={styles.description}>{t('audit.xpAdjustments')}: {(auditStats.byAction['ADJUST_XP'] ?? auditStats.byAction['XP_ADJUSTMENT'] ?? 0)}</Text>
+          <Text style={styles.description}>{t('audit.campaignLaunches')}: {(auditStats.byAction['LAUNCH_CAMPAIGN'] ?? auditStats.byAction['CAMPAIGN_LAUNCH'] ?? 0)}</Text>
+          <Text style={styles.description}>{t('audit.abuseResolutions')}: {(auditStats.byAction['RESOLVE_ABUSE_SIGNAL'] ?? auditStats.byAction['ABUSE_RESOLVED'] ?? 0)}</Text>
         </View>
       ) : null}
 
       {auditLogs.map((log, idx) => (
         <View key={log.id || idx} style={styles.card}>
-          <Text style={styles.userName}>{log.action || 'Unknown Action'}</Text>
-          <Text style={styles.userEmail}>{log.actorType || 'SYSTEM'} • {log.actorId || 'N/A'}</Text>
-          <Text style={styles.description}>{log.resourceType || '-'} {log.resourceId ? `(${log.resourceId})` : ''}</Text>
-          <Text style={styles.description}>{log.reason || 'No details'}</Text>
-          <Text style={styles.userEmail}>{log.createdAt ? new Date(log.createdAt).toLocaleString('en-MY') : 'N/A'}</Text>
+          <Text style={styles.userName}>{log.action || t('audit.unknownAction')}</Text>
+          <Text style={styles.userEmail}>{log.actorType || t('audit.system')} • {log.actorId || t('metrics.na')}</Text>
+          <Text style={styles.description}>{log.resourceType || t('audit.none')} {log.resourceId ? `(${log.resourceId})` : ''}</Text>
+          <Text style={styles.description}>{log.reason || t('audit.noDetails')}</Text>
+          <Text style={styles.userEmail}>{log.createdAt ? formatDateTime(log.createdAt) : t('metrics.na')}</Text>
         </View>
       ))}
     </ScrollView>
@@ -1436,23 +1465,23 @@ export function AdminScreen() {
   const renderAbuseSignals = () => (
     <ScrollView contentContainerStyle={styles.listContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       {abuseSignals.length === 0 ? (
-        <Text style={styles.userEmail}>No open abuse signals</Text>
+        <Text style={styles.userEmail}>{t('abuse.noOpenSignals')}</Text>
       ) : (
         abuseSignals.map((signal) => (
           <View key={signal.id} style={styles.card}>
             <Text style={styles.userName}>{signal.type || 'Signal'}</Text>
-            <Text style={styles.userEmail}>User: {signal.userId || 'N/A'}</Text>
-            <Text style={styles.description}>Risk: {signal.riskScore ?? 0}</Text>
-            <Text style={styles.description}>{signal.summary || 'No details'}</Text>
+            <Text style={styles.userEmail}>{t('abuse.user')}: {signal.userId || t('metrics.na')}</Text>
+            <Text style={styles.description}>{t('abuse.risk')}: {signal.riskScore ?? 0}</Text>
+            <Text style={styles.description}>{signal.summary || t('audit.noDetails')}</Text>
             {!signal.resolved ? (
               <View style={styles.cardActions}>
                 <TouchableOpacity style={[styles.actionBtn, styles.restoreBtn]} onPress={() => handleResolveAbuseSignal(signal)}>
-                  <Text style={styles.actionBtnText}>Resolve</Text>
+                  <Text style={styles.actionBtnText}>{t('abuse.resolve')}</Text>
                 </TouchableOpacity>
               </View>
             ) : (
               <View style={[styles.statusBadge, styles.activeBadge]}>
-                <Text style={styles.statusText}>RESOLVED</Text>
+                <Text style={styles.statusText}>{t('abuse.resolved').toUpperCase()}</Text>
               </View>
             )}
           </View>
@@ -1468,43 +1497,43 @@ export function AdminScreen() {
           style={[styles.subTab, { flex: 0, paddingHorizontal: 12 }, engagementSubTab === 'xp-rules' && styles.subTabActive]}
           onPress={() => setEngagementSubTab('xp-rules')}
         >
-          <Text style={[styles.subTabText, engagementSubTab === 'xp-rules' && styles.subTabTextActive]}>XP Rules</Text>
+          <Text style={[styles.subTabText, engagementSubTab === 'xp-rules' && styles.subTabTextActive]}>{t('engagement.subTab.xpRules')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.subTab, { flex: 0, paddingHorizontal: 12 }, engagementSubTab === 'levels' && styles.subTabActive]}
           onPress={() => setEngagementSubTab('levels')}
         >
-          <Text style={[styles.subTabText, engagementSubTab === 'levels' && styles.subTabTextActive]}>Levels</Text>
+          <Text style={[styles.subTabText, engagementSubTab === 'levels' && styles.subTabTextActive]}>{t('engagement.subTab.levels')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.subTab, { flex: 0, paddingHorizontal: 12 }, engagementSubTab === 'xp-adjust' && styles.subTabActive]}
           onPress={() => setEngagementSubTab('xp-adjust')}
         >
-          <Text style={[styles.subTabText, engagementSubTab === 'xp-adjust' && styles.subTabTextActive]}>XP Ops</Text>
+          <Text style={[styles.subTabText, engagementSubTab === 'xp-adjust' && styles.subTabTextActive]}>{t('engagement.subTab.xpOps')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.subTab, { flex: 0, paddingHorizontal: 12 }, engagementSubTab === 'campaigns' && styles.subTabActive]}
           onPress={() => setEngagementSubTab('campaigns')}
         >
-          <Text style={[styles.subTabText, engagementSubTab === 'campaigns' && styles.subTabTextActive]}>Campaigns</Text>
+          <Text style={[styles.subTabText, engagementSubTab === 'campaigns' && styles.subTabTextActive]}>{t('engagement.subTab.campaigns')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.subTab, { flex: 0, paddingHorizontal: 12 }, engagementSubTab === 'audit' && styles.subTabActive]}
           onPress={() => setEngagementSubTab('audit')}
         >
-          <Text style={[styles.subTabText, engagementSubTab === 'audit' && styles.subTabTextActive]}>Audit</Text>
+          <Text style={[styles.subTabText, engagementSubTab === 'audit' && styles.subTabTextActive]}>{t('engagement.subTab.audit')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.subTab, { flex: 0, paddingHorizontal: 12 }, engagementSubTab === 'abuse' && styles.subTabActive]}
           onPress={() => setEngagementSubTab('abuse')}
         >
-          <Text style={[styles.subTabText, engagementSubTab === 'abuse' && styles.subTabTextActive]}>Abuse</Text>
+          <Text style={[styles.subTabText, engagementSubTab === 'abuse' && styles.subTabTextActive]}>{t('engagement.subTab.abuse')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.subTab, { flex: 0, paddingHorizontal: 12 }, engagementSubTab === 'metrics' && styles.subTabActive]}
           onPress={() => setEngagementSubTab('metrics')}
         >
-          <Text style={[styles.subTabText, engagementSubTab === 'metrics' && styles.subTabTextActive]}>Metrics</Text>
+          <Text style={[styles.subTabText, engagementSubTab === 'metrics' && styles.subTabTextActive]}>{t('engagement.subTab.metrics')}</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -1527,8 +1556,8 @@ export function AdminScreen() {
   const renderBackup = () => (
     <View style={styles.container}>
       <View style={styles.toolbar}>
-        <Button
-          title="Create Backup"
+       <Button
+          title={t('backup.create')}
           onPress={handleBackup}
           loading={actionLoading}
         />
@@ -1555,10 +1584,10 @@ export function AdminScreen() {
   )
 
   const tabs: { key: Tab; label: string }[] = [
-    { key: 'users', label: 'Users' },
-    { key: 'species', label: 'Species' },
-    { key: 'backup', label: 'Backup' },
-    { key: 'engagement', label: 'Engagement' },
+    { key: 'users', label: t('tab.users') },
+    { key: 'species', label: t('tab.species') },
+    { key: 'backup', label: t('tab.backup') },
+    { key: 'engagement', label: t('tab.engagement') },
   ]
 
   if (loading) {

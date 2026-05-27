@@ -8,65 +8,460 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid()) @db.Uuid
-  name        String
-  email       String   @unique
-  phoneCode   String?
-  phoneNumber String?
-  addressLine1 String?
-  addressLine2 String?
-  addressLine3 String?
-  state       String?
-  postcode    String?
-  country     String?
-  role        UserRole @default(USER)
-  avatar    String?
-  password  String?
-  firebaseUid String?  @unique
-  deletedAt   DateTime?
-  blockedAt   DateTime?
-  blockReason String?
-  createdAt DateTime @default(now())
-
-  // Engagement profile
-  totalXP               Int                   @default(0)
-  level                 Int                   @default(1)
-  title                 String                @default("Crab Scout")
-  currentStreak         Int                   @default(0)
-  longestStreak         Int                   @default(0)
-  lastActiveDate        DateTime?
-  approvedCount         Int                   @default(0)
-  totalSubmissions      Int                   @default(0)
-
-  observations Observation[] @relation("UserObservations")
-  validatedObs Observation[] @relation("ValidatedBy")
-  fcmToken     FcmToken?
-  passwordResets PasswordReset[]
-
-  // Engagement relations
-  xpTransactions        XPTransaction[]
-  userAchievements      UserAchievement[]
-  userMissions          UserMission[]
-  onboardingProgress    OnboardingProgress[]
-  seasonStats           UserSeasonStat[]
-  insights              UserInsight[]
-  notificationPrefs     NotificationPreference[]
-  sentNotifications     NotificationDelivery[] @relation("NotificationRecipient")
-  adminAuditLogs        AuditLog[]            @relation("AuditActor")
-  abuseSignals          AbuseSignal[]
+  id                 String                   @id @default(uuid()) @db.Uuid
+  name               String
+  email              String                   @unique
+  phoneCode          String?
+  phoneNumber        String?
+  addressLine1       String?
+  addressLine2       String?
+  addressLine3       String?
+  state              String?
+  postcode           String?
+  country            String?
+  role               UserRole                 @default(USER)
+  avatar             String?
+  password           String?
+  firebaseUid        String?                  @unique
+  deletedAt          DateTime?
+  blockedAt          DateTime?
+  blockReason        String?
+  createdAt          DateTime                 @default(now())
+  approvedCount      Int                      @default(0)
+  currentStreak      Int                      @default(0)
+  lastActiveDate     DateTime?
+  level              Int                      @default(1)
+  longestStreak      Int                      @default(0)
+  title              String                   @default("Crab Scout")
+  totalSubmissions   Int                      @default(0)
+  totalXP            Int                      @default(0)
+  preferredLocale    String?                  @default("en")
+  abuseSignals       AbuseSignal[]
+  adminAuditLogs     AuditLog[]               @relation("AuditActor")
+  fcmToken           FcmToken?
+  sentNotifications  NotificationDelivery[]   @relation("NotificationRecipient")
+  notificationPrefs  NotificationPreference[]
+  onboardingProgress OnboardingProgress[]
+  passwordResets     PasswordReset[]
+  userAchievements   UserAchievement[]
+  insights           UserInsight[]
+  userMissions       UserMission[]
+  seasonStats        UserSeasonStat[]
+  xpTransactions     XPTransaction[]
+  observations       Observation[]            @relation("UserObservations")
+  validatedObs       Observation[]            @relation("ValidatedBy")
 
   @@index([deletedAt])
   @@index([blockedAt])
 }
 
 model FcmToken {
-  id      String   @id @default(uuid()) @db.Uuid
-  userId  String   @unique @db.Uuid
-  token   String
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @db.Uuid
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Species {
+  id                String        @id @default(uuid())
+  scientificName    String        @unique
+  commonName        String
+  description       String
+  keyFeatures       Json
+  images            Json
+  distributionZones Json
+  observations      Observation[]
+
+  @@map("species")
+}
+
+model Observation {
+  id               String            @id @default(uuid())
+  userId           String            @db.Uuid
+  speciesId        String
+  cw               Float
+  bw               Float?
+  gender           Gender            @map("sex")
+  maturationStatus MaturationStatus
+  lat              Float
+  lng              Float
+  locationMethod   LocationMethod
+  photos           Json
+  detectedCoin     String?
+  notes            String?
+  status           ObservationStatus @default(PENDING)
+  validatedBy      String?           @db.Uuid
+  validatedAt      DateTime?
+  rejectionReason  String?
+  createdAt        DateTime          @default(now())
+  uploadSessionId  String?
+  species          Species           @relation(fields: [speciesId], references: [id])
+  user             User              @relation("UserObservations", fields: [userId], references: [id])
+  validator        User?             @relation("ValidatedBy", fields: [validatedBy], references: [id])
+
+  @@index([userId])
+  @@index([speciesId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([validatedBy])
+  @@index([status, speciesId])
+  @@index([status, createdAt])
+  @@index([speciesId, status])
+  @@map("observations")
+}
+
+model Invite {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  role      UserRole
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([email])
+}
+
+model PasswordReset {
+  id        String   @id @default(uuid())
+  userId    String   @db.Uuid
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+model GamificationRule {
+  id               String           @id @default(uuid())
+  actionType       RewardActionType
+  name             String
+  description      String
+  xpReward         Int
+  active           Boolean          @default(true)
+  startsAt         DateTime?
+  endsAt           DateTime?
+  maxPerDay        Int?
+  maxPerUserPerDay Int?
+  cooldownHours    Int?
+  roleScope        Json?
+  platformScope    Json?
+  metadata         Json?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@unique([actionType, name])
+  @@index([active, actionType])
+}
+
+model LevelConfig {
+  id          String   @id @default(uuid())
+  level       Int      @unique
+  xpThreshold Int
+  title       String
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([active, xpThreshold])
+}
+
+model XPTransaction {
+  id             String           @id @default(uuid())
+  userId         String           @db.Uuid
+  actionType     RewardActionType
+  deltaXP        Int
+  sourceType     String
+  sourceId       String?
+  idempotencyKey String           @unique
+  reason         String?
+  metadata       Json?
+  createdAt      DateTime         @default(now())
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([actionType, createdAt])
+}
+
+model Achievement {
+  id               String            @id @default(uuid())
+  code             String            @unique
+  name             String
+  description      String
+  category         String
+  rarity           String
+  iconUrl          String?
+  requirements     Json
+  xpReward         Int               @default(0)
+  isHidden         Boolean           @default(false)
+  isActive         Boolean           @default(true)
+  startsAt         DateTime?
+  endsAt           DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  userAchievements UserAchievement[]
+
+  @@index([isActive, category])
+}
+
+model UserAchievement {
+  id               String      @id @default(uuid())
+  userId           String      @db.Uuid
+  achievementId    String
+  earnedAt         DateTime    @default(now())
+  awardedByAdminId String?     @db.Uuid
+  isPublic         Boolean     @default(true)
+  metadata         Json?
+  achievement      Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId, earnedAt])
+}
+
+model OnboardingFlow {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  version   Int
+  name      String
+  active    Boolean  @default(true)
+  steps     Json
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([code, version])
+  @@index([active])
+}
+
+model OnboardingProgress {
+  id          String    @id @default(uuid())
+  userId      String    @db.Uuid
+  flowCode    String
+  flowVersion Int
+  stepKey     String
+  status      String
+  completedAt DateTime?
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, flowCode, flowVersion, stepKey])
+  @@index([userId, flowCode, flowVersion])
+}
+
+model MissionDefinition {
+  id               String         @id @default(uuid())
+  code             String         @unique
+  name             String
+  description      String
+  cadence          MissionCadence
+  criteria         Json
+  xpReward         Int
+  maxClaimsPerUser Int            @default(1)
+  active           Boolean        @default(true)
+  startsAt         DateTime?
+  endsAt           DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  userMissions     UserMission[]
+
+  @@index([active, cadence])
+}
+
+model UserMission {
+  id             String            @id @default(uuid())
+  userId         String            @db.Uuid
+  missionId      String
+  assignmentDate DateTime
+  progressValue  Float             @default(0)
+  targetValue    Float             @default(1)
+  status         MissionStatus     @default(ASSIGNED)
+  completedAt    DateTime?
+  claimedAt      DateTime?
+  sourceSnapshot Json?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  mission        MissionDefinition @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, missionId, assignmentDate])
+  @@index([userId, assignmentDate, status])
+}
+
+model Season {
+  id          String           @id @default(uuid())
+  code        String           @unique
+  name        String
+  startsAt    DateTime
+  endsAt      DateTime
+  isActive    Boolean          @default(false)
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  seasonStats UserSeasonStat[]
+
+  @@index([isActive, startsAt, endsAt])
+}
+
+model UserSeasonStat {
+  id               String   @id @default(uuid())
+  seasonId         String
+  userId           String   @db.Uuid
+  totalXP          Int      @default(0)
+  approvedCount    Int      @default(0)
+  totalSubmissions Int      @default(0)
+  currentStreak    Int      @default(0)
+  updatedAt        DateTime @updatedAt
+  season           Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([seasonId, userId])
+  @@index([seasonId, totalXP])
+}
+
+model Challenge {
+  id          String        @id @default(uuid())
+  code        String        @unique
+  name        String
+  description String
+  type        ChallengeType
+  criteria    Json
+  reward      Json
+  startsAt    DateTime
+  endsAt      DateTime
+  active      Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model UserInsight {
+  id        String      @id @default(uuid())
+  userId    String      @db.Uuid
+  type      InsightType
+  title     String
+  body      String
+  priority  Int         @default(50)
+  payload   Json?
+  expiresAt DateTime?
+  seenAt    DateTime?
+  actedAt   DateTime?
+  createdAt DateTime    @default(now())
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, priority, createdAt])
+}
+
+model NotificationPreference {
+  id              String              @id @default(uuid())
+  userId          String              @db.Uuid
+  channel         NotificationChannel
+  category        String
+  enabled         Boolean             @default(true)
+  quietHoursStart String?
+  quietHoursEnd   String?
+  timezone        String?
+  updatedAt       DateTime            @updatedAt
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channel, category])
+}
+
+model Campaign {
+  id               String                 @id @default(uuid())
+  code             String                 @unique
+  name             String
+  channel          NotificationChannel
+  status           String
+  audienceFilter   Json
+  content          Json
+  scheduleAt       DateTime?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  createdByAdminId String?                @db.Uuid
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  deliveries       NotificationDelivery[]
+}
+
+model NotificationDelivery {
+  id            String              @id @default(uuid())
+  campaignId    String?
+  userId        String              @db.Uuid
+  channel       NotificationChannel
+  category      String
+  title         String
+  body          String
+  payload       Json?
+  status        NotificationStatus  @default(QUEUED)
+  sentAt        DateTime?
+  failedAt      DateTime?
+  failureReason String?
+  createdAt     DateTime            @default(now())
+  campaign      Campaign?           @relation(fields: [campaignId], references: [id])
+  user          User                @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([campaignId, status])
+}
+
+model AuditLog {
+  id           String         @id @default(uuid())
+  actorType    AuditActorType
+  actorId      String?        @db.Uuid
+  action       String
+  resourceType String
+  resourceId   String?
+  beforeState  Json?
+  afterState   Json?
+  reason       String?
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime       @default(now())
+  actor        User?          @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([createdAt])
+  @@index([resourceType, resourceId])
+}
+
+model AbuseSignal {
+  id                String          @id @default(uuid())
+  userId            String          @db.Uuid
+  type              AbuseSignalType
+  riskScore         Int
+  source            String
+  summary           String
+  metadata          Json?
+  resolved          Boolean         @default(false)
+  resolvedByAdminId String?         @db.Uuid
+  resolvedAt        DateTime?
+  createdAt         DateTime        @default(now())
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([resolved, riskScore, createdAt])
+  @@index([userId, createdAt])
+}
+
+model Translation {
+  id           String   @id @default(uuid())
+  locale       String
+  resourceType String
+  resourceId   String
+  field        String
+  value        String
+  createdBy    String?  @db.Uuid
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([locale, resourceType, resourceId, field])
+  @@index([locale, resourceType, resourceId])
 }
 
 enum UserRole {
@@ -144,60 +539,11 @@ enum AbuseSignalType {
   SUSPICIOUS_PATTERN
 }
 
-model Species {
-  id                 String   @id @default(uuid())
-  scientificName     String   @unique
-  commonName         String
-  description        String
-  keyFeatures        Json
-  images             Json
-  distributionZones  Json
-
-  observations Observation[]
-
-  @@map("species")
-}
-
-model Observation {
-  id                String              @id @default(uuid())
-  userId            String   @db.Uuid
-  speciesId         String
-  cw                Float
-  bw                Float?
-  gender            Gender @map("sex")
-  maturationStatus  MaturationStatus
-  lat               Float
-  lng               Float
-  locationMethod    LocationMethod
-  photos            Json
-  uploadSessionId   String?
-  detectedCoin      String?
-  notes             String?
-  status            ObservationStatus   @default(PENDING)
-  validatedBy       String?  @db.Uuid
-  validatedAt       DateTime?
-  rejectionReason   String?
-  createdAt         DateTime            @default(now())
-
-  user         User    @relation("UserObservations", fields: [userId], references: [id])
-  validator    User?   @relation("ValidatedBy", fields: [validatedBy], references: [id])
-  species      Species @relation(fields: [speciesId], references: [id])
-
-  @@index([userId])
-  @@index([speciesId])
-  @@index([status])
-  @@index([createdAt])
-  @@index([validatedBy])
-  @@index([status, speciesId])
-  @@index([status, createdAt])
-  @@index([speciesId, status])
-  @@map("observations")
-}
-
 enum Gender {
   MALE
   FEMALE
   UNKNOWN
+
   @@map("Sex")
 }
 
@@ -216,364 +562,4 @@ enum ObservationStatus {
   PENDING
   APPROVED
   REJECTED
-}
-
-model Invite {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  role      UserRole
-  token     String   @unique
-  expiresAt DateTime
-  used      Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  @@index([token])
-  @@index([email])
-}
-
-model PasswordReset {
-  id        String   @id @default(uuid())
-  userId    String   @db.Uuid
-  token     String   @unique
-  expiresAt DateTime
-  used      Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([token])
-  @@index([userId])
-}
-
-// ==================== ENGAGEMENT: GAMIFICATION ====================
-
-model GamificationRule {
-  id                    String           @id @default(uuid())
-  actionType            RewardActionType
-  name                  String
-  description           String
-  xpReward              Int
-  active                Boolean          @default(true)
-  startsAt              DateTime?
-  endsAt                DateTime?
-  maxPerDay             Int?
-  maxPerUserPerDay      Int?
-  cooldownHours         Int?
-  roleScope             Json?
-  platformScope         Json?
-  metadata              Json?
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
-
-  @@unique([actionType, name])
-  @@index([active, actionType])
-}
-
-model LevelConfig {
-  id                    String           @id @default(uuid())
-  level                 Int              @unique
-  xpThreshold           Int
-  title                 String
-  description           String?
-  active                Boolean          @default(true)
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
-
-  @@index([active, xpThreshold])
-}
-
-model XPTransaction {
-  id                    String           @id @default(uuid())
-  userId                String           @db.Uuid
-  actionType            RewardActionType
-  deltaXP               Int
-  sourceType            String
-  sourceId              String?
-  idempotencyKey        String           @unique
-  reason                String?
-  metadata              Json?
-  createdAt             DateTime         @default(now())
-
-  user                  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt])
-  @@index([actionType, createdAt])
-}
-
-// ==================== ENGAGEMENT: PROGRESSION ====================
-
-model Achievement {
-  id                    String            @id @default(uuid())
-  code                  String            @unique
-  name                  String
-  description           String
-  category              String
-  rarity                String
-  iconUrl               String?
-  requirements          Json
-  xpReward              Int               @default(0)
-  isHidden              Boolean           @default(false)
-  isActive              Boolean           @default(true)
-  startsAt              DateTime?
-  endsAt                DateTime?
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
-
-  userAchievements      UserAchievement[]
-
-  @@index([isActive, category])
-}
-
-model UserAchievement {
-  id                    String            @id @default(uuid())
-  userId                String            @db.Uuid
-  achievementId         String
-  earnedAt              DateTime          @default(now())
-  awardedByAdminId      String?           @db.Uuid
-  isPublic              Boolean           @default(true)
-  metadata              Json?
-
-  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  achievement           Achievement       @relation(fields: [achievementId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, achievementId])
-  @@index([userId, earnedAt])
-}
-
-model OnboardingFlow {
-  id                    String            @id @default(uuid())
-  code                  String            @unique
-  version               Int
-  name                  String
-  active                Boolean           @default(true)
-  steps                 Json
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
-
-  @@unique([code, version])
-  @@index([active])
-}
-
-model OnboardingProgress {
-  id                    String            @id @default(uuid())
-  userId                String            @db.Uuid
-  flowCode              String
-  flowVersion           Int
-  stepKey               String
-  status                String
-  completedAt           DateTime?
-  metadata              Json?
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
-
-  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, flowCode, flowVersion, stepKey])
-  @@index([userId, flowCode, flowVersion])
-}
-
-model MissionDefinition {
-  id                    String            @id @default(uuid())
-  code                  String            @unique
-  name                  String
-  description           String
-  cadence               MissionCadence
-  criteria              Json
-  xpReward              Int
-  maxClaimsPerUser      Int               @default(1)
-  active                Boolean           @default(true)
-  startsAt              DateTime?
-  endsAt                DateTime?
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
-
-  userMissions          UserMission[]
-
-  @@index([active, cadence])
-}
-
-model UserMission {
-  id                    String            @id @default(uuid())
-  userId                String            @db.Uuid
-  missionId             String
-  assignmentDate        DateTime
-  progressValue         Float             @default(0)
-  targetValue           Float             @default(1)
-  status                MissionStatus     @default(ASSIGNED)
-  completedAt           DateTime?
-  claimedAt             DateTime?
-  sourceSnapshot        Json?
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
-
-  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mission               MissionDefinition @relation(fields: [missionId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, missionId, assignmentDate])
-  @@index([userId, assignmentDate, status])
-}
-
-// ==================== ENGAGEMENT: SEASONS & CAMPAIGNS ====================
-
-model Season {
-  id                    String            @id @default(uuid())
-  code                  String            @unique
-  name                  String
-  startsAt              DateTime
-  endsAt                DateTime
-  isActive              Boolean           @default(false)
-  description           String?
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
-
-  seasonStats           UserSeasonStat[]
-
-  @@index([isActive, startsAt, endsAt])
-}
-
-model UserSeasonStat {
-  id                    String            @id @default(uuid())
-  seasonId              String
-  userId                String            @db.Uuid
-  totalXP               Int               @default(0)
-  approvedCount         Int               @default(0)
-  totalSubmissions      Int               @default(0)
-  currentStreak         Int               @default(0)
-  updatedAt             DateTime          @updatedAt
-
-  season                Season            @relation(fields: [seasonId], references: [id], onDelete: Cascade)
-  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([seasonId, userId])
-  @@index([seasonId, totalXP])
-}
-
-model Challenge {
-  id                    String            @id @default(uuid())
-  code                  String            @unique
-  name                  String
-  description           String
-  type                  ChallengeType
-  criteria              Json
-  reward                Json
-  startsAt              DateTime
-  endsAt                DateTime
-  active                Boolean           @default(true)
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
-}
-
-model UserInsight {
-  id                    String            @id @default(uuid())
-  userId                String            @db.Uuid
-  type                  InsightType
-  title                 String
-  body                  String
-  priority              Int               @default(50)
-  payload               Json?
-  expiresAt             DateTime?
-  seenAt                DateTime?
-  actedAt               DateTime?
-  createdAt             DateTime          @default(now())
-
-  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, priority, createdAt])
-}
-
-model NotificationPreference {
-  id                    String            @id @default(uuid())
-  userId                String            @db.Uuid
-  channel               NotificationChannel
-  category              String
-  enabled               Boolean           @default(true)
-  quietHoursStart       String?
-  quietHoursEnd         String?
-  timezone              String?
-  updatedAt             DateTime          @updatedAt
-
-  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, channel, category])
-}
-
-model Campaign {
-  id                    String             @id @default(uuid())
-  code                  String             @unique
-  name                  String
-  channel               NotificationChannel
-  status                String
-  audienceFilter        Json
-  content               Json
-  scheduleAt            DateTime?
-  startedAt             DateTime?
-  completedAt           DateTime?
-  createdByAdminId      String?            @db.Uuid
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-
-  deliveries            NotificationDelivery[]
-}
-
-model NotificationDelivery {
-  id                    String             @id @default(uuid())
-  campaignId            String?
-  userId                String             @db.Uuid
-  channel               NotificationChannel
-  category              String
-  title                 String
-  body                  String
-  payload               Json?
-  status                NotificationStatus @default(QUEUED)
-  sentAt                DateTime?
-  failedAt              DateTime?
-  failureReason         String?
-  createdAt             DateTime           @default(now())
-
-  campaign              Campaign?          @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  user                  User               @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt])
-  @@index([campaignId, status])
-}
-
-// ==================== ENGAGEMENT: GOVERNANCE ====================
-
-model AuditLog {
-  id                    String            @id @default(uuid())
-  actorType             AuditActorType
-  actorId               String?           @db.Uuid
-  action                String
-  resourceType          String
-  resourceId            String?
-  beforeState           Json?
-  afterState            Json?
-  reason                String?
-  ipAddress             String?
-  userAgent             String?
-  createdAt             DateTime          @default(now())
-
-  actor                 User?             @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
-
-  @@index([createdAt])
-  @@index([resourceType, resourceId])
-}
-
-model AbuseSignal {
-  id                    String            @id @default(uuid())
-  userId                String            @db.Uuid
-  type                  AbuseSignalType
-  riskScore             Int
-  source                String
-  summary               String
-  metadata              Json?
-  resolved              Boolean           @default(false)
-  resolvedByAdminId     String?           @db.Uuid
-  resolvedAt            DateTime?
-  createdAt             DateTime          @default(now())
-
-  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([resolved, riskScore, createdAt])
-  @@index([userId, createdAt])
 }

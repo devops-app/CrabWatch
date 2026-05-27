@@ -1,4 +1,5 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../store/authStore'
 import { AuthStack } from './AuthStack'
 import { MainTabs } from './MainTabs'
@@ -23,6 +24,7 @@ interface AppNavigatorProps {
 
 export function AppNavigator({ deepLinkToken }: AppNavigatorProps) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const { t } = useTranslation()
 
   if (!isAuthenticated) {
     return <AuthStack initialRouteName={deepLinkToken ? 'ResetPassword' : undefined} initialParams={deepLinkToken ? { token: deepLinkToken } : undefined} />
@@ -44,7 +46,7 @@ export function AppNavigator({ deepLinkToken }: AppNavigatorProps) {
       <Stack.Screen
         name="EditProfile"
         component={EditProfileScreen}
-        options={{ headerShown: true, headerTitle: 'Edit Profile', headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
+        options={{ headerShown: true, headerTitle: t('navigation.editProfile'), headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
       />
       <Stack.Screen
         name="AnalysisLoading"
@@ -59,32 +61,32 @@ export function AppNavigator({ deepLinkToken }: AppNavigatorProps) {
       <Stack.Screen
         name="About"
         component={AboutScreen}
-        options={{ headerShown: true, headerTitle: 'About CrabWatch', headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
+        options={{ headerShown: true, headerTitle: t('navigation.about'), headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
       />
       <Stack.Screen
         name="Leaderboard"
         component={LeaderboardScreen}
-        options={{ headerShown: true, headerTitle: 'Leaderboard', headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
+        options={{ headerShown: true, headerTitle: t('navigation.leaderboard'), headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
       />
       <Stack.Screen
         name="Missions"
         component={MissionsScreen}
-        options={{ headerShown: true, headerTitle: 'Missions', headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
+        options={{ headerShown: true, headerTitle: t('navigation.missions'), headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
       />
       <Stack.Screen
         name="Achievements"
         component={AchievementsScreen}
-        options={{ headerShown: true, headerTitle: 'Achievements', headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
+        options={{ headerShown: true, headerTitle: t('navigation.achievements'), headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
       />
       <Stack.Screen
         name="NotificationSettings"
         component={NotificationSettingsScreen}
-        options={{ headerShown: true, headerTitle: 'Notifications', headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
+        options={{ headerShown: true, headerTitle: t('navigation.notifications'), headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
       />
       <Stack.Screen
         name="ProfileSettings"
         component={ProfileSettingsScreen}
-        options={{ headerShown: true, headerTitle: 'Settings', headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
+        options={{ headerShown: true, headerTitle: t('navigation.settings'), headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
       />
     </Stack.Navigator>
   )

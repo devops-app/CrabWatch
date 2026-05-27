@@ -9,6 +9,7 @@ import { AuthRequest } from '../middleware/auth'
 import { setAuthCookie } from '../middleware/cookieAuth'
 import { requestPasswordResetSchema, resetPasswordSchema } from '../utils/schemas'
 import { asyncHandler, UnauthorizedError, ValidationError } from '../utils/errors'
+import { createTranslator } from '../middleware/i18n'
 
 let _resend: Resend | null | undefined
 
@@ -31,6 +32,7 @@ function generateJwt(user: { id: string; firebaseUid?: string | null; email: str
 
 export const login = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { email, password } = req.body
+  const __ = createTranslator(req)
 
   const db = getPrisma()
   const user = await db.user.findUnique({
@@ -38,7 +40,7 @@ export const login = asyncHandler(async (req: AuthRequest, res: Response) => {
   })
 
   if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
-    throw new UnauthorizedError('Invalid credentials')
+    throw new UnauthorizedError(__('login.invalidCredentials', 'auth'))
   }
 
   let token: string
@@ -129,13 +131,14 @@ export const requestPasswordReset = asyncHandler(async (req: AuthRequest, res: R
     return
   }
 
+  const __ = createTranslator(req)
   const { email } = parsed.data
   const db = getPrisma()
 
   const user = await db.user.findUnique({ where: { email } })
 
   if (!user || user.deletedAt) {
-    res.json({ success: true, data: { message: 'If the email exists, a reset link has been sent' } })
+    res.json({ success: true, data: { message: __('passwordReset.requested', 'auth') } })
     return
   }
 
@@ -161,13 +164,13 @@ export const requestPasswordReset = asyncHandler(async (req: AuthRequest, res: R
       await r.emails.send({
         from: 'CrabWatch <noreply@crabwatch.dsigncodehub.com>',
         to: email,
-        subject: 'Reset Your CrabWatch Password',
+        subject: __('passwordReset.email.subject', 'auth'),
         html: `
           <h2>Password Reset Request</h2>
-          <p>You requested to reset your CrabWatch password. Click the link below to set a new password:</p>
+          <p>${__('passwordReset.email.body.click', 'auth')}</p>
           <a href="${resetLink}">${resetLink}</a>
-          <p>This link will expire in 1 hour.</p>
-          <p>If you did not request this, you can safely ignore this email.</p>
+          <p>${__('passwordReset.email.body.expiry', 'auth')}</p>
+          <p>${__('passwordReset.email.body.ignore', 'auth')}</p>
         `,
       })
     } catch (emailError) {
@@ -175,7 +178,7 @@ export const requestPasswordReset = asyncHandler(async (req: AuthRequest, res: R
     }
   }
 
-  res.json({ success: true, data: { message: 'If the email exists, a reset link has been sent' } })
+  res.json({ success: true, data: { message: __('passwordReset.requested', 'auth') } })
 })
 
 export const resetPassword = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -185,13 +188,14 @@ export const resetPassword = asyncHandler(async (req: AuthRequest, res: Response
     return
   }
 
+  const __ = createTranslator(req)
   const { token, password } = parsed.data
   const db = getPrisma()
 
   const reset = await db.passwordReset.findUnique({ where: { token } })
 
   if (!reset || reset.used || reset.expiresAt < new Date()) {
-    throw new ValidationError('Invalid or expired reset token')
+    throw new ValidationError(__('passwordReset.tokenInvalid', 'auth'))
   }
 
   const hashedPassword = await bcrypt.hash(password, 12)
@@ -218,5 +222,5 @@ export const resetPassword = asyncHandler(async (req: AuthRequest, res: Response
     }
   }
 
-  res.json({ success: true, data: { message: 'Password has been reset successfully' } })
+  res.json({ success: true, data: { message: __('passwordReset.success', 'auth') } })
 })

@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { authMiddleware, requireAuth, resolveUser, AuthRequest } from '../middleware/auth'
 import { getConfig, getPrisma } from '../services/container'
 import { Response, NextFunction } from 'express'
+import { detectLocale } from '../middleware/i18n'
 import {
   getOnboardingStatus,
   completeOnboardingStep,
@@ -72,7 +73,7 @@ router.get('/achievements/check', async (req: AuthRequest, res: Response, next: 
       return res.status(401).json({ success: false, error: 'Authentication required' })
     }
     const { checkAndAwardAchievements } = await import('../services/achievementService')
-    const newlyUnlocked = await checkAndAwardAchievements(userId)
+    const newlyUnlocked = await checkAndAwardAchievements(userId, detectLocale(req))
     res.json({ success: true, data: { newlyUnlocked } })
   } catch (error) {
     next(error)
@@ -110,7 +111,7 @@ router.get('/insights/me', async (req: AuthRequest, res: Response, next: NextFun
       return res.status(401).json({ success: false, error: 'Authentication required' })
     }
     const { generateInsights } = await import('../services/aiInsightsService')
-    const insights = await generateInsights(userId)
+    const insights = await generateInsights(userId, detectLocale(req, req.dbUser?.preferredLocale ?? null))
     res.json({ success: true, data: insights })
   } catch (error) {
     next(error)

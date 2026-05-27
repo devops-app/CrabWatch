@@ -1,4 +1,5 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import { useTranslation } from 'react-i18next'
 import { LoginScreen } from '../screens/auth/LoginScreen'
 import { RegisterScreen } from '../screens/auth/RegisterScreen'
 import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen'
@@ -13,6 +14,8 @@ interface AuthStackProps {
 }
 
 export function AuthStack({ initialRouteName, initialParams }: AuthStackProps) {
+  const { t } = useTranslation()
+
   return (
     <Stack.Navigator
       initialRouteName={initialRouteName}
@@ -25,23 +28,23 @@ export function AuthStack({ initialRouteName, initialParams }: AuthStackProps) {
       <Stack.Screen
         name="Login"
         component={LoginScreen}
-        options={{ title: 'Sign In' }}
+        options={{ title: t('navigation.auth.signIn') }}
       />
       <Stack.Screen
         name="Register"
         component={RegisterScreen}
-        options={{ title: 'Create Account' }}
+        options={{ title: t('navigation.auth.createAccount') }}
       />
       <Stack.Screen
         name="ForgotPassword"
         component={ForgotPasswordScreen}
-        options={{ title: 'Forgot Password' }}
+        options={{ title: t('navigation.auth.forgotPassword') }}
       />
       <Stack.Screen
         name="ResetPassword"
         component={ResetPasswordScreen}
         initialParams={initialParams}
-        options={{ title: 'Reset Password' }}
+        options={{ title: t('navigation.auth.resetPassword') }}
       />
     </Stack.Navigator>
   )

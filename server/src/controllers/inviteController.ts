@@ -5,11 +5,13 @@ import { AuthRequest } from '../middleware/auth'
 import { asyncHandler, NotFoundError, ValidationError, ConflictError } from '../utils/errors'
 import { getPrisma, getConfig } from '../services/container'
 import { createInviteSchema, validateInviteSchema } from '../utils/schemas'
+import { createTranslator } from '../middleware/i18n'
 
 export const createInvite = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const __ = createTranslator(req)
   const parsed = createInviteSchema.safeParse(req.body)
   if (!parsed.success) {
-    throw new ValidationError('Invalid input', parsed.error.flatten().fieldErrors as any)
+    throw new ValidationError(__('invite.create.invalidInput', 'invite'), parsed.error.flatten().fieldErrors as any)
   }
 
   const { email, role, expiresInHours } = parsed.data
@@ -18,7 +20,7 @@ export const createInvite = asyncHandler(async (req: AuthRequest, res: Response)
 
   const existingUser = await getPrisma().user.findUnique({ where: { email } })
   if (existingUser && !existingUser.deletedAt) {
-    throw new ConflictError('A user with this email already exists')
+    throw new ConflictError(__('invite.create.emailTaken', 'invite'))
   }
 
   const existingInvite = await getPrisma().invite.findUnique({ where: { email } })
@@ -45,13 +47,13 @@ export const createInvite = asyncHandler(async (req: AuthRequest, res: Response)
       await resend.emails.send({
         from: 'CrabWatch <noreply@crabwatch.dsigncodehub.com>',
         to: email,
-        subject: 'You have been invited to CrabWatch',
+        subject: __('invite.email.subject', 'invite'),
         html: `
           <h2>Welcome to CrabWatch!</h2>
-          <p>You have been invited to join CrabWatch as a <strong>${role.toUpperCase()}</strong>.</p>
-          <p>Click the link below to create your account:</p>
+          <p>${__('invite.email.body.role', 'invite', { role: role.toUpperCase() })}</p>
+          <p>${__('invite.email.body.click', 'invite')}</p>
           <a href="${inviteLink}">${inviteLink}</a>
-          <p>This invite will expire on ${expiresAt.toLocaleDateString()}.</p>
+          <p>${__('invite.email.body.expiry', 'invite')}</p>
         `,
       })
     } catch (emailError) {
@@ -71,11 +73,12 @@ export const createInvite = asyncHandler(async (req: AuthRequest, res: Response)
   })
 })
 
-export const validateInvite = asyncHandler(async (_req: AuthRequest, res: Response) => {
-  const { body } = _req
+export const validateInvite = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const __ = createTranslator(req)
+  const { body } = req
   const parsed = validateInviteSchema.safeParse(body)
   if (!parsed.success) {
-    throw new ValidationError('Invalid input', parsed.error.flatten().fieldErrors as any)
+    throw new ValidationError(__('invite.create.invalidInput', 'invite'), parsed.error.flatten().fieldErrors as any)
   }
 
   const { token } = parsed.data
@@ -83,17 +86,17 @@ export const validateInvite = asyncHandler(async (_req: AuthRequest, res: Respon
   const invite = await getPrisma().invite.findUnique({ where: { token } })
 
   if (!invite) {
-    res.json({ success: true, data: { valid: false, error: 'Invalid invite token' } })
+    res.json({ success: true, data: { valid: false, error: __('invite.validate.invalid', 'invite') } })
     return
   }
 
   if (invite.used) {
-    res.json({ success: true, data: { valid: false, error: 'This invite has already been used' } })
+    res.json({ success: true, data: { valid: false, error: __('invite.validate.used', 'invite') } })
     return
   }
 
   if (new Date() > new Date(invite.expiresAt)) {
-    res.json({ success: true, data: { valid: false, error: 'This invite has expired' } })
+    res.json({ success: true, data: { valid: false, error: __('invite.validate.expired', 'invite') } })
     return
   }
 

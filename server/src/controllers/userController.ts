@@ -6,11 +6,14 @@ import { AuthRequest } from '../middleware/auth'
 import { getPrisma } from '../services/container'
 import { UserResponse, UserListResponse, UserRole } from '@crabwatch/shared'
 import { asyncHandler, AppError, ConflictError, NotFoundError, ValidationError } from '../utils/errors'
+import { createTranslator, detectLocale } from '../middleware/i18n'
 
 const SOFT_DELETE_RETENTION_DAYS = 30
 
 export const createUser = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { name, email, phoneCode, phoneNumber, addressLine1, addressLine2, addressLine3, state, postcode, country, password, inviteToken } = req.body
+  const __ = createTranslator(req)
+  const detectedLocale = detectLocale(req)
 
   let assignedRole = 'USER'
   const db = getPrisma()
@@ -19,19 +22,19 @@ export const createUser = asyncHandler(async (req: AuthRequest, res: Response) =
     const invite = await db.invite.findUnique({ where: { token: inviteToken } })
 
     if (!invite) {
-      throw new ValidationError('Invalid invite token')
+      throw new ValidationError(__('invite.validate.invalid', 'invite'))
     }
 
     if (invite.used) {
-      throw new ValidationError('This invite has already been used')
+      throw new ValidationError(__('invite.validate.used', 'invite'))
     }
 
     if (new Date() > new Date(invite.expiresAt)) {
-      throw new ValidationError('This invite has expired')
+      throw new ValidationError(__('invite.validate.expired', 'invite'))
     }
 
     if (invite.email.toLowerCase() !== email.toLowerCase()) {
-      throw new ValidationError('Email does not match the invite')
+      throw new ValidationError(__('invite.emailMismatch', 'invite'))
     }
 
     assignedRole = invite.role
@@ -54,6 +57,7 @@ export const createUser = asyncHandler(async (req: AuthRequest, res: Response) =
     state,
     postcode,
     country,
+    preferredLocale: detectedLocale,
     ...(addressLine2 && { addressLine2 }),
     ...(addressLine3 && { addressLine3 }),
   }
@@ -64,7 +68,7 @@ export const createUser = asyncHandler(async (req: AuthRequest, res: Response) =
 
   const existingByEmail = await db.user.findUnique({ where: { email } })
   if (existingByEmail && !existingByEmail.deletedAt) {
-    throw new ConflictError('An account with this email already exists')
+    throw new ConflictError(__('register.emailTaken', 'auth'))
   }
   if (existingByEmail && existingByEmail.deletedAt) {
     await db.user.update({
@@ -77,7 +81,7 @@ export const createUser = asyncHandler(async (req: AuthRequest, res: Response) =
     const existingByFirebase = await db.user.findUnique({ where: { firebaseUid: userData.firebaseUid } })
     if (existingByFirebase) {
       if (existingByFirebase.email.toLowerCase() === email.toLowerCase() && !existingByFirebase.deletedAt) {
-        throw new ConflictError('An account with this email already exists')
+        throw new ConflictError(__('register.emailTaken', 'auth'))
       }
       console.log(`Clearing firebaseUid from existing user ${existingByFirebase.id} (${existingByFirebase.email}) for new registration ${email}`)
       await db.user.update({
@@ -104,7 +108,8 @@ export const createUser = asyncHandler(async (req: AuthRequest, res: Response) =
     postcode: user.postcode,
     country: user.country,
     role: user.role.toLowerCase() as UserRole,
-    avatar: user.avatar,
+  avatar: user.avatar,
+    preferredLocale: user.preferredLocale,
     deletedAt: user.deletedAt?.toISOString() || null,
     blockedAt: user.blockedAt?.toISOString() || null,
     blockReason: user.blockReason,
@@ -115,9 +120,10 @@ export const createUser = asyncHandler(async (req: AuthRequest, res: Response) =
 })
 
 export const getUserProfile = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const __ = createTranslator(req)
   const dbUser = req.dbUser
   if (!dbUser) {
-    throw new NotFoundError('User not found')
+    throw new NotFoundError(__('user.notFound', 'user'))
   }
 
   const db = getPrisma()
@@ -137,6 +143,7 @@ export const getUserProfile = asyncHandler(async (req: AuthRequest, res: Respons
       country: true,
       role: true,
       avatar: true,
+      preferredLocale: true,
       deletedAt: true,
       blockedAt: true,
       blockReason: true,
@@ -152,7 +159,7 @@ export const getUserProfile = asyncHandler(async (req: AuthRequest, res: Respons
   })
 
   if (!user) {
-    throw new NotFoundError('User not found')
+    throw new NotFoundError(__('user.notFound', 'user'))
   }
 
   const response: UserResponse & { observationCount: number } = {
@@ -169,6 +176,7 @@ export const getUserProfile = asyncHandler(async (req: AuthRequest, res: Respons
     country: user.country,
     role: user.role.toLowerCase() as UserRole,
     avatar: user.avatar,
+    preferredLocale: user.preferredLocale,
     deletedAt: user.deletedAt?.toISOString() || null,
     blockedAt: user.blockedAt?.toISOString() || null,
     blockReason: user.blockReason,
@@ -180,11 +188,12 @@ export const getUserProfile = asyncHandler(async (req: AuthRequest, res: Respons
 })
 
 export const updateUserProfile = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const __ = createTranslator(req)
   const dbUser = req.dbUser
   if (!dbUser) {
-    throw new NotFoundError('User not found')
+    throw new NotFoundError(__('user.notFound', 'user'))
   }
-  const { name, phoneCode, phoneNumber, addressLine1, addressLine2, addressLine3, state, postcode, country, avatar } = req.body
+  const { name, phoneCode, phoneNumber, addressLine1, addressLine2, addressLine3, state, postcode, country, avatar, preferredLocale } = req.body
 
   const db = getPrisma()
   const user = await db.user.update({
@@ -200,6 +209,7 @@ export const updateUserProfile = asyncHandler(async (req: AuthRequest, res: Resp
       ...(postcode !== undefined && { postcode }),
       ...(country !== undefined && { country }),
       ...(avatar !== undefined && { avatar }),
+      ...(preferredLocale !== undefined && { preferredLocale }),
     },
   })
 
@@ -219,15 +229,17 @@ export const updateUserProfile = asyncHandler(async (req: AuthRequest, res: Resp
       country: user.country,
       role: user.role.toLowerCase() as UserRole,
       avatar: user.avatar,
+      preferredLocale: user.preferredLocale,
       createdAt: user.createdAt.toISOString(),
     },
   })
 })
 
 export const changeUserPassword = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const __ = createTranslator(req)
   const dbUser = req.dbUser
   if (!dbUser) {
-    throw new NotFoundError('User not found')
+    throw new NotFoundError(__('user.notFound', 'user'))
   }
 
   const { currentPassword, newPassword } = req.body as {
@@ -242,17 +254,17 @@ export const changeUserPassword = asyncHandler(async (req: AuthRequest, res: Res
   })
 
   if (!user || !user.password) {
-    throw new ValidationError('Password login is not configured for this account')
+    throw new ValidationError(__('user.password.notConfigured', 'user'))
   }
 
   const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password)
   if (!isCurrentPasswordValid) {
-    throw new ValidationError('Current password is incorrect')
+    throw new ValidationError(__('user.password.currentIncorrect', 'user'))
   }
 
   const isSameAsCurrent = await bcrypt.compare(newPassword, user.password)
   if (isSameAsCurrent) {
-    throw new ValidationError('New password must be different from current password')
+    throw new ValidationError(__('user.password.sameAsCurrent', 'user'))
   }
 
   const hashedPassword = await bcrypt.hash(newPassword, 12)
@@ -262,7 +274,7 @@ export const changeUserPassword = asyncHandler(async (req: AuthRequest, res: Res
     data: { password: hashedPassword },
   })
 
-  res.json({ success: true, data: { message: 'Password updated successfully' } })
+  res.json({ success: true, data: { message: __('user.password.changeSuccess', 'user') } })
 })
 
 export const listUsers = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -310,6 +322,7 @@ export const listUsers = asyncHandler(async (req: AuthRequest, res: Response) =>
         country: true,
         role: true,
         avatar: true,
+        preferredLocale: true,
         blockedAt: true,
         blockReason: true,
         deletedAt: true,
@@ -334,6 +347,7 @@ export const listUsers = asyncHandler(async (req: AuthRequest, res: Response) =>
       country: u.country,
       role: u.role.toLowerCase() as UserRole,
       avatar: u.avatar,
+      preferredLocale: u.preferredLocale,
       blockedAt: u.blockedAt?.toISOString() || null,
       blockReason: u.blockReason,
       deletedAt: u.deletedAt?.toISOString() || null,
@@ -369,11 +383,12 @@ export const updateUserRole = asyncHandler(async (req: AuthRequest, res: Respons
 })
 
 export const softDeleteUser = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const __ = createTranslator(req)
   const { id } = req.params
   const dbUser = req.dbUser
 
   if (dbUser && id === dbUser.id) {
-    throw new ValidationError('Cannot delete your own account')
+    throw new ValidationError(__('user.delete.self', 'user'))
   }
 
   const db = getPrisma()
@@ -399,10 +414,11 @@ export const softDeleteUser = asyncHandler(async (req: AuthRequest, res: Respons
 })
 
 export const softDeleteMyAccount = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const __ = createTranslator(req)
   const dbUser = req.dbUser
 
   if (!dbUser) {
-    throw new NotFoundError('User not found')
+    throw new NotFoundError(__('user.notFound', 'user'))
   }
 
   const db = getPrisma()
@@ -428,22 +444,23 @@ export const softDeleteMyAccount = asyncHandler(async (req: AuthRequest, res: Re
 })
 
 export const restoreUser = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const __ = createTranslator(req)
   const { id } = req.params
 
   const db = getPrisma()
   const user = await db.user.findUnique({ where: { id } })
 
   if (!user) {
-    throw new NotFoundError('User not found')
+    throw new NotFoundError(__('user.notFound', 'user'))
   }
 
   if (!user.deletedAt) {
-    throw new ValidationError('User has not been deleted')
+    throw new ValidationError(__('user.restore.notDeleted', 'user'))
   }
 
   const expiresAt = new Date(user.deletedAt.getTime() + SOFT_DELETE_RETENTION_DAYS * 24 * 60 * 60 * 1000)
   if (new Date() > expiresAt) {
-    throw new ValidationError('User has exceeded retention period and cannot be restored')
+    throw new ValidationError(__('user.restore.expired', 'user'))
   }
 
   const updated = await db.user.update({
@@ -473,23 +490,24 @@ export const restoreUser = asyncHandler(async (req: AuthRequest, res: Response) 
 })
 
 export const blockUser = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const __ = createTranslator(req)
   const { id } = req.params
   const { reason } = req.body
   const dbUser = req.dbUser
 
   if (dbUser && id === dbUser.id) {
-    throw new ValidationError('Cannot block your own account')
+    throw new ValidationError(__('user.block.self', 'user'))
   }
 
   const db = getPrisma()
   const user = await db.user.findUnique({ where: { id } })
 
   if (!user) {
-    throw new NotFoundError('User not found')
+    throw new NotFoundError(__('user.notFound', 'user'))
   }
 
   if (user.blockedAt) {
-    throw new ValidationError('User is already blocked')
+    throw new ValidationError(__('user.block.alreadyBlocked', 'user'))
   }
 
   const updated = await db.user.update({
@@ -522,17 +540,18 @@ export const blockUser = asyncHandler(async (req: AuthRequest, res: Response) =>
 })
 
 export const unblockUser = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const __ = createTranslator(req)
   const { id } = req.params
 
   const db = getPrisma()
   const user = await db.user.findUnique({ where: { id } })
 
   if (!user) {
-    throw new NotFoundError('User not found')
+    throw new NotFoundError(__('user.notFound', 'user'))
   }
 
   if (!user.blockedAt) {
-    throw new ValidationError('User is not blocked')
+    throw new ValidationError(__('user.unblock.notBlocked', 'user'))
   }
 
   const updated = await db.user.update({

@@ -21,9 +21,10 @@ export interface User {
   state: string | null
   postcode: string | null
   country: string | null
-  role: UserRole
+ role: UserRole
   avatar: string | null
   firebaseUid: string
+  preferredLocale: string | null
   createdAt: Date
 }
 
@@ -53,6 +54,7 @@ export interface UpdateUserProfileInput {
   postcode?: string | null
   country?: string | null
   avatar?: string | null
+  preferredLocale?: string | null
 }
 
 export interface UpdateUserRoleInput {
@@ -73,6 +75,7 @@ export interface UserResponse {
   country: string | null
   role: UserRole
   avatar: string | null
+  preferredLocale: string | null
   deletedAt: string | null
   blockedAt: string | null
   blockReason: string | null

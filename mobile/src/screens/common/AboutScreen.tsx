@@ -9,12 +9,15 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import { useTranslation } from 'react-i18next'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 
 const APP_VERSION = '1.0.0'
 
 export function AboutScreen() {
+  const { t } = useTranslation()
+
   const handleEmailPress = () => {
     Linking.openURL('mailto:support@dsigncodehub.com')
   }
@@ -26,30 +29,27 @@ export function AboutScreen() {
           <View style={styles.logoCircle}>
             <Ionicons name="finger-print" size={48} color={COLORS.primary} />
           </View>
-          <Text style={styles.appName}>CrabWatch</Text>
+          <Text style={styles.appName}>{t('about.appName')}</Text>
           <Text style={styles.appVersion}>v{APP_VERSION}</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>About</Text>
+          <Text style={styles.cardTitle}>{t('about.about')}</Text>
           <Text style={styles.cardText}>
-            CrabWatch is a citizen science platform for monitoring crab populations
-            across Malaysia. Researchers and citizens can capture crab observations
-            with AI-powered species identification, size estimation, and data analytics
-            to support conservation efforts.
+            {t('about.aboutText')}
           </Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Made By</Text>
+          <Text style={styles.cardTitle}>{t('about.madeBy')}</Text>
           <View style={styles.creatorRow}>
             <Ionicons name="code-slash" size={20} color={COLORS.primary} />
-            <Text style={styles.creatorText}>DsignCodeHub</Text>
+            <Text style={styles.creatorText}>{t('about.creator')}</Text>
           </View>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Support</Text>
+          <Text style={styles.cardTitle}>{t('about.support')}</Text>
           <TouchableOpacity
             style={styles.contactRow}
             onPress={handleEmailPress}
@@ -61,26 +61,26 @@ export function AboutScreen() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Features</Text>
+          <Text style={styles.cardTitle}>{t('about.features')}</Text>
           <Text style={styles.featureText}>
-            {'\u2022'} AI-powered crab species identification
+            {'\u2022'} {t('about.feature1')}
           </Text>
           <Text style={styles.featureText}>
-            {'\u2022'} Size estimation with coin reference
+            {'\u2022'} {t('about.feature2')}
           </Text>
           <Text style={styles.featureText}>
-            {'\u2022'} Real-time observation tracking
+            {'\u2022'} {t('about.feature3')}
           </Text>
           <Text style={styles.featureText}>
-            {'\u2022'} Interactive species map
+            {'\u2022'} {t('about.feature4')}
           </Text>
           <Text style={styles.featureText}>
-            {'\u2022'} Research-grade analytics dashboard
+            {'\u2022'} {t('about.feature5')}
           </Text>
         </View>
 
         <Text style={styles.footerText}>
-          {new Date().getFullYear()} DsignCodeHub. All rights reserved.
+          {t('about.rights', { year: new Date().getFullYear() })}
         </Text>
       </ScrollView>
     </SafeAreaView>

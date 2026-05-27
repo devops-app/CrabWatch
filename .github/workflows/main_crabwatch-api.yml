@@ -36,11 +36,13 @@ jobs:
         run: |
           mkdir -p deploy
           cp -r server/dist deploy/
+          mkdir -p deploy/dist/server/src/locales
+          cp server/src/locales/*.json deploy/dist/server/src/locales/
           cp server/package.json deploy/
           cp -r server/prisma deploy/
           cd deploy
-          pnpm install --prod
-          pnpm exec prisma generate
+          npm install --omit=dev --no-audit --no-fund --no-package-lock
+          npx prisma generate
           zip -r ../crabwatch-api.zip .
 
       - name: Upload artifact for deployment job

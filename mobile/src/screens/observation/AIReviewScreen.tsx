@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   View,
   Text,
@@ -25,8 +26,6 @@ import { useObservation } from '../../hooks/useObservation'
 import { useSpeciesStore } from '../../store/speciesStore'
 import { api } from '../../services/api'
 import {
-  GENDER_OPTIONS,
-  MATURATION_OPTIONS,
   COLORS,
   CW_MAX,
   BW_MAX,
@@ -49,6 +48,14 @@ interface AIReviewRouteParams {
 }
 
 interface FormValues extends ObservationFormValues {}
+
+function sanitizeDecimalInput(value: string): string {
+  const normalized = value.replace(',', '.').replace(/[^\d.]/g, '')
+  const [intPart = '', ...fractionParts] = normalized.split('.')
+  if (fractionParts.length === 0) return intPart
+  const fraction = fractionParts.join('').slice(0, 2)
+  return `${intPart}.${fraction}`
+}
 
 function extractCoinDenomination(value: string | null | undefined): string {
   if (!value) return ''
@@ -75,8 +82,27 @@ export function AIReviewScreen() {
   const { analysis, photos, sessionId, coinType, blobUrls, isManualFallback } = route.params as AIReviewRouteParams
   const displayPhotos = blobUrls || photos
 
+  const { t } = useTranslation('review')
   const { submitObservation, submitting, error: submitError } = useObservation()
   const { species, loadSpecies, getSpeciesById } = useSpeciesStore()
+
+  const GENDER_OPTIONS = useMemo(
+    () => [
+      { label: t('genderOptions.male'), value: 'male' },
+      { label: t('genderOptions.female'), value: 'female' },
+      { label: t('genderOptions.unknown'), value: 'unknown' },
+    ],
+    [t]
+  )
+
+  const MATURATION_OPTIONS = useMemo(
+    () => [
+      { label: t('maturationOptions.mature'), value: 'mature' },
+      { label: t('maturationOptions.immature'), value: 'immature' },
+      { label: t('maturationOptions.unknown'), value: 'unknown' },
+    ],
+    [t]
+  )
 
   const [latitude, setLatitude] = useState<number | null>(null)
   const [longitude, setLongitude] = useState<number | null>(null)
@@ -145,14 +171,14 @@ export function AIReviewScreen() {
 
   const onSubmit = async (data: FormValues) => {
     if (latitude == null || longitude == null) {
-      Alert.alert('Location Required', 'Please capture your GPS location.')
+      Alert.alert(t('alertLocationTitle'), t('alertLocationMessage'))
       return
     }
 
     const payload = {
       ...data,
-      cw: parseFloat(rawCW) || 0,
-      bw: rawBW === '' ? null : parseFloat(rawBW) || null,
+      cw: parseFloat(sanitizeDecimalInput(rawCW)) || 0,
+      bw: rawBW === '' ? null : parseFloat(sanitizeDecimalInput(rawBW)) || null,
       lat: latitude,
       lng: longitude,
       locationMethod: (manualLocation ? 'manual' : 'gps') as 'manual' | 'gps',
@@ -177,24 +203,24 @@ export function AIReviewScreen() {
         const newStats = await api.getMyStats()
         if (previousLevel !== null && newStats.stats.level > previousLevel) {
           Alert.alert(
-            'Level Up!',
-            `You're now level ${newStats.stats.level} (${newStats.stats.title})`,
-            [{ text: 'Awesome!' }]
+            t('levelUpTitle'),
+            t('levelUpMessage', { level: newStats.stats.level, title: newStats.stats.title }),
+            [{ text: t('awesome') }]
           )
         } else if (previousXP !== null && newStats.stats.totalXP > previousXP) {
           const xpEarned = newStats.stats.totalXP - previousXP
-          Alert.alert('XP Earned', `+${xpEarned} XP earned!`, [{ text: 'OK' }])
+          Alert.alert(t('xpEarnedTitle'), t('xpEarnedMessage', { xp: xpEarned }), [{ text: t('ok') }])
         }
       } catch { /* non-blocking */ }
 
       setShowSuccess(true)
     } else {
       Alert.alert(
-        'Offline Queued',
-        'No network connection. Observation saved locally and will sync later.',
+        t('offlineQueuedTitle'),
+        t('offlineQueuedMessage'),
         [
           {
-            text: 'OK',
+            text: t('ok'),
             onPress: () => navigation.navigate('Home'),
           },
         ]
@@ -209,9 +235,9 @@ export function AIReviewScreen() {
   }
 
   const getConfidenceLabel = (confidence: number) => {
-    if (confidence >= 0.8) return 'High'
-    if (confidence >= 0.5) return 'Medium'
-    return 'Low'
+    if (confidence >= 0.8) return t('high')
+    if (confidence >= 0.5) return t('medium')
+    return t('low')
   }
 
   if (showSuccess) {
@@ -219,18 +245,18 @@ export function AIReviewScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.successContainer}>
           <Ionicons name="checkmark-circle" size={72} color={COLORS.success} />
-          <Text style={styles.successTitle}>Observation Submitted</Text>
+          <Text style={styles.successTitle}>{t('observationSubmitted')}</Text>
           <Text style={styles.successMessage}>
-            Your AI-assisted observation has been queued for review.
+            {t('submittedMessage')}
           </Text>
           <Button
-            title="Capture Another"
+            title={t('captureAnother')}
             onPress={() => {
               setShowSuccess(false)
               navigation.navigate('New')
             }}
             style={styles.successButton}
-            accessibilityLabel="Capture another observation"
+            accessibilityLabel={t('captureAnotherA11y')}
           />
         </View>
       </SafeAreaView>
@@ -242,12 +268,12 @@ export function AIReviewScreen() {
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          accessibilityLabel="Go back"
+          accessibilityLabel={t('goBackA11y')}
         >
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {isManualFallback ? 'Manual Entry' : 'Review AI Results'}
+          {isManualFallback ? t('manualEntry') : t('reviewAIResults')}
         </Text>
         <View style={{ width: 24 }} />
       </View>
@@ -264,13 +290,13 @@ export function AIReviewScreen() {
             <View style={styles.aiSummary}>
               <View style={styles.aiSummaryHeader}>
                 <Ionicons name="sparkles" size={20} color={COLORS.accent} />
-                <Text style={styles.aiSummaryTitle}>AI Analysis Results</Text>
+                <Text style={styles.aiSummaryTitle}>{t('aiAnalysisResults')}</Text>
                 <View style={styles.confidenceBadge}>
                   <Text style={[
                     styles.confidenceText,
                     { color: getConfidenceColor(analysis.confidence) }
                   ]}>
-                    {getConfidenceLabel(analysis.confidence)} confidence
+                    {t('confidenceLabel', { level: getConfidenceLabel(analysis.confidence) })}
                   </Text>
                 </View>
               </View>
@@ -298,7 +324,7 @@ export function AIReviewScreen() {
             <View style={styles.manualFallbackCard}>
               <Ionicons name="alert-circle" size={20} color={COLORS.warning} />
               <Text style={styles.manualFallbackText}>
-                AI analysis unavailable. Please fill in all fields manually.
+                {t('manualFallback')}
               </Text>
             </View>
           )}
@@ -309,7 +335,7 @@ export function AIReviewScreen() {
                 <TouchableOpacity
                   key={i}
                   onPress={() => handlePhotoPress(uri)}
-                  accessibilityLabel={`View photo ${i + 1} in fullscreen`}
+                  accessibilityLabel={t('viewPhotoA11y', { index: i + 1 })}
                 >
                   <Image source={{ uri }} style={styles.photoStripImage} />
                 </TouchableOpacity>
@@ -321,28 +347,28 @@ export function AIReviewScreen() {
             <View style={styles.coinInfo}>
               <Ionicons name="pricetag" size={16} color={COLORS.accent} />
               <Text style={styles.coinInfoText}>
-                Reference coin: {coinType || 'AI detected'}
+                {t('referenceCoin')} {coinType || t('aiDetected')}
                 {analysis.detectedCoin &&
                   extractCoinDenomination(analysis.detectedCoin) !== extractCoinDenomination(coinType) && (
                   <Text>
                     {' '}
-                    (AI detected: {analysis.detectedCoin})
+                    ({t('aiDetectedLabel', { coin: analysis.detectedCoin })})
                   </Text>
                   )}
               </Text>
             </View>
           )}
 
-          <Text style={styles.sectionTitle}>Species</Text>
+          <Text style={styles.sectionTitle}>{t('speciesSection')}</Text>
           <Controller
             control={control}
             name="speciesId"
             render={({ field: { onChange, value } }) => (
               <View style={styles.fieldWithBadge}>
                 <PickerWithAlert
-                  label="Species"
+                  label={t('species')}
                   options={[
-                    { label: 'Select species...', value: '' },
+                    { label: t('selectSpecies'), value: '' },
                     ...species.map((s) => ({
                       label: `${s.commonName} (${s.scientificName})`,
                       value: s.id,
@@ -357,28 +383,29 @@ export function AIReviewScreen() {
             )}
           />
 
-          <Text style={styles.sectionTitle}>Measurements</Text>
+          <Text style={styles.sectionTitle}>{t('measurements')}</Text>
           <Controller
             control={control}
             name="cw"
             render={({ field: { onChange, onBlur, value } }) => (
               <View style={styles.fieldWithBadge}>
                 <Input
-                  label={`Carapace Width (cm)`}
-                  placeholder="e.g. 8.5"
+                  label={t('carapaceWidth')}
+                  placeholder={t('cwPlaceholder')}
                   keyboardType="decimal-pad"
                   value={rawCW}
                   onBlur={() => {
-                    onChange(parseFloat(rawCW) || 0)
+                    onChange(parseFloat(sanitizeDecimalInput(rawCW)) || 0)
                     onBlur()
                   }}
                   onChangeText={(v) => {
-                    setRawCW(v)
-                    onChange(parseFloat(v) || 0)
+                    const sanitized = sanitizeDecimalInput(v)
+                    setRawCW(sanitized)
+                    onChange(parseFloat(sanitized) || 0)
                   }}
                   error={errors.cw?.message}
                 />
-                {!isManualFallback && analysis.estimatedCW && <AIBadge label={`AI: ${analysis.estimatedCW} cm`} />}
+                {!isManualFallback && analysis.estimatedCW && <AIBadge label={t('aiCW', { cw: analysis.estimatedCW })} />}
               </View>
             )}
           />
@@ -388,37 +415,39 @@ export function AIReviewScreen() {
             name="bw"
             render={({ field: { onChange, onBlur, value } }) => (
               <Input
-                label="Body Weight (g)"
-                placeholder="Optional — weigh manually"
+                label={t('bodyWeight')}
+                placeholder={t('bwPlaceholder')}
                 keyboardType="decimal-pad"
                 value={rawBW}
                 onBlur={() => {
-                  onChange(rawBW === '' ? undefined : parseFloat(rawBW) || 0)
+                  const sanitized = sanitizeDecimalInput(rawBW)
+                  onChange(sanitized === '' ? undefined : parseFloat(sanitized) || 0)
                   onBlur()
                 }}
                 onChangeText={(v) => {
-                  setRawBW(v)
-                  onChange(v === '' ? undefined : parseFloat(v) || 0)
+                  const sanitized = sanitizeDecimalInput(v)
+                  setRawBW(sanitized)
+                  onChange(sanitized === '' ? undefined : parseFloat(sanitized) || 0)
                 }}
                 error={errors.bw?.message}
               />
             )}
           />
 
-          <Text style={styles.sectionTitle}>Biological Data</Text>
+          <Text style={styles.sectionTitle}>{t('biologicalData')}</Text>
           <Controller
             control={control}
             name="gender"
             render={({ field: { onChange, value } }) => (
               <View style={styles.fieldWithBadge}>
                 <PickerWithAlert
-                  label="Gender"
+                  label={t('gender')}
                   options={GENDER_OPTIONS}
                   selectedValue={value}
                   onValueChange={onChange}
                   error={errors.gender?.message}
                 />
-                {!isManualFallback && analysis.gender && analysis.gender !== 'unknown' && <AIBadge label={`AI: ${analysis.gender}`} />}
+                {!isManualFallback && analysis.gender && analysis.gender !== 'unknown' && <AIBadge label={t('aiGender', { gender: analysis.gender })} />}
               </View>
             )}
           />
@@ -429,18 +458,18 @@ export function AIReviewScreen() {
             render={({ field: { onChange, value } }) => (
               <View style={styles.fieldWithBadge}>
                 <PickerWithAlert
-                  label="Maturation"
+                  label={t('maturation')}
                   options={MATURATION_OPTIONS}
                   selectedValue={value}
                   onValueChange={onChange}
                   error={errors.maturationStatus?.message}
                 />
-                {!isManualFallback && analysis.maturationStatus && analysis.maturationStatus !== 'unknown' && <AIBadge label={`AI: ${analysis.maturationStatus}`} />}
+                {!isManualFallback && analysis.maturationStatus && analysis.maturationStatus !== 'unknown' && <AIBadge label={t('aiMaturation', { status: analysis.maturationStatus })} />}
               </View>
             )}
           />
 
-          <Text style={styles.sectionTitle}>Location</Text>
+          <Text style={styles.sectionTitle}>{t('location')}</Text>
           <GPSCapture
             latitude={latitude}
             longitude={longitude}
@@ -449,13 +478,13 @@ export function AIReviewScreen() {
             onManualToggle={() => setManualLocation((v) => !v)}
           />
 
-          <Text style={styles.sectionTitle}>Notes (Optional)</Text>
+          <Text style={styles.sectionTitle}>{t('notes')}</Text>
           <Controller
             control={control}
             name="notes"
             render={({ field: { onChange, onBlur, value } }) => (
               <Input
-                placeholder="Add any additional notes..."
+                placeholder={t('notesPlaceholder')}
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
@@ -476,18 +505,18 @@ export function AIReviewScreen() {
 
           <View style={styles.actionRow}>
             <Button
-              title="Retake Photos"
+              title={t('retakePhotos')}
               variant="ghost"
               onPress={() => navigation.goBack()}
               style={styles.actionButton}
-              accessibilityLabel="Go back and retake photos"
+              accessibilityLabel={t('retakePhotosA11y')}
             />
             <Button
-              title="Submit"
+              title={t('submit')}
               loading={submitting}
               onPress={handleSubmit(onSubmit)}
               style={styles.actionButton}
-              accessibilityLabel="Submit observation"
+              accessibilityLabel={t('submitObservationA11y')}
             />
           </View>
         </ScrollView>
@@ -503,7 +532,7 @@ export function AIReviewScreen() {
           <TouchableOpacity
             style={styles.fullscreenClose}
             onPress={() => setShowFullscreen(false)}
-            accessibilityLabel="Close fullscreen image"
+            accessibilityLabel={t('closeFullscreenA11y')}
           >
             <Ionicons name="close-circle" size={32} color="#ffffff" />
           </TouchableOpacity>

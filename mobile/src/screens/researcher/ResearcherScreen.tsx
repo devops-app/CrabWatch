@@ -12,6 +12,8 @@ import {
   RefreshControl,
   TextInput as RNTextInput,
 } from 'react-native'
+import { useTranslation } from 'react-i18next'
+import { useFormatters } from '../../hooks/useFormatters'
 import { api } from '../../services/api'
 import { Button } from '../../components/common/Button'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
@@ -20,6 +22,8 @@ import { FONT } from '../../utils/fonts'
 import type { ObservationResponse } from '@crabwatch/shared'
 
 export function ResearcherScreen() {
+  const { t } = useTranslation('researcher')
+  const { formatDateTime, formatNumber, formatCoordinates } = useFormatters()
   const [observations, setObservations] = useState<ObservationResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -50,12 +54,12 @@ export function ResearcherScreen() {
 
   const handleApprove = (obs: ObservationResponse) => {
     Alert.alert(
-      'Approve Observation',
-      `Approve submission by ${obs.user.name}?`,
+      t('approveTitle'),
+      t('approveBody', { name: obs.user.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: 'Approve',
+          text: t('validate'),
           onPress: () => validateObservation(obs, 'approved'),
         },
       ]
@@ -64,12 +68,12 @@ export function ResearcherScreen() {
 
   const handleRejectConfirm = (obs: ObservationResponse) => {
     Alert.alert(
-      'Reject Observation',
-      `Reject submission by ${obs.user.name}?`,
+      t('rejectTitle'),
+      t('rejectBody', { name: obs.user.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: 'Reject',
+          text: t('reject'),
           style: 'destructive',
           onPress: () => validateObservation(obs, 'rejected'),
         },
@@ -86,31 +90,18 @@ export function ResearcherScreen() {
       })
       setSelectedObs(null)
       setRejectionReason('')
-      Alert.alert('Success', `Observation ${status} successfully`)
+      Alert.alert(t('success'), status === 'approved' ? t('approvedSuccess') : t('rejectedSuccess'))
       loadPending()
     } catch (err) {
       Alert.alert(
-        'Error',
-        err instanceof Error ? err.message : `Failed to ${status} observation`
+        t('error'),
+        err instanceof Error ? err.message : t('failedAction', { action: status })
       )
     } finally {
       setActionLoading(false)
     }
   }
 
-  const formatDate = (dateStr: string) => {
-    try {
-      return new Date(dateStr).toLocaleDateString('en-MY', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    } catch {
-      return dateStr
-    }
-  }
 
   const renderItem = ({ item }: { item: ObservationResponse }) => (
     <TouchableOpacity
@@ -126,28 +117,28 @@ export function ResearcherScreen() {
           <Text style={styles.speciesScientific}>{item.species.scientificName}</Text>
         </View>
         <View style={styles.statusBadge}>
-          <Text style={styles.statusText}>PENDING</Text>
+          <Text style={styles.statusText}>{t('pending').toUpperCase()}</Text>
         </View>
       </View>
 
       <View style={styles.cardRow}>
         <View style={styles.infoBlock}>
-          <Text style={styles.infoLabel}>Submitter</Text>
+          <Text style={styles.infoLabel}>{t('submitter')}</Text>
           <Text style={styles.infoValue}>{item.user.name}</Text>
         </View>
         <View style={styles.infoBlock}>
-          <Text style={styles.infoLabel}>CW</Text>
-          <Text style={styles.infoValue}>{item.cw.toFixed(1)} mm</Text>
+          <Text style={styles.infoLabel}>{t('cw')}</Text>
+          <Text style={styles.infoValue}>{formatNumber(item.cw, 1)} mm</Text>
         </View>
         <View style={styles.infoBlock}>
-          <Text style={styles.infoLabel}>Gender</Text>
+          <Text style={styles.infoLabel}>{t('gender')}</Text>
           <Text style={styles.infoValue}>{item.gender}</Text>
         </View>
       </View>
 
       <View style={styles.cardFooter}>
-        <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
-        <Text style={styles.photoCount}>{item.photos.length} photo(s)</Text>
+        <Text style={styles.dateText}>{formatDateTime(item.createdAt)}</Text>
+        <Text style={styles.photoCount}>{t('photoCount', { count: item.photos.length })}</Text>
       </View>
     </TouchableOpacity>
   )
@@ -161,8 +152,8 @@ export function ResearcherScreen() {
       {observations.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>✓</Text>
-          <Text style={styles.emptyTitle}>All Caught Up!</Text>
-          <Text style={styles.emptyText}>No pending observations to review.</Text>
+          <Text style={styles.emptyTitle}>{t('allCaughtUp')}</Text>
+          <Text style={styles.emptyText}>{t('allCaughtUpHint')}</Text>
         </View>
       ) : (
         <FlatList
@@ -184,10 +175,10 @@ export function ResearcherScreen() {
           <View style={styles.modalContent}>
             {selectedObs && (
               <ScrollView style={styles.modalScroll}>
-                <Text style={styles.modalTitle}>Review Observation</Text>
+                <Text style={styles.modalTitle}>{t('reviewTitle')}</Text>
 
                 <View style={styles.photoSection}>
-                  <Text style={styles.sectionLabel}>Photos</Text>
+                  <Text style={styles.sectionLabel}>{t('photos')}</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator>
                     {selectedObs.photos.map((photo, idx) => (
                       <Image
@@ -200,97 +191,97 @@ export function ResearcherScreen() {
                   </ScrollView>
                 </View>
 
-                <View style={styles.detailSection}>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Species</Text>
-                    <Text style={styles.detailValue}>{selectedObs.species.commonName}</Text>
-                  </View>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Scientific Name</Text>
-                    <Text style={styles.detailValue}>{selectedObs.species.scientificName}</Text>
-                  </View>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Submitter</Text>
-                    <Text style={styles.detailValue}>{selectedObs.user.name}</Text>
-                  </View>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Carapace Width</Text>
-                    <Text style={styles.detailValue}>{selectedObs.cw.toFixed(1)} mm</Text>
-                  </View>
-                  {selectedObs.bw != null && (
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Body Weight</Text>
-                      <Text style={styles.detailValue}>{selectedObs.bw.toFixed(1)} g</Text>
-                    </View>
-                  )}
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Gender</Text>
-                    <Text style={styles.detailValue}>{selectedObs.gender}</Text>
-                  </View>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Maturation</Text>
-                    <Text style={styles.detailValue}>{selectedObs.maturationStatus}</Text>
-                  </View>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Location</Text>
-                    <Text style={styles.detailValue}>
-                      {selectedObs.lat.toFixed(4)}, {selectedObs.lng.toFixed(4)}
-                    </Text>
-                  </View>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Location Method</Text>
-                    <Text style={styles.detailValue}>{selectedObs.locationMethod}</Text>
-                  </View>
-                  {selectedObs.detectedCoin && (
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Coin Reference</Text>
-                      <Text style={styles.detailValue}>{selectedObs.detectedCoin}</Text>
-                    </View>
-                  )}
-                  {selectedObs.notes && (
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Notes</Text>
-                      <Text style={styles.detailValue}>{selectedObs.notes}</Text>
-                    </View>
-                  )}
-                </View>
+       <View style={styles.detailSection}>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t('species')}</Text>
+            <Text style={styles.detailValue}>{selectedObs.species.commonName}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t('scientificName')}</Text>
+            <Text style={styles.detailValue}>{selectedObs.species.scientificName}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t('submitter')}</Text>
+            <Text style={styles.detailValue}>{selectedObs.user.name}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t('carapaceWidth')}</Text>
+            <Text style={styles.detailValue}>{formatNumber(selectedObs.cw, 1)} mm</Text>
+          </View>
+          {selectedObs.bw != null && (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>{t('bodyWeight')}</Text>
+              <Text style={styles.detailValue}>{formatNumber(selectedObs.bw, 1)} g</Text>
+            </View>
+          )}
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t('gender')}</Text>
+            <Text style={styles.detailValue}>{selectedObs.gender}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t('maturation')}</Text>
+            <Text style={styles.detailValue}>{selectedObs.maturationStatus}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t('location')}</Text>
+            <Text style={styles.detailValue}>
+              {formatCoordinates(selectedObs.lat, selectedObs.lng)}
+            </Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t('locationMethod')}</Text>
+            <Text style={styles.detailValue}>{selectedObs.locationMethod}</Text>
+          </View>
+          {selectedObs.detectedCoin && (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>{t('coinReference')}</Text>
+              <Text style={styles.detailValue}>{selectedObs.detectedCoin}</Text>
+            </View>
+          )}
+          {selectedObs.notes && (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>{t('notes')}</Text>
+              <Text style={styles.detailValue}>{selectedObs.notes}</Text>
+            </View>
+          )}
+        </View>
 
-               <View style={styles.rejectSection}>
-                    <Text style={styles.sectionLabel}>Rejection Reason (optional)</Text>
-                    <RNTextInput
-                      style={styles.rejectInput}
-                      placeholder="Enter reason for rejection..."
-                      value={rejectionReason}
-                      onChangeText={setRejectionReason}
-                      multiline
-                      numberOfLines={3}
-                      textAlignVertical="top"
-                      placeholderTextColor={COLORS.textLight}
-                    />
-                  </View>
+      <View style={styles.rejectSection}>
+                <Text style={styles.sectionLabel}>{t('rejectionReason')}</Text>
+                <RNTextInput
+                  style={styles.rejectInput}
+                  placeholder={t('rejectionPlaceholder')}
+                  value={rejectionReason}
+                  onChangeText={setRejectionReason}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                  placeholderTextColor={COLORS.textLight}
+                />
+              </View>
 
-                <View style={styles.modalActions}>
-                  <Button
-                    title="Approve"
-                    onPress={() => handleApprove(selectedObs)}
-                    loading={actionLoading}
-                    style={styles.approveBtn}
-                  />
-                  <Button
-                    title="Reject"
-                    onPress={() => handleRejectConfirm(selectedObs)}
-                    loading={actionLoading}
-                    variant="danger"
-                    style={styles.rejectBtn}
-                  />
-                </View>
+       <View style={styles.modalActions}>
+              <Button
+                title={t('validate')}
+                onPress={() => handleApprove(selectedObs)}
+                loading={actionLoading}
+                style={styles.approveBtn}
+              />
+              <Button
+                title={t('reject')}
+                onPress={() => handleRejectConfirm(selectedObs)}
+                loading={actionLoading}
+                variant="danger"
+                style={styles.rejectBtn}
+              />
+            </View>
 
-                <TouchableOpacity
-                  onPress={() => setSelectedObs(null)}
-                  style={styles.closeBtn}
-                >
-                  <Text style={styles.closeBtnText}>Close</Text>
-                </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setSelectedObs(null)}
+              style={styles.closeBtn}
+            >
+              <Text style={styles.closeBtnText}>{t('close')}</Text>
+            </TouchableOpacity>
               </ScrollView>
             )}
           </View>

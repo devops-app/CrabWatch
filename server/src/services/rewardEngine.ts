@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client'
 import { getContainer } from './container'
 import { invalidateLeaderboardCache } from './leaderboardService'
 import { sendNotification } from './notificationService'
+import { getServerI18n } from '../config/i18n'
 
 let _prisma: PrismaClient
 function getPrisma(): PrismaClient {
@@ -19,6 +20,7 @@ interface AwardXPParams {
   sourceId?: string
   reason?: string
   idempotencyKey?: string
+  locale?: string
 }
 
 interface XPResult {
@@ -35,7 +37,7 @@ interface XPResult {
  * Award XP to a user with full idempotency, transaction safety, and cascading level/streak checks.
  */
 export async function awardXP(params: AwardXPParams): Promise<XPResult> {
-  const { userId, actionType, sourceType, sourceId, reason } = params
+  const { userId, actionType, sourceType, sourceId, reason, locale } = params
 
   // Generate or use provided idempotency key
   const idempotencyKey = params.idempotencyKey || `${userId}:${actionType}:${sourceType}:${sourceId || 'none'}:${Date.now()}`
@@ -154,12 +156,15 @@ export async function awardXP(params: AwardXPParams): Promise<XPResult> {
   }
 
   if (result.leveledUp) {
+    const i18n = getServerI18n()
+    const lng = locale || 'en'
     sendNotification({
       userId,
-      title: 'Level Up!',
-      body: `Congratulations! You've reached level ${result.newLevel} (${result.newTitle})`,
+      title: i18n.t('notification.levelUp.title', { lng }),
+      body: i18n.t('notification.levelUp.body', { lng, level: result.newLevel, title: result.newTitle }),
       channel: 'IN_APP',
       category: 'gamification',
+      locale: lng,
       data: { type: 'level_up', level: String(result.newLevel), title: result.newTitle },
     }).catch(() => {})
   }
@@ -216,7 +221,7 @@ async function calculateLevelFromDB(totalXP: number, tx: any): Promise<{ level: 
  * Update user's observation streak.
  * Called after a new observation is submitted.
  */
-export async function updateStreak(userId: string): Promise<{ currentStreak: number; longestStreak: number; streakBonus: boolean }> {
+export async function updateStreak(userId: string, locale?: string): Promise<{ currentStreak: number; longestStreak: number; streakBonus: boolean }> {
   const user = await getPrisma().user.findUnique({ where: { id: userId } })
   if (!user) throw new Error('User not found')
 
@@ -236,12 +241,15 @@ export async function updateStreak(userId: string): Promise<{ currentStreak: num
   if (user.currentStreak > 0 && lastActive) {
     const hoursSinceActive = (today.getTime() - lastActive.getTime()) / (1000 * 60 * 60)
     if (hoursSinceActive > 18 && lastActive.getTime() !== yesterday.getTime()) {
+      const i18n = getServerI18n()
+      const lng = locale || 'en'
       sendNotification({
         userId,
-        title: 'Streak at Risk!',
-        body: `Your ${user.currentStreak}-day streak is about to expire. Great job staying active!`,
+        title: i18n.t('notification.streakWarning.title', { lng }),
+        body: i18n.t('notification.streakWarning.body', { lng, streak: user.currentStreak }),
         channel: 'IN_APP',
         category: 'gamification',
+        locale: lng,
         data: { type: 'streak_warning', streak: String(user.currentStreak) },
       }).catch(() => {})
     }
@@ -267,12 +275,15 @@ export async function updateStreak(userId: string): Promise<{ currentStreak: num
 
   // Notify user when their streak is reset (they lost it)
   if (newStreak === 1 && user.currentStreak > 1) {
+    const i18n = getServerI18n()
+    const lng = locale || 'en'
     sendNotification({
       userId,
-      title: 'Streak Lost',
-      body: `Your ${user.currentStreak}-day streak has ended. Submit an observation daily to build a new one!`,
+      title: i18n.t('notification.streakLost.title', { lng }),
+      body: i18n.t('notification.streakLost.body', { lng, streak: user.currentStreak }),
       channel: 'IN_APP',
       category: 'gamification',
+      locale: lng,
       data: { type: 'streak_lost', previousStreak: String(user.currentStreak) },
     }).catch(() => {})
   }
@@ -296,6 +307,7 @@ export async function updateStreak(userId: string): Promise<{ currentStreak: num
       sourceType: 'Streak',
       reason: `Streak bonus: ${newStreak} days`,
       idempotencyKey: `streak:${userId}:${today.toISOString().split('T')[0]}`,
+      locale,
     })
   }
 

@@ -10,6 +10,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import { useTranslation } from 'react-i18next'
 import type { ActiveMissionDto, OnboardingStepStatusDto } from '@crabwatch/shared'
 import { api } from '../../services/api'
 import { Card } from '../../components/common/Card'
@@ -21,6 +22,7 @@ import { FONT } from '../../utils/fonts'
 type Tab = 'missions' | 'onboarding'
 
 export function MissionsScreen() {
+  const { t } = useTranslation('gamification')
   const [activeTab, setActiveTab] = useState<Tab>('missions')
   const [missions, setMissions] = useState<ActiveMissionDto[]>([])
   const [onboarding, setOnboarding] = useState<{ steps: OnboardingStepStatusDto[]; completedCount: number; totalCount: number; progress: number }>({
@@ -95,7 +97,7 @@ export function MissionsScreen() {
       await api.claimMission({ missionKey })
       loadData()
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to claim mission')
+      Alert.alert(t('common.error'), err.message || t('missions.claimFailed'))
     } finally {
       setActionLoading(null)
     }
@@ -107,7 +109,7 @@ export function MissionsScreen() {
       await api.completeOnboardingStep({ step })
       loadData()
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to complete step')
+      Alert.alert(t('common.error'), err.message || t('missions.stepFailed'))
     } finally {
       setActionLoading(null)
     }
@@ -177,7 +179,7 @@ export function MissionsScreen() {
 
       {!mission.claimed && !mission.completed && (
         <Button
-          title={actionLoading === mission.key ? 'Claiming...' : 'Claim'}
+          title={actionLoading === mission.key ? t('missions.claiming') : t('missions.accept')}
           variant="primary"
           disabled={actionLoading !== null}
           onPress={() => handleClaimMission(mission.key)}
@@ -188,7 +190,7 @@ export function MissionsScreen() {
       {mission.completed && (
         <View style={styles.completedBadge}>
           <Ionicons name="checkmark-circle" size={14} color={COLORS.success} />
-          <Text style={styles.completedText}>Completed</Text>
+          <Text style={styles.completedText}>{t('missions.complete')}</Text>
         </View>
       )}
     </Card>
@@ -198,11 +200,11 @@ export function MissionsScreen() {
     <Card padding={24}>
       <View style={styles.emptyState}>
         <Ionicons name="shield-outline" size={48} color={COLORS.textLight} />
-        <Text style={styles.emptyTitle}>No missions available</Text>
-        <Text style={styles.emptyText}>Check back tomorrow for new missions!</Text>
+        <Text style={styles.emptyTitle}>{t('missions.empty')}</Text>
+        <Text style={styles.emptyText}>{t('missions.emptyHint')}</Text>
       </View>
     </Card>
-  ), [])
+  ), [t])
 
   const renderTabBar = useCallback(() => (
     <View style={styles.tabBar}>
@@ -218,7 +220,7 @@ export function MissionsScreen() {
             color={activeTab === tab ? '#ffffff' : COLORS.textSecondary}
           />
           <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-            {tab === 'missions' ? 'Daily Missions' : 'Onboarding'}
+            {t(tab === 'missions' ? 'missions.tab.active' : 'missions.tab.onboarding')}
           </Text>
         </TouchableOpacity>
       ))}
@@ -248,7 +250,7 @@ export function MissionsScreen() {
         <Card padding={16}>
           <View style={styles.onboardingProgress}>
             <View style={styles.onboardingProgressHeader}>
-              <Text style={styles.onboardingProgressTitle}>Progress</Text>
+              <Text style={styles.onboardingProgressTitle}>{t('missions.progress')}</Text>
               <Text style={styles.onboardingProgressCount}>
                 {onboarding.completedCount}/{onboarding.totalCount}
               </Text>
@@ -294,7 +296,7 @@ export function MissionsScreen() {
 
                 {!step.completed && index === currentStepIndex && (
                   <Button
-                    title={actionLoading === step.step ? '...' : 'Done'}
+                    title={actionLoading === step.step ? t('missions.doneLoading') : t('missions.done')}
                     variant="primary"
                     disabled={actionLoading !== null}
                     onPress={() => handleCompleteStep(step.step)}
