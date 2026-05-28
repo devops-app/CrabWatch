@@ -13,7 +13,23 @@ const nextConfig = {
   env: {
     MAPBOX_TOKEN: process.env.MAPBOX_TOKEN || '',
   },
-  // API proxy handled by middleware (api-rewrite.ts) for runtime env var support
+  rewrites() {
+    const backendUrl = process.env.BACKEND_URL || 'https://crabwatch-api.azurewebsites.net'
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${backendUrl}/api/:path*`,
+      },
+      {
+        source: '/dashboard/:path*',
+        destination: '/en/dashboard/:path*',
+      },
+      {
+        source: '/auth/:path*',
+        destination: '/en/auth/:path*',
+      },
+    ]
+  },
   async headers() {
     return [
       {

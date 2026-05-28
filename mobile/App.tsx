@@ -78,7 +78,7 @@ export default function App() {
     <ErrorBoundary>
       <I18nextProvider i18n={i18n}>
         <StatusBar style={Platform.OS === 'ios' ? 'dark' : 'auto'} />
-        <NavigationContainer linking={{ prefixes: [Linking.createURL('')], getStateFromPath: () => undefined, subscribe: () => () => {} }}>
+        <NavigationContainer linking={{ enabled: false, prefixes: [] }}>
           <AppNavigator deepLinkToken={deepLinkToken} />
         </NavigationContainer>
       </I18nextProvider>
