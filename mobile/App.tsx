@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { NavigationContainer } from '@react-navigation/native'
-import { View, ActivityIndicator, Platform, Linking } from 'react-native'
+import * as Linking from 'expo-linking'
+import { View, ActivityIndicator, Platform } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
-import * as LinkingModule from 'expo-linking'
 import { I18nextProvider } from 'react-i18next'
 import { AppNavigator } from './src/navigation/AppNavigator'
 import { initAuth } from './src/store/authStore'
@@ -52,7 +52,7 @@ export default function App() {
     console.log('Deep link received:', url)
     if (!url) return
 
-    const parsed = LinkingModule.parse(url)
+    const parsed = Linking.parse(url)
     const path = parsed.path || ''
 
     const resetMatch = path.match(/^\/reset-password\/(.+)$/)
@@ -78,7 +78,7 @@ export default function App() {
     <ErrorBoundary>
       <I18nextProvider i18n={i18n}>
         <StatusBar style={Platform.OS === 'ios' ? 'dark' : 'auto'} />
-        <NavigationContainer>
+        <NavigationContainer linking={{ prefixes: [Linking.createURL('')], getStateFromPath: () => undefined, subscribe: () => () => {} }}>
           <AppNavigator deepLinkToken={deepLinkToken} />
         </NavigationContainer>
       </I18nextProvider>

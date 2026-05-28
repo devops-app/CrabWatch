@@ -13,15 +13,7 @@ const nextConfig = {
   env: {
     MAPBOX_TOKEN: process.env.MAPBOX_TOKEN || '',
   },
-  async rewrites() {
-    const backendUrl = process.env.BACKEND_URL || ''
-    return [
-      {
-        source: '/api/v1/:path*',
-        destination: `${backendUrl}/api/v1/:path*`,
-      },
-    ]
-  },
+  // API proxy handled by middleware (api-rewrite.ts) for runtime env var support
   async headers() {
     return [
       {
