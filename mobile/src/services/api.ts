@@ -55,10 +55,22 @@ type ExpoConfigExtra = {
 }
 
 const expoExtra = Constants.expoConfig?.extra as ExpoConfigExtra | undefined
-const API_URL =
+const API_VERSION_PATH = '/api/v1'
+
+function normalizeApiBaseUrl(rawUrl: string): string {
+  const trimmed = rawUrl.trim().replace(/\/+$/, '')
+  if (trimmed.length === 0) {
+    return `http://localhost:3001${API_VERSION_PATH}`
+  }
+
+  return trimmed.endsWith(API_VERSION_PATH) ? trimmed : `${trimmed}${API_VERSION_PATH}`
+}
+
+const API_URL = normalizeApiBaseUrl(
   process.env.EXPO_PUBLIC_API_URL ??
   expoExtra?.apiUrl ??
   'http://localhost:3001/api/v1'
+)
 
 const HTTP_URL_PATTERN = /^https?:\/\//i
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1'])

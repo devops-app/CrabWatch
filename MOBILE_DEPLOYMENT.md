@@ -29,12 +29,12 @@ The mobile app already has a `.env` file with Firebase credentials. Verify the A
 
 ```env
 # mobile/.env
-EXPO_PUBLIC_API_URL=http://localhost:3001
+EXPO_PUBLIC_API_URL=http://localhost:3001/api/v1
 ```
 
 > **Important for physical devices:** `localhost` on your phone refers to the phone itself, not your computer. If testing on a physical device, replace with your machine's LAN IP:
 > ```env
-> EXPO_PUBLIC_API_URL=http://192.168.x.x:3001
+> EXPO_PUBLIC_API_URL=http://192.168.x.x:3001/api/v1
 > ```
 > Find your IP: `ipconfig` (Windows) or `ifconfig` (Mac/Linux).
 
@@ -81,7 +81,7 @@ pnpm dev:android
 
 > Password is controlled by `SEED_PASSWORD` env var (default: `Pa55w.rd`).
 
-> **Note:** All API calls go through `/api/v1/` endpoints. The mobile app's `.env` should have `EXPO_PUBLIC_API_URL` pointing to your server (e.g., `http://192.168.1.x:3001` for physical devices).
+> **Note:** All API calls go through `/api/v1/` endpoints. The mobile app's `.env` should have `EXPO_PUBLIC_API_URL` including the versioned base path (e.g., `http://192.168.1.x:3001/api/v1` for physical devices).
 
 2. **Test key flows:**
    - Home screen — view stats cards and quick actions
