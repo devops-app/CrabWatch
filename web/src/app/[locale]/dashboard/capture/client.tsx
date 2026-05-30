@@ -69,6 +69,7 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
   const [uploadSessionId, setUploadSessionId] = useState<string>(() => createUploadSessionId())
   const [photos, setPhotos] = useState<PhotoMap>({ dorsal: null, ventral: null, 'carapace-closeup': null })
   const [showFullscreen, setShowFullscreen] = useState(false)
+  const [showTipsModal, setShowTipsModal] = useState(false)
   const [fullscreenPhoto, setFullscreenPhoto] = useState<string | null>(null)
   const [viewWarnings, setViewWarnings] = useState<string[]>([])
   const [analyzingView, setAnalyzingView] = useState(false)
@@ -542,6 +543,56 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
             <li>{t('tipLight')}</li>
             <li>{t('tipSteady')}</li>
           </ul>
+          <button
+            type="button"
+            className="text-xs font-semibold text-ocean-600 hover:text-ocean-800 mt-2 flex items-center gap-1"
+            onClick={() => setShowTipsModal(true)}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            {t('viewExamples')}
+          </button>
+        </div>
+      )}
+
+      {showTipsModal && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setShowTipsModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-lg font-bold text-ocean-900">{t('photoTips')}</h2>
+              <button
+                type="button"
+                className="text-gray-400 hover:text-gray-600 p-1"
+                onClick={() => setShowTipsModal(false)}
+                aria-label={t('closeExamples')}
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <Image src="/images/capture-tips/dorsal.jpg" alt={t('dorsalExample')} width={600} height={300} className="w-full rounded-xl object-cover" />
+                <p className="text-sm text-gray-600 mt-1 text-center">{t('dorsalExample')}</p>
+              </div>
+              <div>
+                <Image src="/images/capture-tips/ventral.jpg" alt={t('ventralExample')} width={600} height={300} className="w-full rounded-xl object-cover" />
+                <p className="text-sm text-gray-600 mt-1 text-center">{t('ventralExample')}</p>
+              </div>
+              <div>
+                <Image src="/images/capture-tips/closeup.png" alt={t('closeupExample')} width={600} height={300} className="w-full rounded-xl object-cover" />
+                <p className="text-sm text-gray-600 mt-1 text-center">{t('closeupExample')}</p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

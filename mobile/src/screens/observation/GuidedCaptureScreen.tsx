@@ -26,6 +26,7 @@ import { CaptureFrameOverlay } from '../../components/observation/CaptureFrameOv
 import { useCaptureAssistance } from '../../hooks/useCaptureAssistance'
 import { analyzeView } from '../../utils/viewAnalysis'
 import { PhotoView } from '@crabwatch/shared'
+import { PhotoTipsModal } from '../../components/observation/PhotoTipsModal'
 
 const COIN_SERIES_RAW = {
   'Third Series (Current)': [
@@ -82,6 +83,7 @@ export function GuidedCaptureScreen() {
     'carapace-closeup': false,
   })
   const [showPreview, setShowPreview] = useState(false)
+  const [showTipsModal, setShowTipsModal] = useState(false)
   const [viewWarnings, setViewWarnings] = useState<string[]>([])
   const [analyzingView, setAnalyzingView] = useState(false)
 
@@ -306,14 +308,23 @@ export function GuidedCaptureScreen() {
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
-        {currentView !== 'carapace-closeup' && (
+{currentView !== 'carapace-closeup' && (
           <View style={[styles.tipsCard, { marginBottom: 16 }]}>
            <Text style={styles.tipsTitle}>{t('photoTips')}</Text>
-             <Text style={styles.tipBullet}>\u2022 {t('tipCoin')}</Text>
-             <Text style={styles.tipBullet}>\u2022 {t('tipFrame')}</Text>
-             <Text style={styles.tipBullet}>\u2022 {t('tipLight')}</Text>
-             <Text style={styles.tipBullet}>\u2022 {t('tipSteady')}</Text>
-          </View>
+              <Text style={styles.tipBullet}>\u2022 {t('tipCoin')}</Text>
+              <Text style={styles.tipBullet}>\u2022 {t('tipFrame')}</Text>
+              <Text style={styles.tipBullet}>\u2022 {t('tipLight')}</Text>
+              <Text style={styles.tipBullet}>\u2022 {t('tipSteady')}</Text>
+              <TouchableOpacity
+                style={styles.viewExamplesButton}
+                onPress={() => setShowTipsModal(true)}
+                accessibilityRole="button"
+                accessibilityLabel={t('viewExamples')}
+              >
+                <Ionicons name="image-outline" size={16} color={COLORS.primary} />
+                <Text style={styles.viewExamplesText}>{t('viewExamples')}</Text>
+              </TouchableOpacity>
+           </View>
         )}
         {!coinSelected && currentStep === 0 && (
           <View style={styles.section}>
@@ -579,6 +590,7 @@ export function GuidedCaptureScreen() {
           </View>
         </SafeAreaView>
       </Modal>
+    <PhotoTipsModal visible={showTipsModal} onClose={() => setShowTipsModal(false)} />
     </SafeAreaView>
   )
 }
@@ -853,6 +865,21 @@ const styles = StyleSheet.create({
     fontSize: FONT['sm+'],
     color: COLORS.textSecondary,
     lineHeight: 20,
+  },
+  viewExamplesButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(10, 60, 120, 0.06)',
+  },
+  viewExamplesText: {
+    fontSize: FONT['sm+'],
+    color: COLORS.primary,
+    fontWeight: '600',
   },
   footer: {
     flexDirection: 'row',
