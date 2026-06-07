@@ -43,6 +43,7 @@ export default function LoginPage(): React.JSX.Element {
         avatar: null,
         firebaseUid: '',
         preferredLocale: null,
+        consentAccepted: true,
         createdAt: new Date(),
       }, result.token)
       router.push('/dashboard')

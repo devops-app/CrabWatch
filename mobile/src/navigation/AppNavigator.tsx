@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../store/authStore'
 import { AuthStack } from './AuthStack'
 import { MainTabs } from './MainTabs'
+import { SpeciesListScreen } from '../screens/species/SpeciesListScreen'
 import { SpeciesDetailScreen } from '../screens/species/SpeciesDetailScreen'
 import { ObservationDetailScreen } from '../screens/observation/ObservationDetailScreen'
 import { EditProfileScreen } from '../screens/profile/EditProfileScreen'
@@ -33,6 +34,11 @@ export function AppNavigator({ deepLinkToken }: AppNavigatorProps) {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen
+        name="SpeciesList"
+        component={SpeciesListScreen}
+        options={{ headerShown: true, headerTitle: t('speciesList.title'), headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
+      />
       <Stack.Screen
         name="SpeciesDetail"
         component={SpeciesDetailScreen}

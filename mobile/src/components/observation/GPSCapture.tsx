@@ -8,6 +8,10 @@ import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 import { useFormatters } from '../../hooks/useFormatters'
 
+interface MapPressEvent {
+  nativeEvent: { coordinate: { latitude: number; longitude: number } }
+}
+
 const MALAYSIA_REGION = {
   latitude: 4.2105,
   longitude: 101.9758,
@@ -54,7 +58,7 @@ export function GPSCapture({
     }
   }, [location, manualMode, onLocationCapture])
 
-  const handleMapPress = useCallback((e: any) => {
+  const handleMapPress = useCallback((e: MapPressEvent) => {
     const { latitude: lat, longitude: lng } = e.nativeEvent.coordinate
     onLocationCapture(lat, lng)
   }, [onLocationCapture])

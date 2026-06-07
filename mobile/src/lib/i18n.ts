@@ -43,6 +43,6 @@ i18n.use(initReactI18next).init({
   },
 })
 
-;(global as any).__i18n = i18n
+; global.__i18n = i18n
 
 export default i18n

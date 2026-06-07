@@ -11,6 +11,7 @@ import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
+type IoniconName = keyof typeof Ionicons.glyphMap
 import { useTranslation } from 'react-i18next'
 import { analysisService, AnalysisProgress, AnalysisResult } from '../../services/analysisService'
 import { COLORS } from '../../utils/constants'
@@ -23,6 +24,7 @@ interface AnalysisLoadingRouteParams {
   views: PhotoView[]
   sessionId: string
   coinType?: string
+  qualityOverrides?: Partial<Record<PhotoView, { approved: boolean; reason?: string }>>
 }
 
 function formatElapsed(seconds: number): string {
@@ -34,7 +36,7 @@ function formatElapsed(seconds: number): string {
 export function AnalysisLoadingScreen() {
   const navigation = useNavigation<any>()
   const route = useRoute<any>()
-  const { photos, views, sessionId, coinType } = route.params as AnalysisLoadingRouteParams
+  const { photos, views, sessionId, coinType, qualityOverrides } = route.params as AnalysisLoadingRouteParams
   const { t } = useTranslation('analysis')
 
   const steps = useMemo(() => [
@@ -79,12 +81,13 @@ export function AnalysisLoadingScreen() {
         const result = await analysisService.analyzeCrab(
           photos,
           views,
-          sessionId,
-          coinType,
-          (p) => {
-            if (!cancelled) handleProgress(p)
-          }
-        )
+            sessionId,
+            coinType,
+            qualityOverrides,
+            (p) => {
+              if (!cancelled) handleProgress(p)
+            }
+          )
 
         if (!cancelled) {
           if (timerRef.current) clearInterval(timerRef.current)
@@ -110,7 +113,7 @@ export function AnalysisLoadingScreen() {
     return () => {
       cancelled = true
     }
-  }, [photos, views, sessionId, coinType, navigation, handleProgress])
+  }, [photos, views, sessionId, coinType, qualityOverrides, navigation, handleProgress])
 
   const handleCancel = () => {
     if (timerRef.current) clearInterval(timerRef.current)
@@ -126,11 +129,12 @@ export function AnalysisLoadingScreen() {
       try {
         const result = await analysisService.retryAnalysis(
           photos,
-          views,
-          sessionId,
-          coinType,
-          handleProgress
-        )
+            views,
+            sessionId,
+            coinType,
+            qualityOverrides,
+            handleProgress
+          )
 
         if (timerRef.current) clearInterval(timerRef.current)
         navigation.navigate('AIReview', {
@@ -157,12 +161,14 @@ export function AnalysisLoadingScreen() {
         speciesId: 'unknown',
         speciesName: 'Unknown Species',
         confidence: 0,
+        speciesConfidence: 0,
         estimatedCW: null,
         estimatedBW: null,
         gender: 'unknown',
         maturationStatus: 'unknown',
         detectedCoin: null,
         coinConfidence: 0,
+        crabCount: 1,
         suggestions: ['AI analysis failed. Please fill in all fields manually.'],
         rawAnalysis: '',
       },
@@ -225,7 +231,7 @@ export function AnalysisLoadingScreen() {
                   ) : isDone ? (
                     <Ionicons name="checkmark" size={20} color={COLORS.surface} />
                   ) : (
-                    <Ionicons name={step.icon as any} size={20} color={COLORS.textLight} />
+                    <Ionicons name={step.icon as IoniconName} size={20} color={COLORS.textLight} />
                   )}
                 </View>
                 <Text

@@ -1,3 +1,6 @@
+import Constants from 'expo-constants'
+import { normalizeGateMode, type GateMode, type QualityGateModes } from '@crabwatch/shared'
+
 export const API_URL = 'http://localhost:3001/api'
 
 export const MAX_PHOTOS = 5
@@ -109,3 +112,46 @@ export const ELEVATION = {
     elevation: 8,
   },
 } as const
+
+type ExpoConfigExtra = {
+  qualityGateModes?: {
+    blur?: string
+    brightness?: string
+    view?: string
+    webcamRes?: string
+  }
+  focusSampleCooldownMs?: number | string
+}
+
+function resolvePositiveInteger(value: unknown, fallback: number): number {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const rounded = Math.round(value)
+    return rounded > 0 ? rounded : fallback
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number.parseInt(value, 10)
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+  }
+
+  return fallback
+}
+
+function resolveGateMode(key: 'blur' | 'brightness' | 'view' | 'webcamRes'): GateMode {
+  const envValue = process.env[`EXPO_PUBLIC_QUALITY_GATE_${key.toUpperCase()}`]
+  const configValue = (Constants.expoConfig?.extra as ExpoConfigExtra | undefined)?.qualityGateModes?.[key]
+  return normalizeGateMode(envValue ?? configValue, 'warn')
+}
+
+export const QUALITY_GATE_MODES: QualityGateModes = {
+  blur: resolveGateMode('blur'),
+  brightness: resolveGateMode('brightness'),
+  view: resolveGateMode('view'),
+  webcamRes: resolveGateMode('webcamRes'),
+}
+
+export const FOCUS_SAMPLE_COOLDOWN_MS = resolvePositiveInteger(
+  process.env.EXPO_PUBLIC_CAPTURE_FOCUS_COOLDOWN_MS
+    ?? (Constants.expoConfig?.extra as ExpoConfigExtra | undefined)?.focusSampleCooldownMs,
+  700,
+)

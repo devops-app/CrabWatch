@@ -1,0 +1,39 @@
+# Calibration Dataset Template
+# 
+# Place labeled crab photos in a directory and list them here.
+# The CLI processes each image through the quality pipeline, then compares
+# computed scores against human labels to find optimal thresholds.
+#
+# Columns:
+#   path          - relative path to image (from --dataset-dir)
+#   blurLabel     - human assessment: clear, slight, blurry, extreme
+#   brightLabel   - human assessment: dark, dim, ok, bright, overexposed
+#   coverageLabel - human assessment: ok, low, very_low
+#   notes         - optional free-text notes
+#
+# Label definitions:
+#   blurLabel:
+#     clear    - sharp, no motion blur, edges well-defined
+#     slight   - minor softness, acceptable for analysis
+#     blurry   - noticeable blur, analysis quality degraded
+#     extreme  - very blurry, unusable for analysis
+#
+#   brightLabel:
+#     dark         - too dark, subject barely visible
+#     dim          - underexposed but subject identifiable
+#     ok           - well-lit, ideal conditions
+#     bright       - well-lit, slightly over but acceptable
+#     overexposed  - blown highlights, detail lost
+#
+#   coverageLabel:
+#     ok        - crab fills >35% of frame
+#     low       - crab fills 15-35% of frame
+#     very_low  - crab fills <15% of frame
+#
+# Example:
+path,blurLabel,brightLabel,coverageLabel,notes
+photos/dorsal-001.jpg,clear,ok,ok,good dorsal shot
+photos/dorsal-002.jpg,slight,dim,ok,low light but usable
+photos/dorsal-003.jpg,blurry,ok,low,handshake during capture
+photos/dorsal-004.jpg,extreme,dark,very_low,night photo, far away
+photos/ventral-001.jpg,clear,bright,ok,well-lit ventral view

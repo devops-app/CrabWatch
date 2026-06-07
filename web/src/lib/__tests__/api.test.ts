@@ -23,7 +23,7 @@ describe('api', () => {
       await api.getSpecies('1')
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/v1/species/1',
+        '/api/v1/species/1',
         expect.objectContaining({
           headers: expect.objectContaining({
             'Content-Type': 'application/json',
@@ -45,7 +45,7 @@ describe('api', () => {
       })
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/v1/species',
+        '/api/v1/species',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({
@@ -105,7 +105,7 @@ describe('api', () => {
       })
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/v1/users/register',
+        '/api/v1/users/register',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({
@@ -123,7 +123,7 @@ describe('api', () => {
       await api.getProfile()
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/v1/users/me',
+        '/api/v1/users/me',
         expect.any(Object)
       )
     })
@@ -134,7 +134,7 @@ describe('api', () => {
       await api.updateProfile({ name: 'Updated' })
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/v1/users/me',
+        '/api/v1/users/me',
         expect.objectContaining({
           method: 'PATCH',
           body: JSON.stringify({ name: 'Updated' }),
@@ -150,7 +150,7 @@ describe('api', () => {
       await api.listSpecies()
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/v1/species',
+        '/api/v1/species',
         expect.any(Object)
       )
     })
@@ -161,7 +161,7 @@ describe('api', () => {
       await api.getSpecies('1')
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/v1/species/1',
+        '/api/v1/species/1',
         expect.any(Object)
       )
     })
@@ -172,7 +172,7 @@ describe('api', () => {
       await api.deleteSpecies('1')
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/v1/species/1',
+        '/api/v1/species/1',
         expect.objectContaining({ method: 'DELETE' })
       )
     })
@@ -196,7 +196,7 @@ gender: 'M',
       })
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/v1/observations',
+        '/api/v1/observations',
         expect.objectContaining({
           method: 'POST',
         })
@@ -231,7 +231,7 @@ gender: 'M',
       await api.validateObservation('1', { status: 'approved' })
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/v1/observations/1/validate',
+        '/api/v1/observations/1/validate',
         expect.objectContaining({
           method: 'PATCH',
           body: JSON.stringify({ status: 'approved' }),
@@ -247,7 +247,7 @@ gender: 'M',
       await api.getDashboardStats()
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/v1/analytics/stats',
+        '/api/v1/analytics/stats',
         expect.any(Object)
       )
     })
@@ -308,6 +308,38 @@ gender: 'M',
     })
   })
 
+  describe('analysis endpoints', () => {
+    it('preserves crabCoveragePct from analyzeCrab response', async () => {
+      const analysis = {
+        speciesId: 'unknown',
+        speciesName: 'Unknown Species',
+        confidence: 0.72,
+        estimatedCW: null,
+        estimatedBW: null,
+        gender: 'unknown',
+        maturationStatus: 'unknown',
+        detectedCoin: null,
+        coinConfidence: 0,
+        crabCount: 1,
+        crabCoveragePct: 22.5,
+        suggestions: ['Crab appears too small in frame (22.5%)'],
+        rawAnalysis: '',
+      }
+      mockResponse(analysis)
+
+      const result = await api.analyzeCrab({
+        photoUrls: ['https://example.com/a.jpg'],
+        views: ['dorsal'],
+      })
+
+      expect(result.crabCoveragePct).toBe(22.5)
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/analyze/crab'),
+        expect.objectContaining({ method: 'POST' })
+      )
+    })
+  })
+
   describe('user admin endpoints', () => {
     it('should list users with filters', async () => {
       mockResponse({ users: [], total: 0, page: 1, limit: 20 })
@@ -326,7 +358,7 @@ gender: 'M',
       await api.updateUserRole('1', 'admin')
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/v1/users/1/role',
+        '/api/v1/users/1/role',
         expect.objectContaining({
           method: 'PATCH',
           body: JSON.stringify({ role: 'admin' }),
@@ -342,7 +374,7 @@ gender: 'M',
       await api.getUploadUrl('test.jpg', 'image/jpeg')
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/v1/upload/url',
+        '/api/v1/upload/url',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ fileName: 'test.jpg', contentType: 'image/jpeg' }),

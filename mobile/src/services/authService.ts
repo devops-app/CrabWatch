@@ -13,7 +13,7 @@ export interface RegisterCredentials {
   phoneNumber?: string
   addressLine1?: string
   addressLine2?: string
-  addressLine3?: string
+ consentAccepted?: boolean
   state?: string
   postcode?: string
   country?: string
@@ -28,8 +28,8 @@ export const authService = {
     return user
   },
 
-  async register(name: string, email: string, password: string, phoneCode?: string, phoneNumber?: string, addressLine1?: string, addressLine2?: string, addressLine3?: string, state?: string, postcode?: string, country?: string) {
-    const user = await api.register(name, email, password, phoneCode, phoneNumber, addressLine1, addressLine2, addressLine3, state, postcode, country)
+  async register(name: string, email: string, password: string, phoneCode?: string, phoneNumber?: string, addressLine1?: string, addressLine2?: string, state?: string, postcode?: string, country?: string, consentAccepted?: boolean) {
+    const user = await api.register(name, email, password, phoneCode, phoneNumber, addressLine1, addressLine2, state, postcode, country, consentAccepted)
     const result = await api.login({ email, password })
     await useAuthStore.getState().login(user, result.token)
     return user

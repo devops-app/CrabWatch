@@ -8,7 +8,6 @@ const mockUser = (overrides = {}) => ({
   phoneNumber: null,
   addressLine1: null,
   addressLine2: null,
-  addressLine3: null,
   state: null,
   postcode: null,
   country: null,
@@ -16,6 +15,7 @@ const mockUser = (overrides = {}) => ({
   avatar: null,
   firebaseUid: '',
   preferredLocale: null,
+  consentAccepted: false,
   createdAt: new Date(),
   ...overrides,
 })

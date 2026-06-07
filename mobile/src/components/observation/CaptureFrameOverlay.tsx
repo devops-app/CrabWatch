@@ -1,37 +1,53 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { View, Text, StyleSheet, Dimensions, Animated } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import { View, Text, StyleSheet, Animated } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+type IoniconName = keyof typeof Ionicons.glyphMap
 import { useTranslation } from 'react-i18next'
+import * as ScreenOrientation from 'expo-screen-orientation'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 import type { CaptureMessageKey } from '../../hooks/useCaptureAssistance'
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
-const FRAME_WIDTH = SCREEN_WIDTH * 0.72
-const FRAME_HEIGHT = FRAME_WIDTH * 0.75
-const CORNER_LENGTH = 40
-const CORNER_THICKNESS = 4
+
 
 interface CaptureFrameOverlayProps {
   viewType: 'dorsal' | 'ventral' | 'carapace-closeup'
   isReady: boolean
   shakeLevel: 'none' | 'slight' | 'heavy'
-  brightnessLevel: 'dark' | 'low' | 'good' | 'bright'
   isFocused: boolean
   messages: CaptureMessageKey[]
+  dimensions: { width: number; height: number }
+  orientation: ScreenOrientation.Orientation
 }
 
 export function CaptureFrameOverlay({
   viewType,
   isReady,
   shakeLevel,
-  brightnessLevel,
   isFocused,
   messages,
+  dimensions,
+  orientation,
 }: CaptureFrameOverlayProps) {
   const { t } = useTranslation('capture')
   const cornerAnim = useState(new Animated.Value(0))[0]
   const [pulseKey, setPulseKey] = useState(0)
+  const isLandscapeOrientation =
+    orientation === ScreenOrientation.Orientation.LANDSCAPE_LEFT
+    || orientation === ScreenOrientation.Orientation.LANDSCAPE_RIGHT
+  const shouldSwapDimensions = isLandscapeOrientation && dimensions.height > dimensions.width
+  const screenWidth = shouldSwapDimensions ? dimensions.height : dimensions.width
+  const screenHeight = shouldSwapDimensions ? dimensions.width : dimensions.height
+
+  const isLandscape = screenWidth > screenHeight
+  const frameWidth = isLandscape
+    ? Math.min(screenWidth * 0.78, screenHeight * 1.02)
+    : Math.min(screenWidth * 0.9, screenHeight * 1.0)
+  const frameHeight = frameWidth * 0.75
+  const frameTop = Math.max((screenHeight - frameHeight) / 2 - 20, 60)
+  const frameLeft = Math.max((screenWidth - frameWidth) / 2, 0)
+  const bottomDimHeight = Math.max(screenHeight - frameTop - frameHeight, 0)
+  const topBarTop = Math.max(frameTop - 72, 12)
 
   useEffect(() => {
     if (isReady) {
@@ -81,82 +97,76 @@ export function CaptureFrameOverlay({
 
   return (
     <View style={styles.overlay} pointerEvents="none">
-      {/* Top instruction bar */}
-      <View style={styles.topBar}>
+     {/* Top instruction bar */}
+      <View
+        style={[
+          styles.topBar,
+          { top: topBarTop },
+          isLandscape && styles.topBarLandscape,
+        ]}
+      >
         <View style={styles.topBarRow}>
-          <Ionicons name={instructions.icon as any} size={22} color={COLORS.primaryLight} />
-          <Text style={styles.topBarTitle}>{instructions.title}</Text>
+          <Ionicons name={instructions.icon as IoniconName} size={22} color={COLORS.primaryLight} />
+          <Text style={[styles.topBarTitle, isLandscape && styles.topBarTitleLandscape]}>{instructions.title}</Text>
         </View>
-        <Text style={styles.topBarHint}>{instructions.hint}</Text>
+        {!isLandscape && <Text style={styles.topBarHint}>{instructions.hint}</Text>}
       </View>
 
-      {/* Frame area */}
-      <View style={styles.frameContainer}>
+      {/* Frame area with crab silhouette */}
+      <View style={[styles.frameContainer, { top: frameTop, left: frameLeft, width: frameWidth, height: frameHeight }]}>
         {/* Semi-transparent outside area */}
-        <View style={styles.topDim} />
-        <View style={styles.bottomDim} />
-        <View style={styles.leftDim} />
-        <View style={styles.rightDim} />
+        <View style={[styles.topDim, { top: -frameTop, left: -frameLeft, right: -frameLeft, height: frameTop }]} />
+        <View
+          style={[
+            styles.bottomDim,
+            {
+              bottom: -bottomDimHeight,
+              left: -frameLeft,
+              right: -frameLeft,
+              height: bottomDimHeight,
+            },
+          ]}
+        />
+        <View style={[styles.leftDim, { left: -frameLeft, width: frameLeft }]} />
+        <View style={[styles.rightDim, { right: -frameLeft, width: frameLeft }]} />
 
-        {/* Frame border */}
-        <View style={[styles.frameBorder, { borderColor }]}>
-          {/* Corners */}
-          <Animated.View
-            style={[
-              styles.corner,
-              styles.cornerTL,
-              {
-                borderTopColor: cornerColor,
-                borderLeftColor: cornerColor,
-                opacity: cornerAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.6, 1],
-                }),
-              },
-            ]}
-          />
-          <Animated.View
-            style={[
-              styles.corner,
-              styles.cornerTR,
-              {
-                borderTopColor: cornerColor,
-                borderRightColor: cornerColor,
-                opacity: cornerAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.6, 1],
-                }),
-              },
-            ]}
-          />
-          <Animated.View
-            style={[
-              styles.corner,
-              styles.cornerBL,
-              {
-                borderBottomColor: cornerColor,
-                borderLeftColor: cornerColor,
-                opacity: cornerAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.6, 1],
-                }),
-              },
-            ]}
-          />
-          <Animated.View
-            style={[
-              styles.corner,
-              styles.cornerBR,
-              {
-                borderBottomColor: cornerColor,
-                borderRightColor: cornerColor,
-                opacity: cornerAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.6, 1],
-                }),
-              },
-            ]}
-          />
+        {/* Crab silhouette outline */}
+        <Animated.View
+          style={[
+            styles.crabOutline,
+            {
+              transform: [{ scale: isLandscape ? 1.08 : 1 }],
+              opacity: cornerAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.5, 1],
+              }),
+            },
+          ]}
+        >
+          {/* Carapace (body) */}
+          <View style={[styles.carapace, { borderColor }]}>
+            <Animated.View style={[styles.carapaceGlow, { borderColor: cornerColor }]} />
+          </View>
+
+          {/* Left claw */}
+          <View style={[styles.clawLeft, { borderColor }]}>
+            <Animated.View style={[styles.clawTipLeft, { borderColor: cornerColor }]} />
+          </View>
+
+          {/* Right claw */}
+          <View style={[styles.clawRight, { borderColor }]}>
+            <Animated.View style={[styles.clawTipRight, { borderColor: cornerColor }]} />
+          </View>
+
+          {/* Left legs */}
+          <View style={[styles.leg, styles.legL1, { borderColor }]} />
+          <View style={[styles.leg, styles.legL2, { borderColor }]} />
+          <View style={[styles.leg, styles.legL3, { borderColor }]} />
+
+          {/* Right legs */}
+          <View style={[styles.leg, styles.legR1, { borderColor }]} />
+          <View style={[styles.leg, styles.legR2, { borderColor }]} />
+          <View style={[styles.leg, styles.legR3, { borderColor }]} />
 
           {/* Center crosshair */}
           <View style={styles.crosshairH} />
@@ -169,34 +179,43 @@ export function CaptureFrameOverlay({
             </View>
           )}
 
-          {/* Coin zone indicator — bottom center of frame */}
+          {/* Coin zone indicator */}
           {viewType !== 'carapace-closeup' && (
             <View style={styles.coinZone}>
               <Ionicons name="pricetag-outline" size={18} color="rgba(255,255,255,0.7)" />
             </View>
           )}
-        </View>
+        </Animated.View>
       </View>
 
-      {/* Bottom quality warnings */}
-      {messages.length > 0 && (
-        <View style={styles.warningsContainer} key={pulseKey}>
+     {/* Bottom quality warnings */}
+       {messages.length > 0 && (
+        <View
+          style={[
+            styles.warningsContainer,
+            isLandscape && styles.warningsContainerLandscape,
+          ]}
+          key={pulseKey}
+        >
           {messages.map((msg, i) => {
             const isWarning = msg === 'holdStill' || msg === 'holdSteadier'
             const isDark = msg === 'lightingTooDark'
             const isLow = msg === 'lightingLow'
-            const iconColor = isWarning ? '#f59e0b' : isDark || isLow ? '#f97316' : COLORS.success
+            const isBright = msg === 'lightingTooBright'
+            const iconColor = isWarning ? '#f59e0b' : isDark || isLow || isBright ? '#f97316' : COLORS.success
             const iconName = isWarning
               ? 'warning'
               : isDark
               ? 'moon'
               : isLow
               ? 'partly-sunny'
+              : isBright
+              ? 'sunny'
               : 'checkmark-circle'
 
             return (
               <View key={i} style={styles.warningChip}>
-                <Ionicons name={iconName as any} size={14} color={iconColor} />
+                <Ionicons name={iconName as IoniconName} size={14} color={iconColor} />
                 <Text style={styles.warningText}>{t(`assistMessages.${msg}`)}</Text>
               </View>
             )
@@ -204,19 +223,20 @@ export function CaptureFrameOverlay({
         </View>
       )}
 
-      {/* Readiness indicator */}
-      <View
-        style={[
-          styles.readinessIndicator,
-          {
-            backgroundColor: isReady
-              ? 'rgba(34, 197, 94, 0.85)'
-              : shakeLevel === 'heavy'
-              ? 'rgba(239, 68, 68, 0.85)'
-              : 'rgba(245, 158, 11, 0.85)',
-          },
-        ]}
-      >
+    {/* Readiness indicator */}
+       <View
+          style={[
+            styles.readinessIndicator,
+            isLandscape && styles.readinessIndicatorLandscape,
+            {
+              backgroundColor: isReady
+                ? 'rgba(34, 197, 94, 0.85)'
+               : shakeLevel === 'heavy'
+               ? 'rgba(239, 68, 68, 0.85)'
+               : 'rgba(245, 158, 11, 0.85)',
+           },
+         ]}
+       >
         <Ionicons
           name={isReady ? 'checkmark-circle' : shakeLevel === 'heavy' ? 'close-circle' : 'time'}
           size={18}
@@ -232,23 +252,20 @@ export function CaptureFrameOverlay({
   )
 }
 
-const FRAME_TOP = SCREEN_HEIGHT * 0.15
-const FRAME_LEFT = (SCREEN_WIDTH - FRAME_WIDTH) / 2
-
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
   },
   topBar: {
     position: 'absolute',
-    top: FRAME_TOP - 72,
-    left: 0,
-    right: 0,
+    left: 12,
+    right: 12,
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 4,
+    borderRadius: 14,
   },
   topBarRow: {
     flexDirection: 'row',
@@ -267,77 +284,109 @@ const styles = StyleSheet.create({
   
   frameContainer: {
     position: 'absolute',
-    top: FRAME_TOP,
-    left: FRAME_LEFT,
-    width: FRAME_WIDTH,
-    height: FRAME_HEIGHT,
   },
   topDim: {
     position: 'absolute',
-    top: -FRAME_TOP,
-    left: -FRAME_LEFT,
-    right: -FRAME_LEFT,
-    height: FRAME_TOP,
     backgroundColor: 'rgba(0, 0, 0, 0.45)',
   },
   bottomDim: {
     position: 'absolute',
-    bottom: -SCREEN_HEIGHT + FRAME_TOP + FRAME_HEIGHT,
-    left: -FRAME_LEFT,
-    right: -FRAME_LEFT,
-    height: SCREEN_HEIGHT - FRAME_TOP - FRAME_HEIGHT,
     backgroundColor: 'rgba(0, 0, 0, 0.45)',
   },
   leftDim: {
     position: 'absolute',
     top: 0,
-    left: -FRAME_LEFT,
-    width: FRAME_LEFT,
     height: '100%',
     backgroundColor: 'rgba(0, 0, 0, 0.45)',
   },
   rightDim: {
     position: 'absolute',
     top: 0,
-    right: -FRAME_LEFT,
-    width: FRAME_LEFT,
     height: '100%',
     backgroundColor: 'rgba(0, 0, 0, 0.45)',
   },
-  frameBorder: {
+  /* Crab silhouette outline */
+  crabOutline: {
     ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
-    borderColor: 'rgba(125, 211, 252, 0.35)',
+    paddingHorizontal: 8,
+    paddingVertical: 8,
   },
-  corner: {
+  carapace: {
     position: 'absolute',
-    width: CORNER_LENGTH,
-    height: CORNER_LENGTH,
+    left: '12%',
+    right: '12%',
+    top: '18%',
+    bottom: '18%',
+    borderWidth: 2.5,
+    borderRadius: 100,
   },
-  cornerTL: {
-    top: -2,
-    left: -2,
-    borderTopWidth: CORNER_THICKNESS,
-    borderLeftWidth: CORNER_THICKNESS,
+  carapaceGlow: {
+    position: 'absolute',
+    left: 3,
+    right: 3,
+    top: 3,
+    bottom: 3,
+    borderWidth: 1,
+    borderRadius: 100,
+    opacity: 0.3,
   },
-  cornerTR: {
-    top: -2,
-    right: -2,
-    borderTopWidth: CORNER_THICKNESS,
-    borderRightWidth: CORNER_THICKNESS,
+  clawLeft: {
+    position: 'absolute',
+    left: 0,
+    top: '28%',
+    width: '14%',
+    height: '22%',
+    borderTopWidth: 2.5,
+    borderLeftWidth: 2.5,
+    borderRadius: 12,
+    transform: [{ rotate: '-20deg' }],
   },
-  cornerBL: {
-    bottom: -2,
-    left: -2,
-    borderBottomWidth: CORNER_THICKNESS,
-    borderLeftWidth: CORNER_THICKNESS,
+  clawTipLeft: {
+    position: 'absolute',
+    right: -8,
+    top: -4,
+    width: 16,
+    height: '100%',
+    borderWidth: 2.5,
+    borderRightWidth: 0,
+    borderRadius: 8,
+    opacity: 0.6,
   },
-  cornerBR: {
-    bottom: -2,
-    right: -2,
-    borderBottomWidth: CORNER_THICKNESS,
-    borderRightWidth: CORNER_THICKNESS,
+  clawRight: {
+    position: 'absolute',
+    right: 0,
+    top: '28%',
+    width: '14%',
+    height: '22%',
+    borderTopWidth: 2.5,
+    borderRightWidth: 2.5,
+    borderRadius: 12,
+    transform: [{ rotate: '20deg' }],
   },
+  clawTipRight: {
+    position: 'absolute',
+    left: -8,
+    top: -4,
+    width: 16,
+    height: '100%',
+    borderWidth: 2.5,
+    borderLeftWidth: 0,
+    borderRadius: 8,
+    opacity: 0.6,
+  },
+  leg: {
+    position: 'absolute',
+    width: '10%',
+    height: 2,
+    borderBottomWidth: 2.5,
+    borderRadius: 2,
+  },
+  legL1: { left: 0, top: '38%', transform: [{ rotate: '30deg' }] },
+  legL2: { left: 0, top: '50%', transform: [{ rotate: '15deg' }] },
+  legL3: { left: 0, top: '62%', transform: [{ rotate: '0deg' }] },
+  legR1: { right: 0, top: '38%', transform: [{ rotate: '-30deg' }] },
+  legR2: { right: 0, top: '50%', transform: [{ rotate: '-15deg' }] },
+  legR3: { right: 0, top: '62%', transform: [{ rotate: '0deg' }] },
   crosshairH: {
     position: 'absolute',
     top: '50%',
@@ -422,6 +471,23 @@ const styles = StyleSheet.create({
     fontSize: FONT['sm+'],
     color: '#ffffff',
     fontWeight: '600',
+  },
+  topBarLandscape: {
+    left: 20,
+    right: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    gap: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  },
+  topBarTitleLandscape: {
+    fontSize: FONT.lg,
+  },
+  warningsContainerLandscape: {
+    bottom: 80,
+  },
+  readinessIndicatorLandscape: {
+    bottom: 20,
   },
   
 })

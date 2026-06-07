@@ -24,7 +24,8 @@
     "missions": "Misi",
     "achievements": "Pencapaian",
     "about": "Tentang CrabWatch",
-    "aboutText": "CrabWatch ialah platform sains rakyat yang membantu memulihara populasi ketam di Malaysia. Pemerhatian anda membantu penyelidik memahami kesihatan populasi dan membentuk dasar pemuliharaan."
+    "aboutText": "CrabWatch ialah platform sains rakyat yang membantu memulihara populasi ketam di Malaysia. Pemerhatian anda membantu penyelidik memahami kesihatan populasi dan membentuk dasar pemuliharaan.",
+    "species": "Spesies"
   },
   "login": {
     "title": "CrabWatch",
@@ -55,8 +56,6 @@
     "addressPlaceholder1": "Alamat jalan",
     "addressLine2": "Alamat Baris 2 (pilihan)",
     "addressPlaceholder2": "Pangsapuri, suite, dll.",
-    "addressLine3": "Alamat Baris 3 (pilihan)",
-    "addressPlaceholder3": "Maklumat alamat tambahan",
     "state": "Negeri *",
     "statePlaceholder": "Negeri",
     "postcode": "Poskod *",
@@ -69,7 +68,17 @@
     "hasAccount": "Sudah ada akaun?",
     "signIn": "Log masuk",
     "registrationFailed": "Pendaftaran Gagal",
-    "couldNotCreate": "Tidak dapat mencipta akaun"
+    "couldNotCreate": "Tidak dapat mencipta akaun",
+    "consentPrefix": "Saya bersetuju dengan",
+    "consentSuffix": "Saya faham data lokasi dan pemerhatian saya akan digunakan untuk penyelidikan pemuliharaan ketam.",
+    "termsOfService": "Terma Perkhidmatan",
+    "privacyPolicy": "Dasar Privasi",
+    "termsPlaceholder": "Kandungan Terma Perkhidmatan akan datang.",
+    "privacyPlaceholder": "Kandungan Dasar Privasi akan datang."
+  },
+  "legal": {
+    "termsTitle": "Terma Perkhidmatan",
+    "privacyTitle": "Dasar Privasi"
   },
   "forgotPassword": {
     "title": "Lupa Kata Laluan",
@@ -77,6 +86,7 @@
     "email": "E-mel",
     "emailPlaceholder": "anda@email.com",
     "sendLink": "Hantar Pautan Tetapan Semula",
+    "invalidEmail": "Alamat e-mel tidak sah",
     "success": "Jika akaun wujud dengan e-mel tersebut, pautan penetapan semula kata laluan telah dihantar. Semak peti masuk anda.",
     "backToLogin": "Kembali ke Log Masuk",
     "rememberPassword": "Ingat kata laluan anda?",
@@ -89,6 +99,7 @@
     "subtitle": "Masukkan kata laluan baru anda di bawah.",
     "newPassword": "Kata Laluan Baru",
     "passwordPlaceholder": "Sekurang-kurangnya 8 aksara",
+    "passwordMin": "Sekurang-kurangnya 8 aksara",
     "confirmPassword": "Sahkan Kata Laluan",
     "confirmPlaceholder": "Masukkan semula kata laluan anda",
     "reset": "Tetapkan Semula Kata Laluan",
@@ -181,8 +192,6 @@
     "streetAddress": "Alamat jalan",
     "addressLine2": "Alamat Baris 2",
     "aptSuite": "Pangsapuri, suite, dll.",
-    "addressLine3": "Alamat Baris 3",
-    "additionalAddressInfo": "Maklumat alamat tambahan",
     "state": "Negeri",
     "postcode": "Poskod",
     "country": "Negara",
@@ -286,6 +295,16 @@
       "meanBW": "Purata BW",
       "stdDev": "Sisihan Piawai",
       "sample": "Sampel"
+    },
+    "map": {
+      "title": "Taburan Geograf",
+      "subtitle": "Lokasi pemerhatian di seluruh Malaysia",
+      "loading": "Memuat data peta...",
+      "filterGender": "Tapis:",
+      "allGenders": "Semua",
+      "gender": "Jantina",
+      "status": "Status",
+      "observations": " pemerhatian"
     }
   },
   "capture": {
@@ -313,6 +332,7 @@
       "ventral": "Tunjukkan bahagian bawah dengan jelas",
       "closeup": "Zum masuk pada corak cengkerang"
     },
+    "cameraBanner": "Landskap disokong — pastikan ketam berada di tengah bingkai",
     "overlayStatus": {
       "ready": "Sedia",
       "holdStill": "Pegang Stabil",
@@ -322,6 +342,7 @@
       "focusLocked": "Fokus terkunci",
       "lightingTooDark": "Pencahayaan terlalu gelap - pergi ke kawasan lebih terang",
       "lightingLow": "Pencahayaan rendah - cuba berhampiran tingkap",
+      "lightingTooBright": "Pencahayaan terlalu terang - kurangkan silau atau cahaya matahari kuat",
       "holdStill": "Pegang stabil - pergerakan terlalu banyak",
       "holdSteadier": "Cuba pegang lebih stabil"
     },
@@ -434,6 +455,30 @@
     "alertCoinRequired": "Syiling Diperlukan",
     "alertCoinRequiredMessage": "Sila pilih jenis syiling atau pilih \"Biarkan AI mengesan\" sebelum teruskan.",
     "alertCoinRequiredFinal": "Sila pilih jenis syiling atau pilih \"Biarkan AI mengesan\".",
+    "quality": {
+      "title": "Semakan kualiti foto",
+      "checking": "Menyemak kabur dan kecerahan...",
+      "blur": "Skor kabur",
+      "brightness": "Kecerahan",
+      "status": {
+        "pass": "Lulus",
+        "warn": "Amaran",
+        "fail": "Gagal"
+      },
+      "failHint": "Foto ini gagal semakan kualiti minimum. Ambil semula disyorkan.",
+      "retake": "Ambil Semula",
+      "submitAnyway": "Hantar Juga",
+      "clearOverride": "Kosongkan Override",
+      "reasonA11y": "Sebab override",
+      "reasonPlaceholder": "Sebab override (min 5 aksara)",
+      "reasonTitle": "Sebab override diperlukan",
+      "reasonRequired": "Sila tambah sebab override sekurang-kurangnya 5 aksara.",
+      "overrideSavedTitle": "Override disimpan",
+      "overrideSavedMessage": "Foto ini boleh diteruskan dengan override manual.",
+      "blockTitle": "Semakan kualiti gagal",
+      "blockMessage": "Ambil semula foto ini atau beri sebab override sebelum teruskan.",
+      "blockAnalyzeMessage": "Foto wajib gagal semakan kualiti. Ambil semula atau tambah sebab override sebelum analisis AI."
+    },
     "limitReached": "Had Dicapai",
     "maxPhotos": "Maksimum {{max}} foto dibenarkan",
     "coins": {
@@ -525,6 +570,14 @@
     "referenceCoin": "Syiling rujukan:",
     "aiDetected": "Dikesan AI",
     "aiDetectedLabel": "Dikesan AI: {{coin}}",
+    "crabCoverage": "Liputan ketam",
+    "coverageWarningChip": "Liputan rendah",
+    "coverageWarningMessage": "Ketam kelihatan terlalu kecil dalam bingkai ({{coverage}}%). Ambil semula dengan lebih dekat supaya ketam memenuhi lebih banyak ruang imej.",
+    "retakeRecommended": "Ambil semula disyorkan",
+    "retakeRecommendedA11y": "Kembali dan ambil semula foto untuk liputan ketam yang lebih baik",
+    "enhancedByCrop": "Dipertingkat dengan potongan fokus",
+    "suggestedCrop": "Cadangan potongan",
+    "suggestedCropHint": "AI mencadangkan potongan lebih rapat pada foto pertama untuk fokus yang lebih baik.",
     "speciesSection": "Spesies",
     "selectSpecies": "Pilih spesies...",
     "measurements": "Ukuran",

@@ -1,15 +1,25 @@
 import { photoService } from '../photoService'
 import * as ImagePicker from 'expo-image-picker'
 import * as ImageManipulator from 'expo-image-manipulator'
+import * as FileSystem from 'expo-file-system'
 
 jest.mock('expo-image-picker')
 jest.mock('expo-image-manipulator')
+jest.mock('expo-file-system')
 
 const mockImagePicker = ImagePicker as jest.Mocked<typeof ImagePicker>
 const mockImageManipulator = ImageManipulator as jest.Mocked<typeof ImageManipulator>
+const mockFileSystem = FileSystem as jest.Mocked<typeof FileSystem>
 
 beforeEach(() => {
   jest.clearAllMocks()
+  mockFileSystem.getInfoAsync.mockResolvedValue({
+    exists: true,
+    uri: 'file://mock.jpg',
+    size: 100000,
+    isDirectory: false,
+    modificationTime: Date.now(),
+  })
 })
 
 describe('photoService', () => {

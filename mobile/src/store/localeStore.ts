@@ -18,20 +18,21 @@ export const useLocaleStore = create<LocaleState>((set, get) => ({
     await SecureStore.setItemAsync(LOCALE_KEY, locale)
     set({ locale })
 
-    const i18n = (global as any).__i18n
-    if (i18n) {
-      i18n.changeLanguage(locale)
+    const i18nInstance = global.__i18n
+    if (i18nInstance) {
+      i18nInstance.changeLanguage(locale)
     }
   },
 
   init: async () => {
     const saved = await SecureStore.getItemAsync(LOCALE_KEY)
-    const locale = (saved && SUPPORTED_LOCALES.includes(saved as any)) ? (saved as SupportedLocale) : 'en'
+    const parsed = saved as SupportedLocale | undefined
+    const locale = parsed && SUPPORTED_LOCALES.includes(parsed) ? parsed : 'en'
     set({ locale })
 
-    const i18n = (global as any).__i18n
-    if (i18n) {
-      i18n.changeLanguage(locale)
+    const i18nInstance = global.__i18n
+    if (i18nInstance) {
+      i18nInstance.changeLanguage(locale)
     }
   },
 }))

@@ -34,6 +34,10 @@ export interface ServiceConfig {
     campaignsEnabled: boolean
     abuseDetectionEnabled: boolean
   }
+  imageQuality: {
+    coverageWarnThresholdPct: number
+    autoCropSecondPassEnabled: boolean
+  }
 }
 
 export interface ServiceContainer {

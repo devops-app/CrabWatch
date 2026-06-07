@@ -24,7 +24,8 @@
     "missions": "Missions",
     "achievements": "Achievements",
     "about": "About CrabWatch",
-    "aboutText": "CrabWatch is a citizen science platform helping to conserve crab populations in Malaysia. Your observations help researchers understand population health and inform conservation policies."
+    "aboutText": "CrabWatch is a citizen science platform helping to conserve crab populations in Malaysia. Your observations help researchers understand population health and inform conservation policies.",
+    "species": "Species"
   },
   "login": {
     "title": "CrabWatch",
@@ -55,8 +56,6 @@
     "addressPlaceholder1": "Street address",
     "addressLine2": "Address Line 2 (optional)",
     "addressPlaceholder2": "Apartment, suite, etc.",
-    "addressLine3": "Address Line 3 (optional)",
-    "addressPlaceholder3": "Additional address info",
     "state": "State *",
     "statePlaceholder": "State",
     "postcode": "Postcode *",
@@ -69,7 +68,17 @@
     "hasAccount": "Already have an account?",
     "signIn": "Sign in",
     "registrationFailed": "Registration Failed",
-    "couldNotCreate": "Could not create account"
+    "couldNotCreate": "Could not create account",
+    "consentPrefix": "I agree to the",
+    "consentSuffix": "I understand my location and observation data will be used for crab conservation research.",
+    "termsOfService": "Terms of Service",
+    "privacyPolicy": "Privacy Policy",
+    "termsPlaceholder": "Terms of Service content coming soon.",
+    "privacyPlaceholder": "Privacy Policy content coming soon."
+  },
+  "legal": {
+    "termsTitle": "Terms of Service",
+    "privacyTitle": "Privacy Policy"
   },
   "forgotPassword": {
     "title": "Forgot Password",
@@ -77,6 +86,7 @@
     "email": "Email",
     "emailPlaceholder": "your@email.com",
     "sendLink": "Send Reset Link",
+    "invalidEmail": "Invalid email address",
     "success": "If an account exists with that email, a password reset link has been sent. Check your inbox.",
     "backToLogin": "Back to Login",
     "rememberPassword": "Remember your password?",
@@ -89,6 +99,7 @@
     "subtitle": "Enter your new password below.",
     "newPassword": "New Password",
     "passwordPlaceholder": "At least 8 characters",
+    "passwordMin": "At least 8 characters",
     "confirmPassword": "Confirm Password",
     "confirmPlaceholder": "Re-enter your password",
     "reset": "Reset Password",
@@ -181,8 +192,6 @@
     "streetAddress": "Street address",
     "addressLine2": "Address Line 2",
     "aptSuite": "Apartment, suite, etc.",
-    "addressLine3": "Address Line 3",
-    "additionalAddressInfo": "Additional address info",
     "state": "State",
     "postcode": "Postcode",
     "country": "Country",
@@ -286,6 +295,16 @@
       "meanBW": "Mean BW",
       "stdDev": "Std Dev",
       "sample": "Sample"
+    },
+    "map": {
+      "title": "Geographic Distribution",
+      "subtitle": "Observation locations across Malaysia",
+      "loading": "Loading map data...",
+      "filterGender": "Filter:",
+      "allGenders": "All",
+      "gender": "Gender",
+      "status": "Status",
+      "observations": " observations"
     }
   },
   "capture": {
@@ -314,6 +333,7 @@
       "ventral": "Show the underside clearly",
       "closeup": "Zoom in on shell pattern"
     },
+    "cameraBanner": "Landscape supported — keep crab centered in the frame",
     "overlayStatus": {
       "ready": "Ready",
       "holdStill": "Hold Still",
@@ -323,6 +343,7 @@
       "focusLocked": "Focus locked",
       "lightingTooDark": "Lighting too dark - move to brighter area",
       "lightingLow": "Lighting is low - try near a window",
+      "lightingTooBright": "Lighting is too bright - reduce glare or harsh sun",
       "holdStill": "Hold still - too much movement",
       "holdSteadier": "Try to hold steadier"
     },
@@ -435,6 +456,30 @@
     "alertCoinRequired": "Coin Required",
     "alertCoinRequiredMessage": "Please select a coin type or choose \"Let AI detect\" before continuing.",
     "alertCoinRequiredFinal": "Please select a coin type or choose \"Let AI detect\".",
+    "quality": {
+      "title": "Photo quality check",
+      "checking": "Checking blur and brightness...",
+      "blur": "Blur score",
+      "brightness": "Brightness",
+      "status": {
+        "pass": "Pass",
+        "warn": "Warn",
+        "fail": "Fail"
+      },
+      "failHint": "This photo fails minimum quality checks. Retake recommended.",
+      "retake": "Retake",
+      "submitAnyway": "Submit Anyway",
+      "clearOverride": "Clear Override",
+      "reasonA11y": "Override reason",
+      "reasonPlaceholder": "Reason for override (min 5 characters)",
+      "reasonTitle": "Override reason required",
+      "reasonRequired": "Please add an override reason with at least 5 characters.",
+      "overrideSavedTitle": "Override saved",
+      "overrideSavedMessage": "This photo can proceed with manual override.",
+      "blockTitle": "Quality check failed",
+      "blockMessage": "Retake this photo or provide an override reason before continuing.",
+      "blockAnalyzeMessage": "A required photo failed quality checks. Retake or add override reason before AI analysis."
+    },
     "limitReached": "Limit Reached",
     "maxPhotos": "Maximum {{max}} photos allowed",
     "coins": {
@@ -529,6 +574,14 @@
     "referenceCoin": "Reference coin:",
     "aiDetected": "AI detected",
     "aiDetectedLabel": "AI detected: {{coin}}",
+    "crabCoverage": "Crab coverage",
+    "coverageWarningChip": "Low coverage",
+    "coverageWarningMessage": "Crab appears too small in frame ({{coverage}}%). Retake closer so it fills more of the image.",
+    "retakeRecommended": "Retake recommended",
+    "retakeRecommendedA11y": "Go back and retake photos for better crab coverage",
+    "enhancedByCrop": "Enhanced by focused crop",
+    "suggestedCrop": "Suggested crop",
+    "suggestedCropHint": "AI suggested a tighter crop on the first photo for better focus.",
     "speciesSection": "Species",
     "selectSpecies": "Select species...",
     "measurements": "Measurements",

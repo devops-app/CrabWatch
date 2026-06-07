@@ -65,21 +65,57 @@ export function ReviewSection({
 }: ReviewSectionProps) {
   const t = useTranslations('capture')
   const tone = getConfidenceTone(analysis.confidence)
+  const coveragePct = analysis.crabCoveragePct
+  const hasLowCoverage = typeof coveragePct === 'number' && coveragePct < 35
+  const autoCrop = analysis.autoCropBoundingBox
+  const hasAutoCrop = Boolean(
+    autoCrop
+    && Number.isFinite(autoCrop.x)
+    && Number.isFinite(autoCrop.y)
+    && Number.isFinite(autoCrop.width)
+    && Number.isFinite(autoCrop.height)
+    && autoCrop.width > 0
+    && autoCrop.height > 0
+  )
+  const cropTargetKey = photos.dorsal
+    ? 'dorsal'
+    : CAPTURE_STEPS.find((step) => photos[step.key])?.key
 
   return (
     <>
       {photos.dorsal && (
         <section className="flex gap-2 overflow-x-auto pb-1">
           {CAPTURE_STEPS.map((step) => photos[step.key] && (
-            <img
-              key={step.key}
-              src={photos[step.key]!}
-              alt={t.raw(`stepLabels.${step.key}`)}
-              className="w-[70px] h-[70px] rounded-lg object-cover flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
-              onClick={() => onPhotoFullscreen(photos[step.key]!)}
-            />
+            <div key={step.key} className="relative w-[70px] h-[70px] flex-shrink-0">
+              <img
+                src={photos[step.key]!}
+                alt={t.raw(`stepLabels.${step.key}`)}
+                className="w-[70px] h-[70px] rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={() => onPhotoFullscreen(photos[step.key]!)}
+              />
+              {hasAutoCrop && cropTargetKey === step.key && (
+                <>
+                  <div
+                    className="absolute border-2 border-cyan-400 rounded-sm pointer-events-none"
+                    style={{
+                      left: `${Math.max(0, Math.min(1, autoCrop!.x)) * 100}%`,
+                      top: `${Math.max(0, Math.min(1, autoCrop!.y)) * 100}%`,
+                      width: `${Math.max(0, Math.min(1, autoCrop!.width)) * 100}%`,
+                      height: `${Math.max(0, Math.min(1, autoCrop!.height)) * 100}%`,
+                    }}
+                  />
+                  <span className="absolute left-1 top-1 text-[10px] leading-3 font-semibold px-1 py-0.5 rounded bg-cyan-500 text-white pointer-events-none">
+                    {t('review.suggestedCrop')}
+                  </span>
+                </>
+              )}
+            </div>
           ))}
         </section>
+      )}
+
+      {hasAutoCrop && (
+        <p className="text-xs text-cyan-700 -mt-2 mb-1">{t('review.suggestedCropHint')}</p>
       )}
 
       {!analysis.speciesId || analysis.speciesId === 'unknown' || analysis.confidence === 0 ? (
@@ -93,13 +129,28 @@ export function ReviewSection({
 
       <section className="card space-y-2">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold text-ocean-800">{t('review.aiResults')}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold text-ocean-800">{t('review.aiResults')}</h2>
+            {analysis.secondPassApplied && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-cyan-50 text-cyan-700 border border-cyan-200">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9V9h2v4zm0-6H9V5h2v2z" />
+                </svg>
+                {t('review.enhancedByCrop')}
+              </span>
+            )}
+          </div>
           <span className={`text-xs font-semibold px-2 py-1 rounded-full ${tone.className}`}>
             {t(`confidence.${tone.level}`)} {t('review.confidence')}
           </span>
         </div>
         <p className="text-gray-700"><span className="font-semibold">{t('review.speciesLabel')}</span> {analysis.speciesName}</p>
         <p className="text-gray-700"><span className="font-semibold">{t('review.confidenceLabel')}</span> {(analysis.confidence * 100).toFixed(1)}%</p>
+        {typeof coveragePct === 'number' && (
+          <p className="text-gray-700">
+            <span className="font-semibold">{t('review.crabCoverage')}</span> {coveragePct.toFixed(1)}%
+          </p>
+        )}
         {analysis.detectedCoin && (
           <p className="text-gray-700"><span className="font-semibold">{t('review.detectedCoin')}</span> {analysis.detectedCoin} ({(analysis.coinConfidence * 100).toFixed(0)}%)</p>
         )}
@@ -115,6 +166,30 @@ export function ReviewSection({
           </div>
         )}
       </section>
+
+      {hasLowCoverage && (
+        <section className="card bg-amber-50 border border-amber-200">
+          <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-300 mb-2">
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            {t('review.coverageWarningChip')}
+          </div>
+          <p className="text-sm text-amber-800">
+            {t('review.coverageWarningMessage', { coverage: coveragePct?.toFixed(1) ?? '0' })}
+          </p>
+          <div className="mt-3">
+            <button
+              type="button"
+              className="btn-secondary text-sm py-1.5 px-3"
+              onClick={onBackToCapture}
+              aria-label={t('review.retakeRecommendedA11y')}
+            >
+              {t('review.retakeRecommended')}
+            </button>
+          </div>
+        </section>
+      )}
 
       {coinType && analysis.detectedCoin && coinType !== analysis.detectedCoin && (
         <section className="card bg-amber-50 border border-amber-200">

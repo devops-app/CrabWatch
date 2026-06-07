@@ -1,16 +1,24 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import AuthGuard from '../AuthGuard'
 import { useAuthStore } from '@/lib/authStore'
+import { api } from '@/lib/api'
 
 const mockUseAuthStore = useAuthStore as jest.MockedFunction<typeof useAuthStore>
+const mockApi = api as jest.Mocked<typeof api>
 const mockReplace = jest.fn()
 
-jest.mock('next/navigation', () => ({
+jest.mock('@/i18n/navigation', () => ({
   useRouter: () => ({
     push: jest.fn(),
     replace: mockReplace,
     back: jest.fn(),
   }),
+}))
+
+jest.mock('@/lib/api', () => ({
+  api: {
+    getProfile: jest.fn(),
+  },
 }))
 
 jest.mock('@/lib/authStore', () => ({
@@ -27,6 +35,7 @@ describe('AuthGuard', () => {
       user: null,
       isLoading: false,
       isHydrated: true,
+      token: null,
       login: jest.fn(),
       logout: jest.fn(),
       updateUser: jest.fn(),
@@ -34,11 +43,19 @@ describe('AuthGuard', () => {
 
     render(<AuthGuard><div>Protected Content</div></AuthGuard>)
 
-    expect(screen.getByText('Loading...')).toBeInTheDocument()
+    expect(screen.getByText('loading')).toBeInTheDocument()
     expect(mockReplace).toHaveBeenCalledWith('/auth/login')
   })
 
   it('should show children when authenticated', async () => {
+    mockApi.getProfile.mockResolvedValue({
+      id: '1',
+      name: 'Test',
+      email: 'test@example.com',
+      role: 'user',
+      avatar: null,
+    } as any)
+
     mockUseAuthStore.mockReturnValue({
       user: {
         id: '1',
@@ -49,6 +66,7 @@ describe('AuthGuard', () => {
       },
       isLoading: false,
       isHydrated: true,
+      token: null,
       login: jest.fn(),
       logout: jest.fn(),
       updateUser: jest.fn(),
@@ -62,6 +80,14 @@ describe('AuthGuard', () => {
   })
 
   it('should redirect to dashboard when role does not match', () => {
+    mockApi.getProfile.mockResolvedValue({
+      id: '1',
+      name: 'Test',
+      email: 'test@example.com',
+      role: 'user',
+      avatar: null,
+    } as any)
+
     mockUseAuthStore.mockReturnValue({
       user: {
         id: '1',
@@ -72,6 +98,7 @@ describe('AuthGuard', () => {
       },
       isLoading: false,
       isHydrated: true,
+      token: null,
       login: jest.fn(),
       logout: jest.fn(),
       updateUser: jest.fn(),
@@ -83,10 +110,20 @@ describe('AuthGuard', () => {
       </AuthGuard>
     )
 
-    expect(mockReplace).toHaveBeenCalledWith('/dashboard')
+    return waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith('/dashboard')
+    })
   })
 
   it('should show content when role matches', async () => {
+    mockApi.getProfile.mockResolvedValue({
+      id: '1',
+      name: 'Admin',
+      email: 'admin@example.com',
+      role: 'admin',
+      avatar: null,
+    } as any)
+
     mockUseAuthStore.mockReturnValue({
       user: {
         id: '1',
@@ -97,6 +134,7 @@ describe('AuthGuard', () => {
       },
       isLoading: false,
       isHydrated: true,
+      token: null,
       login: jest.fn(),
       logout: jest.fn(),
       updateUser: jest.fn(),
@@ -114,10 +152,19 @@ describe('AuthGuard', () => {
   })
 
   it('should show loading spinner while checking', () => {
+    mockApi.getProfile.mockResolvedValue({
+      id: '1',
+      name: 'Test',
+      email: 'test@example.com',
+      role: 'user',
+      avatar: null,
+    } as any)
+
     mockUseAuthStore.mockReturnValue({
       user: null,
       isLoading: true,
       isHydrated: true,
+      token: null,
       login: jest.fn(),
       logout: jest.fn(),
       updateUser: jest.fn(),
@@ -125,6 +172,6 @@ describe('AuthGuard', () => {
 
     render(<AuthGuard><div>Content</div></AuthGuard>)
 
-    expect(screen.getByText('Loading...')).toBeInTheDocument()
+    expect(screen.getByText('loading')).toBeInTheDocument()
   })
 })

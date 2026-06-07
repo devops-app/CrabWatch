@@ -131,12 +131,19 @@
       "addressLine1Required": "Address line 1 is required",
       "addressLine2": "Address Line 2",
       "addressLine2Optional": "(optional)",
-      "addressLine3": "Address Line 3",
       "state": "State",
       "stateRequired": "State is required",
       "postcode": "Postcode",
       "postcodeRequired": "Postcode is required",
-      "country": "Country"
+      "country": "Country",
+      "consentAccepted": "I agree to the Terms of Service and Privacy Policy",
+      "consentPrefix": "I agree to the",
+      "consentSuffix": ".",
+      "consentAnd": "and",
+      "termsOfService": "Terms of Service",
+      "privacyPolicy": "Privacy Policy",
+      "consentRequired": "You must accept the terms to continue",
+      "languageSwitch": "Language"
     },
     "forgotPassword": {
       "title": "Forgot Password",
@@ -149,7 +156,9 @@
       "sendLinkLoading": "Sending...",
       "backToLogin": "Back to Sign In",
       "success": "If an account exists with that email, you'll receive a password reset link.",
-      "failed": "Failed to send reset email. Please try again."
+      "failed": "Failed to send reset email. Please try again.",
+      "rememberPassword": "Remember your password?",
+      "signInLink": "Sign In"
     },
     "resetPassword": {
       "title": "Reset Password",
@@ -167,7 +176,9 @@
       "backToLogin": "Back to Sign In",
       "success": "Your password has been reset successfully. You can now sign in.",
       "failed": "Failed to reset password. The link may have expired.",
-      "invalidToken": "Invalid or expired reset token"
+      "invalidToken": "Invalid or expired reset token",
+      "rememberPassword": "Remember your password?",
+      "signInLink": "Sign In"
     }
   },
   "nav": {
@@ -376,6 +387,14 @@
       "species": "Species",
       "speciesLabel": "Species:",
       "confidenceLabel": "Confidence:",
+      "crabCoverage": "Crab coverage:",
+      "coverageWarningChip": "Low coverage",
+      "coverageWarningMessage": "Crab appears too small in frame ({coverage}%). Retake closer so it fills more of the image.",
+      "retakeRecommended": "Retake recommended",
+      "retakeRecommendedA11y": "Go back and retake photos for better crab coverage",
+      "enhancedByCrop": "Enhanced by focused crop",
+      "suggestedCrop": "Suggested crop",
+      "suggestedCropHint": "AI suggested a tighter crop on the first photo for better focus.",
       "detectedCoin": "Detected coin:",
       "aiSuggestions": "AI suggestions",
       "coinMismatch": "Coin Mismatch",
@@ -423,6 +442,13 @@
     },
     "client": {
       "title": "AI Guided Capture",
+      "analysis": {
+        "uploading": "Uploading photos",
+        "identifying": "Identifying species",
+        "estimating": "Estimating size",
+        "complete": "Analysis complete",
+        "elapsed": "Elapsed"
+      },
       "stepOf": "Step {current} of {total}",
       "inReview": "Review AI results and submit",
       "photoTips": "Photo Tips",
@@ -483,7 +509,35 @@
       "letAiDetect": "Let AI detect coin automatically",
       "toggleSeries": "Toggle {series} coin options",
       "selectCoin": "Select {coin}",
-      "changeCoin": "Change coin selection"
+      "changeCoin": "Change coin selection",
+      "quality": {
+        "title": "Quality check: {step}",
+        "subtitle": "Review photo quality before AI upload",
+        "analyzing": "Running image quality checks...",
+        "coverage": "Coverage {pct}%",
+        "checks": {
+          "blur": "Blur",
+          "brightness": "Brightness",
+          "framing": "Framing"
+        },
+        "status": {
+          "pass": "Pass",
+          "warn": "Warn",
+          "fail": "Fail"
+        },
+        "failHint": "This photo fails minimum quality checks. Retake recommended.",
+        "reasonLabel": "Override reason",
+        "reasonPlaceholder": "Reason for overriding quality checks (min 5 chars)",
+        "retake": "Retake",
+        "uploadAnyway": "Upload Anyway",
+        "clearOverride": "Clear Override",
+        "overrideActive": "Override active for this photo. Analysis can proceed.",
+        "reasonRequired": "Please add an override reason (at least 5 characters).",
+        "overrideSaved": "Override saved for this photo.",
+        "blockingStep": "This step has blocking quality failures. Retake or provide override reason.",
+        "blockingAnalyze": "At least one required photo failed quality checks. Retake or add override reason.",
+        "webcamLowRes": "Webcam resolution is low ({width}x{height}). For better accuracy, upload a phone photo."
+      }
     }
   },
   "observation": {
@@ -672,10 +726,8 @@
     "address": "Address",
     "addressLine1": "Address Line 1",
     "addressLine2": "Address Line 2",
-    "addressLine3": "Address Line 3",
     "streetPlaceholder": "Street address",
     "apartmentPlaceholder": "Apartment, suite, etc.",
-    "additionalPlaceholder": "Additional address info",
     "state": "State",
     "postcode": "Postcode",
     "country": "Country",
@@ -959,9 +1011,25 @@
       "scientificName": "Scientific Name",
       "commonName": "Common Name",
       "description": "Description",
-      "keyFeatures": "Key Features (JSON array)",
-      "distributionZones": "Distribution Zones (JSON array)",
+      "keyFeatures": "Key Features",
+      "keyFeaturesHint": "One per line, format: trait: value (e.g. Color: Blue-green)",
+      "distributionZones": "Distribution Zones",
+      "distributionZonesHint": "One zone name per line (e.g. Gulf of Thailand)",
       "images": "images",
+      "imagesLabel": "Images",
+      "imageUploadTitle": "Upload Image",
+      "imageUploadBtn": "Upload from device",
+      "imageOr": "or",
+      "imageUrlLabel": "Image URL",
+      "imageUrlHint": "Paste a direct image URL",
+      "imageUrlPlaceholder": "https://example.com/image.jpg",
+      "imageRemove": "Remove",
+      "imageUploadSuccess": "Image uploaded",
+      "imageUploadFailed": "Failed to upload image",
+      "imageUploadInvalidType": "Only JPEG, PNG, and WebP images are accepted",
+      "imageUploadTooLarge": "Image must be under 10MB",
+      "imageUploadUploading": "Uploading...",
+      "imageAddUrl": "Add URL",
       "save": "Save Species",
       "delete": "Delete Species",
       "confirmDelete": "Are you sure you want to delete this species?",

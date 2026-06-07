@@ -76,7 +76,8 @@ pnpm dev:mobile
 
 ### Mobile App
 - Full capture flow with guided camera, quality gates, and AI analysis
-- Analytics with 6 tabs matching web parity
+- Analytics with 7 tabs: Gender, Size, CW50, Condition, Species, Trends, Map
+- Analytics Map: geographic distribution with gender filter, status-colored markers, observation detail cards, fullscreen photo modal
 - Gamification: leaderboard (scope toggle, pagination), missions, achievements
 - Dark mode support with automatic system theme detection
 - Safe area handling for notched devices
@@ -90,6 +91,7 @@ pnpm dev:mobile
 - App Service (API + Web, shared B1 plan)
 - Application Insights (telemetry)
 - Scripts: `scripts/deploy-server.ps1`, `scripts/deploy-web.ps1`
+- Quality telemetry KQL helper: `APP_INSIGHTS_QUALITY_GATE_QUERIES.md`
 
 ### Mobile
 - EAS Build for Android/iOS
@@ -100,7 +102,7 @@ See `Azure-Deployment-Plan.md` for detailed deployment steps.
 
 ## Testing
 
-See `UAT.md` for comprehensive end-to-end test cases (223 test cases across 17 modules).
+See `UAT.md` for comprehensive end-to-end test cases (248 test cases across 20 modules).
 
 Seed accounts (password: `Pa55w.rd`):
 - `admin@crabwatch.my` (ADMIN)

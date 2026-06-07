@@ -2,14 +2,25 @@ import { Response } from 'express'
 import { AuthRequest } from '../middleware/auth'
 import { CrabAnalysisRequest, CrabAnalysisResult } from '@crabwatch/shared'
 import { analyzeCrabWithAgent, uploadAnalysisPhotos, cleanupAnalysisBlobs, detectView as detectViewAgent } from '../services/foundryAgent'
-import { getPrisma } from '../services/container'
+import type { ExifMetadata } from '../utils/imageQuality'
+import { getConfig, getPrisma } from '../services/container'
 import { asyncHandler, ValidationError } from '../utils/errors'
 import { detectLocale } from '../middleware/i18n'
 import { clearCache } from '../utils/cache'
 import { sanitizeInput, sanitizeHtml } from '../utils/sanitize'
 import { createTranslator } from '../middleware/i18n'
+import {
+  assessServerImageQualityFromUrl,
+  getImageDimensionsFromUrl,
+  computeBoundingBoxCoveragePct,
+  computeAutoCropBoundingBox,
+  createCroppedImageDataUrlFromUrl,
+  extractExifMetadata,
+  formatExifNotes,
+} from '../utils/imageQuality'
+import logger from '../utils/logger'
 
-export const activeSessions = new Map<string, { sessionId: string; blobUrls: string[]; lastActive: number }>()
+export const activeSessions = new Map<string, { sessionId: string; blobUrls: string[]; lastActive: number; exifNotes?: string }>()
 const ANALYSIS_BLOB_TTL_MS = Number(process.env.ANALYSIS_BLOB_TTL_MS) || 20 * 60 * 1000
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000
 let cleanupInterval: ReturnType<typeof setInterval> | null = null
@@ -68,12 +79,15 @@ export const uploadAnalysisPhotosHandler = asyncHandler(async (
     sessionId,
   })
 
+  const exifResults = await Promise.all(files.map((f) => extractExifMetadata(f.buffer)))
+  const exifNotes = exifResults.map(formatExifNotes).filter((n): n is string => Boolean(n)).join('; ')
+
   const userId = req.dbUser?.id || 'anon'
   const prevSession = activeSessions.get(userId)
   if (prevSession && prevSession.sessionId !== sessionId) {
     cleanupAnalysisBlobs(prevSession.blobUrls).catch(() => {})
   }
-  activeSessions.set(userId, { sessionId: sessionId || prevSession?.sessionId || 'unknown', blobUrls, lastActive: Date.now() })
+  activeSessions.set(userId, { sessionId: sessionId || prevSession?.sessionId || 'unknown', blobUrls, lastActive: Date.now(), exifNotes: exifNotes || undefined })
 
   res.json({
     success: true,
@@ -144,9 +158,156 @@ export const analyzeCrabHandler = asyncHandler(async (
     locale: detectLocale(req, (req as any).dbUser?.preferredLocale ?? null),
   }
 
-  const result: CrabAnalysisResult = await analyzeCrabWithAgent(analysisRequest)
+  const qualityResults = await Promise.all(analysisRequest.photoUrls.map((url) => assessServerImageQualityFromUrl(url)))
+  const qualitySummary = {
+    source: 'server',
+    category: 'quality-gate-server',
+    photoCount: analysisRequest.photoUrls.length,
+    blurFailCount: qualityResults.filter((result) => result.blurStatus === 'fail').length,
+    blurWarnCount: qualityResults.filter((result) => result.blurStatus === 'warn').length,
+    brightnessFailCount: qualityResults.filter((result) => result.brightnessStatus === 'fail').length,
+    brightnessWarnCount: qualityResults.filter((result) => result.brightnessStatus === 'warn').length,
+    avgBlurScore:
+      qualityResults.length > 0
+        ? Math.round((qualityResults.reduce((sum, result) => sum + result.blurScore, 0) / qualityResults.length) * 100) / 100
+        : 0,
+    avgBrightness:
+      qualityResults.length > 0
+        ? Math.round((qualityResults.reduce((sum, result) => sum + result.brightness, 0) / qualityResults.length) * 10000) / 10000
+        : 0,
+  }
+
+  if (qualitySummary.blurWarnCount > 0 || qualitySummary.brightnessWarnCount > 0) {
+    logger.info(qualitySummary, 'Server quality warnings observed')
+  }
+
+  if (qualityResults.some((result) => result.blurStatus === 'fail')) {
+    logger.warn(qualitySummary, 'Server quality gate blocked request: blur fail')
+    throw new ValidationError(__('analysis.quality.blurFail', 'analysis'), undefined, 'QUALITY_BLUR_FAIL')
+  }
+
+  if (qualityResults.some((result) => result.brightnessStatus === 'fail')) {
+    logger.warn(qualitySummary, 'Server quality gate blocked request: brightness fail')
+    throw new ValidationError(__('analysis.quality.brightnessFail', 'analysis'), undefined, 'QUALITY_BRIGHTNESS_FAIL')
+  }
+
+  let result: CrabAnalysisResult = await analyzeCrabWithAgent(analysisRequest)
+
+  if (result.crabCount === 0) {
+    throw new ValidationError(__('analysis.crabCount.zero', 'analysis'), undefined, 'CRAB_COUNT_ZERO_FAIL')
+  }
+
+  if (result.crabCount > 1) {
+    throw new ValidationError(__('analysis.crabCount.multiple', 'analysis'), undefined, 'CRAB_COUNT_MULTI_FAIL')
+  }
+
+  if (result.boundingBox && analysisRequest.photoUrls[0]) {
+    try {
+      const dimensions = await getImageDimensionsFromUrl(analysisRequest.photoUrls[0])
+      if (dimensions) {
+        const config = getConfig()
+        const coverageWarnThresholdPct = Math.max(1, config.imageQuality.coverageWarnThresholdPct || 35)
+        const autoCropBoundingBox = computeAutoCropBoundingBox(result.boundingBox, dimensions)
+        if (autoCropBoundingBox) {
+          result.autoCropBoundingBox = autoCropBoundingBox
+        }
+
+        const coverage = computeBoundingBoxCoveragePct(result.boundingBox, dimensions)
+        if (coverage != null) {
+          result.crabCoveragePct = coverage
+          if (coverage < coverageWarnThresholdPct) {
+            result.suggestions = [
+              ...(result.suggestions || []),
+              __('analysis.coverage.warn', 'analysis', { coverage }),
+            ]
+
+            logger.info(
+              {
+                source: 'server',
+                category: 'quality-gate-server',
+                event: 'coverage_warn',
+                crabCoveragePct: coverage,
+                thresholdPct: coverageWarnThresholdPct,
+              },
+              'Server coverage warning from AI bounding box'
+            )
+
+            if (config.imageQuality.autoCropSecondPassEnabled && autoCropBoundingBox) {
+              const croppedPhotoDataUrl = await createCroppedImageDataUrlFromUrl(
+                analysisRequest.photoUrls[0],
+                autoCropBoundingBox,
+              )
+
+              if (croppedPhotoDataUrl) {
+                const secondPassRequest: CrabAnalysisRequest = {
+                  ...analysisRequest,
+                  photoUrls: [
+                    croppedPhotoDataUrl,
+                    ...analysisRequest.photoUrls.slice(1),
+                  ],
+                }
+
+                const secondPassResult = await analyzeCrabWithAgent(secondPassRequest)
+                const firstSpeciesConfidence = result.speciesConfidence ?? result.confidence ?? 0
+                const secondSpeciesConfidence = secondPassResult.speciesConfidence ?? secondPassResult.confidence ?? 0
+
+                if (secondPassResult.crabCount === 1 && secondSpeciesConfidence >= firstSpeciesConfidence) {
+                  result = {
+                    ...secondPassResult,
+                    boundingBox: result.boundingBox,
+                    autoCropBoundingBox,
+                    crabCoveragePct: coverage,
+                    secondPassApplied: true,
+                    suggestions: [
+                      ...(secondPassResult.suggestions || []),
+                      __('analysis.coverage.secondPassApplied', 'analysis'),
+                    ],
+                  }
+
+                  logger.info(
+                    {
+                      source: 'server',
+                      category: 'quality-gate-server',
+                      event: 'coverage_second_pass_applied',
+                      crabCoveragePct: coverage,
+                      firstSpeciesConfidence,
+                      secondSpeciesConfidence,
+                    },
+                    'Server low-coverage second-pass analysis applied'
+                  )
+                } else {
+                  logger.info(
+                    {
+                      source: 'server',
+                      category: 'quality-gate-server',
+                      event: 'coverage_second_pass_skipped',
+                      crabCoveragePct: coverage,
+                      firstSpeciesConfidence,
+                      secondSpeciesConfidence,
+                      secondPassCrabCount: secondPassResult.crabCount,
+                    },
+                    'Server low-coverage second-pass analysis skipped'
+                  )
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch {
+      // Coverage enrichment is best-effort and should not block analysis flow
+    }
+  }
 
   await ensureSpeciesExists(result)
+
+  const session = activeSessions.get(req.dbUser?.id || 'anon')
+  if (session?.exifNotes) {
+    result = {
+      ...result,
+      suggestions: [...(result.suggestions || []), session.exifNotes],
+    }
+  }
 
   res.json({
     success: true,

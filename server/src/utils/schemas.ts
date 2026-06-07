@@ -7,11 +7,13 @@ export const registerSchema = z.object({
   phoneNumber: z.string().min(7, 'Phone number must be at least 7 digits').max(20),
   addressLine1: z.string().min(1, 'Address line 1 is required').max(200),
   addressLine2: z.string().max(200).optional(),
-  addressLine3: z.string().max(200).optional(),
   state: z.string().min(1, 'State is required').max(100),
   postcode: z.string().min(1, 'Postcode is required').max(20),
   country: z.string().min(1, 'Country is required').max(100),
   password: z.string().min(8),
+  consentAccepted: z.literal(true, {
+    errorMap: () => ({ message: 'You must accept the consent terms to register' }),
+  }),
 })
 
 export const updateUserSchema = z.object({
@@ -20,7 +22,6 @@ export const updateUserSchema = z.object({
   phoneNumber: z.string().min(7, 'Phone number must be at least 7 digits').max(20).optional().nullable(),
   addressLine1: z.string().max(200).optional().nullable(),
   addressLine2: z.string().max(200).optional().nullable(),
-  addressLine3: z.string().max(200).optional().nullable(),
   state: z.string().max(100).optional().nullable(),
   postcode: z.string().max(20).optional().nullable(),
   country: z.string().max(100).optional().nullable(),

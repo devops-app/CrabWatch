@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { AuthStackParamList } from '../../navigation/types'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -23,15 +25,23 @@ import { Button } from '../../components/common/Button'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 import { type CountryOption } from '@crabwatch/shared'
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import type { AuthStackParamList } from '../../navigation/types'
+import { useLocaleStore } from '../../store/localeStore'
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>
+
+const LOCALES = [{ code: 'en', label: 'EN' }, { code: 'ms', label: 'BM' }] as const
 
 export function RegisterScreen() {
   const { t } = useTranslation()
   const navigation = useNavigation<NavigationProp>()
   const [loading, setLoading] = useState(false)
+  const { locale, setLocale } = useLocaleStore()
+  const [langMenuOpen, setLangMenuOpen] = useState(false)
+
+  const switchLocale = useCallback(async (code: 'en' | 'ms') => {
+    await setLocale(code)
+    setLangMenuOpen(false)
+  }, [setLocale])
 
   const {
     control,
@@ -47,7 +57,6 @@ export function RegisterScreen() {
       phoneNumber: '',
       addressLine1: '',
       addressLine2: '',
-      addressLine3: '',
       state: '',
       postcode: '',
       country: 'MY',
@@ -72,7 +81,6 @@ export function RegisterScreen() {
         data.phoneNumber,
         data.addressLine1,
         data.addressLine2 || undefined,
-        data.addressLine3 || undefined,
         data.state,
         data.postcode,
         data.country
@@ -99,6 +107,38 @@ export function RegisterScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
+            <View style={styles.langSwitcher}>
+              <TouchableOpacity
+                style={styles.langButton}
+                onPress={() => setLangMenuOpen(!langMenuOpen)}
+              >
+                <Text style={styles.langButtonText}>
+                  {LOCALES.find((l) => l.code === locale)?.label ?? 'EN'}
+                </Text>
+                <Text style={styles.langArrow}>{langMenuOpen ? '▲' : '▼'}</Text>
+              </TouchableOpacity>
+              {langMenuOpen && (
+                <View style={styles.langDropdown}>
+                  {LOCALES.map((l) => (
+                    <TouchableOpacity
+                      key={l.code}
+                      style={[
+                        styles.langOption,
+                        l.code === locale && styles.langOptionActive,
+                      ]}
+                      onPress={() => switchLocale(l.code)}
+                    >
+                      <Text style={[
+                        styles.langOptionText,
+                        l.code === locale && styles.langOptionTextActive,
+                      ]}>
+                        {l.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
             <Text style={styles.title}>{t('register.title')}</Text>
             <Text style={styles.subtitle}>
               {t('register.subtitle')}
@@ -230,25 +270,7 @@ export function RegisterScreen() {
               )}
             />
 
-            <Controller
-              control={control}
-              name="addressLine3"
-              render={({ field: { onChange, onBlur, value } }) => (
-             <Input
-                    label={t('register.addressLine3')}
-                    placeholder={t('register.addressPlaceholder3')}
-                    autoCapitalize="words"
-                    textContentType="streetAddressLine1"
-                    value={value}
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    error={errors.addressLine3?.message}
-                    returnKeyType="next"
-                  />
-              )}
-            />
-
-            <View style={styles.addressRow}>
+           <View style={styles.addressRow}>
               <View style={styles.stateWrap}>
                 <Controller
                   control={control}
@@ -325,6 +347,51 @@ export function RegisterScreen() {
               )}
             />
 
+            <Controller
+              control={control}
+              name="consentAccepted"
+              render={({ field: { onChange, value } }) => (
+                <TouchableOpacity
+                  style={styles.consentRow}
+                  onPress={() => onChange(!value)}
+                >
+                  <View
+                    style={[
+                      styles.checkbox,
+                      value && styles.checkboxChecked,
+                    ]}
+                  >
+                    {value && (
+                      <Text style={styles.checkmark}>✓</Text>
+                    )}
+                  </View>
+                  <View style={styles.consentTextWrap}>
+                    <Text style={styles.consentText}>
+                      {t('register.consentPrefix')}{' '}
+                      <Text
+                        style={styles.consentLink}
+                        onPress={() => navigation.navigate('Terms')}
+                      >
+                        {t('register.termsOfService')}
+                      </Text>{' '}
+                      {' & '}{' '}
+                      <Text
+                        style={styles.consentLink}
+                        onPress={() => navigation.navigate('Privacy')}
+                      >
+                        {t('register.privacyPolicy')}
+                      </Text>
+                      {'. '}
+                      {t('register.consentSuffix')}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+            {errors.consentAccepted && (
+              <Text style={styles.consentError}>{errors.consentAccepted.message}</Text>
+            )}
+
             <Button
               title={t('register.createAccount')}
               loading={loading}
@@ -357,9 +424,66 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   header: {
-    alignItems: 'center',
     paddingTop: 32,
     paddingBottom: 24,
+  },
+  langSwitcher: {
+    alignSelf: 'flex-end',
+    marginRight: 24,
+    marginBottom: 16,
+    zIndex: 10,
+  },
+  langButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  langButtonText: {
+    fontSize: FONT.sm,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginRight: 4,
+  },
+  langArrow: {
+    fontSize: 10,
+    color: COLORS.textSecondary,
+  },
+  langDropdown: {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    marginTop: 4,
+    backgroundColor: COLORS.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    overflow: 'hidden',
+  },
+  langOption: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  langOptionActive: {
+    backgroundColor: COLORS.primary + '15',
+  },
+  langOptionText: {
+    fontSize: FONT.sm,
+    fontWeight: '500',
+    color: COLORS.text,
+  },
+  langOptionTextActive: {
+    color: COLORS.primary,
+    fontWeight: '600',
   },
   title: {
     fontSize: FONT['5xl'],
@@ -412,5 +536,49 @@ const styles = StyleSheet.create({
   },
   postcodeWrap: {
     flex: 1,
+  },
+  consentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderWidth: 2,
+    borderColor: COLORS.textSecondary,
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  checkboxChecked: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  checkmark: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  consentTextWrap: {
+    flex: 1,
+  },
+  consentText: {
+    fontSize: FONT.sm,
+    color: COLORS.text,
+  },
+  consentLink: {
+    fontSize: FONT.sm,
+    color: COLORS.primary,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+  consentError: {
+    fontSize: FONT.xs,
+    color: COLORS.error,
+    marginTop: 4,
+    marginBottom: 4,
   },
 })

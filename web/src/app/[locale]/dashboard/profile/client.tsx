@@ -15,7 +15,6 @@ interface FormValues {
   phoneNumber: string
   addressLine1: string
   addressLine2: string
-  addressLine3: string
   state: string
   postcode: string
   country: string
@@ -75,7 +74,6 @@ export function ProfileClient({
           setValue('phoneNumber', u.phoneNumber || '')
           setValue('addressLine1', u.addressLine1 || '')
           setValue('addressLine2', u.addressLine2 || '')
-          setValue('addressLine3', u.addressLine3 || '')
           setValue('state', u.state || '')
           setValue('postcode', u.postcode || '')
           setValue('country', u.country || 'MY')
@@ -105,7 +103,6 @@ export function ProfileClient({
       phoneNumber: initialUser?.phoneNumber || '',
       addressLine1: initialUser?.addressLine1 || '',
       addressLine2: initialUser?.addressLine2 || '',
-      addressLine3: initialUser?.addressLine3 || '',
       state: initialUser?.state || '',
       postcode: initialUser?.postcode || '',
       country: initialUser?.country || 'MY',
@@ -131,7 +128,6 @@ export function ProfileClient({
         phoneNumber: data.phoneNumber || null,
         addressLine1: data.addressLine1 || null,
         addressLine2: data.addressLine2 || null,
-        addressLine3: data.addressLine3 || null,
         state: data.state || null,
         postcode: data.postcode || null,
         country: data.country || null,
@@ -337,15 +333,6 @@ export function ProfileClient({
             placeholder={t('apartmentPlaceholder')}
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('addressLine3')}</label>
-          <input
-            {...register('addressLine3')}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-ocean-400"
-            placeholder={t('additionalPlaceholder')}
-          />
-        </div>
-
         {/* State & Postcode */}
         <div className="grid grid-cols-2 gap-3">
           <div>

@@ -1,9 +1,8 @@
 import { UserRole } from '../constants/roles'
 
 export interface UserAddress {
-  line1: string | null
+ line1: string | null
   line2: string | null
-  line3: string | null
   state: string | null
   postcode: string | null
   country: string | null
@@ -15,9 +14,8 @@ export interface User {
   email: string
   phoneCode: string | null
   phoneNumber: string | null
-  addressLine1: string | null
+ addressLine1: string | null
   addressLine2: string | null
-  addressLine3: string | null
   state: string | null
   postcode: string | null
   country: string | null
@@ -25,6 +23,7 @@ export interface User {
   avatar: string | null
   firebaseUid: string
   preferredLocale: string | null
+  consentAccepted: boolean
   createdAt: Date
 }
 
@@ -33,13 +32,13 @@ export interface CreateUserInput {
   email: string
   phoneCode: string
   phoneNumber: string
-  addressLine1: string
+ addressLine1: string
   addressLine2?: string
-  addressLine3?: string
   state: string
   postcode: string
   country: string
-  password: string
+ password: string
+  consentAccepted: boolean
   role?: UserRole
 }
 
@@ -49,7 +48,6 @@ export interface UpdateUserProfileInput {
   phoneNumber?: string | null
   addressLine1?: string | null
   addressLine2?: string | null
-  addressLine3?: string | null
   state?: string | null
   postcode?: string | null
   country?: string | null
@@ -69,13 +67,13 @@ export interface UserResponse {
   phoneNumber: string | null
   addressLine1: string | null
   addressLine2: string | null
-  addressLine3: string | null
   state: string | null
   postcode: string | null
   country: string | null
   role: UserRole
   avatar: string | null
   preferredLocale: string | null
+  consentAccepted: boolean
   deletedAt: string | null
   blockedAt: string | null
   blockReason: string | null

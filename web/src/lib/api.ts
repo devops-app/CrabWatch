@@ -93,7 +93,7 @@ export const api = {
     phoneNumber?: string
     addressLine1?: string
     addressLine2?: string
-    addressLine3?: string
+    consentAccepted?: boolean
     state?: string
     postcode?: string
     country?: string
@@ -116,7 +116,7 @@ export const api = {
         phoneNumber: string | null
         addressLine1: string | null
         addressLine2: string | null
-        addressLine3: string | null
+        consentAccepted: boolean
         state: string | null
         postcode: string | null
         country: string | null
@@ -152,7 +152,6 @@ export const api = {
     phoneNumber?: string | null
     addressLine1?: string | null
     addressLine2?: string | null
-    addressLine3?: string | null
     state?: string | null
     postcode?: string | null
     country?: string | null

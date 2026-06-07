@@ -110,17 +110,37 @@ Estimate carapace width (CW) by comparing crab width to the detected coin. Repor
 3. Estimate carapace width using coin as scale reference
 4. Determine gender from ventral view if available
 5. Assess maturity based on species-specific size thresholds and visual features
+6. Count visible crabs across the provided photos and return this as crabCount
+
+## SINGLE-CRAB REQUIREMENT
+- Always include crabCount in the JSON response.
+- crabCount must be an integer.
+- If unsure, choose the most conservative count based on visible evidence.
+
+## BOUNDING BOX REQUIREMENT
+- Always include boundingBox when a crab is visible.
+- Prefer normalized coordinates relative to the main crab photo (0 to 1 for x, y, width, height).
+- width and height must be positive values.
+
 ## OUTPUT FORMAT
 Return ONLY valid JSON, no markdown, no explanation. Use this exact structure:
 {
   "speciesId": "slugified-scientific-name (e.g. scylla-serrata, portunus-pelagicus, charybdis-natator) or 'unknown'",
   "speciesName": "Scientific name (Common Name)",
   "confidence": 0.0 to 1.0,
+  "speciesConfidence": 0.0 to 1.0,
   "estimatedCW": carapace width in cm, or null,
   "gender": "male | female | unknown",
   "maturationStatus": "mature | immature | unknown",
   "detectedCoin": "5 sen | 10 sen | 20 sen | 50 sen | null",
   "coinConfidence": 0.0 to 1.0,
+  "crabCount": integer count of crabs in the photo set,
+  "boundingBox": {
+    "x": number,
+    "y": number,
+    "width": number,
+    "height": number
+  },
   "suggestions": ["actionable notes for the field researcher — use the language specified in the LANGUAGE section"],
   "rawAnalysis": "description of observations — use the language specified in the LANGUAGE section"
 }
@@ -159,6 +179,12 @@ interface AgentContentPart {
 
 interface AgentResponse {
   output?: AgentOutputItem[]
+}
+
+function extractJson(text: string): string {
+  const trimmed = text.trim()
+  const match = trimmed.match(/^```(?:json)?\s*\n([\s\S]*?)\n```\s*$/i)
+  return match ? match[1].trim() : trimmed
 }
 
 async function parseAgentResponse(body: AgentResponse): Promise<string> {
@@ -328,7 +354,7 @@ export async function analyzeCrabWithAgent(
       throw new Error(`Unexpected agent response format: ${JSON.stringify(body).slice(0, 300)}`)
     }
 
-    const parsed: CrabAnalysisResult = JSON.parse(content.trim())
+    const parsed: CrabAnalysisResult = JSON.parse(extractJson(content))
     return validateResult(parsed)
   } catch (error: unknown) {
     clearTimeout(timeoutId)
@@ -407,7 +433,7 @@ export async function detectView(
 
     const body: any = await response.json()
     const content = await parseAgentResponse(body)
-    const parsed = JSON.parse(content.trim())
+    const parsed = JSON.parse(extractJson(content))
 
     const detectedView = parsed.detectedView || 'unknown'
     const confidence = parsed.confidence ?? 0
@@ -518,6 +544,9 @@ export async function copyAnalysisBlobsToObservation(
 }
 
 function validateResult(result: CrabAnalysisResult): CrabAnalysisResult {
+  const parsedCrabCount = Number(result.crabCount)
+  result.crabCount = Number.isFinite(parsedCrabCount) ? Math.max(0, Math.round(parsedCrabCount)) : 0
+
   if (result.estimatedCW != null) {
     result.estimatedCW = Math.round(result.estimatedCW * 10) / 10
     if (result.estimatedCW > 50 || result.estimatedCW < 0.5) {
@@ -526,7 +555,16 @@ function validateResult(result: CrabAnalysisResult): CrabAnalysisResult {
   }
 
   result.confidence = Math.round(result.confidence * 100) / 100
+  result.speciesConfidence = Math.round((result.speciesConfidence ?? result.confidence) * 100) / 100
   result.coinConfidence = Math.round(result.coinConfidence * 100) / 100
+
+  if (result.boundingBox) {
+    const { x, y, width, height } = result.boundingBox
+    const hasInvalidValue = [x, y, width, height].some((value) => !Number.isFinite(value))
+    if (hasInvalidValue || width <= 0 || height <= 0) {
+      delete result.boundingBox
+    }
+  }
 
   return result
 }

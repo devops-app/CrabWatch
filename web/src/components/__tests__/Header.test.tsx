@@ -1,11 +1,19 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import Header from '../Header'
 import { useAuthStore } from '@/lib/authStore'
+import { api } from '@/lib/api'
 
 const mockUseAuthStore = useAuthStore as jest.MockedFunction<typeof useAuthStore>
+const mockApi = api as jest.Mocked<typeof api>
 
 jest.mock('@/lib/authStore', () => ({
   useAuthStore: jest.fn(),
+}))
+
+jest.mock('@/lib/api', () => ({
+  api: {
+    logout: jest.fn(),
+  },
 }))
 
 describe('Header', () => {
@@ -14,6 +22,7 @@ describe('Header', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockApi.logout.mockResolvedValue(undefined)
     mockUseAuthStore.mockReturnValue({
       user: {
         id: '1',
@@ -64,7 +73,9 @@ describe('Header', () => {
   it('should call logout when logout button is clicked', async () => {
     render(<Header onSidebarToggle={mockOnSidebarToggle} />)
 
-    const logoutButton = screen.getByTitle('Logout')
+    const menuButton = screen.getByText('Test User').closest('button')
+    menuButton?.click()
+    const logoutButton = await screen.findByText('signOut')
     logoutButton.click()
     await waitFor(() => expect(mockLogout).toHaveBeenCalled())
   })
@@ -100,6 +111,6 @@ describe('Header', () => {
 
     render(<Header onSidebarToggle={mockOnSidebarToggle} />)
 
-    expect(screen.getByText('User')).toBeInTheDocument()
+    expect(screen.getByText('user')).toBeInTheDocument()
   })
 })

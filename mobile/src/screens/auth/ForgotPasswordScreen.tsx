@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import {
   View,
   Text,
@@ -24,11 +24,9 @@ import type { AuthStackParamList } from '../../navigation/types'
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>
 
-const forgotPasswordSchema = z.object({
-  email: z.string().email('Invalid email address'),
-})
-
-type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>
+type ForgotPasswordValues = {
+  email: string
+}
 
 export function ForgotPasswordScreen() {
   const { t } = useTranslation()
@@ -36,12 +34,20 @@ export function ForgotPasswordScreen() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
+  const schema = useMemo(
+    () =>
+      z.object({
+        email: z.string().email(t('forgotPassword.invalidEmail')),
+      }),
+    [t]
+  )
+
   const {
     control,
     handleSubmit,
     formState: { errors },
   } = useForm<ForgotPasswordValues>({
-    resolver: zodResolver(forgotPasswordSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
       email: '',
     },

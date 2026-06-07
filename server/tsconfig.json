@@ -16,6 +16,6 @@
       "@crabwatch/shared": ["../shared/src"]
     }
   },
-  "include": ["src", "../shared/src"],
-  "exclude": ["src/**/__tests__", "src/**/__mocks__", "../shared/src/**/__tests__"]
+  "include": ["src", "scripts", "../shared/src"],
+  "exclude": ["src/**/__tests__", "src/**/__mocks__", "../shared/src/**/__tests__", "scripts/fix-photos.ts", "scripts/migrate-db.ts"]
 }

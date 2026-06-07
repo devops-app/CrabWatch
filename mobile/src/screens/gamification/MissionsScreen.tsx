@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useTranslation } from 'react-i18next'
-import type { ActiveMissionDto, OnboardingStepStatusDto } from '@crabwatch/shared'
+import type { ActiveMissionDto, OnboardingStepStatusDto, OnboardingStatusDto } from '@crabwatch/shared'
 import { api } from '../../services/api'
 import { Card } from '../../components/common/Card'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
@@ -38,39 +38,15 @@ export function MissionsScreen() {
   const loadData = useCallback(async () => {
     try {
       if (activeTab === 'missions') {
-        const data: any = await api.getActiveMissions()
-        const items = Array.isArray(data) ? data : []
-        const mapped: ActiveMissionDto[] = items.map((item: any) => ({
-          id: item.code || item.id,
-          code: item.code || item.id,
-          key: item.code || item.id,
-          title: item.title || item.name || 'Mission',
-          name: item.title || item.name || 'Mission',
-          description: item.description || '',
-          xpReward: item.xpReward || 0,
-          claimed: item.claimed || item.completed,
-          completed: item.completed,
-          progress: item.progress || 0,
-          targetCount: item.targetCount || 1,
-        }))
-        setMissions(mapped)
+        const missions: ActiveMissionDto[] = await api.getActiveMissions()
+        setMissions(Array.isArray(missions) ? missions : [])
       } else {
-        const data: any = await api.getOnboardingStatus()
-        const steps = data?.steps || []
-        const mapped: OnboardingStepStatusDto[] = steps.map((s: any) => ({
-          step: s.step || s.stepKey || 'unknown',
-          key: s.step || s.stepKey || 'unknown',
-          title: s.title || s.step || s.stepKey || 'Step',
-          description: s.description || '',
-          xpReward: s.xpReward || 0,
-          completed: s.completed === true || s.status === 'COMPLETED',
-          completedAt: s.completedAt || null,
-        }))
+        const status: OnboardingStatusDto = await api.getOnboardingStatus()
         setOnboarding({
-          steps: mapped,
-          completedCount: data?.completedCount || 0,
-          totalCount: data?.totalCount || mapped.length,
-          progress: data?.completionPercentage || 0,
+          steps: status.steps || [],
+          completedCount: status.completedCount || 0,
+          totalCount: status.totalCount || 0,
+          progress: status.progress || 0,
         })
       }
     } catch {
@@ -96,8 +72,9 @@ export function MissionsScreen() {
     try {
       await api.claimMission({ missionKey })
       loadData()
-    } catch (err: any) {
-      Alert.alert(t('common.error'), err.message || t('missions.claimFailed'))
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : t('missions.claimFailed')
+      Alert.alert(t('common.error'), message)
     } finally {
       setActionLoading(null)
     }
@@ -108,8 +85,9 @@ export function MissionsScreen() {
     try {
       await api.completeOnboardingStep({ step })
       loadData()
-    } catch (err: any) {
-      Alert.alert(t('common.error'), err.message || t('missions.stepFailed'))
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : t('missions.stepFailed')
+      Alert.alert(t('common.error'), message)
     } finally {
       setActionLoading(null)
     }

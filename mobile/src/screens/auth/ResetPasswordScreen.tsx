@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import {
   View,
   Text,
@@ -25,15 +25,10 @@ import type { AuthStackParamList } from '../../navigation/types'
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>
 type RouteParams = RouteProp<AuthStackParamList, 'ResetPassword'>
 
-const resetPasswordSchema = z.object({
-  password: z.string().min(8, 'At least 8 characters'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Passwords do not match',
-  path: ['confirmPassword'],
-})
-
-type ResetPasswordValues = z.infer<typeof resetPasswordSchema>
+type ResetPasswordValues = {
+  password: string
+  confirmPassword: string
+}
 
 export function ResetPasswordScreen() {
   const { t } = useTranslation()
@@ -43,13 +38,27 @@ export function ResetPasswordScreen() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
+  const schema = useMemo(
+    () =>
+      z
+        .object({
+          password: z.string().min(8, t('resetPassword.passwordMin')),
+          confirmPassword: z.string(),
+        })
+        .refine((data) => data.password === data.confirmPassword, {
+          message: t('resetPassword.passwordMismatch'),
+          path: ['confirmPassword'],
+        }),
+    [t]
+  )
+
   const {
     control,
     handleSubmit,
     watch,
     formState: { errors },
   } = useForm<ResetPasswordValues>({
-    resolver: zodResolver(resetPasswordSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
       password: '',
       confirmPassword: '',

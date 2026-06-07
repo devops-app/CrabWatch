@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   View,
@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useFocusEffect } from '@react-navigation/native'
+import { useIsFocused } from '@react-navigation/native'
 import {
   observationSchema,
   type ObservationFormValues,
@@ -88,11 +88,13 @@ export function NewObservationScreen() {
     { label: t('maturationOptions.unknown'), value: 'unknown' },
   ], [t])
 
-  useFocusEffect(
-    React.useCallback(() => {
+  const isFocused = useIsFocused()
+
+  useEffect(() => {
+    if (isFocused) {
       loadSpecies()
-    }, [loadSpecies])
-  )
+    }
+  }, [isFocused, loadSpecies])
 
   const handleLocationCapture = (lat: number, lng: number) => {
     setLatitude(lat)

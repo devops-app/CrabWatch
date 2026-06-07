@@ -39,7 +39,7 @@ export function PhotoTipsModal({ visible, onClose }: { visible: boolean; onClose
           <ScrollView contentContainerStyle={styles.scrollContent}>
             <View style={styles.example}>
               <Image
-                source={require('../../assets/images/dorsal-example.jpg')}
+                source={require('../../../assets/images/dorsal-example.jpg')}
                 style={styles.image}
                 contentFit="cover"
               />
@@ -48,7 +48,7 @@ export function PhotoTipsModal({ visible, onClose }: { visible: boolean; onClose
 
             <View style={styles.example}>
               <Image
-                source={require('../../assets/images/ventral-example.jpg')}
+                source={require('../../../assets/images/ventral-example.jpg')}
                 style={styles.image}
                 contentFit="cover"
               />
@@ -57,7 +57,7 @@ export function PhotoTipsModal({ visible, onClose }: { visible: boolean; onClose
 
             <View style={styles.example}>
               <Image
-                source={require('../../assets/images/closeup-example.png')}
+                source={require('../../../assets/images/closeup-example.png')}
                 style={styles.image}
                 contentFit="cover"
               />

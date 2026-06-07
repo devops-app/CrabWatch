@@ -1,7 +1,7 @@
 {
     "name":  "crabwatch",
     "private":  true,
-    "version":  "1.0.0+0002",
+    "version":  "1.0.0+0003",
     "description":  "Citizen science platform for mud crab conservation in Malaysia",
     "scripts":  {
                     "dev":  "pnpm -r --parallel dev",
@@ -14,7 +14,7 @@
                     "build:mobile":  "pnpm --filter=mobile build",
                     "lint":  "pnpm -r lint",
                     "lint:fix":  "pnpm -r lint:fix",
-                    "typecheck":  "pnpm -r typecheck",
+                    "typecheck":  "npx tsc --noEmit -p shared/tsconfig.json \u0026\u0026 npx tsc --noEmit -p server/tsconfig.json \u0026\u0026 npx tsc --noEmit -p web/tsconfig.json \u0026\u0026 npx tsc --noEmit -p mobile/tsconfig.json",
                     "test:e2e":  "pnpm --filter=web test:e2e",
                     "test:e2e:ui":  "pnpm --filter=web test:e2e:ui",
                     "test:e2e:headed":  "pnpm --filter=web test:e2e:headed",
@@ -42,7 +42,7 @@
                     "pnpm":  "\u003e=10.0.0"
                 },
     "dependencies":  {
-                         "expo":  "~54.0.34",
+                         "expo":  "~54.0.35",
                          "react":  "19.1.0",
                          "react-native":  "0.81.5"
                      }

@@ -48,6 +48,10 @@ export const config = {
     campaignsEnabled: process.env.CAMPAIGNS_ENABLED === 'true' || process.env.NODE_ENV !== 'production',
     abuseDetectionEnabled: process.env.ABUSE_DETECTION_ENABLED === 'true' || process.env.NODE_ENV !== 'production',
   },
+  imageQuality: {
+    coverageWarnThresholdPct: Number(process.env.QUALITY_COVERAGE_WARN_THRESHOLD_PCT || 35),
+    autoCropSecondPassEnabled: process.env.QUALITY_AUTOCROP_SECOND_PASS_ENABLED === 'true',
+  },
 }
 
 if (!config.databaseUrl) {

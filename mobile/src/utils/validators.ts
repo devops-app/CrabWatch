@@ -16,12 +16,14 @@ export const registerSchema = z.object({
   phoneNumber: z.string().min(7, 'Phone number must be at least 7 digits').max(20, 'Phone number is too long'),
   addressLine1: z.string().min(1, 'Address line 1 is required').max(200, 'Address line too long'),
   addressLine2: z.string().max(200, 'Address line too long').optional().or(z.literal('')),
-  addressLine3: z.string().max(200, 'Address line too long').optional().or(z.literal('')),
   state: z.string().min(1, 'State is required').max(100, 'State too long'),
   postcode: z.string().min(1, 'Postcode is required').max(20, 'Postcode too long'),
   country: z.string().min(1, 'Country is required').max(100, 'Country too long'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string().min(1, 'Please confirm your password'),
+  consentAccepted: z.literal(true, {
+    errorMap: () => ({ message: 'You must accept the consent terms to register' }),
+  }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Passwords do not match',
   path: ['confirmPassword'],

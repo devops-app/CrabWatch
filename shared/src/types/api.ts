@@ -40,7 +40,6 @@ export interface LoginResponse {
     phoneNumber: string | null
     addressLine1: string | null
     addressLine2: string | null
-    addressLine3: string | null
     state: string | null
     postcode: string | null
     country: string | null

@@ -3,7 +3,7 @@
                  "name":  "CrabWatch",
                  "slug":  "crabwatch",
                  "version":  "1.0.0",
-                 "orientation":  "portrait",
+                 "orientation":  "default",
                  "scheme":  "crabwatch",
                  "platforms":  [
                                    "ios",
@@ -12,6 +12,13 @@
                  "userInterfaceStyle":  "automatic",
                  "extra":  {
                                "apiUrl":  "https://crabwatch-api.azurewebsites.net/api/v1",
+                               "focusSampleCooldownMs":  700,
+                               "qualityGateModes":  {
+                                                        "blur":  "warn",
+                                                        "brightness":  "warn",
+                                                        "view":  "warn",
+                                                        "webcamRes":  "warn"
+                                                    },
                                "eas":  {
                                            "projectId":  "2b6450de-2e8d-4d06-a12e-ef9fc444d7b7"
                                        }
