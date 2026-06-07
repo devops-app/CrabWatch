@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { api } from '@/lib/api'
 import { COUNTRIES } from '@crabwatch/shared'
-import { useTranslations } from 'next-intl'
-import { Link, useRouter } from '@/i18n/navigation'
+import { useTranslations, useLocale } from 'next-intl'
+import { Link, useRouter, usePathname } from '@/i18n/navigation'
 
 interface RegisterForm {
   name: string
@@ -14,7 +14,7 @@ interface RegisterForm {
   phoneNumber: string
   addressLine1: string
   addressLine2: string
-  addressLine3: string
+  consentAccepted: boolean
   state: string
   postcode: string
   country: string
@@ -24,7 +24,9 @@ interface RegisterForm {
 
 export default function RegisterPage(): React.JSX.Element {
   const router = useRouter()
+  const pathname = usePathname()
   const t = useTranslations('auth.register')
+  const locale = useLocale()
   const [error, setError] = useState('')
   const [isNetworkError, setIsNetworkError] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
@@ -32,6 +34,19 @@ export default function RegisterPage(): React.JSX.Element {
   const [inviteRole, setInviteRole] = useState('')
   const [inviteToken, setInviteToken] = useState('')
   const [validatingInvite, setValidatingInvite] = useState(false)
+  const [langOpen, setLangOpen] = useState(false)
+  const langRef = useRef<HTMLDivElement>(null)
+  const closeLang = useCallback(() => setLangOpen(false), [])
+  useEffect(() => {
+    if (!langOpen) return
+    const handler = (e: MouseEvent) => {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) {
+        closeLang()
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [langOpen, closeLang])
   const {
     register,
     control,
@@ -87,7 +102,7 @@ export default function RegisterPage(): React.JSX.Element {
         phoneNumber: data.phoneNumber,
         addressLine1: data.addressLine1,
         addressLine2: data.addressLine2 || undefined,
-        addressLine3: data.addressLine3 || undefined,
+        consentAccepted: data.consentAccepted,
         state: data.state,
         postcode: data.postcode,
         country: data.country,
@@ -106,7 +121,54 @@ export default function RegisterPage(): React.JSX.Element {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-ocean-50 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-ocean-50 py-8 relative">
+      {/* Language switcher */}
+      <div className="absolute top-4 right-4" ref={langRef}>
+        <button
+          onClick={() => setLangOpen(!langOpen)}
+          className="flex items-center gap-1.5 rounded-lg hover:bg-gray-100 transition-colors px-2.5 py-1.5 text-sm font-medium text-gray-600 bg-white shadow-sm border"
+          title={t('languageSwitch')}
+          aria-label={t('languageSwitch')}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016 4a9.728 9.728 0 006.75 2.98C15.072 6.975 16.5 7 18 7c-1.5 0-2.925-.025-4.25-.075A18.022 18.022 0 0118 14c-2.625 0-4.75-.05-6.452-.145M12 21l-2-2m4 0l2-2" />
+          </svg>
+          {locale === 'en' ? 'EN' : 'BM'}
+          <svg
+            className={`w-3.5 h-3.5 text-gray-400 transition-transform ${langOpen ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {langOpen && (
+          <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+            {(['en', 'ms'] as const).map((l) => (
+              <a
+                key={l}
+                href={`/${l}${pathname.replace(/^\/(en|ms)(?=\/|$)/, '') || ''}`}
+                onClick={() => setLangOpen(false)}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                  l === locale
+                    ? 'bg-ocean-50 text-ocean-700 font-medium'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <span className="flex-1">{l === 'en' ? 'English' : 'Bahasa Melayu'}</span>
+                {l === locale && (
+                  <svg className="w-4 h-4 text-ocean-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="card w-full max-w-md">
         <h1 className="text-2xl font-bold text-ocean-900 mb-6 text-center">
           {t('title')}
@@ -233,18 +295,6 @@ export default function RegisterPage(): React.JSX.Element {
             />
           </div>
 
-          <div>
-            <label htmlFor="reg-addressLine3" className="block text-sm font-medium text-gray-700 mb-1">
-              {t('addressLine3')} <span className="text-gray-400">{t('addressLine2Optional')}</span>
-            </label>
-            <input
-              id="reg-addressLine3"
-              {...register('addressLine3')}
-              className="input-field"
-              placeholder="Additional address info"
-            />
-          </div>
-
           <div className="flex gap-3">
             <div className="flex-1">
               <label htmlFor="reg-state" className="block text-sm font-medium text-gray-700 mb-1">
@@ -334,12 +384,34 @@ export default function RegisterPage(): React.JSX.Element {
               className="input-field"
               placeholder={t('confirmPasswordPlaceholder')}
             />
-            {errors.confirmPassword && (
+           {errors.confirmPassword && (
               <p className="mt-1 text-sm text-red-600">
                 {errors.confirmPassword.message}
               </p>
             )}
           </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              id="consentAccepted"
+              type="checkbox"
+              {...register('consentAccepted', { required: t('consentRequired') })}
+              className="w-4 h-4 rounded border-gray-300 text-ocean-600 focus:ring-ocean-500"
+            />
+            <label htmlFor="consentAccepted" className="text-sm text-gray-700">
+              {t('consentPrefix')}{' '}
+              <Link href="/terms" className="text-ocean-600 hover:underline">{t('termsOfService')}</Link>
+              {' '}
+              {t('consentAnd')}
+              {' '}
+              <Link href="/privacy" className="text-ocean-600 hover:underline">{t('privacyPolicy')}</Link>
+              {t('consentSuffix')}
+              <span className="text-red-500">*</span>
+            </label>
+          </div>
+          {errors.consentAccepted && (
+            <p className="text-sm text-red-600">{errors.consentAccepted.message}</p>
+          )}
 
           <button type="submit" disabled={isSubmitting || validatingInvite} className="btn-primary w-full">
             {isSubmitting ? t('createAccountLoading') : t('createAccount')}

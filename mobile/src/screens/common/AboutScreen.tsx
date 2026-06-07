@@ -63,19 +63,19 @@ export function AboutScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{t('about.features')}</Text>
           <Text style={styles.featureText}>
-            {'\u2022'} {t('about.feature1')}
+            {'•'} {t('about.feature1')}
           </Text>
           <Text style={styles.featureText}>
-            {'\u2022'} {t('about.feature2')}
+            {'•'} {t('about.feature2')}
           </Text>
           <Text style={styles.featureText}>
-            {'\u2022'} {t('about.feature3')}
+            {'•'} {t('about.feature3')}
           </Text>
           <Text style={styles.featureText}>
-            {'\u2022'} {t('about.feature4')}
+            {'•'} {t('about.feature4')}
           </Text>
           <Text style={styles.featureText}>
-            {'\u2022'} {t('about.feature5')}
+            {'•'} {t('about.feature5')}
           </Text>
         </View>
 

@@ -105,7 +105,13 @@
     "analysis.notConfigured": "AI service is not configured",
     "species.autoCreated": "New species auto-created: {{name}}",
     "coin.required": "Coin reference is required for size estimation",
-    "coin.invalid": "Invalid coin selection"
+    "coin.invalid": "Invalid coin selection",
+    "crabCount.zero": "No crab detected - please retake with one crab clearly visible",
+    "crabCount.multiple": "Multiple crabs detected - please photograph only one crab at a time",
+    "quality.blurFail": "Photo is too blurry - please retake a sharper image",
+    "quality.brightnessFail": "Photo is too dark - please retake in better lighting",
+    "coverage.warn": "Crab appears too small in frame ({{coverage}}%). Move closer so the crab fills more of the image.",
+    "coverage.secondPassApplied": "Applied focused crop analysis to improve species confidence."
   },
   "admin": {
     "backup.createSuccess": "Backup created successfully",

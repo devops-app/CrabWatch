@@ -156,10 +156,10 @@ export const api = {
     })
   },
 
-  async register(name: string, email: string, password: string, phoneCode?: string, phoneNumber?: string, addressLine1?: string, addressLine2?: string, addressLine3?: string, state?: string, postcode?: string, country?: string): Promise<UserResponse> {
-    return apiRequest('/users/register', {
+ async register(name: string, email: string, password: string, phoneCode?: string, phoneNumber?: string, addressLine1?: string, addressLine2?: string, state?: string, postcode?: string, country?: string, consentAccepted?: boolean): Promise<UserResponse> {
+    return apiRequest('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ name, email, phoneCode, phoneNumber, addressLine1, addressLine2, addressLine3, state, postcode, country, password }),
+      body: JSON.stringify({ name, email, phoneCode, phoneNumber, addressLine1, addressLine2, state, postcode, country, password, consentAccepted }),
     })
   },
 
@@ -181,7 +181,7 @@ export const api = {
     return apiRequest('/users/me')
   },
 
-  async updateProfile(data: { name?: string; phoneCode?: string | null; phoneNumber?: string | null; addressLine1?: string | null; addressLine2?: string | null; addressLine3?: string | null; state?: string | null; postcode?: string | null; country?: string | null; avatar?: string | null; preferredLocale?: 'en' | 'ms' | null }): Promise<UserResponse> {
+  async updateProfile(data: { name?: string; phoneCode?: string | null; phoneNumber?: string | null; addressLine1?: string | null; addressLine2?: string | null; state?: string | null; postcode?: string | null; country?: string | null; avatar?: string | null; preferredLocale?: 'en' | 'ms' | null }): Promise<UserResponse> {
     return apiRequest('/users/me', {
       method: 'PATCH',
       body: JSON.stringify(data),
@@ -611,7 +611,7 @@ export const api = {
         uri,
         name: fileName,
         type: mimeType,
-      } as any)
+      } as unknown as File)
     })
 
     if (sessionId) {
@@ -666,7 +666,7 @@ export const api = {
       uri: photoUri,
       name: fileName,
       type: mimeType,
-    } as any)
+    } as unknown as File)
 
     const headers: Record<string, string> = {
       'Content-Type': 'multipart/form-data',
@@ -798,4 +798,21 @@ export const api = {
       body: JSON.stringify(body),
     })
   },
+
+  // Telemetry — fire-and-forget, never crashes the app
+  reportTelemetryError: (body: {
+    message: string
+    stack?: string
+    componentStack?: string
+    error?: unknown
+    timestamp?: string
+    url?: string
+  }) =>
+    fetch(`${API_URL}/api/v1/telemetry/error`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).catch(() => {
+      /* telemetry failure should never crash the app */
+    }),
 }

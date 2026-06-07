@@ -304,4 +304,36 @@ gender: 'male',
       expect(result).toEqual(user)
     })
   })
+
+  describe('analysis endpoints', () => {
+    it('preserves crabCoveragePct from analyzeCrab response', async () => {
+      const analysis = {
+        speciesId: 'unknown',
+        speciesName: 'Unknown Species',
+        confidence: 0.7,
+        estimatedCW: null,
+        estimatedBW: null,
+        gender: 'unknown',
+        maturationStatus: 'unknown',
+        detectedCoin: null,
+        coinConfidence: 0,
+        crabCount: 1,
+        crabCoveragePct: 18.75,
+        suggestions: ['Coverage low'],
+        rawAnalysis: '',
+      }
+      mockResponse(analysis)
+
+      const result = await api.analyzeCrab({
+        photoUrls: ['https://example.com/a.jpg'],
+        views: ['dorsal'],
+      })
+
+      expect(result.crabCoveragePct).toBe(18.75)
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://localhost:3001/api/analyze/crab',
+        expect.objectContaining({ method: 'POST' })
+      )
+    })
+  })
 })

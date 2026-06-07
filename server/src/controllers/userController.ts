@@ -11,7 +11,7 @@ import { createTranslator, detectLocale } from '../middleware/i18n'
 const SOFT_DELETE_RETENTION_DAYS = 30
 
 export const createUser = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { name, email, phoneCode, phoneNumber, addressLine1, addressLine2, addressLine3, state, postcode, country, password, inviteToken } = req.body
+  const { name, email, phoneCode, phoneNumber, addressLine1, addressLine2, state, postcode, country, password, inviteToken, consentAccepted } = req.body
   const __ = createTranslator(req)
   const detectedLocale = detectLocale(req)
 
@@ -59,7 +59,7 @@ export const createUser = asyncHandler(async (req: AuthRequest, res: Response) =
     country,
     preferredLocale: detectedLocale,
     ...(addressLine2 && { addressLine2 }),
-    ...(addressLine3 && { addressLine3 }),
+    consentAccepted: consentAccepted === true,
   }
 
   if (isFirebaseEnabled && req.user?.uid) {
@@ -103,13 +103,13 @@ export const createUser = asyncHandler(async (req: AuthRequest, res: Response) =
     phoneNumber: user.phoneNumber,
     addressLine1: user.addressLine1,
     addressLine2: user.addressLine2,
-    addressLine3: user.addressLine3,
     state: user.state,
     postcode: user.postcode,
     country: user.country,
     role: user.role.toLowerCase() as UserRole,
-  avatar: user.avatar,
+    avatar: user.avatar,
     preferredLocale: user.preferredLocale,
+    consentAccepted: user.consentAccepted,
     deletedAt: user.deletedAt?.toISOString() || null,
     blockedAt: user.blockedAt?.toISOString() || null,
     blockReason: user.blockReason,
@@ -137,13 +137,13 @@ export const getUserProfile = asyncHandler(async (req: AuthRequest, res: Respons
       phoneNumber: true,
       addressLine1: true,
       addressLine2: true,
-      addressLine3: true,
       state: true,
       postcode: true,
       country: true,
       role: true,
       avatar: true,
       preferredLocale: true,
+      consentAccepted: true,
       deletedAt: true,
       blockedAt: true,
       blockReason: true,
@@ -170,13 +170,13 @@ export const getUserProfile = asyncHandler(async (req: AuthRequest, res: Respons
     phoneNumber: user.phoneNumber,
     addressLine1: user.addressLine1,
     addressLine2: user.addressLine2,
-    addressLine3: user.addressLine3,
     state: user.state,
     postcode: user.postcode,
     country: user.country,
     role: user.role.toLowerCase() as UserRole,
     avatar: user.avatar,
     preferredLocale: user.preferredLocale,
+    consentAccepted: user.consentAccepted,
     deletedAt: user.deletedAt?.toISOString() || null,
     blockedAt: user.blockedAt?.toISOString() || null,
     blockReason: user.blockReason,
@@ -193,7 +193,7 @@ export const updateUserProfile = asyncHandler(async (req: AuthRequest, res: Resp
   if (!dbUser) {
     throw new NotFoundError(__('user.notFound', 'user'))
   }
-  const { name, phoneCode, phoneNumber, addressLine1, addressLine2, addressLine3, state, postcode, country, avatar, preferredLocale } = req.body
+  const { name, phoneCode, phoneNumber, addressLine1, addressLine2, state, postcode, country, avatar, preferredLocale } = req.body
 
   const db = getPrisma()
   const user = await db.user.update({
@@ -204,7 +204,6 @@ export const updateUserProfile = asyncHandler(async (req: AuthRequest, res: Resp
       ...(phoneNumber !== undefined && { phoneNumber }),
       ...(addressLine1 !== undefined && { addressLine1 }),
       ...(addressLine2 !== undefined && { addressLine2 }),
-      ...(addressLine3 !== undefined && { addressLine3 }),
       ...(state !== undefined && { state }),
       ...(postcode !== undefined && { postcode }),
       ...(country !== undefined && { country }),
@@ -223,13 +222,13 @@ export const updateUserProfile = asyncHandler(async (req: AuthRequest, res: Resp
       phoneNumber: user.phoneNumber,
       addressLine1: user.addressLine1,
       addressLine2: user.addressLine2,
-      addressLine3: user.addressLine3,
-      state: user.state,
+        state: user.state,
       postcode: user.postcode,
       country: user.country,
       role: user.role.toLowerCase() as UserRole,
       avatar: user.avatar,
       preferredLocale: user.preferredLocale,
+      consentAccepted: user.consentAccepted,
       createdAt: user.createdAt.toISOString(),
     },
   })
@@ -316,13 +315,13 @@ export const listUsers = asyncHandler(async (req: AuthRequest, res: Response) =>
         phoneNumber: true,
         addressLine1: true,
         addressLine2: true,
-        addressLine3: true,
-        state: true,
+          state: true,
         postcode: true,
         country: true,
         role: true,
         avatar: true,
         preferredLocale: true,
+        consentAccepted: true,
         blockedAt: true,
         blockReason: true,
         deletedAt: true,
@@ -341,13 +340,13 @@ export const listUsers = asyncHandler(async (req: AuthRequest, res: Response) =>
       phoneNumber: u.phoneNumber,
       addressLine1: u.addressLine1,
       addressLine2: u.addressLine2,
-      addressLine3: u.addressLine3,
       state: u.state,
       postcode: u.postcode,
       country: u.country,
       role: u.role.toLowerCase() as UserRole,
       avatar: u.avatar,
       preferredLocale: u.preferredLocale,
+      consentAccepted: u.consentAccepted,
       blockedAt: u.blockedAt?.toISOString() || null,
       blockReason: u.blockReason,
       deletedAt: u.deletedAt?.toISOString() || null,

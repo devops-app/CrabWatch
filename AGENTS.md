@@ -1,6 +1,6 @@
 # CrabWatch — Work Progress Tracker
 
-> **Last Updated**: 2026-05-27
+> **Last Updated**: 2026-06-01
 > **Current Focus**: Web app deployed to Azure. Mobile build and UAT testing next.
 
 ## Goal
@@ -23,8 +23,45 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - AI species matching must handle exact, partial, and genus-level name variations
 - Use Resend for transactional emails (3k/month free). Use `onboarding@resend.dev` for immediate testing.
 - Invite link must pre-fill the email and lock the assigned role (RESEARCHER/ADMIN) on the registration form.
+- **Single-crab hard constraint**: Every observation photo must contain exactly one crab. AI must return `crabCount`; 0 or >1 crabs are rejected with no override.
+- **Quality gates before AI**: On-device blur/brightness checks block poor photos before upload. Server-side `sharp` validation as defense-in-depth.
+- **Confidence thresholds**: AI species classification >90% auto-accept, 70-90% flag for review, <70% ask retake.
 
 ## Progress
+
+### Completed (Image Quality Plan — Phase 1 Architecture)
+- Completed: Created `image-quality-plan.md` with 3-phase rollout (on-device gates, server preprocessing, advanced features)
+- Completed: Mapped 7 Expo mobile components with roles, current state, required improvements, and field-capture benefits
+- Completed: Defined platform split: mobile = real-time frame analysis & sensor feedback; web = post-capture Canvas validation
+- Completed: Added single-crab hard constraint — AI must return `crabCount`, 0 or >1 rejected with no override
+- Completed: Added confidence thresholds — AI species >90% auto-accept, 70-90% flag for review, <70% ask retake
+- Completed: Added crab coverage validation — bounding box must cover >35% of image
+- Completed: Added Laplacian blur detection with calibration note for threshold validation
+- Completed: Added histogram equalization to server P2-1 preprocessing
+- Completed: Added dataset quality notes for AI accuracy success factors
+- Completed: Automated versioning system: `VERSION` file, `scripts/version.ps1`, `.git/hooks/pre-commit`
+- Completed: Initialized versioning at `v1.0.0+0001`; auto-increments on every commit
+
+### Completed (Calibration Workflow)
+- Completed: Created `server/scripts/calibration-dataset-template.csv` with labeled dataset schema and label definitions
+- Completed: Created `server/scripts/calibrateQuality.ts` — CLI that processes labeled images, runs threshold sweeps, generates confusion matrices and F1-scored recommendations
+- Completed: Blur sweep: iterates fail/warn thresholds, computes TP/FP/TN/FN vs human labels, ranks by F1 score
+- Completed: Brightness sweep: iterates fail/warnLow/warnHigh thresholds, same confusion matrix analysis
+- Completed: Score distribution analysis with min/max/mean/median/p10/p90 and histogram buckets
+- Completed: Per-image mismatch report showing which photos disagree with current thresholds
+- Completed: JSON report output with top-5 threshold recommendations for both blur and brightness
+- Completed: Added `calibrate` npm script in `server/package.json`
+- Completed: Updated `server/tsconfig.json` to include `scripts` directory
+- Verified: `tsc --noEmit` passes for calibration script (only pre-existing errors in `fix-photos.ts`/`migrate-db.ts`)
+
+### Completed (QA Matrix Validation)
+- Completed: Created `qa-matrix.md` — comprehensive QA matrix with 24 test scenarios across 6 groups (Lighting, Focus, Framing, Crab Count, Surface, Resolution)
+- Completed: Created `server/scripts/runQAMatrix.ts` — automated runner that processes test images, evaluates blur/brightness gates, compares against expected outcomes
+- Completed: Runner matches images by filename prefix (a1-, b1-, c1-, etc.) to scenario definitions
+- Completed: JSON report output (`qa-matrix-report.json`) with per-image results, mismatches, and summary stats
+- Completed: Added `qa:matrix` npm script in `server/package.json`
+- Verified: `tsc --noEmit` passes for QA matrix script (only pre-existing errors in `fix-photos.ts`/`migrate-db.ts`)
+- Verified: Script runs correctly with usage instructions
 
 ### Completed (Observation Print)
 - Completed: Added print button to web observation detail page (`observation/[id]/client.tsx`) with `window.print()` and `@media print` CSS that hides sidebar/header
@@ -38,6 +75,25 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Completed: Added streak warning notification in `rewardEngine.ts` `updateStreak()` — warns user when streak > 0 and last activity > 18h ago
 - Completed: Added streak lost notification in `rewardEngine.ts` `updateStreak()` — notifies user when streak resets from > 1 to 1
 - Verified: `tsc --noEmit` passes cleanly for all packages (server, shared, mobile, web)
+
+### Completed (Mobile Analytics Map Tab)
+- Completed: Added Map tab button to mobile analytics screen with `activeSection` state.
+- Completed: Implemented `MapSection` component with `react-native-maps`, gender filter toggle, status-colored markers, observation info card, and fullscreen photo modal.
+- Completed: Added `loadMapData` with paginated API fetch (500 per page, up to 5000 observations).
+- Completed: Added `MALAYSIA_REGION` with auto-calculated `latitudeDelta`/`longitudeDelta` from `MALAYSIA_BOUNDS`.
+- Completed: Added `map.*` i18n keys to `en.json` and `ms.json`.
+- Verified: `tsc --noEmit` passes cleanly for mobile package.
+
+### Completed (Reset Password i18n — Web + Mobile)
+- Completed: Mobile `ForgotPasswordScreen.tsx` and `ResetPasswordScreen.tsx` — fixed hardcoded Zod validation messages with `useMemo` + `t()` for dynamic i18n.
+- Completed: Added `forgotPassword.invalidEmail`, `resetPassword.passwordMin`, `resetPassword.passwordMismatch` to mobile `en.json` and `ms.json`.
+- Completed: Web `auth/forgot-password/page.tsx` and `auth/reset-password/page.tsx` — added missing `rememberPassword` and `signInLink` keys to `web/messages/en.json` and `ms.json`.
+- Verified: `tsc --noEmit` passes cleanly for mobile, shared, and server packages.
+
+### Completed (Image Quality Plan — Resolved Gaps)
+- Completed: Both "Out of Scope" gaps in `image-quality-plan.md` resolved: mobile analytics map tab and reset password i18n.
+- Completed: Updated `image-quality-plan.md` to mark gaps as resolved.
+- Remaining future work: Phase 3 advanced items, calibration sign-off, QA matrix execution, production alerting.
 
 ### Completed Areas
 
@@ -269,6 +325,14 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Verified: `next build` passes cleanly for web (pre-existing lint warnings only)
 - Verified: `pnpm -r test` — all 80 failures are pre-existing Jest infrastructure issues, zero new failures from i18n changes
 
+### Completed (Mobile Analytics Map Tab)
+- Completed: Added Map tab button to mobile analytics screen with `activeSection` state.
+- Completed: Implemented `MapSection` component with `react-native-maps`, gender filter toggle, status-colored markers, observation info card, and fullscreen photo modal.
+- Completed: Added `loadMapData` with paginated API fetch (500 per page, up to 5000 observations).
+- Completed: Added `MALAYSIA_REGION` with auto-calculated `latitudeDelta`/`longitudeDelta` from `MALAYSIA_BOUNDS`.
+- Completed: Added `map.*` i18n keys to `en.json` and `ms.json`.
+- Verified: `tsc --noEmit` passes cleanly for mobile package.
+
 ### Completed (i18n Malay Translation Seed — Phase 2.3)
 - Completed: Created `server/src/services/seedMalayTranslations.ts` to bulk-seed Malay translations for existing DB content
 - Completed: Seeds LevelConfig (12 titles), Achievement (19 names + 19 descriptions), MissionDefinition (4 names + 4 descriptions), OnboardingFlow (1 name + 5 steps), Species (4 common names + descriptions + key features)
@@ -303,14 +367,101 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Completed: Configured app settings: `BACKEND_URL`, `SCM_DO_BUILD_DURING_DEPLOYMENT=false`, `ENABLE_ORYX_BUILD=false`, `WEBSITE_NODE_DEFAULT_VERSION=22`
 - Verified: Web app responds with HTTP 200 at `https://crabwatch-web.azurewebsites.net`
 
-### Blocked
-- (none)
+### Completed (Legal Document Pages + Consent Checkbox)
+- Completed: Created `web/src/app/[locale]/terms/page.tsx` and `web/src/app/[locale]/privacy/page.tsx` — server components that read locale-specific markdown files from `web/public/legal/{en,ms}/` and render them with Tailwind-styled HTML
+- Completed: Moved consent checkbox in `web/src/app/[locale]/auth/register/page.tsx` to appear directly before the "Create Account" button
+- Completed: Updated consent links to use locale-aware paths: `/${locale}/terms` and `/${locale}/privacy`
+- Completed: Created Malay translations for legal documents: `web/public/legal/ms/terms.md` and `web/public/legal/ms/privacy.md`
+- Completed: Copied English legal docs: `web/public/legal/en/terms.md` and `web/public/legal/en/privacy.md`
+- Completed: Added top-right language selectors to mobile `LoginScreen.tsx` and `RegisterScreen.tsx` using `useLocaleStore` and custom dropdown UI
+- Completed: Added consent terms i18n keys (`consentPrefix`, `consentSuffix`, `termsOfService`, `privacyPolicy`) to mobile and web translation files
+- Completed: Updated `RegisterScreen` and web register page to render consent terms with tappable links
+- Completed: Fixed TypeScript errors in mobile auth screens: replaced `COLORS.card` with `COLORS.surface`, added missing style definitions
+- Completed: Fixed `next-intl` import in web register page: removed invalid `setLocale`, added `useRef`, `useCallback`, `usePathname`
+- Completed: Implemented top-right language selector dropdown in web register page with click-outside close handler and locale-switching `href` logic
+- Completed: Added `SpeciesList: undefined` to `RootStackParamList` and registered `SpeciesListScreen` in `AppNavigator.tsx`
+- Completed: Added "Species" action button to `mobile/src/screens/home/HomeScreen.tsx` navigating via `tabNav.getParent<StackNavigation>()`
+- Completed: Added comprehensive i18n keys for species management UI to `web/messages/en.json` and `ms.json`
+- Completed: Refactored `web/src/app/[locale]/dashboard/admin/species-tab.tsx`: replaced JSON textareas with plain text inputs for `keyFeatures` and `distributionZones`; added image upload via Azure presigned URL + manual URL input with preview thumbnails
+- Completed: Added `parseKeyFeatures`, `formatKeyFeatures`, `parseDistributionZones`, `formatDistributionZones` helper functions
+- Verified: `pnpm typecheck` passes cleanly for all packages (shared, server, web, mobile)
+- Verified: `next build` passes cleanly with zero new errors
+
+### Completed (Image Quality Gate Rollout Wiring)
+- Completed: Created `shared/src/utils/qualityRollout.ts` with `GateMode` type, `QualityGateModes` interface, and utility functions (`applyGateModeToStatus`, `isGateBlocking`, `isGateOverridable`, `normalizeGateMode`)
+- Completed: Exported `qualityRollout` utilities from `shared/src/index.ts`
+- Completed: Added `NEXT_PUBLIC_QUALITY_GATE_*` env vars to `web/.env.local` (default `warn`)
+- Completed: Added `qualityGateModes` config block to `mobile/app.json` `extra` section
+- Completed: Wired `QUALITY_GATE_MODES` export into `mobile/src/utils/constants.ts` using `expo-constants` + shared `normalizeGateMode`
+- Completed: Wired rollout modes into web `client.tsx`: parsed env vars, applied `applyGateModeToStatus` to status derivation, replaced hardcoded blocking with `isGateBlocking`/`isGateOverridable`
+- Completed: Wired rollout modes into mobile `GuidedCaptureScreen.tsx`: applied `applyGateModeToStatus` to blur/brightness status, replaced `hasBlockingFailure` with mode-aware `isGateBlocking`/`isGateOverridable`
+- Completed: Updated `QualityGateCard.tsx` with `allowOverride` prop to conditionally render override UI based on rollout config
+- Verified: `pnpm typecheck` passes cleanly for all packages (shared, mobile, web)
+- Verified: `next build` passes cleanly with zero new errors
+
+### Completed (P2-2: Auto-Crop + Coverage Validation)
+- Completed: P2-2 — Server-side image re-crop pass in `analysisController.ts:229-287` using `createCroppedImageDataUrlFromUrl`
+- Completed: `toPixelBox` in `imageQuality.ts` auto-detects normalized vs pixel coordinates and clamps bounds safely
+- Completed: Re-crop pass is conditional on `config.imageQuality.autoCropSecondPassEnabled` and coverage thresholds
+- Completed: `validateResult` enforces numeric rounding/bounds for `crabCount`, `estimatedCW`, `confidence`, and `speciesConfidence`
+- Completed: Bounding box coverage warnings and `autoCropBoundingBox` emission fully wired
+- Verified: `pnpm typecheck` passes cleanly for all packages
+
+### Completed (EXIF Metadata Extraction)
+- Completed: `extractExifMetadata` and `formatExifNotes` in `imageQuality.ts` using `sharp`'s built-in EXIF buffer + custom binary parser (zero new dependencies)
+- Completed: Binary parser handles Motorola/Intel byte order, IFD entries, GPS rational conversion, and ASCII string extraction
+- Completed: Wired EXIF extraction into `uploadAnalysisPhotosHandler`, stored notes in `activeSessions`, injected into `analyzeCrabHandler` response `suggestions`
+- Completed: `activeSessions` map type updated to include `exifNotes?: string`
+- Completed: EXIF notes appended as structured text (`"Camera: X | Date: Y | GPS: Z"`) in submission notes
+- Verified: `pnpm typecheck` passes cleanly for all packages
+- Verified: `pnpm -r test` — all 80 failures are pre-existing Jest infrastructure issues, zero new failures
+
+### Completed (EXIF-1: Mobile Orientation Pre-Correction)
+- Completed: `getExifOrientation` in `photoService.ts` — reads JPEG binary header, scans APP1 segment for EXIF orientation tag (0x0112), handles Motorola/Intel byte order
+- Completed: `applyExifOrientation` — rotates image using `ImageManipulator.manipulateAsync` for orientations 3/6/8 (180°/270°/90°)
+- Completed: Wired into `assessImageQuality` — orientation-corrected URI used for all downstream blur/brightness checks
+- Verified: `pnpm typecheck` passes cleanly for mobile, web, and shared packages
+
+### Completed (R-2: Mobile Quality Gate Telemetry)
+- Completed: Added `reportTelemetryError` to mobile `api.ts` matching web payload structure with `[QUALITY_GATE]` message
+- Completed: Wired telemetry in `GuidedCaptureScreen.tsx` for quality results (blur/brightness scores, issue codes), overrides (with reason), and view detection (confidence, dorsal/ventral)
+- Completed: All payloads use `platform: 'mobile'` to distinguish from web events in App Insights
+- Verified: `pnpm typecheck` passes cleanly for mobile, web, and shared packages
+
+### Completed (React Navigation 7 Upgrade + Expo Patches)
+- Completed: Upgraded `@react-navigation/native`, `native-stack`, `bottom-tabs` from 6.x to 7.x in `mobile/package.json`
+- Completed: Replaced deprecated `useFocusEffect` with `useIsFocused` + `useEffect` in 4 screens: `GuidedCaptureScreen`, `AIReviewScreen`, `NewObservationScreen`, `SpeciesListScreen`
+- Completed: Updated Jest mock for `@react-navigation/native` to remove `useFocusEffect`
+- Completed: Patched Expo packages (`expo`, `expo-file-system`, `expo-font`, `expo-localization`) to recommended SDK 54 versions
+- Completed: Excluded `scripts/fix-photos.ts` and `scripts/migrate-db.ts` from `server/tsconfig.json`
+- Completed: Added `extractJson` helper in `server/src/services/foundryAgent.ts` to strip markdown code fences before `JSON.parse`
+- Completed: Added missing i18n keys (`capture.client.analysis.*`, `auth.forgotPassword.*`) to `web/messages/en.json` and `ms.json`
+- Completed: Fixed mobile asset `require` paths in `PhotoTipsModal.tsx`
+- Verified: `pnpm typecheck` passes cleanly for all packages
+- Verified: `next build` passes cleanly with zero new errors
+
+### Completed (Mobile Dependency Upgrade — React 19.2.7 + RN 0.81.6)
+- Completed: Upgraded React from `19.1.0` to `19.2.7` across root, mobile, and web `package.json`
+- Completed: Upgraded React Native from `0.81.5` to `0.81.6` across root and mobile `package.json`
+- Completed: Upgraded `react-native-maps` from `1.20.1` to `1.27.2`
+- Completed: Upgraded `react-native-safe-area-context` from `~5.6.0` to `~5.8.0`
+- Completed: Upgraded `@expo/vector-icons` from `^15.0.3` to `^15.1.1`
+- Completed: Upgraded `react-test-renderer` from `19.2.6` to `19.2.7`
+- Completed: Fixed root `package.json` which was pinning React `19.1.0` and RN `0.81.5`, preventing hoisted resolution
+- Completed: Pruned pnpm store and regenerated lockfile to enforce correct version resolution
+- Completed: Fixed BOM encoding issue in `web/package.json` from PowerShell edit
+- Completed: Fixed Metro "Failed to start watch mode" error — narrowed `watchFolders` to `__dirname` + `../shared`, added `watchman: false`
+- Completed: Fixed `expo-dev-client` SDK mismatch — downgraded from `^56.0.18` to `~4.0.28` to match Expo SDK 54
+- Completed: Aligned `expo` version to `~54.0.35` across root and mobile `package.json`
+- Completed: Fixed stale `expo_tmp_6844_6` bin wrapper symlink in `mobile/node_modules/.bin/expo.CMD`
+- Verified: `pnpm typecheck` passes cleanly for all packages (shared, server, web, mobile)
+- Verified: `next build` passes cleanly with zero new errors
+- Verified: Metro bundler starts successfully on Windows
 
 ## Next Steps
-- Build and publish mobile via EAS Build (`eas.projectId` already configured)
+- Validate mobile staging build with `warn`/`soft_block`/`hard_block` quality gate configs
 - Test researcher observation approval/rejection flow end-to-end on mobile
 - Test admin user management, backup, and invite flows on mobile
-- Investigate web observation image display (SAS URL refresh on server restart)
 - End-to-end testing of full engagement flow (submission -> XP -> level up -> achievements -> notifications)
 - Run UAT test cases (240 cases across 19 modules) to verify all features
 - Close out i18n integration project
@@ -378,6 +529,9 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - **Mobile dark mode**: `app.json` set to `"automatic"`; `DARK_COLORS` palette added to `constants.ts`; `useTheme` hook uses `useColorScheme()` to return `{ colors, isDark, scheme }`.
 - **Mobile safe area**: `MainTabs.tsx` uses `useSafeAreaInsets()` for dynamic bottom padding and tab bar height, replacing hardcoded platform-specific values.
 - **Mobile deep linking**: `App.tsx` handles `Linking.getInitialURL()` + `Linking.addEventListener('url')`, extracts token from `crabwatch://reset-password/:token` via regex, passes to `AuthStack` with `initialRouteName='ResetPassword'`.
+- **Quality gate rollout**: Shared `GateMode` type (`off`/`warn`/`soft_block`/`hard_block`) with per-check modes (`blur`, `brightness`, `view`, `webcamRes`). Web reads from `NEXT_PUBLIC_QUALITY_GATE_*` env vars; mobile resolves at runtime via `expo-constants` + `process.env` fallback. `applyGateModeToStatus` downgrades status for `off`/`warn`, `isGateBlocking`/`isGateOverridable` control navigation and override UI visibility.
+- **P2-2 auto-crop**: Server-side re-crop pass in `analysisController.ts` using `createCroppedImageDataUrlFromUrl` with `toPixelBox` coordinate normalization. Configurable via `config.imageQuality.autoCropSecondPassEnabled`. `validateResult` enforces numeric rounding/bounds for `crabCount`, `estimatedCW`, `confidence`, and `speciesConfidence`.
+- **EXIF extraction**: `extractExifMetadata` and `formatExifNotes` in `imageQuality.ts` use `sharp`'s built-in EXIF buffer + custom binary parser (zero new dependencies). Binary parser handles Motorola/Intel byte order, IFD entries, GPS rational conversion, and ASCII string extraction. Notes stored in `activeSessions` and injected into analysis `suggestions`.
 - **Mobile admin type safety**: `AdminScreen.tsx` fully typed with shared DTOs. API methods use `CreateGamificationRuleInput` for create, `Partial<Omit<GamificationRuleDto, 'description'>> & { description?: string | null }` for update, `CampaignCreateInput` for campaign create, and `NotificationPreferenceUpdateRequest` for notification updates.
 - **Admin memo optimization**: All 10 sub-components in `admin/components.tsx` wrapped with `React.memo` to isolate re-renders. Each tab component only re-renders when its own props change, not when sibling tabs receive new data.
 - **Mobile shared DTOs**: Gamification screens use `UserAchievementListDto`, `ActiveMissionDto`, `OnboardingStepStatusDto`, `LeaderboardEntryDto` from `@crabwatch/shared` instead of local interfaces. Added `description` field to mission/onboarding DTOs.
@@ -395,9 +549,12 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - **Error middleware AI status codes**: `middleware/error.ts` catches "timed out" (504) and "not configured" (503) messages from `foundryAgent.ts` to preserve correct HTTP status codes after removing inline handler catches.
 - **Server i18n services**: `rewardEngine.ts`, `achievementService.ts`, and `notificationService.ts` receive `locale: string` from controllers to generate translated notification payloads. `User` model lacks a `locale` field, so locale is passed explicitly via `detectLocale(req)` from the request's `Accept-Language` header.
 - **Campaign locale-awareness**: `campaignService.ts` uses `resolveContentForLocale()` to select content per `User.preferredLocale`. Supports both legacy flat `{ title, body }` and locale-map `{ en: {...}, ms: {...} }` formats with EN fallback. Admin form in `CampaignAdminSubTab` accepts separate EN/MS fields, building locale-map payload.
+- **React Navigation 7 upgrade**: React Navigation 6.x is incompatible with React 19 (causes "Invalid hook call" crash). Upgraded to 7.x which supports React 19. `useFocusEffect` is removed in v7; replaced with `useIsFocused()` + `useEffect`.
+- **Server utility scripts**: `fix-photos.ts` and `migrate-db.ts` excluded from `server/tsconfig.json` to avoid typecheck failures from unused/legacy scripts.
+- **AI JSON extraction**: `foundryAgent.ts` uses `extractJson` to strip markdown code fences before `JSON.parse` to handle LLM responses that wrap JSON in markdown.
 
 ## Critical Context
-- **Stack**: Expo SDK 54, React 19, RN 0.81.5, Zustand, React Navigation, Express, Prisma, Azure Storage, Azure AI Foundry
+- **Stack**: Expo SDK 54, React 19, RN 0.81.5, Zustand, React Navigation 7.x, Express, Prisma, Azure Storage, Azure AI Foundry
 - **Foundry Project Endpoint**: `https://wilsontchui-5315-resource.services.ai.azure.com/api/projects/wilsontchui-5315`
 - **Azure OpenAI Endpoint**: `https://wilsontchui-5315-resource.openai.azure.com/openai/v1`
 - **Mapbox**: Web-only (`MAPBOX_TOKEN` in `web/.env.local`). Used in `dashboard/capture` (manual location picker). No observation map page exists.
@@ -415,6 +572,9 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - **Server i18n**: `i18next` instance initialized on startup via `initServerI18n()` in `server/src/index.ts`. Locale detection middleware in `server/src/middleware/i18n.ts` uses `Accept-Language` header with `en` fallback. `createTranslator` returns `(key, ns?, options?) => string` with `WeakMap` caching per namespace.
 - **Server notification templates**: `server/src/locales/en.json` and `ms.json` contain `notification.*` keys (`levelUp`, `streakWarning`, `streakLost`, `achievement`, `fcm.noTokens`). `rewardEngine.ts`, `achievementService.ts`, and `notificationService.ts` use `getServerI18n()` to translate push/email templates.
 - **Web navigation locale fix**: `router.push()`/`router.replace()` from `next/navigation` strips locale prefix. Must use `useRouter()` from `@/i18n/navigation` to preserve `/en` or `/ms`. `router.back()` is history-based and locale-safe. `localePrefix` changed from `'as-needed'` to `'always'` in `routing.ts` so locale prefix is always visible in URL.
+- **Metro config**: `mobile/metro.config.js` pins `react` via `extraNodeModules`, but resolver still watches root `node_modules`. React Navigation 7.x packages resolve from root hoisted `node_modules`. `watchman: false` + narrowed `watchFolders` required on Windows to avoid "Failed to start watch mode" error.
+- **Expo Go React mismatch**: Expo Go SDK 54 bundles React `19.2.0-canary` but app uses `19.2.7`, causing "Invalid hook call" + `useId` crash. Must use a development build (`expo-dev-client`) instead of Expo Go for React 19 apps.
+- **expo-dev-client SDK pin**: `expo-dev-client` must stay at SDK 54 (`~4.0.x`). Other packages (`expo-system-ui`, `react`, etc.) can be upgraded independently.
 
 ## Relevant Files
 ### AI Analysis
@@ -437,6 +597,15 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - `mobile/src/hooks/useCaptureAssistance.ts` — Motion/brightness/focus real-time monitoring
 - `mobile/src/utils/viewAnalysis.ts` — Post-capture view validation (dorsal/ventral detection)
 - `mobile/src/utils/formatters.ts` — `formatNumber` handles null values
+
+### Image Quality
+- `image-quality-plan.md` — 3-phase improvement plan with platform-specific quality gates, Laplacian blur detection, brightness thresholds, and confidence thresholds
+- `mobile/src/hooks/useCaptureAssistance.ts` — Current broken brightness/shake logic (accelerometer-based brightness needs replacement)
+- `mobile/src/utils/viewAnalysis.ts` — Current broken view detection (always returns true, needs color heuristics)
+- `mobile/src/services/photoService.ts` — Current unreliable blur heuristic (compression ratio, needs Laplacian)
+- `web/src/app/[locale]/dashboard/capture/client.tsx` — Web capture page (needs post-capture quality gate & feedback UI)
+- `server/src/services/foundryAgent.ts` — Server AI agent (needs pre-upload quality gate and crab count validation)
+- `shared/src/types/analysis.ts` — Shared types (needs `ImageQualityResult`, `crabCount`, `boundingBox` additions)
 
 ### Species
 - `server/src/controllers/speciesController.ts` — Species CRUD with auto-upsert
@@ -555,6 +724,13 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - `mobile/src/navigation/AppNavigator.tsx` — Accepts `deepLinkToken` prop and passes to `AuthStack`
 - `mobile/App.tsx` — Handles `Linking.getInitialURL()` + event listener, extracts token from URL path
 - `mobile/app.json` — `"userInterfaceStyle": "automatic"`, scheme `crabwatch` registered
+- `mobile/package.json` — React Navigation 7.x dependencies, patched Expo packages
+- `mobile/src/screens/observation/GuidedCaptureScreen.tsx` — `useIsFocused` + `useEffect` replacing `useFocusEffect`
+- `mobile/src/screens/observation/AIReviewScreen.tsx` — `useIsFocused` + `useEffect` replacing `useFocusEffect`
+- `mobile/src/screens/observation/NewObservationScreen.tsx` — `useIsFocused` + `useEffect` replacing `useFocusEffect`
+- `mobile/src/screens/species/SpeciesListScreen.tsx` — `useIsFocused` + `useEffect` replacing `useFocusEffect`
+- `mobile/src/__tests__/__mocks__/@react-navigation/native.js` — Removed `useFocusEffect` mock
+- `mobile/src/components/observation/PhotoTipsModal.tsx` — Fixed asset `require` paths
 
 ### Shared
 - `shared/src/types/user.ts` — User, CreateUserInput, UpdateUserProfileInput, UserResponse types; Invite, PasswordResetRequest, PasswordResetConfirm types

@@ -84,7 +84,6 @@ export const login = asyncHandler(async (req: AuthRequest, res: Response) => {
         phoneNumber: user.phoneNumber,
         addressLine1: user.addressLine1,
         addressLine2: user.addressLine2,
-        addressLine3: user.addressLine3,
         state: user.state,
         postcode: user.postcode,
         country: user.country,

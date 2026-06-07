@@ -12,6 +12,7 @@ import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost'
+type ButtonPressEvent = Parameters<NonNullable<TouchableOpacityProps['onPress']>>[0]
 
 interface ButtonProps extends TouchableOpacityProps {
   variant?: ButtonVariant
@@ -37,7 +38,7 @@ export function Button({
 }: ButtonProps) {
   const variantStyle = VARIANT_STYLES[variant]
 
-  const handlePress = (e: any) => {
+  const handlePress = (e: ButtonPressEvent) => {
     if (!disabled && !loading) {
       Haptics.selectionAsync()
     }

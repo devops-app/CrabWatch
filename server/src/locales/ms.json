@@ -105,7 +105,13 @@
     "analysis.notConfigured": "Perkhidmatan AI tidak dikonfigurasi",
     "species.autoCreated": "Spesies baru dicipta secara automatik: {{name}}",
     "coin.required": "Rujukan syiling diperlukan untuk anggaran saiz",
-    "coin.invalid": "Pilihan syiling tidak sah"
+    "coin.invalid": "Pilihan syiling tidak sah",
+    "crabCount.zero": "Tiada ketam dikesan - sila ambil semula dengan satu ketam yang jelas kelihatan",
+    "crabCount.multiple": "Lebih daripada satu ketam dikesan - sila ambil gambar satu ketam pada satu masa",
+    "quality.blurFail": "Foto terlalu kabur - sila ambil semula gambar yang lebih jelas",
+    "quality.brightnessFail": "Foto terlalu gelap - sila ambil semula dalam pencahayaan yang lebih baik",
+    "coverage.warn": "Ketam kelihatan terlalu kecil dalam bingkai ({{coverage}}%). Dekatkan kamera supaya ketam memenuhi lebih banyak ruang imej.",
+    "coverage.secondPassApplied": "Analisis potongan fokus telah digunakan untuk meningkatkan keyakinan spesies."
   },
   "admin": {
     "backup.createSuccess": "Sandaran dicipta berjaya",

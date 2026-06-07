@@ -5,8 +5,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
-    "typecheck": "tsc --noEmit",
+    "build": "npx tsc",
+    "typecheck": "npx tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "test": "jest",
     "test:watch": "jest --watch",

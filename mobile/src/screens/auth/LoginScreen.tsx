@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import {
   View,
   Text,
@@ -19,15 +19,25 @@ import { Input } from '../../components/common/Input'
 import { Button } from '../../components/common/Button'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
+import { useLocaleStore } from '../../store/localeStore'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { AuthStackParamList } from '../../navigation/types'
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>
 
+const LOCALES = [{ code: 'en', label: 'EN' }, { code: 'ms', label: 'BM' }] as const
+
 export function LoginScreen() {
   const { t } = useTranslation()
   const navigation = useNavigation<NavigationProp>()
   const [loading, setLoading] = useState(false)
+  const { locale, setLocale } = useLocaleStore()
+  const [langMenuOpen, setLangMenuOpen] = useState(false)
+
+  const switchLocale = useCallback(async (code: 'en' | 'ms') => {
+    await setLocale(code)
+    setLangMenuOpen(false)
+  }, [setLocale])
 
   const {
     control,
@@ -62,12 +72,44 @@ export function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>{t('login.title')}</Text>
-          <Text style={styles.subtitle}>
-            {t('login.subtitle')}
-          </Text>
-        </View>
+       <View style={styles.header}>
+            <View style={styles.langSwitcher}>
+              <TouchableOpacity
+                style={styles.langButton}
+                onPress={() => setLangMenuOpen(!langMenuOpen)}
+              >
+                <Text style={styles.langButtonText}>
+                  {LOCALES.find((l) => l.code === locale)?.label ?? 'EN'}
+                </Text>
+                <Text style={styles.langArrow}>{langMenuOpen ? '▲' : '▼'}</Text>
+              </TouchableOpacity>
+              {langMenuOpen && (
+                <View style={styles.langDropdown}>
+                  {LOCALES.map((l) => (
+                    <TouchableOpacity
+                      key={l.code}
+                      style={[
+                        styles.langOption,
+                        l.code === locale && styles.langOptionActive,
+                      ]}
+                      onPress={() => switchLocale(l.code)}
+                    >
+                      <Text style={[
+                        styles.langOptionText,
+                        l.code === locale && styles.langOptionTextActive,
+                      ]}>
+                        {l.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+            <Text style={styles.title}>{t('login.title')}</Text>
+            <Text style={styles.subtitle}>
+              {t('login.subtitle')}
+            </Text>
+          </View>
 
         <View style={styles.form}>
           <Controller
@@ -145,15 +187,73 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    alignItems: 'center',
     paddingTop: 40,
     paddingBottom: 32,
+  },
+  langSwitcher: {
+    alignSelf: 'flex-end',
+    marginRight: 24,
+    marginBottom: 16,
+    zIndex: 10,
+  },
+  langButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  langButtonText: {
+    fontSize: FONT.sm,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginRight: 4,
+  },
+  langArrow: {
+    fontSize: 10,
+    color: COLORS.textSecondary,
+  },
+  langDropdown: {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    marginTop: 4,
+    backgroundColor: COLORS.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    overflow: 'hidden',
+  },
+  langOption: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  langOptionActive: {
+    backgroundColor: COLORS.primary + '15',
+  },
+  langOptionText: {
+    fontSize: FONT.sm,
+    fontWeight: '500',
+    color: COLORS.text,
+  },
+  langOptionTextActive: {
+    color: COLORS.primary,
+    fontWeight: '600',
   },
   title: {
     fontSize: FONT['6xl'],
     fontWeight: '800',
     color: COLORS.primary,
     letterSpacing: -1,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: FONT.base,

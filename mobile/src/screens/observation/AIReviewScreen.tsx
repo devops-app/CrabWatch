@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   View,
@@ -10,6 +10,7 @@ import {
   Platform,
   TouchableOpacity,
   Modal,
+  Image as RNImage,
 } from 'react-native'
 import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -17,7 +18,7 @@ import { useNavigation, useRoute } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useFocusEffect } from '@react-navigation/native'
+import { useIsFocused } from '@react-navigation/native'
 import {
   observationSchema,
   type ObservationFormValues,
@@ -110,8 +111,68 @@ export function AIReviewScreen() {
   const [showSuccess, setShowSuccess] = useState(false)
   const [showFullscreen, setShowFullscreen] = useState(false)
   const [fullscreenPhoto, setFullscreenPhoto] = useState<string | null>(null)
+  const [fullscreenLayout, setFullscreenLayout] = useState({ width: 0, height: 0 })
+  const [fullscreenNaturalSize, setFullscreenNaturalSize] = useState<{ width: number; height: number } | null>(null)
   const [rawCW, setRawCW] = useState(analysis.estimatedCW?.toString() || '')
   const [rawBW, setRawBW] = useState('')
+  const coveragePct = analysis.crabCoveragePct
+  const hasLowCoverage = typeof coveragePct === 'number' && coveragePct < 35
+  const autoCrop = analysis.autoCropBoundingBox
+  const hasAutoCrop = Boolean(
+    autoCrop
+    && Number.isFinite(autoCrop.x)
+    && Number.isFinite(autoCrop.y)
+    && Number.isFinite(autoCrop.width)
+    && Number.isFinite(autoCrop.height)
+    && autoCrop.width > 0
+    && autoCrop.height > 0
+  )
+
+  const cropBoxStyle = hasAutoCrop
+    ? {
+      left: 70 * Math.max(0, Math.min(1, autoCrop!.x)),
+      top: 70 * Math.max(0, Math.min(1, autoCrop!.y)),
+      width: 70 * Math.max(0, Math.min(1, autoCrop!.width)),
+      height: 70 * Math.max(0, Math.min(1, autoCrop!.height)),
+    }
+    : null
+
+  const fullscreenCropTargetUri = displayPhotos[0] ?? null
+  const fullscreenCropBoxStyle = useMemo(() => {
+    if (!hasAutoCrop || !autoCrop || !fullscreenPhoto || !fullscreenNaturalSize) return null
+    if (fullscreenPhoto !== fullscreenCropTargetUri) return null
+    if (fullscreenLayout.width <= 0 || fullscreenLayout.height <= 0) return null
+
+    const imageAspect = fullscreenNaturalSize.width / fullscreenNaturalSize.height
+    const viewportAspect = fullscreenLayout.width / fullscreenLayout.height
+
+    let renderedWidth = fullscreenLayout.width
+    let renderedHeight = fullscreenLayout.height
+    if (imageAspect > viewportAspect) {
+      renderedHeight = renderedWidth / imageAspect
+    } else {
+      renderedWidth = renderedHeight * imageAspect
+    }
+
+    const offsetLeft = (fullscreenLayout.width - renderedWidth) / 2
+    const offsetTop = (fullscreenLayout.height - renderedHeight) / 2
+
+    return {
+      left: offsetLeft + renderedWidth * Math.max(0, Math.min(1, autoCrop.x)),
+      top: offsetTop + renderedHeight * Math.max(0, Math.min(1, autoCrop.y)),
+      width: renderedWidth * Math.max(0, Math.min(1, autoCrop.width)),
+      height: renderedHeight * Math.max(0, Math.min(1, autoCrop.height)),
+    }
+  }, [autoCrop, fullscreenCropTargetUri, fullscreenLayout.height, fullscreenLayout.width, fullscreenNaturalSize, fullscreenPhoto, hasAutoCrop])
+
+  React.useEffect(() => {
+    if (!showFullscreen || !fullscreenPhoto) return
+    RNImage.getSize(
+      fullscreenPhoto,
+      (width, height) => setFullscreenNaturalSize({ width, height }),
+      () => setFullscreenNaturalSize(null)
+    )
+  }, [fullscreenPhoto, showFullscreen])
 
   const findMatchingSpecies = (): string => {
     if (!analysis.speciesId || analysis.speciesId === 'unknown') return ''
@@ -142,11 +203,13 @@ export function AIReviewScreen() {
     },
   })
 
-  useFocusEffect(
-    React.useCallback(() => {
+  const isFocused = useIsFocused()
+
+  useEffect(() => {
+    if (isFocused) {
       loadSpecies()
-    }, [loadSpecies])
-  )
+    }
+  }, [isFocused, loadSpecies])
 
   React.useEffect(() => {
     if (species.length > 0 && analysis.speciesId) {
@@ -291,6 +354,12 @@ export function AIReviewScreen() {
               <View style={styles.aiSummaryHeader}>
                 <Ionicons name="sparkles" size={20} color={COLORS.accent} />
                 <Text style={styles.aiSummaryTitle}>{t('aiAnalysisResults')}</Text>
+                {analysis.secondPassApplied && (
+                  <View style={styles.secondPassBadge}>
+                    <Ionicons name="scan" size={11} color="#0e7490" />
+                    <Text style={styles.secondPassBadgeText}>{t('enhancedByCrop')}</Text>
+                  </View>
+                )}
                 <View style={styles.confidenceBadge}>
                   <Text style={[
                     styles.confidenceText,
@@ -302,6 +371,38 @@ export function AIReviewScreen() {
               </View>
 
               <Text style={styles.aiSpeciesName}>{analysis.speciesName}</Text>
+
+              {typeof coveragePct === 'number' && (
+                <View style={styles.coverageRow}>
+                  <Text style={styles.coverageLabel}>{t('crabCoverage')}:</Text>
+                  <Text style={styles.coverageValue}>{coveragePct.toFixed(1)}%</Text>
+                  {hasLowCoverage && (
+                    <View style={styles.coverageChip}>
+                      <Ionicons name="warning" size={12} color={COLORS.warning} />
+                      <Text style={styles.coverageChipText}>{t('coverageWarningChip')}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {hasLowCoverage && (
+                <View style={styles.coverageWarnBox}>
+                  <Ionicons name="alert-circle" size={16} color={COLORS.warning} />
+                  <View style={styles.coverageWarnContent}>
+                    <Text style={styles.coverageWarnText}>
+                      {t('coverageWarningMessage', { coverage: coveragePct?.toFixed(1) || '0' })}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.coverageRetakeBtn}
+                      onPress={() => navigation.goBack()}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('retakeRecommendedA11y')}
+                    >
+                      <Text style={styles.coverageRetakeText}>{t('retakeRecommended')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
 
               {analysis.rawAnalysis && (
                 <Text style={styles.aiRawAnalysis}>{analysis.rawAnalysis}</Text>
@@ -336,11 +437,24 @@ export function AIReviewScreen() {
                   key={i}
                   onPress={() => handlePhotoPress(uri)}
                   accessibilityLabel={t('viewPhotoA11y', { index: i + 1 })}
+                  style={styles.photoThumbWrap}
                 >
                   <Image source={{ uri }} style={styles.photoStripImage} />
+                  {hasAutoCrop && i === 0 && cropBoxStyle && (
+                    <>
+                      <View style={[styles.cropOverlayBox, cropBoxStyle]} pointerEvents="none" />
+                      <View style={styles.cropOverlayChip} pointerEvents="none">
+                        <Text style={styles.cropOverlayChipText}>{t('suggestedCrop')}</Text>
+                      </View>
+                    </>
+                  )}
                 </TouchableOpacity>
               ))}
             </View>
+          )}
+
+          {hasAutoCrop && (
+            <Text style={styles.cropHintText}>{t('suggestedCropHint')}</Text>
           )}
 
           {coinType !== undefined && (
@@ -528,7 +642,13 @@ export function AIReviewScreen() {
         animationType="fade"
         onRequestClose={() => setShowFullscreen(false)}
       >
-        <View style={styles.fullscreenOverlay}>
+        <View
+          style={styles.fullscreenOverlay}
+          onLayout={(event) => {
+            const { width, height } = event.nativeEvent.layout
+            setFullscreenLayout({ width, height })
+          }}
+        >
           <TouchableOpacity
             style={styles.fullscreenClose}
             onPress={() => setShowFullscreen(false)}
@@ -541,6 +661,66 @@ export function AIReviewScreen() {
             style={styles.fullscreenImage}
             resizeMode="contain"
           />
+          {fullscreenCropBoxStyle && (
+            <>
+              <View
+                style={[
+                  styles.fullscreenCropMask,
+                  { left: 0, top: 0, width: '100%', height: fullscreenCropBoxStyle.top },
+                ]}
+                pointerEvents="none"
+              />
+              <View
+                style={[
+                  styles.fullscreenCropMask,
+                  {
+                    left: 0,
+                    top: fullscreenCropBoxStyle.top,
+                    width: fullscreenCropBoxStyle.left,
+                    height: fullscreenCropBoxStyle.height,
+                  },
+                ]}
+                pointerEvents="none"
+              />
+              <View
+                style={[
+                  styles.fullscreenCropMask,
+                  {
+                    left: fullscreenCropBoxStyle.left + fullscreenCropBoxStyle.width,
+                    top: fullscreenCropBoxStyle.top,
+                    width: Math.max(0, fullscreenLayout.width - (fullscreenCropBoxStyle.left + fullscreenCropBoxStyle.width)),
+                    height: fullscreenCropBoxStyle.height,
+                  },
+                ]}
+                pointerEvents="none"
+              />
+              <View
+                style={[
+                  styles.fullscreenCropMask,
+                  {
+                    left: 0,
+                    top: fullscreenCropBoxStyle.top + fullscreenCropBoxStyle.height,
+                    width: '100%',
+                    height: Math.max(0, fullscreenLayout.height - (fullscreenCropBoxStyle.top + fullscreenCropBoxStyle.height)),
+                  },
+                ]}
+                pointerEvents="none"
+              />
+              <View style={[styles.fullscreenCropBox, fullscreenCropBoxStyle]} pointerEvents="none" />
+              <View
+                style={[
+                  styles.fullscreenCropChip,
+                  {
+                    left: fullscreenCropBoxStyle.left,
+                    top: Math.max(8, fullscreenCropBoxStyle.top - 30),
+                  },
+                ]}
+                pointerEvents="none"
+              >
+                <Text style={styles.fullscreenCropChipText}>{t('suggestedCrop')}</Text>
+              </View>
+            </>
+          )}
         </View>
       </Modal>
     </SafeAreaView>
@@ -598,6 +778,22 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: COLORS.background,
   },
+  secondPassBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#ecfeff',
+    borderWidth: 1,
+    borderColor: '#a5f3fc',
+  },
+  secondPassBadgeText: {
+    fontSize: FONT.xs,
+    color: '#0e7490',
+    fontWeight: '700',
+  },
   confidenceText: {
     fontSize: FONT.sm,
     fontWeight: '600',
@@ -607,6 +803,71 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.primary,
     marginBottom: 8,
+  },
+  coverageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 8,
+  },
+  coverageLabel: {
+    fontSize: FONT['sm+'],
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+  },
+  coverageValue: {
+    fontSize: FONT['sm+'],
+    color: COLORS.text,
+    fontWeight: '700',
+  },
+  coverageChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: COLORS.warning,
+    backgroundColor: COLORS.warningLight,
+  },
+  coverageChipText: {
+    fontSize: FONT.xs,
+    color: '#92400e',
+    fontWeight: '700',
+  },
+  coverageWarnBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: COLORS.warningLight,
+    borderWidth: 1,
+    borderColor: COLORS.warning,
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 10,
+  },
+  coverageWarnContent: {
+    flex: 1,
+    gap: 8,
+  },
+  coverageWarnText: {
+    fontSize: FONT['sm+'],
+    color: '#78350f',
+    lineHeight: 18,
+  },
+  coverageRetakeBtn: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#f59e0b',
+  },
+  coverageRetakeText: {
+    fontSize: FONT.sm,
+    color: '#ffffff',
+    fontWeight: '700',
   },
   aiRawAnalysis: {
     fontSize: FONT.base,
@@ -651,10 +912,43 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 16,
   },
+  photoThumbWrap: {
+    width: 70,
+    height: 70,
+    borderRadius: 8,
+    overflow: 'hidden',
+    position: 'relative',
+  },
   photoStripImage: {
     width: 70,
     height: 70,
     borderRadius: 8,
+  },
+  cropOverlayBox: {
+    position: 'absolute',
+    borderWidth: 2,
+    borderColor: '#22d3ee',
+    borderRadius: 2,
+  },
+  cropOverlayChip: {
+    position: 'absolute',
+    left: 3,
+    top: 3,
+    backgroundColor: '#06b6d4',
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+  },
+  cropOverlayChipText: {
+    fontSize: 9,
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+  cropHintText: {
+    marginTop: -10,
+    marginBottom: 10,
+    fontSize: FONT.xs,
+    color: '#0e7490',
   },
   coinInfo: {
     flexDirection: 'row',
@@ -761,5 +1055,27 @@ const styles = StyleSheet.create({
   fullscreenImage: {
     width: '100%',
     height: '100%',
+  },
+  fullscreenCropBox: {
+    position: 'absolute',
+    borderWidth: 2,
+    borderColor: '#22d3ee',
+    borderRadius: 3,
+  },
+  fullscreenCropMask: {
+    position: 'absolute',
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+  },
+  fullscreenCropChip: {
+    position: 'absolute',
+    backgroundColor: '#06b6d4',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  fullscreenCropChipText: {
+    color: '#ffffff',
+    fontSize: FONT.xs,
+    fontWeight: '700',
   },
 })

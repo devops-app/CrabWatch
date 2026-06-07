@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Gyroscope, Accelerometer } from 'expo-sensors'
+import { Gyroscope } from 'expo-sensors'
+import * as FileSystem from 'expo-file-system'
+import { photoService } from '../services/photoService'
 
 type GyroscopeSubscription = ReturnType<typeof Gyroscope.addListener>
-type AccelerometerSubscription = ReturnType<typeof Accelerometer.addListener>
 
 interface CaptureQuality {
   isSteady: boolean
@@ -18,6 +19,7 @@ export type CaptureMessageKey =
   | 'focusLocked'
   | 'lightingTooDark'
   | 'lightingLow'
+  | 'lightingTooBright'
   | 'holdStill'
   | 'holdSteadier'
 
@@ -34,7 +36,6 @@ const DEFAULT_QUALITY: CaptureQuality = {
 export function useCaptureAssistance() {
   const [quality, setQuality] = useState<CaptureQuality>(DEFAULT_QUALITY)
   const gyroSubRef = useRef<GyroscopeSubscription | null>(null)
-  const accelSubRef = useRef<AccelerometerSubscription | null>(null)
   const motionHistoryRef = useRef<number[]>([])
 
   const setFocused = useCallback((focused: boolean) => {
@@ -51,10 +52,11 @@ export function useCaptureAssistance() {
 
   const setBrightness = useCallback((level: CaptureQuality['brightnessLevel']) => {
     setQuality((prev) => {
-      const isWellLit = level === 'good' || level === 'bright'
-      const messages = prev.messages.filter((m) => m !== 'lightingTooDark' && m !== 'lightingLow') as CaptureMessageKey[]
+      const isWellLit = level === 'good'
+      const messages = prev.messages.filter((m) => m !== 'lightingTooDark' && m !== 'lightingLow' && m !== 'lightingTooBright') as CaptureMessageKey[]
       if (level === 'dark') messages.push('lightingTooDark')
       else if (level === 'low') messages.push('lightingLow')
+      else if (level === 'bright') messages.push('lightingTooBright')
       return {
         ...prev,
         isWellLit,
@@ -104,33 +106,38 @@ export function useCaptureAssistance() {
     }
   }, [])
 
-  const processAccelerometer = useCallback((data: { x: number; y: number; z: number }) => {
-    const lightEstimate = Math.max(0, data.z)
-    if (lightEstimate > 0.8) setBrightness('bright')
-    else if (lightEstimate > 0.4) setBrightness('good')
-    else if (lightEstimate > 0.15) setBrightness('low')
-    else setBrightness('dark')
-  }, [setBrightness])
+  const sampleBrightnessFromUri = useCallback(async (uri: string) => {
+    try {
+      const qualityResult = await photoService.assessImageQuality(uri)
+      setBrightness(qualityResult.brightnessLevel)
+      setFocused(qualityResult.blurStatus !== 'fail')
+    } catch {
+      // Ignore frame sampling errors to keep capture flow responsive
+    } finally {
+      try {
+        await FileSystem.deleteAsync(uri, { idempotent: true })
+      } catch {
+        // Best effort cleanup for sampled frame files
+      }
+    }
+  }, [setBrightness, setFocused])
 
   useEffect(() => {
     Gyroscope.setUpdateInterval(100)
-    Accelerometer.setUpdateInterval(500)
 
     gyroSubRef.current = Gyroscope.addListener(processMotion)
-    accelSubRef.current = Accelerometer.addListener(processAccelerometer)
 
     return () => {
       gyroSubRef.current?.remove()
       gyroSubRef.current = null
-      accelSubRef.current?.remove()
-      accelSubRef.current = null
       motionHistoryRef.current = []
     }
-  }, [processMotion, processAccelerometer])
+  }, [processMotion])
 
   return {
     quality,
     setFocused,
     setBrightness,
+    sampleBrightnessFromUri,
   }
 }

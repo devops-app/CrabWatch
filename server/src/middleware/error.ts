@@ -26,6 +26,10 @@ export function errorHandler(
       error: err.message,
     }
 
+    if (err.code) {
+      body.code = err.code
+    }
+
     if (err instanceof ValidationError && err.errors) {
       body.details = err.errors
     }

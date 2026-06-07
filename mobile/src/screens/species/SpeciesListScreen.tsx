@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   View,
@@ -6,7 +6,7 @@ import {
   StyleSheet,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useNavigation, useFocusEffect } from '@react-navigation/native'
+import { useNavigation, useIsFocused } from '@react-navigation/native'
 import { useSpeciesStore } from '../../store/speciesStore'
 import { SpeciesCard } from '../../components/species/SpeciesCard'
 import { EmptyState } from '../../components/common/EmptyState'
@@ -24,11 +24,13 @@ export function SpeciesListScreen() {
   const { species, loading, loadSpecies } = useSpeciesStore()
   const [search, setSearch] = useState('')
 
-  useFocusEffect(
-    React.useCallback(() => {
+  const isFocused = useIsFocused()
+
+  useEffect(() => {
+    if (isFocused) {
       loadSpecies()
-    }, [loadSpecies])
-  )
+    }
+  }, [isFocused, loadSpecies])
 
   const filteredSpecies = species.filter(
     (s) =>

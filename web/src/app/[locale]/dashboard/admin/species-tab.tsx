@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { api } from '@/lib/api'
 import type { SpeciesResponse, KeyFeature, DistributionZone } from '@crabwatch/shared'
@@ -20,6 +20,34 @@ interface SpeciesTabProps {
   flash: (msg: string, type: 'error' | 'success') => void
   onConfirm: (state: ConfirmState) => void
   onReload: () => void
+}
+
+function parseKeyFeatures(text: string): KeyFeature[] {
+  return text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const idx = line.indexOf(':')
+      if (idx === -1) return { trait: line, value: '' }
+      return { trait: line.slice(0, idx).trim(), value: line.slice(idx + 1).trim() }
+    })
+}
+
+function parseDistributionZones(text: string): DistributionZone[] {
+  return text
+    .split('\n')
+    .map((name) => name.trim())
+    .filter(Boolean)
+    .map((name) => ({ name, polygon: [] }))
+}
+
+function formatKeyFeatures(features: KeyFeature[]): string {
+  return features.map((f) => `${f.trait}: ${f.value}`).join('\n')
+}
+
+function formatDistributionZones(zones: DistributionZone[]): string {
+  return zones.map((z) => z.name).join('\n')
 }
 
 export function SpeciesTab({ flash, onConfirm, onReload }: SpeciesTabProps): React.JSX.Element {
@@ -182,6 +210,7 @@ export function SpeciesTab({ flash, onConfirm, onReload }: SpeciesTabProps): Rea
           onDistributionZonesChange={setFormDistributionZones}
           onSave={handleSaveSpecies}
           onClose={closeSpeciesForm}
+          flash={flash}
         />
       )}
     </>
@@ -205,6 +234,7 @@ function SpeciesFormModal({
   onDistributionZonesChange,
   onSave,
   onClose,
+  flash,
 }: {
   editingSpecies: SpeciesResponse | null
   formScientificName: string
@@ -222,8 +252,54 @@ function SpeciesFormModal({
   onDistributionZonesChange: (v: DistributionZone[]) => void
   onSave: () => void
   onClose: () => void
+  flash: (msg: string, type: 'error' | 'success') => void
 }) {
   const t = useTranslations('admin.species')
+  const [imageUrl, setImageUrl] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileUpload = async (file: File) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      flash(t('imageUploadInvalidType'), 'error')
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      flash(t('imageUploadTooLarge'), 'error')
+      return
+    }
+    setUploading(true)
+    try {
+      const ext = file.name.split('.').pop() || 'jpg'
+      const res = await api.getUploadUrl(`${Date.now()}.${ext}`, file.type) as { uploadUrl: string; blobUrl: string }
+      await fetch(res.uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type },
+      })
+      const blobUrl = res.blobUrl
+      onImagesChange([...formImages, blobUrl])
+      flash(t('imageUploadSuccess'), 'success')
+    } catch (err: unknown) {
+      flash(err instanceof Error ? err.message : t('imageUploadFailed'), 'error')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleAddImageUrl = useCallback(() => {
+    const url = imageUrl.trim()
+    if (url) {
+      onImagesChange([...formImages, url])
+      setImageUrl('')
+    }
+  }, [imageUrl, formImages, onImagesChange])
+
+  const removeImage = (idx: number) => {
+    onImagesChange(formImages.filter((_, i) => i !== idx))
+  }
+
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 p-6 max-h-[90vh] overflow-y-auto">
@@ -246,35 +322,81 @@ function SpeciesFormModal({
             <textarea value={formDescription} onChange={(e) => onDescriptionChange(e.target.value)} className="input-field" rows={3} placeholder="Species description..." />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('keyFeatures')} (<code className="text-xs">{'[{"trait":"Color","value":"Blue-green"}]'}</code>)
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('keyFeatures')}</label>
+            <p className="text-xs text-gray-400 mb-1">{t('keyFeaturesHint')}</p>
             <textarea
-              value={JSON.stringify(formKeyFeatures, null, 2)}
-              onChange={(e) => {
-                try { onKeyFeaturesChange(JSON.parse(e.target.value || '[]')) } catch { /* ignore invalid JSON */ }
-              }}
-              className="input-field font-mono text-xs"
+              value={formatKeyFeatures(formKeyFeatures)}
+              onChange={(e) => onKeyFeaturesChange(parseKeyFeatures(e.target.value))}
+              className="input-field text-sm"
               rows={3}
-              placeholder='[{"trait":"Carapace","value":"Round"}]'
+              placeholder="Color: Blue-green"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('images')}</label>
-            <textarea value={formImages.join('\n')} onChange={(e) => onImagesChange(e.target.value.split('\n').filter(Boolean))} className="input-field text-xs" rows={2} placeholder="https://example.com/image1.jpg" />
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('imagesLabel')}</label>
+            {formImages.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {formImages.map((url, idx) => (
+                  <div key={idx} className="relative group">
+                    <img src={url} alt={`Image ${idx + 1}`} className="w-20 h-20 object-cover rounded-lg border" />
+                    <button
+                      onClick={() => removeImage(idx)}
+                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      title={t('imageRemove')}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2 items-center">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handleFileUpload(file)
+                  if (fileInputRef.current) fileInputRef.current.value = ''
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="px-3 py-1.5 text-sm bg-ocean-100 text-ocean-700 rounded-lg hover:bg-ocean-200 transition-colors disabled:opacity-50"
+              >
+                {uploading ? t('imageUploadUploading') : t('imageUploadBtn')}
+              </button>
+              <span className="text-xs text-gray-400">{t('imageOr')}</span>
+              <input
+                type="url"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                className="input-field flex-1 text-sm"
+                placeholder={t('imageUrlPlaceholder')}
+              />
+              <button
+                type="button"
+                onClick={handleAddImageUrl}
+                disabled={!imageUrl.trim()}
+                className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+              >
+                {t('imageAddUrl')}
+              </button>
+            </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('distributionZones')} (<code className="text-xs">{'[{"name":"Gulf of Thailand","polygon":[[100.5,6.5],[100.6,6.5]]}]'}</code>)
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('distributionZones')}</label>
+            <p className="text-xs text-gray-400 mb-1">{t('distributionZonesHint')}</p>
             <textarea
-              value={JSON.stringify(formDistributionZones, null, 2)}
-              onChange={(e) => {
-                try { onDistributionZonesChange(JSON.parse(e.target.value || '[]')) } catch { /* ignore invalid JSON */ }
-              }}
-              className="input-field font-mono text-xs"
-              rows={3}
-              placeholder='[{"name":"Zone","polygon":[[100,6],[101,6],[101,7],[100,7]]}]'
+              value={formatDistributionZones(formDistributionZones)}
+              onChange={(e) => onDistributionZonesChange(parseDistributionZones(e.target.value))}
+              className="input-field text-sm"
+              rows={2}
+              placeholder="Gulf of Thailand"
             />
           </div>
         </div>

@@ -15,7 +15,6 @@ model User {
   phoneNumber        String?
   addressLine1       String?
   addressLine2       String?
-  addressLine3       String?
   state              String?
   postcode           String?
   country            String?
@@ -36,6 +35,7 @@ model User {
   totalSubmissions   Int                      @default(0)
   totalXP            Int                      @default(0)
   preferredLocale    String?                  @default("en")
+  consentAccepted    Boolean                  @default(false)
   abuseSignals       AbuseSignal[]
   adminAuditLogs     AuditLog[]               @relation("AuditActor")
   fcmToken           FcmToken?

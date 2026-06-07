@@ -17,7 +17,7 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 import { useFormatters } from '../../hooks/useFormatters'
-import type { LeaderboardEntryDto } from '@crabwatch/shared'
+import type { LeaderboardEntryDto, LeaderboardResponseDto } from '@crabwatch/shared'
 
 type Scope = 'ALL_TIME' | 'SEASONAL'
 
@@ -34,11 +34,10 @@ export function LeaderboardScreen() {
 
   const loadLeaderboard = useCallback(async (currentPage: number, reset: boolean) => {
     try {
-      const data: any = await api.getLeaderboard({ scope, page: currentPage, limit: 50 })
-      const newEntries = data.items || []
-      const totalPages = data.total ? Math.ceil(data.total / (data.limit || 50)) : 1
+      const data: LeaderboardResponseDto = await api.getLeaderboard({ scope, page: currentPage, limit: 50 })
+      const newEntries = data.entries || []
       setEntries(reset ? newEntries : [...entries, ...newEntries])
-      setTotalPages(totalPages)
+      setTotalPages(data.totalPages)
       setPage(currentPage)
     } catch {
       console.error('Failed to load leaderboard')

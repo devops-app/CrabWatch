@@ -529,6 +529,21 @@
 
 ---
 
+## 20. Mobile Analytics Map Tab
+
+| ID | Test Case | Steps | Expected Result |
+|----|-----------|-------|-----------------|
+| MAP-001 | Map tab visible | 1. Navigate to Analytics > Map tab | Map renders centered on Malaysia |
+| MAP-002 | Markers render | 1. Map loads with observation data | Status-colored markers displayed (approved/pending/rejected) |
+| MAP-003 | Gender filter | 1. Toggle gender filter | Map updates to show only selected gender |
+| MAP-004 | Observation card | 1. Tap marker | Info card shows species, gender, date, location |
+| MAP-005 | Fullscreen photo | 1. Tap photo in observation card | Fullscreen modal with photo displayed |
+| MAP-006 | Pagination | 1. Scroll/load more data | Additional markers load (500/page, up to 5000) |
+| MAP-007 | Empty state | 1. No observations in region | Map renders without markers |
+| MAP-008 | Region bounds | 1. Zoom out from Malaysia | Map region auto-calculated from bounds data |
+
+---
+
 ## Execution Summary Template
 
 | Module | Total | Pass | Fail | Blocked | N/A |
@@ -552,4 +567,5 @@
 | 17. Web Performance | 4 | | | | |
 | 18. Typography & Accessibility | 9 | | | | |
 | 19. Observation Print | 8 | | | | |
-| **TOTAL** | **240** | | | | |
+| 20. Mobile Analytics Map | 8 | | | | |
+| **TOTAL** | **248** | | | | |

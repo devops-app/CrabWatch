@@ -17,7 +17,7 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 import { useFormatters } from '../../hooks/useFormatters'
-import type { UserResponse, SpeciesResponse, Invite, GamificationRuleDto, LevelConfigDto, CampaignDto, AdminAuditLogDto, AbuseSignalDto, EngagementMetricsDto, RecalculationJobDto } from '@crabwatch/shared'
+import type { UserResponse, SpeciesResponse, Invite, GamificationRuleDto, LevelConfigDto, CampaignDto, AdminAuditLogDto, AbuseSignalDto, EngagementMetricsDto, RecalculationJobDto, RewardActionType } from '@crabwatch/shared'
 
 type Tab = 'users' | 'species' | 'backup' | 'engagement'
 type UserSubTab = 'active' | 'deleted' | 'invites'
@@ -498,7 +498,7 @@ export function AdminScreen() {
     setEditingRuleId(null)
   }
 
-  const handleEditRule = (rule: any) => {
+  const handleEditRule = (rule: GamificationRuleDto) => {
     setEditingRuleId(rule.id)
     setRuleDraft({
       actionType: rule.actionType || '',
@@ -518,7 +518,7 @@ export function AdminScreen() {
     setActionLoading(true)
     try {
       const createPayload = {
-        actionType: ruleDraft.actionType.trim() as any,
+        actionType: ruleDraft.actionType.trim() as RewardActionType,
         name: ruleDraft.name.trim(),
         description: ruleDraft.description.trim() || null,
         xpReward: ruleDraft.xpReward,
@@ -542,7 +542,7 @@ export function AdminScreen() {
     }
   }
 
-  const handleDeleteRule = (rule: any) => {
+  const handleDeleteRule = (rule: GamificationRuleDto) => {
     Alert.alert(t('alerts.deleteXpRule.title'), t('alerts.deleteXpRule.message', { name: rule.name }), [
       { text: t('common.cancel'), style: 'cancel' },
       {
@@ -564,7 +564,7 @@ export function AdminScreen() {
     ])
   }
 
-  const handleToggleRule = async (rule: any) => {
+  const handleToggleRule = async (rule: GamificationRuleDto) => {
     setActionLoading(true)
     try {
       await api.updateGamificationRule(rule.id, { active: !rule.active })
@@ -582,7 +582,7 @@ export function AdminScreen() {
     setEditingLevelId(null)
   }
 
-  const handleEditLevel = (level: any) => {
+  const handleEditLevel = (level: LevelConfigDto) => {
     setEditingLevelId(level.id)
     setLevelDraft({
       level: Number(level.level) || 1,
@@ -626,7 +626,7 @@ export function AdminScreen() {
     }
   }
 
-  const handleDeleteLevel = (level: any) => {
+  const handleDeleteLevel = (level: LevelConfigDto) => {
     Alert.alert(t('alerts.deleteLevel.title'), t('alerts.deleteLevel.message', { level: level.level, title: level.title }), [
       { text: t('common.cancel'), style: 'cancel' },
       {
@@ -730,7 +730,7 @@ export function AdminScreen() {
     }
   }
 
-  const handleLaunchCampaign = (campaign: any) => {
+  const handleLaunchCampaign = (campaign: CampaignDto) => {
     Alert.alert(t('alerts.launchCampaign.title'), t('alerts.launchCampaign.message', { name: campaign.name }), [
       { text: t('common.cancel'), style: 'cancel' },
       {
@@ -768,7 +768,7 @@ export function AdminScreen() {
     }
   }
 
-  const handleDeleteCampaign = (campaign: any) => {
+  const handleDeleteCampaign = (campaign: CampaignDto) => {
     Alert.alert(t('alerts.deleteCampaign.title'), t('alerts.deleteCampaign.message', { name: campaign.name }), [
       { text: t('common.cancel'), style: 'cancel' },
       {
@@ -790,7 +790,7 @@ export function AdminScreen() {
     ])
   }
 
-  const handleResolveAbuseSignal = async (signal: any) => {
+  const handleResolveAbuseSignal = async (signal: AbuseSignalDto) => {
     setActionLoading(true)
     try {
       await api.resolveAbuseSignal(signal.id, 'Resolved via mobile admin panel')

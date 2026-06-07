@@ -6,9 +6,14 @@ const resolvePackageRoot = (packageName) =>
 
 const config = getDefaultConfig(__dirname)
 
+const defaultWatchFolders = config.watchFolders ?? []
+
 config.watchFolders = [
-  path.resolve(__dirname, '..'),
-  path.resolve(__dirname, '../shared'),
+  ...new Set([
+    ...defaultWatchFolders,
+    __dirname,
+    path.resolve(__dirname, '../shared'),
+  ]),
 ]
 
 config.resolver.nodeModulesPaths = [
@@ -23,7 +28,6 @@ config.resolver.extraNodeModules = {
   assert: path.resolve(__dirname, 'polyfills/assert'),
 }
 
-config.resolver.unstable_enableSymlinks = true
 config.resolver.blockList = [/.*[\\/]web[\\/]\.next[\\/].*/]
 
 module.exports = config

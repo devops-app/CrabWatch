@@ -6,6 +6,8 @@ export type AuthStackParamList = {
   Register: undefined
   ForgotPassword: undefined
   ResetPassword: { token: string }
+  Terms: undefined
+  Privacy: undefined
 }
 
 export type MainTabParamList = {
@@ -19,10 +21,17 @@ export type MainTabParamList = {
 
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList>
+  SpeciesList: undefined
   SpeciesDetail: { speciesId: string }
   ObservationDetail: { observation: ObservationResponse }
   EditProfile: undefined
-  AnalysisLoading: { photos: string[]; views: PhotoView[]; sessionId: string; coinType?: string }
+  AnalysisLoading: {
+    photos: string[]
+    views: PhotoView[]
+    sessionId: string
+    coinType?: string
+    qualityOverrides?: Partial<Record<PhotoView, { approved: boolean; reason?: string }>>
+  }
   AIReview: { analysis: CrabAnalysisResult; photos: string[]; views: PhotoView[]; sessionId: string; coinType?: string; blobUrls?: string[] }
   About: undefined
   Leaderboard: undefined

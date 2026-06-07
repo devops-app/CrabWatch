@@ -5,6 +5,7 @@ export class AppError extends Error {
     public message: string,
     public statusCode: number = 500,
     public isOperational: boolean = true,
+    public code?: string,
   ) {
     super(message)
     Object.setPrototypeOf(this, AppError.prototype)
@@ -16,8 +17,9 @@ export class ValidationError extends AppError {
   constructor(
     message: string,
     public errors?: Array<{ field: string; message: string }>,
+    code?: string,
   ) {
-    super(message, 400)
+    super(message, 400, true, code)
   }
 }
 

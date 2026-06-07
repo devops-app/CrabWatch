@@ -86,7 +86,7 @@ pnpm dev:android
 2. **Test key flows:**
    - Home screen — view stats cards and quick actions
    - AI-Guided Capture — tap "New" tab → select coin series (Third/Second) → dorsal/ventral photos → AI analysis → review & submit
-   - Analytics — view Gender Ratio, Size Frequency, CW50, Condition Index, Species Distribution, and Temporal Trends charts
+   - Analytics — view Gender Ratio, Size Frequency, CW50, Condition Index, Species Distribution, Temporal Trends charts, and Map tab with geographic distribution
    - Profile — view/edit user profile, view XP stats card
    - Logout — verify logout redirects to login screen
 
@@ -100,8 +100,15 @@ pnpm dev:android
    - Test with app in foreground, background, and not running
 
 5. **Test safe area:**
-    - On iPhone with notch: verify tab bar not obscured by home indicator
-    - On Android: verify tab bar at normal bottom position
+   - On iPhone with notch: verify tab bar not obscured by home indicator
+   - On Android: verify tab bar at normal bottom position
+
+8. **Test analytics map tab:**
+   - Navigate to Analytics > Map tab — verify map renders centered on Malaysia
+   - Verify status-colored markers (approved/pending/rejected)
+   - Toggle gender filter — verify map updates
+   - Tap marker — verify observation info card appears with species, gender, date, location
+   - Tap photo in card — verify fullscreen photo modal opens
 
 6. **Test dynamic type scaling (iOS):**
     - Go to Settings → Display & Brightness → Text Size

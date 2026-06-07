@@ -11,6 +11,7 @@ interface CameraSectionProps {
   photos: Record<PhotoView, string | null>
   cameraActive: boolean
   cameraError: string | null
+  webcamWarning: string | null
   analyzingView: boolean
   viewWarnings: string[]
   videoRef: React.RefObject<HTMLVideoElement | null>
@@ -32,6 +33,7 @@ export function CameraSection({
   photos,
   cameraActive,
   cameraError,
+  webcamWarning,
   analyzingView,
   viewWarnings,
   videoRef,
@@ -110,6 +112,7 @@ export function CameraSection({
             </div>
           )}
           {cameraError && <p className="text-sm text-red-600">{cameraError}</p>}
+          {webcamWarning && <p className="text-sm text-amber-700">{webcamWarning}</p>}
         </div>
       )}
 

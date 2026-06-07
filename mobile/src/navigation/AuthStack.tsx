@@ -4,6 +4,8 @@ import { LoginScreen } from '../screens/auth/LoginScreen'
 import { RegisterScreen } from '../screens/auth/RegisterScreen'
 import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen'
 import { ResetPasswordScreen } from '../screens/auth/ResetPasswordScreen'
+import { TermsScreen } from '../screens/common/TermsScreen'
+import { PrivacyScreen } from '../screens/common/PrivacyScreen'
 import type { AuthStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<AuthStackParamList>()
@@ -45,6 +47,16 @@ export function AuthStack({ initialRouteName, initialParams }: AuthStackProps) {
         component={ResetPasswordScreen}
         initialParams={initialParams}
         options={{ title: t('navigation.auth.resetPassword') }}
+      />
+      <Stack.Screen
+        name="Terms"
+        component={TermsScreen}
+        options={{ title: t('legal.termsTitle') }}
+      />
+      <Stack.Screen
+        name="Privacy"
+        component={PrivacyScreen}
+        options={{ title: t('legal.privacyTitle') }}
       />
     </Stack.Navigator>
   )

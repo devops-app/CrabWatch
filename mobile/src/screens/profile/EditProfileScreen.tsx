@@ -36,7 +36,6 @@ type FormValues = {
   phoneNumber: string
   addressLine1: string
   addressLine2: string
-  addressLine3: string
   state: string
   postcode: string
   country: string
@@ -64,9 +63,8 @@ export function EditProfileScreen() {
       name: user?.name || '',
       phoneCode: user?.phoneCode || '+60',
       phoneNumber: user?.phoneNumber || '',
-      addressLine1: user?.addressLine1 || '',
-      addressLine2: user?.addressLine2 || '',
-      addressLine3: user?.addressLine3 || '',
+   addressLine1: user?.addressLine1 || '',
+    addressLine2: user?.addressLine2 || '',
       state: user?.state || '',
       postcode: user?.postcode || '',
       country: user?.country || 'MY',
@@ -117,7 +115,6 @@ export function EditProfileScreen() {
         phoneNumber: data.phoneNumber || null,
         addressLine1: data.addressLine1 || null,
         addressLine2: data.addressLine2 || null,
-        addressLine3: data.addressLine3 || null,
         state: data.state || null,
         postcode: data.postcode || null,
         country: data.country || null,
@@ -280,25 +277,9 @@ export function EditProfileScreen() {
                 onBlur={onBlur}
                 onChangeText={onChange}
                 error={errors.addressLine2?.message}
-              />
-            )}
-          />
-
-          <Controller
-            control={control}
-            name="addressLine3"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-         label={t('addressLine3')}
-                  placeholder={t('additionalAddressInfo')}
-                autoCapitalize="words"
-                value={value}
-                onBlur={onBlur}
-                onChangeText={onChange}
-                error={errors.addressLine3?.message}
-              />
-            )}
-          />
+         />
+        )}
+      />
 
           <View style={styles.addressRow}>
             <View style={styles.stateWrap}>

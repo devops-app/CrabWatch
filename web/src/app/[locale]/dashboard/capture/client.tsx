@@ -4,9 +4,11 @@ import { useEffect, useMemo, useRef, useState, useCallback, useTransition } from
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
-import type { CrabAnalysisResult, PhotoView, SpeciesResponse } from '@crabwatch/shared'
+import type { CrabAnalysisResult, PhotoView, QualityIssueCode, SpeciesResponse } from '@crabwatch/shared'
 import { api } from '@/lib/api'
-import { MALAYSIA_BOUNDS } from '@crabwatch/shared'
+import { assessWebBlur } from '@/utils/imageQuality'
+import { MALAYSIA_BOUNDS, applyGateModeToStatus, isGateBlocking, isGateOverridable, normalizeGateMode } from '@crabwatch/shared'
+import type { QualityGateModes } from '@crabwatch/shared'
 import {
   CAPTURE_STEPS,
   isUuid,
@@ -25,6 +27,17 @@ import { CameraSection } from './camera-section'
 import { MapSection } from './map-section'
 import { ReviewSection } from './review-section'
 
+function resolveQualityGateModes(): QualityGateModes {
+  return {
+    blur: normalizeGateMode(process.env.NEXT_PUBLIC_QUALITY_GATE_BLUR, 'warn'),
+    brightness: normalizeGateMode(process.env.NEXT_PUBLIC_QUALITY_GATE_BRIGHTNESS, 'warn'),
+    view: normalizeGateMode(process.env.NEXT_PUBLIC_QUALITY_GATE_VIEW, 'warn'),
+    webcamRes: normalizeGateMode(process.env.NEXT_PUBLIC_QUALITY_GATE_WEBCAM_RES, 'warn'),
+  }
+}
+
+const QUALITY_GATE_MODES = resolveQualityGateModes()
+
 function createUploadSessionId(): string {
   const randomUuid = globalThis.crypto?.randomUUID?.()
   if (randomUuid) return randomUuid
@@ -39,6 +52,176 @@ function createUploadSessionId(): string {
 function hasAtMostTwoDecimalPlaces(value: string): boolean {
   const normalized = value.trim()
   return /^\d+(\.\d{1,2})?$/.test(normalized)
+}
+
+type CheckStatus = 'pass' | 'warn' | 'fail'
+
+interface PhotoQualityAssessment {
+  blurScore: number
+  brightness: number
+  coveragePct: number
+  blurStatus: CheckStatus
+  brightnessStatus: CheckStatus
+  framingStatus: CheckStatus
+  overallStatus: CheckStatus
+  issues: QualityIssueCode[]
+}
+
+interface PhotoOverrideState {
+  approved: boolean
+  reason: string
+}
+
+type QualityInputSource = 'camera' | 'upload' | 'dragdrop'
+
+const REQUIRED_VIEWS: PhotoView[] = ['dorsal', 'ventral']
+
+function createDefaultOverrides(): Record<PhotoView, PhotoOverrideState> {
+  return {
+    dorsal: { approved: false, reason: '' },
+    ventral: { approved: false, reason: '' },
+    'carapace-closeup': { approved: false, reason: '' },
+  }
+}
+
+async function readImageData(dataUrl: string, maxWidth: number = 256): Promise<{ imageData: ImageData; width: number; height: number; aspectRatio: number }> {
+  const image = document.createElement('img')
+  image.src = dataUrl
+  await new Promise<void>((resolve, reject) => {
+    image.onload = () => resolve()
+    image.onerror = () => reject(new Error('Image decode failed'))
+  })
+
+  const ratio = image.width / image.height
+  const width = Math.max(1, Math.min(maxWidth, image.width))
+  const height = Math.max(1, Math.round(width / ratio))
+
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const context = canvas.getContext('2d')
+  if (!context) {
+    throw new Error('Canvas context unavailable')
+  }
+
+  context.drawImage(image, 0, 0, width, height)
+  const imageData = context.getImageData(0, 0, width, height)
+  return { imageData, width, height, aspectRatio: ratio }
+}
+
+function estimateCoveragePct(luminance: Uint8Array, width: number, height: number): number {
+  if (width < 3 || height < 3) return 0
+
+  const centerStartX = Math.floor(width * 0.2)
+  const centerEndX = Math.floor(width * 0.8)
+  const centerStartY = Math.floor(height * 0.2)
+  const centerEndY = Math.floor(height * 0.8)
+
+  let totalEdgeEnergy = 0
+  let centerEdgeEnergy = 0
+
+  for (let y = 1; y < height - 1; y += 1) {
+    for (let x = 1; x < width - 1; x += 1) {
+      const index = y * width + x
+      const right = index + 1
+      const bottom = index + width
+      const edgeStrength = Math.abs(luminance[index] - luminance[right]) + Math.abs(luminance[index] - luminance[bottom])
+      totalEdgeEnergy += edgeStrength
+
+      if (x >= centerStartX && x <= centerEndX && y >= centerStartY && y <= centerEndY) {
+        centerEdgeEnergy += edgeStrength
+      }
+    }
+  }
+
+  if (totalEdgeEnergy === 0) return 0
+  const centerRatio = centerEdgeEnergy / totalEdgeEnergy
+  return Math.max(0, Math.min(100, Math.round(centerRatio * 170)))
+}
+
+function evaluatePhotoQuality(imageData: ImageData, aspectRatio: number): PhotoQualityAssessment {
+  const blur = assessWebBlur(imageData)
+
+  let luminanceSum = 0
+  const luminance = new Uint8Array(Math.floor(imageData.data.length / 4))
+  for (let i = 0, p = 0; i < imageData.data.length; i += 4, p += 1) {
+    const value = Math.round(0.299 * imageData.data[i] + 0.587 * imageData.data[i + 1] + 0.114 * imageData.data[i + 2])
+    luminance[p] = value
+    luminanceSum += value
+  }
+
+  const brightness = luminance.length > 0 ? luminanceSum / luminance.length / 255 : 0
+  const rawBrightnessStatus: CheckStatus = brightness < 0.15 ? 'fail' : (brightness < 0.4 || brightness > 0.8 ? 'warn' : 'pass')
+  const brightnessStatus = applyGateModeToStatus(rawBrightnessStatus, QUALITY_GATE_MODES.brightness)
+
+  const coveragePct = estimateCoveragePct(luminance, imageData.width, imageData.height)
+  const aspectWarn = aspectRatio < 0.6 || aspectRatio > 1.5
+  const framingStatus: CheckStatus = (aspectWarn || coveragePct < 35) ? 'warn' : 'pass'
+
+  const effectiveBlurStatus = applyGateModeToStatus(blur.status, QUALITY_GATE_MODES.blur)
+
+  const issues = mapQualityIssues({
+    blurStatus: effectiveBlurStatus,
+    brightnessStatus,
+    framingStatus,
+  })
+
+  const overallStatus: CheckStatus = effectiveBlurStatus === 'fail' || brightnessStatus === 'fail'
+    ? 'fail'
+    : (effectiveBlurStatus === 'warn' || brightnessStatus === 'warn' || framingStatus === 'warn' ? 'warn' : 'pass')
+
+  return {
+    blurScore: blur.score,
+    brightness,
+    coveragePct,
+    blurStatus: effectiveBlurStatus,
+    brightnessStatus,
+    framingStatus,
+    overallStatus,
+    issues,
+  }
+}
+
+function isOverrideReady(state: PhotoOverrideState): boolean {
+  return state.approved && state.reason.trim().length >= 5
+}
+
+function emitQualityTelemetry(payload: {
+  event: 'quality_result' | 'quality_override' | 'webcam_warning'
+  view?: PhotoView
+  inputSource?: QualityInputSource
+  result?: CheckStatus
+  issueCodes?: QualityIssueCode[]
+  blurScore?: number
+  brightness?: number
+  coveragePct?: number
+  overrideUsed?: boolean
+  overrideReason?: string
+  detail?: Record<string, unknown>
+}) {
+  api.reportTelemetryError({
+    message: '[QUALITY_GATE]',
+    error: {
+      qualityGateVersion: 'v1',
+      platform: 'web',
+      ...payload,
+      timestamp: new Date().toISOString(),
+    },
+    timestamp: new Date().toISOString(),
+    url: typeof window !== 'undefined' ? window.location.href : undefined,
+  })
+}
+
+function mapQualityIssues(params: {
+  blurStatus: CheckStatus
+  brightnessStatus: CheckStatus
+  framingStatus: CheckStatus
+}): QualityIssueCode[] {
+  const issues: QualityIssueCode[] = []
+  if (params.blurStatus === 'fail') issues.push('QUALITY_BLUR_FAIL')
+  if (params.brightnessStatus === 'fail') issues.push('QUALITY_BRIGHTNESS_FAIL')
+  if (params.framingStatus !== 'pass') issues.push('QUALITY_COVERAGE_WARN')
+  return issues
 }
 
 interface CaptureClientProps {
@@ -71,8 +254,15 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
   const [showFullscreen, setShowFullscreen] = useState(false)
   const [showTipsModal, setShowTipsModal] = useState(false)
   const [fullscreenPhoto, setFullscreenPhoto] = useState<string | null>(null)
+  const [fullscreenNaturalSize, setFullscreenNaturalSize] = useState<{ width: number; height: number } | null>(null)
+  const [fullscreenViewport, setFullscreenViewport] = useState<{ width: number; height: number }>({ width: 0, height: 0 })
   const [viewWarnings, setViewWarnings] = useState<string[]>([])
   const [analyzingView, setAnalyzingView] = useState(false)
+  const [analyzingQuality, setAnalyzingQuality] = useState(false)
+  const [webcamWarning, setWebcamWarning] = useState<string | null>(null)
+  const [qualityByView, setQualityByView] = useState<Partial<Record<PhotoView, PhotoQualityAssessment>>>({})
+  const [qualityInputByView, setQualityInputByView] = useState<Partial<Record<PhotoView, QualityInputSource>>>({})
+  const [qualityOverrides, setQualityOverrides] = useState<Record<PhotoView, PhotoOverrideState>>(createDefaultOverrides)
   const [mapViewport, setMapViewport] = useState({
     latitude: MALAYSIA_BOUNDS.center.lat,
     longitude: MALAYSIA_BOUNDS.center.lng,
@@ -107,6 +297,26 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
   const isLastStep = currentStep === CAPTURE_STEPS.length - 1
   const requiredComplete = Boolean(photos.dorsal && photos.ventral)
   const inReview = analysis !== null
+  const currentQuality = qualityByView[currentView]
+  const currentOverride = qualityOverrides[currentView]
+
+  function isViewBlocked(quality: PhotoQualityAssessment | undefined, override: PhotoOverrideState): boolean {
+    if (!quality) return false
+    const isBlocking = isGateBlocking(quality.overallStatus, QUALITY_GATE_MODES.blur) || isGateBlocking(quality.overallStatus, QUALITY_GATE_MODES.brightness)
+    if (!isBlocking) return false
+    if (!isGateOverridable(QUALITY_GATE_MODES.blur) && !isGateOverridable(QUALITY_GATE_MODES.brightness)) return true
+    return !isOverrideReady(override)
+  }
+
+  const currentBlocking = current.required && isViewBlocked(currentQuality, currentOverride)
+  const hasBlockingRequired = REQUIRED_VIEWS.some((view) => isViewBlocked(qualityByView[view], qualityOverrides[view]))
+
+  const getBlockingViews = useCallback((qualityMap: Partial<Record<PhotoView, PhotoQualityAssessment>>) => {
+    return REQUIRED_VIEWS.filter((view) => {
+      if (!photos[view]) return false
+      return isViewBlocked(qualityMap[view], qualityOverrides[view])
+    })
+  }, [photos, qualityOverrides])
 
   const resetState = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop())
@@ -129,8 +339,12 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
     setUploadedPhotoUrls([])
     setUploadSessionId(createUploadSessionId())
     setPhotos({ dorsal: null, ventral: null, 'carapace-closeup': null })
+    setQualityByView({})
+    setQualityInputByView({})
+    setQualityOverrides(createDefaultOverrides())
     setShowFullscreen(false)
     setFullscreenPhoto(null)
+    setWebcamWarning(null)
     setMapViewport({
       latitude: MALAYSIA_BOUNDS.center.lat,
       longitude: MALAYSIA_BOUNDS.center.lng,
@@ -161,6 +375,44 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
     [photos]
   )
 
+  const fullscreenCropTargetUri = useMemo(() => {
+    if (photos.dorsal) return photos.dorsal
+    const firstWithPhoto = CAPTURE_STEPS.find((step) => photos[step.key])
+    return firstWithPhoto ? photos[firstWithPhoto.key] : null
+  }, [photos])
+
+  const fullscreenCropBox = useMemo(() => {
+    const autoCrop = analysis?.autoCropBoundingBox
+    if (!showFullscreen || !fullscreenPhoto || !autoCrop || !fullscreenNaturalSize) return null
+    if (fullscreenPhoto !== fullscreenCropTargetUri) return null
+    if (fullscreenViewport.width <= 0 || fullscreenViewport.height <= 0) return null
+
+    const imageAspect = fullscreenNaturalSize.width / fullscreenNaturalSize.height
+    const viewportAspect = fullscreenViewport.width / fullscreenViewport.height
+
+    let renderedWidth = fullscreenViewport.width
+    let renderedHeight = fullscreenViewport.height
+    if (imageAspect > viewportAspect) {
+      renderedHeight = renderedWidth / imageAspect
+    } else {
+      renderedWidth = renderedHeight * imageAspect
+    }
+
+    const offsetLeft = (fullscreenViewport.width - renderedWidth) / 2
+    const offsetTop = (fullscreenViewport.height - renderedHeight) / 2
+    const x = Math.max(0, Math.min(1, autoCrop.x))
+    const y = Math.max(0, Math.min(1, autoCrop.y))
+    const width = Math.max(0, Math.min(1, autoCrop.width))
+    const height = Math.max(0, Math.min(1, autoCrop.height))
+
+    return {
+      left: offsetLeft + x * renderedWidth,
+      top: offsetTop + y * renderedHeight,
+      width: width * renderedWidth,
+      height: height * renderedHeight,
+    }
+  }, [analysis, fullscreenCropTargetUri, fullscreenNaturalSize, fullscreenPhoto, fullscreenViewport, showFullscreen])
+
   useEffect(() => {
     return () => {
       streamRef.current?.getTracks().forEach((track) => track.stop())
@@ -188,6 +440,18 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
     const timer = window.setTimeout(() => setFlash(null), 3500)
     return () => window.clearTimeout(timer)
   }, [flash])
+
+  useEffect(() => {
+    if (!showFullscreen) return
+
+    const updateViewport = () => {
+      setFullscreenViewport({ width: window.innerWidth, height: window.innerHeight })
+    }
+
+    updateViewport()
+    window.addEventListener('resize', updateViewport)
+    return () => window.removeEventListener('resize', updateViewport)
+  }, [showFullscreen])
 
   const stopCamera = () => {
     streamRef.current?.getTracks().forEach((track) => track.stop())
@@ -220,6 +484,20 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
         })
       }
       streamRef.current = stream
+      const settings = stream.getVideoTracks()[0]?.getSettings()
+      if (settings?.width && settings?.height && (settings.width < 1280 || settings.height < 720)) {
+        setWebcamWarning(t('quality.webcamLowRes', { width: settings.width, height: settings.height }))
+        emitQualityTelemetry({
+          event: 'webcam_warning',
+          issueCodes: ['QUALITY_WEBCAM_LOW_RES_WARN'],
+          detail: {
+            width: settings.width,
+            height: settings.height,
+          },
+        })
+      } else {
+        setWebcamWarning(null)
+      }
       setCameraActive(true)
     } catch {
       setCameraError(t('cameraAccessFailed'))
@@ -250,6 +528,67 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
     setAnalyzingView(false)
   }
 
+  const runQualityValidation = async (
+    dataUrl: string,
+    view: PhotoView,
+    inputSource: QualityInputSource,
+  ): Promise<PhotoQualityAssessment | null> => {
+    setAnalyzingQuality(true)
+    try {
+      const { imageData, aspectRatio } = await readImageData(dataUrl)
+      const quality = evaluatePhotoQuality(imageData, aspectRatio)
+      setQualityByView((prev) => ({ ...prev, [view]: quality }))
+      setQualityInputByView((prev) => ({ ...prev, [view]: inputSource }))
+      emitQualityTelemetry({
+        event: 'quality_result',
+        view,
+        inputSource,
+        result: quality.overallStatus,
+        issueCodes: quality.issues,
+        blurScore: quality.blurScore,
+        brightness: quality.brightness,
+        coveragePct: quality.coveragePct,
+      })
+      return quality
+    } catch {
+      const fallback: PhotoQualityAssessment = {
+        blurScore: 0,
+        brightness: 0,
+        coveragePct: 0,
+        blurStatus: 'fail',
+        brightnessStatus: 'fail',
+        framingStatus: 'warn',
+        overallStatus: 'fail',
+        issues: ['QUALITY_BLUR_FAIL', 'QUALITY_BRIGHTNESS_FAIL'],
+      }
+      setQualityByView((prev) => ({ ...prev, [view]: fallback }))
+      setQualityInputByView((prev) => ({ ...prev, [view]: inputSource }))
+      emitQualityTelemetry({
+        event: 'quality_result',
+        view,
+        inputSource,
+        result: 'fail',
+        issueCodes: fallback.issues,
+      })
+      return fallback
+    } finally {
+      setAnalyzingQuality(false)
+    }
+  }
+
+  const validateCapturedPhoto = async (
+    dataUrl: string,
+    view: PhotoView,
+    inputSource: QualityInputSource,
+    file?: File,
+  ) => {
+    setQualityOverrides((prev) => ({ ...prev, [view]: { approved: false, reason: '' } }))
+    await Promise.all([
+      runViewValidation(dataUrl, view, file),
+      runQualityValidation(dataUrl, view, inputSource),
+    ])
+  }
+
   const capturePhoto = () => {
     const videoEl = videoRef.current
     const canvasEl = canvasRef.current
@@ -266,7 +605,7 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
     const dataUrl = canvasEl.toDataURL('image/jpeg', 0.9)
     setPhotos((prev) => ({ ...prev, [currentView]: dataUrl }))
     stopCamera()
-    runViewValidation(dataUrl, currentView)
+    validateCapturedPhoto(dataUrl, currentView, 'camera')
   }
 
   const onFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -277,7 +616,7 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
       const result = reader.result
       if (typeof result === 'string') {
         setPhotos((prev) => ({ ...prev, [currentView]: result }))
-        runViewValidation(result, currentView, file)
+        validateCapturedPhoto(result, currentView, 'upload', file)
       }
     }
     reader.readAsDataURL(file)
@@ -307,6 +646,27 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
     )
   }
 
+  const ensureQualityForRequiredViews = async (): Promise<Partial<Record<PhotoView, PhotoQualityAssessment>>> => {
+    const entries = REQUIRED_VIEWS.filter((view) => photos[view])
+    if (entries.length === 0) return qualityByView
+
+    const updates: Partial<Record<PhotoView, PhotoQualityAssessment>> = {}
+    await Promise.all(entries.map(async (view) => {
+      if (qualityByView[view]) {
+        updates[view] = qualityByView[view]
+        return
+      }
+      const dataUrl = photos[view]
+      if (!dataUrl) return
+      const quality = await runQualityValidation(dataUrl, view, qualityInputByView[view] || 'upload')
+      if (quality) {
+        updates[view] = quality
+      }
+    }))
+
+    return { ...qualityByView, ...updates }
+  }
+
   const handleNext = () => {
     if (!coinSelected && currentStep === 0) {
       setFlash({ tone: 'error', text: t('coinRequired') })
@@ -314,6 +674,10 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
     }
     if (current.required && !photos[currentView]) {
       setFlash({ tone: 'error', text: t('stepRequired', { step: tCapture.raw(`stepLabels.${currentView}`) }) })
+      return
+    }
+    if (current.required && currentQuality?.overallStatus === 'fail' && !isOverrideReady(currentOverride)) {
+      setFlash({ tone: 'error', text: t('quality.blockingStep') })
       return
     }
     if (!isLastStep) {
@@ -329,12 +693,14 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
       speciesId: 'unknown',
       speciesName: 'Unknown Species',
       confidence: 0,
+      speciesConfidence: 0,
       estimatedCW: null,
       estimatedBW: null,
       gender: 'unknown',
       maturationStatus: 'unknown',
       detectedCoin: null,
       coinConfidence: 0,
+      crabCount: 1,
       suggestions: ['AI analysis failed. Please fill in all fields manually.'],
       rawAnalysis: '',
     })
@@ -355,6 +721,14 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
   const runAnalysis = async () => {
     if (!requiredComplete) return
     setAnalysisError(null)
+
+    const qualityMap = await ensureQualityForRequiredViews()
+    const blockingViews = getBlockingViews(qualityMap)
+    if (blockingViews.length > 0) {
+      setFlash({ tone: 'error', text: t('quality.blockingAnalyze') })
+      return
+    }
+
     setAnalysisStage('uploading')
     setBusyMessage(t('uploading'))
     setElapsed(0)
@@ -473,7 +847,75 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
 
   const handlePhotoFullscreen = (uri: string) => {
     setFullscreenPhoto(uri)
+    setFullscreenNaturalSize(null)
     setShowFullscreen(true)
+  }
+
+  const handleRetakeCurrent = () => {
+    setPhotos((prev) => ({ ...prev, [currentView]: null }))
+    setQualityByView((prev) => {
+      const next = { ...prev }
+      delete next[currentView]
+      return next
+    })
+    setQualityInputByView((prev) => {
+      const next = { ...prev }
+      delete next[currentView]
+      return next
+    })
+    setQualityOverrides((prev) => ({ ...prev, [currentView]: { approved: false, reason: '' } }))
+    setViewWarnings([])
+    setAnalyzingView(false)
+    setAnalyzingQuality(false)
+  }
+
+  const updateOverrideReason = (view: PhotoView, reason: string) => {
+    setQualityOverrides((prev) => ({
+      ...prev,
+      [view]: {
+        ...prev[view],
+        reason,
+      },
+    }))
+  }
+
+  const approveOverride = (view: PhotoView) => {
+    const override = qualityOverrides[view]
+    const quality = qualityByView[view]
+    if (override.reason.trim().length < 5) {
+      setFlash({ tone: 'error', text: t('quality.reasonRequired') })
+      return
+    }
+    setQualityOverrides((prev) => ({
+      ...prev,
+      [view]: {
+        ...prev[view],
+        approved: true,
+      },
+    }))
+    emitQualityTelemetry({
+      event: 'quality_override',
+      view,
+      inputSource: qualityInputByView[view],
+      overrideUsed: true,
+      overrideReason: override.reason.trim(),
+      issueCodes: quality?.issues,
+      result: quality?.overallStatus,
+      blurScore: quality?.blurScore,
+      brightness: quality?.brightness,
+      coveragePct: quality?.coveragePct,
+    })
+    setFlash({ tone: 'info', text: t('quality.overrideSaved') })
+  }
+
+  const clearOverride = (view: PhotoView) => {
+    setQualityOverrides((prev) => ({
+      ...prev,
+      [view]: {
+        ...prev[view],
+        approved: false,
+      },
+    }))
   }
 
   const onMapClick = (lat: number, lng: number) => {
@@ -636,6 +1078,7 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
             photos={photos}
             cameraActive={cameraActive}
             cameraError={cameraError}
+            webcamWarning={webcamWarning}
             analyzingView={analyzingView}
             viewWarnings={viewWarnings}
             videoRef={videoRef}
@@ -646,10 +1089,24 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
             onStartCamera={startCamera}
             onStopCamera={stopCamera}
             onFileSelected={onFileSelected}
-            onRetake={() => { setPhotos((prev) => ({ ...prev, [currentView]: null })); setViewWarnings([]); setAnalyzingView(false) }}
+            onRetake={handleRetakeCurrent}
             onNext={handleNext}
             onPhotoFullscreen={handlePhotoFullscreen}
           />
+
+          {photos[currentView] && (
+            <QualityGateCard
+              t={t}
+              stepLabel={tCapture.raw(`stepLabels.${currentView}`)}
+              quality={currentQuality}
+              override={currentOverride}
+              isAnalyzing={analyzingQuality}
+              onReasonChange={(reason) => updateOverrideReason(currentView, reason)}
+              onApproveOverride={() => approveOverride(currentView)}
+              onClearOverride={() => clearOverride(currentView)}
+              onRetake={handleRetakeCurrent}
+            />
+          )}
 
           <CaptureProgress t={t} photos={photos} />
 
@@ -658,9 +1115,9 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
           <div className="flex flex-wrap gap-2">
             <button type="button" className="btn-secondary" onClick={() => startTransition(() => setCurrentStep((prev) => Math.max(0, prev - 1)))} disabled={currentStep === 0 || Boolean(busyMessage)} aria-label={t('goBack')}>{t('back')}</button>
             {!isLastStep ? (
-              <button type="button" className="btn-primary" disabled={Boolean(busyMessage)} onClick={() => startTransition(handleNext)} aria-label={t('nextCapture')}>{t('nextStep')}</button>
+              <button type="button" className="btn-primary" disabled={Boolean(busyMessage) || Boolean(currentBlocking)} onClick={() => startTransition(handleNext)} aria-label={t('nextCapture')}>{t('nextStep')}</button>
             ) : requiredComplete ? (
-              <button type="button" className="btn-primary" disabled={Boolean(busyMessage)} onClick={runAnalysis} aria-label={t('proceedAnalysis')}>{t('analyzeWithAi')}</button>
+              <button type="button" className="btn-primary" disabled={Boolean(busyMessage) || hasBlockingRequired} onClick={runAnalysis} aria-label={t('proceedAnalysis')}>{t('analyzeWithAi')}</button>
             ) : undefined}
           </div>
         </>
@@ -695,7 +1152,64 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
               <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
           </button>
-          <Image src={fullscreenPhoto} alt={t('title')} fill unoptimized className="object-contain" />
+          <Image
+            src={fullscreenPhoto}
+            alt={t('title')}
+            fill
+            unoptimized
+            className="object-contain"
+            onLoad={(event) => {
+              const target = event.currentTarget
+              if (target.naturalWidth > 0 && target.naturalHeight > 0) {
+                setFullscreenNaturalSize({ width: target.naturalWidth, height: target.naturalHeight })
+              }
+            }}
+          />
+          {fullscreenCropBox && (
+            <>
+              <div
+                className="absolute bg-black/35 pointer-events-none"
+                style={{ left: 0, top: 0, width: '100%', height: fullscreenCropBox.top }}
+              />
+              <div
+                className="absolute bg-black/35 pointer-events-none"
+                style={{
+                  left: 0,
+                  top: fullscreenCropBox.top,
+                  width: fullscreenCropBox.left,
+                  height: fullscreenCropBox.height,
+                }}
+              />
+              <div
+                className="absolute bg-black/35 pointer-events-none"
+                style={{
+                  left: fullscreenCropBox.left + fullscreenCropBox.width,
+                  top: fullscreenCropBox.top,
+                  width: Math.max(0, fullscreenViewport.width - (fullscreenCropBox.left + fullscreenCropBox.width)),
+                  height: fullscreenCropBox.height,
+                }}
+              />
+              <div
+                className="absolute bg-black/35 pointer-events-none"
+                style={{
+                  left: 0,
+                  top: fullscreenCropBox.top + fullscreenCropBox.height,
+                  width: '100%',
+                  height: Math.max(0, fullscreenViewport.height - (fullscreenCropBox.top + fullscreenCropBox.height)),
+                }}
+              />
+              <div className="absolute border-2 border-cyan-400 rounded-sm pointer-events-none" style={fullscreenCropBox} />
+              <span
+                className="absolute text-xs font-semibold px-2 py-1 rounded bg-cyan-500 text-white pointer-events-none"
+                style={{
+                  left: fullscreenCropBox.left,
+                  top: Math.max(8, fullscreenCropBox.top - 28),
+                }}
+              >
+                {tCapture('review.suggestedCrop')}
+              </span>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -777,6 +1291,97 @@ function AnalysisErrorCard({ t, analysisError, busyMessage, onRetry, onSubmitMan
           </div>
         </div>
       </div>
+    </section>
+  )
+}
+
+function statusClasses(status: CheckStatus): string {
+  if (status === 'pass') return 'bg-green-100 text-green-700 border-green-200'
+  if (status === 'warn') return 'bg-amber-100 text-amber-700 border-amber-200'
+  return 'bg-red-100 text-red-700 border-red-200'
+}
+
+function QualityGateCard({
+  t,
+  stepLabel,
+  quality,
+  override,
+  isAnalyzing,
+  onReasonChange,
+  onApproveOverride,
+  onClearOverride,
+  onRetake,
+}: {
+  t: (key: string, values?: Record<string, string | number>) => string
+  stepLabel: string
+  quality?: PhotoQualityAssessment
+  override: PhotoOverrideState
+  isAnalyzing: boolean
+  onReasonChange: (value: string) => void
+  onApproveOverride: () => void
+  onClearOverride: () => void
+  onRetake: () => void
+}) {
+  const status = quality?.overallStatus ?? 'warn'
+
+  return (
+    <section className="card border border-ocean-200 bg-ocean-50/40 space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-ocean-900">{t('quality.title', { step: stepLabel })}</h3>
+          <p className="text-xs text-gray-600">{t('quality.subtitle')}</p>
+        </div>
+        <span className={`px-2 py-1 rounded-md border text-xs font-semibold ${statusClasses(status)}`}>
+          {t(`quality.status.${status}`)}
+        </span>
+      </div>
+
+      {isAnalyzing && <p className="text-xs text-ocean-700">{t('quality.analyzing')}</p>}
+
+      {quality && (
+        <div className="grid gap-2 sm:grid-cols-3 text-xs">
+          <div className="rounded-lg border border-gray-200 bg-white p-2">
+            <p className="font-semibold text-gray-700">{t('quality.checks.blur')}</p>
+            <p className="text-gray-600">{quality.blurScore.toFixed(0)}</p>
+            <span className={`inline-flex mt-1 px-2 py-0.5 rounded border ${statusClasses(quality.blurStatus)}`}>{t(`quality.status.${quality.blurStatus}`)}</span>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white p-2">
+            <p className="font-semibold text-gray-700">{t('quality.checks.brightness')}</p>
+            <p className="text-gray-600">{Math.round(quality.brightness * 100)}%</p>
+            <span className={`inline-flex mt-1 px-2 py-0.5 rounded border ${statusClasses(quality.brightnessStatus)}`}>{t(`quality.status.${quality.brightnessStatus}`)}</span>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white p-2">
+            <p className="font-semibold text-gray-700">{t('quality.checks.framing')}</p>
+            <p className="text-gray-600">{t('quality.coverage', { pct: quality.coveragePct })}</p>
+            <span className={`inline-flex mt-1 px-2 py-0.5 rounded border ${statusClasses(quality.framingStatus)}`}>{t(`quality.status.${quality.framingStatus}`)}</span>
+          </div>
+        </div>
+      )}
+
+      {quality?.overallStatus === 'fail' && (
+        <div className="space-y-2">
+          <p className="text-sm text-red-700 font-medium">{t('quality.failHint')}</p>
+          <textarea
+            value={override.reason}
+            onChange={(event) => onReasonChange(event.target.value)}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            rows={2}
+            placeholder={t('quality.reasonPlaceholder')}
+            aria-label={t('quality.reasonLabel')}
+          />
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn-secondary text-sm py-1.5 px-3" onClick={onRetake}>{t('quality.retake')}</button>
+            {!override.approved ? (
+              <button type="button" className="btn-primary text-sm py-1.5 px-3" onClick={onApproveOverride}>{t('quality.uploadAnyway')}</button>
+            ) : (
+              <button type="button" className="btn-secondary text-sm py-1.5 px-3" onClick={onClearOverride}>{t('quality.clearOverride')}</button>
+            )}
+          </div>
+          {override.approved && (
+            <p className="text-xs text-amber-700">{t('quality.overrideActive')}</p>
+          )}
+        </div>
+      )}
     </section>
   )
 }

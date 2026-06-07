@@ -130,6 +130,13 @@ export function HomeScreen() {
                 <Ionicons name="analytics" size={22} color={COLORS.secondary} />
                 <Text style={styles.actionText}>{t('home.analytics')}</Text>
               </TouchableOpacity>
+              <TouchableOpacity style={styles.actionBtn} onPress={() => {
+                const parentNav = tabNav.getParent<StackNavigation>()
+                parentNav?.navigate('SpeciesList')
+              }}>
+                <Ionicons name="fish" size={22} color={COLORS.accent} />
+                <Text style={styles.actionText}>{t('home.species')}</Text>
+              </TouchableOpacity>
             </View>
           </Card>
         )

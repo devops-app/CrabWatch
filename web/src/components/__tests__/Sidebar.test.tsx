@@ -1,21 +1,43 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import Sidebar from '../Sidebar'
+import { useAuthStore } from '@/lib/authStore'
+
+const mockUseAuthStore = useAuthStore as jest.MockedFunction<typeof useAuthStore>
+
+jest.mock('@/lib/authStore', () => ({
+  useAuthStore: jest.fn(),
+}))
 
 describe('Sidebar', () => {
   const mockOnToggle = jest.fn()
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockUseAuthStore.mockReturnValue({
+      user: {
+        id: '1',
+        name: 'Admin User',
+        email: 'admin@example.com',
+        role: 'admin',
+        avatar: null,
+      },
+      token: 'token',
+      isLoading: false,
+      isHydrated: true,
+      login: jest.fn(),
+      logout: jest.fn(),
+      updateUser: jest.fn(),
+    })
   })
 
   it('should render all navigation items', () => {
     render(<Sidebar isOpen={true} onToggle={mockOnToggle} />)
 
-    expect(screen.getByText('Dashboard')).toBeInTheDocument()
-    expect(screen.getByText('Analytics')).toBeInTheDocument()
-    expect(screen.getByText('Map')).toBeInTheDocument()
-    expect(screen.getByText('Researcher')).toBeInTheDocument()
-    expect(screen.getByText('Admin')).toBeInTheDocument()
+    expect(screen.getByText('dashboard')).toBeInTheDocument()
+    expect(screen.getByText('analytics')).toBeInTheDocument()
+    expect(screen.getByText('capture')).toBeInTheDocument()
+    expect(screen.getByText('researcher')).toBeInTheDocument()
+    expect(screen.getByText('admin')).toBeInTheDocument()
   })
 
   it('should render branding when open', () => {
@@ -61,20 +83,20 @@ describe('Sidebar', () => {
   it('should show footer text when open', () => {
     render(<Sidebar isOpen={true} onToggle={mockOnToggle} />)
 
-    expect(screen.getByText('Crab Conservation')).toBeInTheDocument()
+    expect(screen.getByText('crabConservation')).toBeInTheDocument()
   })
 
   it('should highlight active route', () => {
     render(<Sidebar isOpen={true} onToggle={mockOnToggle} />)
 
-    const dashboardLink = screen.getByText('Dashboard').closest('a')
+    const dashboardLink = screen.getByText('dashboard').closest('a')
     expect(dashboardLink).toHaveClass('bg-ocean-600')
   })
 
   it('should hide nav labels when collapsed', () => {
     render(<Sidebar isOpen={false} onToggle={mockOnToggle} />)
 
-    expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
-    expect(screen.queryByText('Analytics')).not.toBeInTheDocument()
+    expect(screen.queryByText('dashboard')).not.toBeInTheDocument()
+    expect(screen.queryByText('analytics')).not.toBeInTheDocument()
   })
 })

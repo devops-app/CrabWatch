@@ -57,6 +57,10 @@ else {
 Write-Host "=== Validating archive ===" -ForegroundColor Cyan
 tar -tzf $outputFile | Out-Null
 
+# Clean up staging directory
+Write-Host "=== Cleaning up staging directory ===" -ForegroundColor Cyan
+Remove-Item -Recurse -Force $staging
+
 $size = [math]::Round((Get-Item $outputFile).Length / 1MB, 2)
 
 Write-Host "`nDone! Package: $OutputPath ($size MB)" -ForegroundColor Green

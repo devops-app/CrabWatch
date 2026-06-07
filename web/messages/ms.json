@@ -131,12 +131,19 @@
       "addressLine1Required": "Alamat baris 1 diperlukan",
       "addressLine2": "Alamat Baris 2",
       "addressLine2Optional": "(pilihan)",
-      "addressLine3": "Alamat Baris 3",
       "state": "Negeri",
       "stateRequired": "Negeri diperlukan",
       "postcode": "Poskod",
       "postcodeRequired": "Poskod diperlukan",
-      "country": "Negara"
+      "country": "Negara",
+      "consentAccepted": "Saya bersetuju dengan Terma Perkhidmatan dan Dasar Privasi",
+      "consentPrefix": "Saya bersetuju dengan",
+      "consentSuffix": ".",
+      "consentAnd": "dan",
+      "termsOfService": "Terma Perkhidmatan",
+      "privacyPolicy": "Dasar Privasi",
+      "consentRequired": "Anda mesti menerima terma untuk terus",
+      "languageSwitch": "Bahasa"
     },
     "forgotPassword": {
       "title": "Lupa Kata Laluan",
@@ -149,7 +156,9 @@
       "sendLinkLoading": "Menghantar...",
       "backToLogin": "Kembali ke Log Masuk",
       "success": "Jika akaun wujud dengan e-mel tersebut, anda akan menerima pautan untuk menetapkan semula kata laluan.",
-      "failed": "Gagal menghantar e-mel penetapan semula. Sila cuba lagi."
+      "failed": "Gagal menghantar e-mel penetapan semula. Sila cuba lagi.",
+      "rememberPassword": "Ingat kata laluan anda?",
+      "signInLink": "Log Masuk"
     },
     "resetPassword": {
       "title": "Tetapkan Semula Kata Laluan",
@@ -167,7 +176,9 @@
       "backToLogin": "Kembali ke Log Masuk",
       "success": "Kata laluan anda telah ditetapkan semula dengan jayanya. Anda kini boleh log masuk.",
       "failed": "Gagal menetapkan semula kata laluan. Pautan mungkin telah tamat tempoh.",
-      "invalidToken": "Token penetapan semula tidak sah atau telah tamat tempoh"
+      "invalidToken": "Token penetapan semula tidak sah atau telah tamat tempoh",
+      "rememberPassword": "Ingat kata laluan anda?",
+      "signInLink": "Log Masuk"
     }
   },
   "nav": {
@@ -376,6 +387,14 @@
       "species": "Spesies",
       "speciesLabel": "Spesies:",
       "confidenceLabel": "Keyakinan:",
+      "crabCoverage": "Liputan ketam:",
+      "coverageWarningChip": "Liputan rendah",
+      "coverageWarningMessage": "Ketam kelihatan terlalu kecil dalam bingkai ({coverage}%). Ambil semula dengan lebih dekat supaya ketam memenuhi lebih banyak ruang imej.",
+      "retakeRecommended": "Ambil semula disyorkan",
+      "retakeRecommendedA11y": "Kembali dan ambil semula foto untuk liputan ketam yang lebih baik",
+      "enhancedByCrop": "Dipertingkat dengan potongan fokus",
+      "suggestedCrop": "Cadangan potongan",
+      "suggestedCropHint": "AI mencadangkan potongan lebih rapat pada foto pertama untuk fokus yang lebih baik.",
       "detectedCoin": "Syiling dikesan:",
       "aiSuggestions": "Cadangan AI",
       "coinMismatch": "Pencanggahan Syiling",
@@ -423,6 +442,13 @@
     },
     "client": {
       "title": "Rakaman AI Berpanduan",
+      "analysis": {
+        "uploading": "Memuat naik gambar",
+        "identifying": "Mengenal pasti spesies",
+        "estimating": "Menganggar saiz",
+        "complete": "Analisis lengkap",
+        "elapsed": "Lalu"
+      },
       "stepOf": "Langkah {current} daripada {total}",
       "inReview": "Semak keputusan AI dan hantar",
       "photoTips": "Petua Gambar",
@@ -483,7 +509,35 @@
       "letAiDetect": "Biarkan AI mengesan syiling secara automatik",
       "toggleSeries": "Togol pilihan syiling {series}",
       "selectCoin": "Pilih {coin}",
-      "changeCoin": "Tukar pemilihan syiling"
+      "changeCoin": "Tukar pemilihan syiling",
+      "quality": {
+        "title": "Semakan kualiti: {step}",
+        "subtitle": "Semak kualiti foto sebelum muat naik AI",
+        "analyzing": "Menjalankan semakan kualiti imej...",
+        "coverage": "Liputan {pct}%",
+        "checks": {
+          "blur": "Kabur",
+          "brightness": "Kecerahan",
+          "framing": "Pembingkaian"
+        },
+        "status": {
+          "pass": "Lulus",
+          "warn": "Amaran",
+          "fail": "Gagal"
+        },
+        "failHint": "Foto ini gagal semakan kualiti minimum. Ambil semula disyorkan.",
+        "reasonLabel": "Sebab override",
+        "reasonPlaceholder": "Sebab untuk override semakan kualiti (min 5 aksara)",
+        "retake": "Ambil Semula",
+        "uploadAnyway": "Muat Naik Juga",
+        "clearOverride": "Kosongkan Override",
+        "overrideActive": "Override aktif untuk foto ini. Analisis boleh diteruskan.",
+        "reasonRequired": "Sila tambah sebab override (sekurang-kurangnya 5 aksara).",
+        "overrideSaved": "Override disimpan untuk foto ini.",
+        "blockingStep": "Langkah ini mempunyai kegagalan kualiti kritikal. Ambil semula atau beri sebab override.",
+        "blockingAnalyze": "Sekurang-kurangnya satu foto wajib gagal semakan kualiti. Ambil semula atau tambah sebab override.",
+        "webcamLowRes": "Resolusi webcam rendah ({width}x{height}). Untuk ketepatan lebih baik, muat naik foto dari telefon."
+      }
     }
   },
   "observation": {
@@ -672,10 +726,8 @@
     "address": "Alamat",
     "addressLine1": "Baris Alamat 1",
     "addressLine2": "Baris Alamat 2",
-    "addressLine3": "Baris Alamat 3",
     "streetPlaceholder": "Alamat jalan",
     "apartmentPlaceholder": "Pangsapuri, suite, dll.",
-    "additionalPlaceholder": "Maklumat alamat tambahan",
     "state": "Negeri",
     "postcode": "Poskod",
     "country": "Negara",
@@ -959,9 +1011,25 @@
       "scientificName": "Nama Saintifik",
       "commonName": "Nama Lazim",
       "description": "Penerangan",
-      "keyFeatures": "Ciri-ciri Utama (array JSON)",
-      "distributionZones": "Zon Taburan (array JSON)",
+      "keyFeatures": "Ciri-ciri Utama",
+      "keyFeaturesHint": "Satu setiap baris, format: trait: value (cth. Warna: Biru-hijau)",
+      "distributionZones": "Zon Taburan",
+      "distributionZonesHint": "Satu nama zon setiap baris (cth. Teluk Thailand)",
       "images": "imej",
+      "imagesLabel": "Imej",
+      "imageUploadTitle": "Muat Naik Imej",
+      "imageUploadBtn": "Muat naik dari peranti",
+      "imageOr": "atau",
+      "imageUrlLabel": "URL Imej",
+      "imageUrlHint": "Tampal URL imej langsung",
+      "imageUrlPlaceholder": "https://example.com/image.jpg",
+      "imageRemove": "Buang",
+      "imageUploadSuccess": "Imej dimuat naik",
+      "imageUploadFailed": "Gagal memuat naik imej",
+      "imageUploadInvalidType": "Hanya imej JPEG, PNG, dan WebP diterima",
+      "imageUploadTooLarge": "Imej mestilah di bawah 10MB",
+      "imageUploadUploading": "Memuat naik...",
+      "imageAddUrl": "Tambah URL",
       "save": "Simpan Spesies",
       "delete": "Padam Spesies",
       "confirmDelete": "Adakah anda pasti ingin memadam spesies ini?",

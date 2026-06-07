@@ -39,6 +39,7 @@ import { createContainer } from './services/container'
 import admin from './config/firebase'
 import { getBlobService } from './services/upload'
 import { initServerI18n } from './config/i18n'
+import logger from './utils/logger'
 
 // Initialize DI container before any services are used
 createContainer(prisma, config, admin, getBlobService)
@@ -151,7 +152,42 @@ app.use('/api/v1/engagement', engagementRoutes)
 app.use('/api/v1/admin', adminEngagementRoutes)
 
 app.post('/api/v1/telemetry/error', (req, res) => {
-  const { message, stack, componentStack } = req.body || {}
+  const body = req.body || {}
+  const { message, stack, componentStack } = body
+
+  if (message === '[QUALITY_GATE]' && body.error && typeof body.error === 'object' && !Array.isArray(body.error)) {
+    const quality = body.error as Record<string, unknown>
+    const issueCodes = Array.isArray(quality.issueCodes)
+      ? quality.issueCodes.filter((code): code is string => typeof code === 'string')
+      : []
+
+    logger.info(
+      {
+        source: 'frontend',
+        category: 'quality-gate',
+        event: typeof quality.event === 'string' ? quality.event : 'unknown',
+        platform: typeof quality.platform === 'string' ? quality.platform : 'unknown',
+        qualityGateVersion: typeof quality.qualityGateVersion === 'string' ? quality.qualityGateVersion : 'unknown',
+        view: typeof quality.view === 'string' ? quality.view : undefined,
+        inputSource: typeof quality.inputSource === 'string' ? quality.inputSource : undefined,
+        result: typeof quality.result === 'string' ? quality.result : undefined,
+        issueCodes,
+        blurScore: typeof quality.blurScore === 'number' ? quality.blurScore : undefined,
+        brightness: typeof quality.brightness === 'number' ? quality.brightness : undefined,
+        coveragePct: typeof quality.coveragePct === 'number' ? quality.coveragePct : undefined,
+        overrideUsed: typeof quality.overrideUsed === 'boolean' ? quality.overrideUsed : undefined,
+        overrideReason: typeof quality.overrideReason === 'string' ? quality.overrideReason : undefined,
+        detail: quality.detail,
+        timestamp: typeof quality.timestamp === 'string' ? quality.timestamp : body.timestamp,
+        url: typeof body.url === 'string' ? body.url : undefined,
+      },
+      'Frontend quality telemetry'
+    )
+
+    res.status(204).end()
+    return
+  }
+
   console.error(`[FRONTEND-ERROR] ${message} - ComponentStack: ${componentStack || 'N/A'} - Stack: ${stack || 'N/A'}`)
   res.status(204).end()
 })
