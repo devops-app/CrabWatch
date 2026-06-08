@@ -256,7 +256,10 @@ try {
   }
   Copy-Item -Path $startupWrapperPath -Destination (Join-Path $stagingServerDir "start.sh") -Force
 
-  tar -a -cf $ZipPath -C $stagingServerDir dist package.json prisma start.sh node_modules
+  # Rename to bundled_modules so Oryx doesn't detect/destroy it on deploy
+  Rename-Item -Path (Join-Path $stagingServerDir "node_modules") -NewName "bundled_modules" -Force
+
+  tar -a -cf $ZipPath -C $stagingServerDir dist package.json prisma start.sh bundled_modules
   if ($LASTEXITCODE -ne 0) {
     throw "Packaging failed for $ZipPath"
   }
