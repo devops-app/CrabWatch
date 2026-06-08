@@ -1,8 +1,8 @@
 # CrabWatch — User Acceptance Test (UAT)
 
-> **Version**: 1.1
-> **Date**: 2026-05-22
-> **Scope**: Full end-to-end testing across Web, Mobile, and Server (240 test cases across 19 modules)
+> **Version**: 1.2
+> **Date**: 2026-06-01
+> **Scope**: Full end-to-end testing across Web, Mobile, and Server (270 test cases across 20 modules)
 > **Seed Password**: `Pa55w.rd` (all seeded accounts)
 
 ---

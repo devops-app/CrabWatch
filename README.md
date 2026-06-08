@@ -27,7 +27,7 @@ pnpm dev:server
 # Start web (port 3000)
 pnpm dev:web
 
-# Start mobile (Expo Go)
+# Start mobile (development build)
 pnpm dev:mobile
 ```
 
@@ -102,7 +102,7 @@ See `Azure-Deployment-Plan.md` for detailed deployment steps.
 
 ## Testing
 
-See `UAT.md` for comprehensive end-to-end test cases (248 test cases across 20 modules).
+See `UAT.md` for comprehensive end-to-end test cases (270 test cases across 20 modules).
 
 Seed accounts (password: `Pa55w.rd`):
 - `admin@crabwatch.my` (ADMIN)

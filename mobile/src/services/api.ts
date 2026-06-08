@@ -34,6 +34,7 @@ import type {
   RecalculationJobDto,
   UserStatsDto,
   XPHistoryResponseDto,
+  LeaderboardEntryDto,
   LeaderboardResponseDto,
   ActiveMissionDto,
   OnboardingStatusDto,
@@ -723,7 +724,12 @@ export const api = {
     if (params?.page) p.set('page', String(params.page))
     if (params?.limit) p.set('limit', String(params.limit))
     const query = p.toString()
-    return apiRequest(`/gamification/leaderboard${query ? `?${query}` : ''}`)
+    const raw = await apiRequest<{ items: LeaderboardEntryDto[]; page: number; limit: number; total: number; myRank?: number }>(`/gamification/leaderboard${query ? `?${query}` : ''}`)
+    return {
+      entries: raw.items,
+      totalPages: Math.ceil(raw.total / raw.limit),
+      currentPage: raw.page,
+    }
   },
 
   // Engagement - Missions

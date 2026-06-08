@@ -9,6 +9,8 @@ This folder uses centralized route typing in `types.ts`.
   - `Register`
   - `ForgotPassword`
   - `ResetPassword` (`{ token: string }`)
+  - `Terms`
+  - `Privacy`
 
 - `MainTabParamList`
   - `Home`
@@ -20,12 +22,18 @@ This folder uses centralized route typing in `types.ts`.
 
 - `RootStackParamList`
   - `MainTabs` (typed with `NavigatorScreenParams<MainTabParamList>`)
+  - `SpeciesList`
   - `SpeciesDetail` (`{ speciesId: string }`)
   - `ObservationDetail` (`{ observation: ObservationResponse }`)
   - `EditProfile`
-  - `AnalysisLoading` (`{ photos: string[]; views: PhotoView[]; coinType?: string }`)
-  - `AIReview` (`{ analysis: CrabAnalysisResult; photos: string[]; views: PhotoView[]; coinType?: string }`)
+  - `AnalysisLoading` (`{ photos: string[]; views: PhotoView[]; sessionId: string; coinType?: string; qualityOverrides?: ... }`)
+  - `AIReview` (`{ analysis: CrabAnalysisResult; photos: string[]; views: PhotoView[]; sessionId: string; coinType?: string; blobUrls?: string[] }`)
   - `About`
+  - `Leaderboard`
+  - `Missions`
+  - `Achievements`
+  - `NotificationSettings`
+  - `ProfileSettings`
 
 ## Usage
 

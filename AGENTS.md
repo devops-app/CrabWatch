@@ -30,7 +30,7 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 ## Progress
 
 ### Completed (Image Quality Plan — Phase 1 Architecture)
-- Completed: Created `image-quality-plan.md` with 3-phase rollout (on-device gates, server preprocessing, advanced features)
+- Completed: Created image quality plan with 3-phase rollout (on-device gates, server preprocessing, advanced features); content consolidated into AGENTS.md
 - Completed: Mapped 7 Expo mobile components with roles, current state, required improvements, and field-capture benefits
 - Completed: Defined platform split: mobile = real-time frame analysis & sensor feedback; web = post-capture Canvas validation
 - Completed: Added single-crab hard constraint — AI must return `crabCount`, 0 or >1 rejected with no override
@@ -91,8 +91,7 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Verified: `tsc --noEmit` passes cleanly for mobile, shared, and server packages.
 
 ### Completed (Image Quality Plan — Resolved Gaps)
-- Completed: Both "Out of Scope" gaps in `image-quality-plan.md` resolved: mobile analytics map tab and reset password i18n.
-- Completed: Updated `image-quality-plan.md` to mark gaps as resolved.
+- Completed: Both "Out of Scope" gaps resolved: mobile analytics map tab and reset password i18n.
 - Remaining future work: Phase 3 advanced items, calibration sign-off, QA matrix execution, production alerting.
 
 ### Completed Areas
@@ -320,7 +319,7 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Completed: Fixed invite email namespace bug — `inviteController.ts` uses `'invite'` ns; `authController.ts` uses `'auth'` ns
 - Completed: Added missing password reset email keys and invite email role key to server locale files
 - Completed: Added translation coverage summary to `translation-tab.tsx` with progress bars per locale
-- Completed: Updated `i18n-plan.md` with all 4 phases marked COMPLETED, body checkmarks updated to match actual state
+- Completed: All 4 i18n phases marked COMPLETED; plan content consolidated into AGENTS.md
 - Verified: `pnpm typecheck` passes cleanly across all 4 packages
 - Verified: `next build` passes cleanly for web (pre-existing lint warnings only)
 - Verified: `pnpm -r test` — all 80 failures are pre-existing Jest infrastructure issues, zero new failures from i18n changes
@@ -463,8 +462,7 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Test researcher observation approval/rejection flow end-to-end on mobile
 - Test admin user management, backup, and invite flows on mobile
 - End-to-end testing of full engagement flow (submission -> XP -> level up -> achievements -> notifications)
-- Run UAT test cases (240 cases across 19 modules) to verify all features
-- Close out i18n integration project
+- Run UAT test cases (270 cases across 20 modules) to verify all features
 
 ## Key Decisions
 - **Dynamic species**: AI identifies any crab species; server auto-creates via `upsert` on `speciesName`
@@ -599,13 +597,13 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - `mobile/src/utils/formatters.ts` — `formatNumber` handles null values
 
 ### Image Quality
-- `image-quality-plan.md` — 3-phase improvement plan with platform-specific quality gates, Laplacian blur detection, brightness thresholds, and confidence thresholds
-- `mobile/src/hooks/useCaptureAssistance.ts` — Current broken brightness/shake logic (accelerometer-based brightness needs replacement)
-- `mobile/src/utils/viewAnalysis.ts` — Current broken view detection (always returns true, needs color heuristics)
-- `mobile/src/services/photoService.ts` — Current unreliable blur heuristic (compression ratio, needs Laplacian)
-- `web/src/app/[locale]/dashboard/capture/client.tsx` — Web capture page (needs post-capture quality gate & feedback UI)
-- `server/src/services/foundryAgent.ts` — Server AI agent (needs pre-upload quality gate and crab count validation)
-- `shared/src/types/analysis.ts` — Shared types (needs `ImageQualityResult`, `crabCount`, `boundingBox` additions)
+- `mobile/src/hooks/useCaptureAssistance.ts` — Real-time sensor data (shake, brightness, focus)
+- `mobile/src/utils/viewAnalysis.ts` — Post-capture view validation (dorsal/ventral detection)
+- `mobile/src/services/photoService.ts` — Photo capture, manipulation, quality assessment
+- `web/src/app/[locale]/dashboard/capture/client.tsx` — Web capture with quality gates
+- `server/src/services/foundryAgent.ts` — Server AI agent with quality validation
+- `shared/src/types/analysis.ts` — Shared analysis types
+- `shared/src/utils/qualityRollout.ts` — Quality gate rollout modes (off/warn/soft_block/hard_block)
 
 ### Species
 - `server/src/controllers/speciesController.ts` — Species CRUD with auto-upsert
