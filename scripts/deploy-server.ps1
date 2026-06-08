@@ -234,7 +234,7 @@ try {
   Copy-Item -Path (Join-Path $serverDir "dist") -Destination (Join-Path $stagingServerDir "dist") -Recurse -Force
   Copy-Item -Path (Join-Path $serverDir "package.json") -Destination (Join-Path $stagingServerDir "package.json") -Force
   Copy-Item -Path (Join-Path $serverDir "prisma") -Destination (Join-Path $stagingServerDir "prisma") -Recurse -Force
-  Copy-Item -Path (Join-Path $repoRoot "shared/dist/*") -Destination $stagingSharedBundleDir -Recurse -Force
+  Copy-Item -Path (Join-Path $repoRoot "shared/dist") -Destination (Join-Path $stagingSharedBundleDir "dist") -Recurse -Force
   Copy-Item -Path (Join-Path $repoRoot "shared/package.json") -Destination $stagingSharedBundleDir -Force
 
   # Install production dependencies in staging so they're bundled in the zip.

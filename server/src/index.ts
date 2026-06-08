@@ -46,6 +46,10 @@ createContainer(prisma, config, admin, getBlobService)
 
 const app = express()
 
+// Azure App Service sits behind a reverse proxy that adds X-Forwarded-For headers.
+// Enable trust proxy so express-rate-limit can accurately identify user IPs.
+app.set('trust proxy', true)
+
 app.use(requestIdMiddleware)
 app.use(compression())
 app.use(requestLogger)

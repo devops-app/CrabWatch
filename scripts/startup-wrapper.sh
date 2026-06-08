@@ -42,7 +42,11 @@ else
 fi
 
 # --- Restore bundled @crabwatch/shared ---
-if [ -d /home/site/shared-backup/@crabwatch/shared ]; then
+# Only restore from backup if the bundled version is missing or broken
+# (i.e. lacks the dist/ subdirectory expected by package.json "main" field)
+if [ -d node_modules/@crabwatch/shared/dist ]; then
+  echo "[STARTUP] @crabwatch/shared already bundled with dist/, skipping backup restore"
+elif [ -d /home/site/shared-backup/@crabwatch/shared ]; then
   echo "[STARTUP] Restoring @crabwatch/shared from backup"
   mkdir -p node_modules/@crabwatch
   rm -rf node_modules/@crabwatch/shared
