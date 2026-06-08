@@ -237,6 +237,18 @@ try {
   Copy-Item -Path (Join-Path $repoRoot "shared/dist/*") -Destination $stagingSharedBundleDir -Recurse -Force
   Copy-Item -Path (Join-Path $repoRoot "shared/package.json") -Destination $stagingSharedBundleDir -Force
 
+  # Install production dependencies in staging so they're bundled in the zip.
+  # This eliminates the fragile post-deploy npm install and Oryx symlink race condition.
+  Write-Host "Installing production dependencies in staging directory..."
+  Push-Location $stagingServerDir
+  npm install --omit=dev --no-audit --no-fund --no-package-lock 2>&1 | Select-Object -Last 5
+  if ($LASTEXITCODE -ne 0) {
+    Pop-Location
+    throw "npm install in staging directory failed"
+  }
+  Pop-Location
+  Write-Host "Production dependencies installed in staging"
+
   # Include startup wrapper in package so direct zip deploys always have start.sh.
   $startupWrapperPath = Join-Path $PSScriptRoot "startup-wrapper.sh"
   if (-not (Test-Path -LiteralPath $startupWrapperPath)) {
@@ -244,7 +256,7 @@ try {
   }
   Copy-Item -Path $startupWrapperPath -Destination (Join-Path $stagingServerDir "start.sh") -Force
 
-  tar -a -cf $ZipPath -C $stagingServerDir dist package.json prisma start.sh node_modules/@crabwatch
+  tar -a -cf $ZipPath -C $stagingServerDir dist package.json prisma start.sh node_modules
   if ($LASTEXITCODE -ne 0) {
     throw "Packaging failed for $ZipPath"
   }

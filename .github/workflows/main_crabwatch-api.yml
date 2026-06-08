@@ -44,7 +44,7 @@ jobs:
           npm install --omit=dev --no-audit --no-fund --no-package-lock
           npx prisma generate
           # Bundle @crabwatch/shared (workspace package — npm install doesn't know about it)
-          mkdir -p node_modules/@crabwatch
+          mkdir -p node_modules/@crabwatch/shared
           cp -r ../shared/dist/* node_modules/@crabwatch/shared/
           cp ../shared/package.json node_modules/@crabwatch/shared/
           # Include startup wrapper to bypass Oryx node_modules handling
