@@ -98,49 +98,53 @@ function Invoke-KuduCommandWithRetry {
   }
 }
 
-function Install-ProductionDependencies {
+function Upload-StartupWrapper {
   param(
     [string]$ApiName,
     [hashtable]$Headers,
-    [int]$TimeoutSeconds = 900,
-    [int]$PollSeconds = 8
+    [string]$AzPath,
+    [string]$ResourceGroupName,
+    [string]$WebAppName
   )
 
-  Invoke-KuduCommandWithRetry -ApiName $ApiName -Headers $Headers -Command 'bash -lc "rm -f /home/site/install-deps.exitcode /home/LogFiles/install-deps.log"' | Out-Null
-
-  $startResult = Invoke-KuduCommandWithRetry -ApiName $ApiName -Headers $Headers -Command 'bash -lc "nohup sh -c ''status=0; ts=$(date +%s); if [ -d /home/site/wwwroot/node_modules ]; then mv /home/site/wwwroot/node_modules /home/site/node_modules.$ts.bak || true; fi; cd /home/site/wwwroot && npm install --omit=dev --no-audit --no-fund --no-package-lock > /home/LogFiles/install-deps.log 2>&1 || status=$?; if [ $status -eq 0 ]; then node -e \"require.resolve(\\\"compression\\\"); require.resolve(\\\"bcryptjs\\\"); require.resolve(\\\"@azure/monitor-opentelemetry\\\"); console.log(\\\"Dependency verification passed\\\")\" >> /home/LogFiles/install-deps.log 2>&1 || status=$?; fi; echo $status > /home/site/install-deps.exitcode'' >/dev/null 2>&1 & echo INSTALL_STARTED"'
-  if ($startResult.ExitCode -ne 0) {
-    throw "Failed to start production dependency install: $($startResult.Error)"
+  $wrapperPath = Join-Path $PSScriptRoot "startup-wrapper.sh"
+  if (-not (Test-Path -LiteralPath $wrapperPath)) {
+    throw "Startup wrapper script not found: $wrapperPath"
   }
 
-  $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
-  while ((Get-Date) -lt $deadline) {
-    $status = Invoke-KuduCommandWithRetry -ApiName $ApiName -Headers $Headers -Command 'bash -lc "if [ -f /home/site/install-deps.exitcode ]; then echo DONE:$(cat /home/site/install-deps.exitcode); else echo RUNNING; fi"'
-    if ($status.ExitCode -ne 0) {
-      throw "Failed while checking dependency install status: $($status.Error)"
-    }
-
-    $output = ($status.Output | Out-String).Trim()
-    if ($output -like 'DONE:*') {
-      $exitCodeText = $output.Substring(5).Trim()
-      $exitCode = 1
-      if (-not [int]::TryParse($exitCodeText, [ref]$exitCode)) {
-        throw "Dependency install status returned invalid exit code: $output"
-      }
-
-      if ($exitCode -ne 0) {
-        $logTail = Invoke-KuduCommandWithRetry -ApiName $ApiName -Headers $Headers -Command 'bash -lc "tail -n 200 /home/LogFiles/install-deps.log 2>/dev/null || echo install log not found"'
-        throw "Production dependency install failed with exit code $exitCode. Tail log:`n$($logTail.Output)"
-      }
-
-      return
-    }
-
-    Start-Sleep -Seconds $PollSeconds
+  $uploadHeaders = @{}
+  foreach ($key in $Headers.Keys) {
+    $uploadHeaders[$key] = $Headers[$key]
   }
+  $uploadHeaders['If-Match'] = '*'
 
-  $finalLogTail = Invoke-KuduCommandWithRetry -ApiName $ApiName -Headers $Headers -Command 'bash -lc "tail -n 120 /home/LogFiles/install-deps.log 2>/dev/null || echo install log not found"'
-  throw "Timed out waiting for production dependency install after $TimeoutSeconds seconds. Tail log:`n$($finalLogTail.Output)"
+  Invoke-WebRequest -Uri "https://$ApiName.scm.azurewebsites.net/api/vfs/site/wwwroot/start.sh" -Method PUT -Headers $uploadHeaders -InFile $wrapperPath -ContentType "application/octet-stream" -UseBasicParsing | Out-Null
+
+  $verifyResult = Invoke-KuduCommandWithRetry -ApiName $ApiName -Headers $Headers -Command 'bash -lc "test -f /home/site/wwwroot/start.sh && chmod 755 /home/site/wwwroot/start.sh && echo startup wrapper uploaded"'
+  if ($verifyResult.ExitCode -ne 0) {
+    throw "Failed to verify startup wrapper upload: $($verifyResult.Error)"
+  }
+  Write-Host $verifyResult.Output
+
+  Invoke-Checked -FilePath $AzPath -Arguments @(
+    'webapp', 'config', 'set',
+    '--resource-group', $ResourceGroupName,
+    '--name', $WebAppName,
+    '--startup-file', 'bash /home/site/wwwroot/start.sh'
+  ) -ErrorMessage "Failed to set startup wrapper"
+}
+
+function Upload-SharedBackup {
+  param(
+    [string]$ApiName,
+    [hashtable]$Headers
+  )
+
+  $copyResult = Invoke-KuduCommandWithRetry -ApiName $ApiName -Headers $Headers -Command 'bash -lc "rm -rf /home/site/shared-backup && if [ -d /home/site/wwwroot/node_modules/@crabwatch/shared ]; then mkdir -p /home/site/shared-backup && cp -r /home/site/wwwroot/node_modules/@crabwatch/shared /home/site/shared-backup/ && echo Shared backup created; else echo WARNING: bundled shared package not found; fi"'
+  if ($copyResult.ExitCode -ne 0) {
+    throw "Failed to backup shared package: $($copyResult.Error)"
+  }
+  Write-Host $copyResult.Output
 }
 
 function Wait-ForHealthySite {
@@ -175,6 +179,14 @@ if (-not (Test-Path -LiteralPath $serverDir)) {
 if ([string]::IsNullOrWhiteSpace($ZipPath)) {
   $ZipPath = Join-Path $repoRoot "server-deploy.zip"
 }
+
+$ZipPath = [System.IO.Path]::GetFullPath($ZipPath)
+$zipParentDir = Split-Path -Parent $ZipPath
+if (-not (Test-Path -LiteralPath $zipParentDir)) {
+  throw "Zip output directory not found: $zipParentDir"
+}
+
+$stagingRoot = $null
 
 Push-Location $repoRoot
 try {
@@ -211,7 +223,40 @@ try {
   New-Item -ItemType Directory -Force -Path $distLocalesDir | Out-Null
   Copy-Item -Path (Join-Path $serverDir "src/locales/*.json") -Destination $distLocalesDir -Force
 
-  tar -a -cf $ZipPath -C $serverDir dist package.json prisma
+  # Build deployment archive in an isolated staging folder to avoid mutating workspace files.
+  $stagingRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("crabwatch-server-deploy-" + [Guid]::NewGuid().ToString("N"))
+  $stagingServerDir = Join-Path $stagingRoot "server"
+  $stagingSharedBundleDir = Join-Path $stagingServerDir "node_modules/@crabwatch/shared"
+
+  New-Item -ItemType Directory -Force -Path $stagingServerDir | Out-Null
+  New-Item -ItemType Directory -Force -Path $stagingSharedBundleDir | Out-Null
+
+  Copy-Item -Path (Join-Path $serverDir "dist") -Destination (Join-Path $stagingServerDir "dist") -Recurse -Force
+  Copy-Item -Path (Join-Path $serverDir "package.json") -Destination (Join-Path $stagingServerDir "package.json") -Force
+  Copy-Item -Path (Join-Path $serverDir "prisma") -Destination (Join-Path $stagingServerDir "prisma") -Recurse -Force
+  Copy-Item -Path (Join-Path $repoRoot "shared/dist/*") -Destination $stagingSharedBundleDir -Recurse -Force
+  Copy-Item -Path (Join-Path $repoRoot "shared/package.json") -Destination $stagingSharedBundleDir -Force
+
+  # Install production dependencies in staging so they're bundled in the zip.
+  # This eliminates the fragile post-deploy npm install and Oryx symlink race condition.
+  Write-Host "Installing production dependencies in staging directory..."
+  Push-Location $stagingServerDir
+  npm install --omit=dev --no-audit --no-fund --no-package-lock 2>&1 | Select-Object -Last 5
+  if ($LASTEXITCODE -ne 0) {
+    Pop-Location
+    throw "npm install in staging directory failed"
+  }
+  Pop-Location
+  Write-Host "Production dependencies installed in staging"
+
+  # Include startup wrapper in package so direct zip deploys always have start.sh.
+  $startupWrapperPath = Join-Path $PSScriptRoot "startup-wrapper.sh"
+  if (-not (Test-Path -LiteralPath $startupWrapperPath)) {
+    throw "Startup wrapper script not found: $startupWrapperPath"
+  }
+  Copy-Item -Path $startupWrapperPath -Destination (Join-Path $stagingServerDir "start.sh") -Force
+
+  tar -a -cf $ZipPath -C $stagingServerDir dist package.json prisma start.sh node_modules
   if ($LASTEXITCODE -ne 0) {
     throw "Packaging failed for $ZipPath"
   }
@@ -226,6 +271,11 @@ try {
     throw "Package verification failed: dist/server/src/locales/en.json is missing from $ZipPath"
   }
 
+  $startupEntry = tar -tf $ZipPath | Select-String -Pattern "start.sh" -SimpleMatch
+  if (-not $startupEntry) {
+    throw "Package verification failed: start.sh is missing from $ZipPath"
+  }
+
   Write-Host "Package ready: $ZipPath"
 
   if ($SkipDeploy) {
@@ -233,6 +283,19 @@ try {
   }
   else {
     $azPath = Get-AzCommand
+
+    $appInfoJson = & $azPath webapp show --resource-group $ResourceGroup --name $ApiAppName --query "{name:name,kind:kind,state:state,defaultHostName:defaultHostName}" -o json
+    if ($LASTEXITCODE -ne 0) {
+      throw "Failed to find App Service '$ApiAppName' in resource group '$ResourceGroup'"
+    }
+
+    $appInfo = $appInfoJson | ConvertFrom-Json
+    if ($appInfo.kind -notmatch 'linux') {
+      Write-Warning "Target app kind '$($appInfo.kind)' does not appear to be Linux. Current deploy flow expects Linux App Service."
+    }
+    Write-Host "Deploy target: $($appInfo.name) ($($appInfo.state)) at $($appInfo.defaultHostName)"
+
+    $kuduHeaders = Get-KuduHeaders -AzPath $azPath -ResourceGroupName $ResourceGroup -WebAppName $ApiAppName
 
     Invoke-Checked -FilePath $azPath -Arguments @(
       'webapp', 'config', 'appsettings', 'set',
@@ -245,15 +308,13 @@ try {
     ) -ErrorMessage "Failed to set deployment app settings"
 
     # Must use NODE|<version> for Linux code stack so Azure Portal detects Node runtime correctly.
-    # Keep surrounding quotes in the argument so az.cmd (cmd.exe wrapper) doesn't treat | as a pipe.
     $linuxFxVersion = '"NODE|22-lts"'
     Invoke-Checked -FilePath $azPath -Arguments @(
       'webapp', 'config', 'set',
       '--resource-group', $ResourceGroup,
       '--name', $ApiAppName,
-      '--linux-fx-version', $linuxFxVersion,
-      '--startup-file', 'node dist/server/src/index.js'
-    ) -ErrorMessage "Failed to set runtime/startup configuration"
+      '--linux-fx-version', $linuxFxVersion
+    ) -ErrorMessage "Failed to set runtime configuration"
 
     $deployed = $false
     try {
@@ -272,8 +333,6 @@ try {
       Write-Warning "az webapp deploy failed. Falling back to Kudu upload + unzip."
     }
 
-    $kuduHeaders = Get-KuduHeaders -AzPath $azPath -ResourceGroupName $ResourceGroup -WebAppName $ApiAppName
-
     if (-not $deployed) {
       $uploadHeaders = @{}
       foreach ($key in $kuduHeaders.Keys) {
@@ -288,7 +347,20 @@ try {
       }
     }
 
-    Install-ProductionDependencies -ApiName $ApiAppName -Headers $kuduHeaders
+    # Upload startup wrapper AFTER deploy so it survives --clean true
+    Upload-StartupWrapper -ApiName $ApiAppName -Headers $kuduHeaders -AzPath $azPath -ResourceGroupName $ResourceGroup -WebAppName $ApiAppName
+
+    # Backup bundled shared package to persistent /home/ location for startup wrapper
+    Upload-SharedBackup -ApiName $ApiAppName -Headers $kuduHeaders
+
+    # Clear first-boot marker so wrapper runs npm install on restart
+    Invoke-KuduCommandWithRetry -ApiName $ApiAppName -Headers $kuduHeaders -Command 'bash -lc "rm -f /home/site/install-done"' | Out-Null
+
+    # Restart — startup wrapper handles npm install + app launch
+    Invoke-Checked -FilePath $azPath -Arguments @('webapp', 'restart', '--resource-group', $ResourceGroup, '--name', $ApiAppName) -ErrorMessage "Failed to restart app service"
+
+    # Wait for health (wrapper runs npm install on first boot, then starts app)
+    $health = Wait-ForHealthySite -ApiName $ApiAppName -TimeoutSeconds 300
 
     if ($Migrate) {
       Write-Host "Applying Prisma migrations with migrate deploy..."
@@ -300,15 +372,6 @@ try {
     } else {
       Write-Host "Skipping Prisma migrations. Use -Migrate to run prisma migrate deploy after deploy."
     }
-
-    $verifyDepsResult = Invoke-KuduCommandWithRetry -ApiName $ApiAppName -Headers $kuduHeaders -Command 'bash -lc "cd /home/site/wwwroot && node -e \"require.resolve(\\\"compression\\\"); require.resolve(\\\"bcryptjs\\\"); require.resolve(\\\"@azure/monitor-opentelemetry\\\"); console.log(\\\"Dependency verification passed\\\")\""'
-    if ($verifyDepsResult.ExitCode -ne 0) {
-      throw "Production dependency verification failed: $($verifyDepsResult.Error)"
-    }
-
-    Invoke-Checked -FilePath $azPath -Arguments @('webapp', 'restart', '--resource-group', $ResourceGroup, '--name', $ApiAppName) -ErrorMessage "Failed to restart app service"
-
-    $health = Wait-ForHealthySite -ApiName $ApiAppName
 
     if ($Seed) {
       $seedResult = Invoke-KuduCommandWithRetry -ApiName $ApiAppName -Headers $kuduHeaders -Command 'node /home/site/wwwroot/dist/server/src/services/seedEngagement.js'
@@ -325,5 +388,8 @@ try {
   }
 }
 finally {
+  if ($stagingRoot -and (Test-Path -LiteralPath $stagingRoot)) {
+    Remove-Item -LiteralPath $stagingRoot -Recurse -Force -ErrorAction SilentlyContinue
+  }
   Pop-Location
 }
