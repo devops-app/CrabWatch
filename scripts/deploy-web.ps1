@@ -43,6 +43,8 @@ try {
     # Replace monorepo package.json with web package.json
     Copy-Item -Force $packageJsonPath (Join-Path $standaloneDir "package.json")
     npm install --omit=dev --ignore-scripts
+    # Next.js standalone requires styled-jsx as a transitive dep
+    npm install styled-jsx --omit=dev --ignore-scripts
   }
   finally {
     Pop-Location

@@ -43,6 +43,13 @@ jobs:
           cd deploy
           npm install --omit=dev --no-audit --no-fund --no-package-lock
           npx prisma generate
+          # Bundle @crabwatch/shared (workspace package — npm install doesn't know about it)
+          mkdir -p node_modules/@crabwatch
+          cp -r ../shared/dist/* node_modules/@crabwatch/shared/
+          cp ../shared/package.json node_modules/@crabwatch/shared/
+          # Include startup wrapper to bypass Oryx node_modules handling
+          cp ../scripts/startup-wrapper.sh start.sh
+          chmod +x start.sh
           zip -r ../crabwatch-api.zip .
 
       - name: Upload artifact for deployment job
@@ -80,12 +87,41 @@ jobs:
           slot-name: 'Production'
           package: crabwatch-api.zip
 
+      - name: Configure startup and clear Oryx cache
+        run: |
+          # Set custom startup file so Oryx calls our wrapper instead of mangling node_modules
+          az webapp config set \
+            --resource-group VSES-CrabWatch-MY-RG \
+            --name crabwatch-api \
+            --startup-file "bash /home/site/wwwroot/start.sh"
+          # Ensure build flags are set
+          az webapp config appsettings set \
+            --resource-group VSES-CrabWatch-MY-RG \
+            --name crabwatch-api \
+            --settings \
+              SCM_DO_BUILD_DURING_DEPLOYMENT=false \
+              ENABLE_ORYX_BUILD=false \
+              WEBSITE_NODE_DEFAULT_VERSION=22
+          # Clear stale Oryx cache and install-done marker via Kudu API
+          CREDS=$(az webapp deployment list-publishing-credentials \
+            --resource-group VSES-CrabWatch-MY-RG \
+            --name crabwatch-api \
+            --query "{username: publishingUserName, password: publishingPassword}" \
+            -o tsv)
+          IFS=$'\t' read -r USER PASS <<< "$CREDS"
+          AUTH=$(echo -n "$USER:$PASS" | base64 -w0)
+          curl -s -X POST \
+            -H "Authorization: Basic $AUTH" \
+            -H "Content-Type: application/json" \
+            -d '{"command": "rm -f /home/site/node_modules.tar.gz /home/site/oryx-manifest.toml /home/site/install-done /home/site/wwwroot/node_modules.tar.gz && echo cleared"}' \
+            https://crabwatch-api.scm.azurewebsites.net/api/command || true
+
       - name: Restart Web App
         run: az webapp restart --resource-group VSES-CrabWatch-MY-RG --name crabwatch-api
 
       - name: Wait for health check
         run: |
-          for i in {1..12}; do
+          for i in {1..24}; do
             if curl -sf https://crabwatch-api.azurewebsites.net/health; then
               echo "Health check passed"
               exit 0
