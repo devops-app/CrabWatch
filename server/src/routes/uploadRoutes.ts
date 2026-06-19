@@ -5,9 +5,15 @@ import { authMiddleware, requireAuth, resolveUser } from '../middleware/auth'
 import { uploadUrlSchema } from '../utils/schemas'
 import { validate } from '../middleware/validation'
 
+// CVE-2026-5079: Prevent DoS via deeply nested field names in multipart form data
+// fieldNestingDepth limits nesting depth to prevent attackers from consuming excessive CPU/memory
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_UPLOAD_SIZE },
+  limits: {
+    fileSize: MAX_UPLOAD_SIZE,
+    // @ts-expect-error - fieldNestingDepth is available in multer 2.2.0+ but types haven't been updated
+    fieldNestingDepth: 3,
+  },
   fileFilter: (_req, file, cb) => {
     const allowed = ['image/jpeg', 'image/png', 'image/webp']
     if (allowed.includes(file.mimetype)) {
