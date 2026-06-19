@@ -1,7 +1,11 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../store/authStore'
-import { AuthStack } from './AuthStack'
+import { LoginScreen } from '../screens/auth/LoginScreen'
+import { RegisterScreen } from '../screens/auth/RegisterScreen'
+import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen'
+import { ResetPasswordScreen } from '../screens/auth/ResetPasswordScreen'
+import { ConsentScreen } from '../screens/common/ConsentScreen'
 import { MainTabs } from './MainTabs'
 import { SpeciesListScreen } from '../screens/species/SpeciesListScreen'
 import { SpeciesDetailScreen } from '../screens/species/SpeciesDetailScreen'
@@ -27,13 +31,74 @@ export function AppNavigator({ deepLinkToken }: AppNavigatorProps) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const { t } = useTranslation()
 
-  if (!isAuthenticated) {
-    return <AuthStack initialRouteName={deepLinkToken ? 'ResetPassword' : undefined} initialParams={deepLinkToken ? { token: deepLinkToken } : undefined} />
-  }
+  const initialRoute = deepLinkToken && !isAuthenticated
+    ? 'ResetPassword'
+    : isAuthenticated
+      ? 'MainTabs'
+      : 'Login'
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      key={String(isAuthenticated)}
+      initialRouteName={initialRoute}
+      screenOptions={{ headerShown: false }}
+    >
       <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen
+        name="Login"
+        component={LoginScreen}
+        options={{
+          headerShown: true,
+          headerStyle: { backgroundColor: '#0284c7' },
+          headerTintColor: '#ffffff',
+          headerTitleStyle: { fontWeight: 'bold' },
+          title: t('navigation.auth.signIn'),
+        }}
+      />
+      <Stack.Screen
+        name="Register"
+        component={RegisterScreen}
+        options={{
+          headerShown: true,
+          headerStyle: { backgroundColor: '#0284c7' },
+          headerTintColor: '#ffffff',
+          headerTitleStyle: { fontWeight: 'bold' },
+          title: t('navigation.auth.createAccount'),
+        }}
+      />
+      <Stack.Screen
+        name="ForgotPassword"
+        component={ForgotPasswordScreen}
+        options={{
+          headerShown: true,
+          headerStyle: { backgroundColor: '#0284c7' },
+          headerTintColor: '#ffffff',
+          headerTitleStyle: { fontWeight: 'bold' },
+          title: t('navigation.auth.forgotPassword'),
+        }}
+      />
+      <Stack.Screen
+        name="ResetPassword"
+        component={ResetPasswordScreen}
+        initialParams={deepLinkToken ? { token: deepLinkToken } : undefined}
+        options={{
+          headerShown: true,
+          headerStyle: { backgroundColor: '#0284c7' },
+          headerTintColor: '#ffffff',
+          headerTitleStyle: { fontWeight: 'bold' },
+          title: t('navigation.auth.resetPassword'),
+        }}
+      />
+      <Stack.Screen
+        name="Consent"
+        component={ConsentScreen}
+        options={{
+          headerShown: true,
+          headerStyle: { backgroundColor: '#0284c7' },
+          headerTintColor: '#ffffff',
+          title: t('legal.consentTitle'),
+        }}
+      />
       <Stack.Screen
         name="SpeciesList"
         component={SpeciesListScreen}
@@ -57,12 +122,10 @@ export function AppNavigator({ deepLinkToken }: AppNavigatorProps) {
       <Stack.Screen
         name="AnalysisLoading"
         component={AnalysisLoadingScreen}
-        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="AIReview"
         component={AIReviewScreen}
-        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="About"

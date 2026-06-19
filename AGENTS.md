@@ -439,6 +439,15 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Verified: `pnpm typecheck` passes cleanly for all packages
 - Verified: `next build` passes cleanly with zero new errors
 
+### Completed (Android RouteNotFound Fix — Single Navigator)
+- Completed: Fixed `common.routeNotFound` on Android after registration — root cause was dual-navigator swap: `AppNavigator` unmounted `<AuthStack>` and mounted a new `<Stack.Navigator>` on auth state change, destroying native-stack route registry on Android.
+- Completed: Merged `AuthStack.tsx` into `AppNavigator.tsx` — single `Stack.Navigator` with `key={String(isAuthenticated)}` forces clean remount, `initialRouteName` switches between `Login` and `MainTabs`.
+- Completed: Updated `types.ts` to `RootStackParamList` merging auth and main app routes; removed `AuthStackParamList`.
+- Completed: Updated `LoginScreen.tsx` and `RegisterScreen.tsx` to use `RootStackParamList`, reverted try-catch navigation wrappers.
+- Completed: Deleted `AuthStack.tsx` and stale `AuthStack.test.tsx`.
+- Verified: `pnpm typecheck` passes cleanly for all packages.
+- Verified: `next build` passes cleanly with zero new errors.
+
 ### Completed (Mobile Dependency Upgrade — React 19.2.7 + RN 0.81.6)
 - Completed: Upgraded React from `19.1.0` to `19.2.7` across root, mobile, and web `package.json`
 - Completed: Upgraded React Native from `0.81.5` to `0.81.6` across root and mobile `package.json`
@@ -456,6 +465,22 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Verified: `pnpm typecheck` passes cleanly for all packages (shared, server, web, mobile)
 - Verified: `next build` passes cleanly with zero new errors
 - Verified: Metro bundler starts successfully on Windows
+
+### Completed (Mobile Legal Screen Consolidation)
+- Completed: Merged `TermsScreen.tsx` and `PrivacyScreen.tsx` into single `ConsentScreen.tsx` with locale-aware content
+- Completed: Deleted `TermsScreen.tsx` and `PrivacyScreen.tsx`
+- Completed: Updated `RootStackParamList` — replaced `Terms` and `Privacy` routes with `Consent`
+- Completed: Updated `AppNavigator.tsx` — single `Consent` screen, removed Terms/Privacy entries
+- Completed: Updated `RegisterScreen.tsx` — both consent links now navigate to `Consent`
+- Completed: Added `legal.consentTitle` i18n key to `en.json` ("User Consent") and `ms.json` ("Kebenaran Pengguna")
+- Verified: `pnpm typecheck` passes cleanly for all packages
+
+### Completed (Mobile Registration 404 Fix)
+- Completed: Fixed `common.routeNotFound` on mobile registration — root cause was wrong API endpoint: `api.ts` called `/auth/register` but server registers at `/users/register`
+- Completed: Updated `api.ts` `register()` to use `/users/register` matching `userRoutes.ts`
+- Completed: Removed unnecessary `try...catch` wrappers around `navigation.dispatch` in `LoginScreen.tsx` and `RegisterScreen.tsx` (not needed — `key={String(isAuthenticated)}` handles navigator remount)
+- Completed: Fixed "validation failed" — `RegisterScreen.tsx` validated `consentAccepted` via Zod but dropped it when calling `authService.register`; added `data.consentAccepted` to the call
+- Verified: `tsc --noEmit` passes cleanly for mobile
 
 ## Next Steps
 - Validate mobile staging build with `warn`/`soft_block`/`hard_block` quality gate configs
@@ -550,6 +575,7 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - **React Navigation 7 upgrade**: React Navigation 6.x is incompatible with React 19 (causes "Invalid hook call" crash). Upgraded to 7.x which supports React 19. `useFocusEffect` is removed in v7; replaced with `useIsFocused()` + `useEffect`.
 - **Server utility scripts**: `fix-photos.ts` and `migrate-db.ts` excluded from `server/tsconfig.json` to avoid typecheck failures from unused/legacy scripts.
 - **AI JSON extraction**: `foundryAgent.ts` uses `extractJson` to strip markdown code fences before `JSON.parse` to handle LLM responses that wrap JSON in markdown.
+- **Mobile legal consolidation**: `TermsScreen` and `PrivacyScreen` merged into `ConsentScreen` with locale-aware content. Both "Terms of Service" and "Privacy Policy" links on registration navigate to the same `Consent` route.
 
 ## Critical Context
 - **Stack**: Expo SDK 54, React 19, RN 0.81.5, Zustand, React Navigation 7.x, Express, Prisma, Azure Storage, Azure AI Foundry

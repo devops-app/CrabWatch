@@ -69,16 +69,16 @@
     "signIn": "Log masuk",
     "registrationFailed": "Pendaftaran Gagal",
     "couldNotCreate": "Tidak dapat mencipta akaun",
-    "consentPrefix": "Saya bersetuju dengan",
-    "consentSuffix": "Saya faham data lokasi dan pemerhatian saya akan digunakan untuk penyelidikan pemuliharaan ketam.",
-    "termsOfService": "Terma Perkhidmatan",
-    "privacyPolicy": "Dasar Privasi",
-    "termsPlaceholder": "Kandungan Terma Perkhidmatan akan datang.",
-    "privacyPlaceholder": "Kandungan Dasar Privasi akan datang."
+    "consentPrefix": "Saya bersetuju dengan ",
+    "userConsent": "Kebenaran Pengguna",
+    "consentSuffix": ".",
+    "registrationSuccess": "Pendaftaran Berjaya",
+    "registrationSuccessMessage": "Akaun anda telah diciptakan. Selamat datang ke CrabWatch!"
   },
   "legal": {
     "termsTitle": "Terma Perkhidmatan",
-    "privacyTitle": "Dasar Privasi"
+    "privacyTitle": "Dasar Privasi",
+    "consentTitle": "Kebenaran Pengguna"
   },
   "forgotPassword": {
     "title": "Lupa Kata Laluan",

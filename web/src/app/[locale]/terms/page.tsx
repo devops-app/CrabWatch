@@ -36,7 +36,7 @@ export default async function TermsPage({
     notFound()
   }
 
-  const filePath = path.join(process.cwd(), 'public', 'legal', locale, 'terms.md')
+  const filePath = path.join(process.cwd(), 'public', 'legal', locale, 'consent.md')
 
   if (!fs.existsSync(filePath)) {
     notFound()

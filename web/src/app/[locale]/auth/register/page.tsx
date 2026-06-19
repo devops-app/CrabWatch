@@ -399,12 +399,8 @@ export default function RegisterPage(): React.JSX.Element {
               className="w-4 h-4 rounded border-gray-300 text-ocean-600 focus:ring-ocean-500"
             />
             <label htmlFor="consentAccepted" className="text-sm text-gray-700">
-              {t('consentPrefix')}{' '}
-              <Link href="/terms" className="text-ocean-600 hover:underline">{t('termsOfService')}</Link>
-              {' '}
-              {t('consentAnd')}
-              {' '}
-              <Link href="/privacy" className="text-ocean-600 hover:underline">{t('privacyPolicy')}</Link>
+              {t('consentPrefix')}
+              <Link href={`/${locale}/consent`} className="text-ocean-600 hover:underline">{t('userConsent')}</Link>
               {t('consentSuffix')}
               <span className="text-red-500">*</span>
             </label>

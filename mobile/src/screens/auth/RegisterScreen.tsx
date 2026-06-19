@@ -10,7 +10,7 @@ import {
   ScrollView,
 } from 'react-native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import type { AuthStackParamList } from '../../navigation/types'
+import type { RootStackParamList } from '../../navigation/types'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -18,6 +18,7 @@ import { useNavigation } from '@react-navigation/native'
 import { useTranslation } from 'react-i18next'
 import { registerSchema, type RegisterFormValues } from '../../utils/validators'
 import { authService } from '../../services/authService'
+import { resetToMainTabs } from '../../navigation/navRef'
 import { Input } from '../../components/common/Input'
 import { CountryPicker } from '../../components/common/CountryPicker'
 import { PhoneCodePicker } from '../../components/common/PhoneCodePicker'
@@ -27,7 +28,7 @@ import { FONT } from '../../utils/fonts'
 import { type CountryOption } from '@crabwatch/shared'
 import { useLocaleStore } from '../../store/localeStore'
 
-type NavigationProp = NativeStackNavigationProp<AuthStackParamList>
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>
 
 const LOCALES = [{ code: 'en', label: 'EN' }, { code: 'ms', label: 'BM' }] as const
 
@@ -83,7 +84,17 @@ export function RegisterScreen() {
         data.addressLine2 || undefined,
         data.state,
         data.postcode,
-        data.country
+        data.country,
+        data.consentAccepted
+      )
+      Alert.alert(
+        t('register.registrationSuccess'),
+        t('register.registrationSuccessMessage'),
+        [{
+          text: t('ok', { ns: 'common' }),
+          style: 'default',
+          onPress: () => setTimeout(() => resetToMainTabs(), 0),
+        }]
       )
     } catch (err) {
       Alert.alert(
@@ -367,21 +378,13 @@ export function RegisterScreen() {
                   </View>
                   <View style={styles.consentTextWrap}>
                     <Text style={styles.consentText}>
-                      {t('register.consentPrefix')}{' '}
+                      {t('register.consentPrefix')}
                       <Text
                         style={styles.consentLink}
-                        onPress={() => navigation.navigate('Terms')}
+                        onPress={() => navigation.navigate('Consent')}
                       >
-                        {t('register.termsOfService')}
-                      </Text>{' '}
-                      {' & '}{' '}
-                      <Text
-                        style={styles.consentLink}
-                        onPress={() => navigation.navigate('Privacy')}
-                      >
-                        {t('register.privacyPolicy')}
+                        {t('register.userConsent')}
                       </Text>
-                      {'. '}
                       {t('register.consentSuffix')}
                     </Text>
                   </View>
@@ -401,7 +404,9 @@ export function RegisterScreen() {
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>{t('register.hasAccount')} </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Login')}
+              >
                 <Text style={styles.linkText}>{t('register.signIn')}</Text>
               </TouchableOpacity>
             </View>
@@ -522,7 +527,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   phoneCodeWrap: {
-    width: 100,
+    width: 130,
   },
   phoneNumWrap: {
     flex: 1,

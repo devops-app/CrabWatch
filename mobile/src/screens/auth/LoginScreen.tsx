@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigation } from '@react-navigation/native'
+import { resetToMainTabs } from '../../navigation/navRef'
 import { useTranslation } from 'react-i18next'
 import { loginSchema, type LoginFormValues } from '../../utils/validators'
 import { authService } from '../../services/authService'
@@ -21,9 +22,9 @@ import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 import { useLocaleStore } from '../../store/localeStore'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import type { AuthStackParamList } from '../../navigation/types'
+import type { RootStackParamList } from '../../navigation/types'
 
-type NavigationProp = NativeStackNavigationProp<AuthStackParamList>
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>
 
 const LOCALES = [{ code: 'en', label: 'EN' }, { code: 'ms', label: 'BM' }] as const
 
@@ -55,6 +56,7 @@ export function LoginScreen() {
     setLoading(true)
     try {
       await authService.login(data.email, data.password)
+      setTimeout(() => resetToMainTabs(), 0)
     } catch (err) {
       Alert.alert(
         t('login.loginFailed'),

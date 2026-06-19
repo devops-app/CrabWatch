@@ -20,10 +20,10 @@ import { Button } from '../../components/common/Button'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import type { AuthStackParamList } from '../../navigation/types'
+import type { RootStackParamList } from '../../navigation/types'
 
-type NavigationProp = NativeStackNavigationProp<AuthStackParamList>
-type RouteParams = RouteProp<AuthStackParamList, 'ResetPassword'>
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>
+type RouteParams = RouteProp<RootStackParamList, 'ResetPassword'>
 
 type ResetPasswordValues = {
   password: string

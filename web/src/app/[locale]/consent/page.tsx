@@ -24,7 +24,7 @@ function mdToHtml(md: string): string {
   return html
 }
 
-export default async function PrivacyPage({
+export default async function ConsentPage({
   params,
 }: {
   params: Promise<{ locale: string }>

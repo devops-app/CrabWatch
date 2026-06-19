@@ -158,7 +158,7 @@ export const api = {
   },
 
  async register(name: string, email: string, password: string, phoneCode?: string, phoneNumber?: string, addressLine1?: string, addressLine2?: string, state?: string, postcode?: string, country?: string, consentAccepted?: boolean): Promise<UserResponse> {
-    return apiRequest('/auth/register', {
+    return apiRequest('/users/register', {
       method: 'POST',
       body: JSON.stringify({ name, email, phoneCode, phoneNumber, addressLine1, addressLine2, state, postcode, country, password, consentAccepted }),
     })

@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store'
 import type { UserResponse } from '@crabwatch/shared'
 import { api } from '../services/api'
 import { syncPushTokenWithServer, unregisterPushTokenFromServer } from '../services/pushNotificationService'
+import { resetToLogin } from '../navigation/navRef'
 
 interface AuthState {
   user: UserResponse | null
@@ -45,6 +46,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     await SecureStore.deleteItemAsync('auth_token')
     await SecureStore.deleteItemAsync('firebase_uid')
     set({ user: null, token: null, firebaseUid: null, isAuthenticated: false })
+    resetToLogin()
   },
 
   updateUser: (user) => {

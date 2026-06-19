@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../../hooks/useAuth'
+import { useLocaleStore } from '../../store/localeStore'
 import { api } from '../../services/api'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
@@ -71,8 +72,9 @@ export function ProfileSettingsScreen() {
             setDeleting(true)
             try {
               await api.deleteMyAccount()
-              logout()
-              Alert.alert(t('delete.successTitle'), t('delete.successBody'))
+              Alert.alert(t('delete.successTitle'), t('delete.successBody'), [
+                { text: t('ok', { ns: 'common' }), onPress: () => logout() },
+              ])
             } catch (err) {
               Alert.alert(t('delete.errorTitle'), err instanceof Error ? err.message : t('delete.errorBody'))
             } finally {

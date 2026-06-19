@@ -194,7 +194,7 @@ export function AdminScreen() {
       t('alerts.backup.title'),
       t('alerts.backup.message'),
       [
-        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('cancel', { ns: 'common' }), style: 'cancel' },
         {
           text: t('alerts.backup.confirm'),
           onPress: async () => {
@@ -219,7 +219,7 @@ export function AdminScreen() {
       t('alerts.cleanup.title'),
       t('alerts.cleanup.message'),
       [
-        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('cancel', { ns: 'common' }), style: 'cancel' },
         {
           text: t('alerts.cleanup.confirm'),
           style: 'destructive',
@@ -245,7 +245,7 @@ export function AdminScreen() {
       t('alerts.changeRole.title'),
       t('alerts.changeRole.message', { name: user.name, role: newRole }),
       [
-        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('cancel', { ns: 'common' }), style: 'cancel' },
         {
           text: t('alerts.changeRole.confirm'),
           onPress: async () => {
@@ -270,7 +270,7 @@ export function AdminScreen() {
       t('alerts.deleteUser.title'),
       t('alerts.deleteUser.message', { name: user.name }),
       [
-        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('cancel', { ns: 'common' }), style: 'cancel' },
         {
           text: t('alerts.deleteUser.confirm'),
           style: 'destructive',
@@ -296,7 +296,7 @@ export function AdminScreen() {
       t('alerts.restoreUser.title'),
       t('alerts.restoreUser.message', { name: user.name }),
       [
-        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('cancel', { ns: 'common' }), style: 'cancel' },
         {
           text: t('alerts.restoreUser.confirm'),
           onPress: async () => {
@@ -321,7 +321,7 @@ export function AdminScreen() {
       t('alerts.blockUser.title'),
       t('alerts.blockUser.message', { name: user.name }),
       [
-        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('cancel', { ns: 'common' }), style: 'cancel' },
         {
           text: t('alerts.blockUser.confirm'),
           style: 'destructive',
@@ -347,7 +347,7 @@ export function AdminScreen() {
       t('alerts.unblockUser.title'),
       t('alerts.unblockUser.message', { name: user.name }),
       [
-        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('cancel', { ns: 'common' }), style: 'cancel' },
         {
           text: t('alerts.unblockUser.confirm'),
           onPress: async () => {
@@ -372,7 +372,7 @@ export function AdminScreen() {
       t('alerts.sendInvite.title'),
       t('alerts.sendInvite.message', { role, email }),
       [
-        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('cancel', { ns: 'common' }), style: 'cancel' },
         {
           text: t('alerts.sendInvite.confirm'),
           onPress: async () => {
@@ -397,7 +397,7 @@ export function AdminScreen() {
       t('alerts.resendInvite.title'),
       t('alerts.resendInvite.message', { role, email }),
       [
-        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('cancel', { ns: 'common' }), style: 'cancel' },
         {
           text: t('alerts.resendInvite.confirm'),
           onPress: async () => {
@@ -422,7 +422,7 @@ export function AdminScreen() {
       t('alerts.deleteSpecies.title'),
       t('alerts.deleteSpecies.message', { name: s.commonName }),
       [
-        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('cancel', { ns: 'common' }), style: 'cancel' },
         {
           text: t('alerts.deleteSpecies.confirm'),
           style: 'destructive',
@@ -544,9 +544,9 @@ export function AdminScreen() {
 
   const handleDeleteRule = (rule: GamificationRuleDto) => {
     Alert.alert(t('alerts.deleteXpRule.title'), t('alerts.deleteXpRule.message', { name: rule.name }), [
-      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('cancel', { ns: 'common' }), style: 'cancel' },
       {
-        text: t('common.delete'),
+        text: t('delete', { ns: 'common' }),
         style: 'destructive',
         onPress: async () => {
           setActionLoading(true)
@@ -628,9 +628,9 @@ export function AdminScreen() {
 
   const handleDeleteLevel = (level: LevelConfigDto) => {
     Alert.alert(t('alerts.deleteLevel.title'), t('alerts.deleteLevel.message', { level: level.level, title: level.title }), [
-      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('cancel', { ns: 'common' }), style: 'cancel' },
       {
-        text: t('common.delete'),
+        text: t('delete', { ns: 'common' }),
         style: 'destructive',
         onPress: async () => {
           setActionLoading(true)
@@ -732,7 +732,7 @@ export function AdminScreen() {
 
   const handleLaunchCampaign = (campaign: CampaignDto) => {
     Alert.alert(t('alerts.launchCampaign.title'), t('alerts.launchCampaign.message', { name: campaign.name }), [
-      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('cancel', { ns: 'common' }), style: 'cancel' },
       {
         text: t('alerts.launchCampaign.confirm'),
         onPress: async () => {
@@ -770,9 +770,9 @@ export function AdminScreen() {
 
   const handleDeleteCampaign = (campaign: CampaignDto) => {
     Alert.alert(t('alerts.deleteCampaign.title'), t('alerts.deleteCampaign.message', { name: campaign.name }), [
-      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('cancel', { ns: 'common' }), style: 'cancel' },
       {
-        text: t('common.delete'),
+        text: t('delete', { ns: 'common' }),
         style: 'destructive',
         onPress: async () => {
           setActionLoading(true)
@@ -867,7 +867,7 @@ export function AdminScreen() {
                 style={[styles.actionBtn, styles.deleteBtn]}
                 onPress={() => handleSoftDelete(item)}
               >
-                <Text style={styles.actionBtnText}>{t('common.delete')}</Text>
+                <Text style={styles.actionBtnText}>{t('delete', { ns: 'common' })}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1064,7 +1064,7 @@ export function AdminScreen() {
             loading={actionLoading}
           />
           {editingSpeciesId ? (
-         <Button title={t('common.cancel')} onPress={resetSpeciesDraft}
+         <Button title={t('cancel', { ns: 'common' })} onPress={resetSpeciesDraft}
 variant="secondary" />
           ) : null}
         </View>
@@ -1082,13 +1082,13 @@ variant="secondary" />
               </View>
               <View style={styles.inlineActions}>
                 <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => handleEditSpecies(item)}>
-                  <Text style={styles.actionBtnText}>{t('common.edit')}</Text>
+                  <Text style={styles.actionBtnText}>{t('edit', { ns: 'common' })}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.actionBtn, styles.deleteBtn]}
                   onPress={() => handleDeleteSpecies(item)}
                 >
-                  <Text style={styles.actionBtnText}>{t('common.delete')}</Text>
+                  <Text style={styles.actionBtnText}>{t('delete', { ns: 'common' })}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -1141,7 +1141,7 @@ variant="secondary" />
         <View style={styles.inlineActions}>
           <Button title={editingRuleId ? t('rules.save') : t('rules.add')} onPress={handleSaveRule} loading={actionLoading} />
           {editingRuleId ? (
-         <Button title={t('common.cancel')} onPress={resetRuleDraft}
+         <Button title={t('cancel', { ns: 'common' })} onPress={resetRuleDraft}
 variant="secondary" />
           ) : null}
         </View>
@@ -1161,13 +1161,13 @@ variant="secondary" />
           {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
           <View style={styles.cardActions}>
             <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => handleEditRule(item)}>
-              <Text style={styles.actionBtnText}>{t('common.edit')}</Text>
+              <Text style={styles.actionBtnText}>{t('edit', { ns: 'common' })}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.actionBtn, styles.roleChangeBtn]} onPress={() => handleToggleRule(item)}>
               <Text style={styles.actionBtnText}>{item.active ? t('rules.action.disable') : t('rules.action.enable')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => handleDeleteRule(item)}>
-              <Text style={styles.actionBtnText}>{t('common.delete')}</Text>
+              <Text style={styles.actionBtnText}>{t('delete', { ns: 'common' })}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1212,7 +1212,7 @@ variant="secondary" />
         <View style={styles.inlineActions}>
           <Button title={editingLevelId ? t('levels.save') : t('levels.add')} onPress={handleSaveLevel} loading={actionLoading} />
           {editingLevelId ? (
-         <Button title={t('common.cancel')} onPress={resetLevelDraft}
+         <Button title={t('cancel', { ns: 'common' })} onPress={resetLevelDraft}
 variant="secondary" />
           ) : null}
         </View>
@@ -1232,10 +1232,10 @@ variant="secondary" />
           {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
           <View style={styles.cardActions}>
             <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => handleEditLevel(item)}>
-              <Text style={styles.actionBtnText}>{t('common.edit')}</Text>
+              <Text style={styles.actionBtnText}>{t('edit', { ns: 'common' })}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => handleDeleteLevel(item)}>
-              <Text style={styles.actionBtnText}>{t('common.delete')}</Text>
+              <Text style={styles.actionBtnText}>{t('delete', { ns: 'common' })}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1423,7 +1423,7 @@ variant="secondary" />
               <Text style={styles.actionBtnText}>{t('campaigns.sendTest')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => handleDeleteCampaign(campaign)}>
-              <Text style={styles.actionBtnText}>{t('common.delete')}</Text>
+              <Text style={styles.actionBtnText}>{t('delete', { ns: 'common' })}</Text>
             </TouchableOpacity>
           </View>
           <RNTextInput

@@ -5,6 +5,7 @@ import { View, ActivityIndicator, Platform } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { I18nextProvider } from 'react-i18next'
 import { AppNavigator } from './src/navigation/AppNavigator'
+import { navRef } from './src/navigation/navRef'
 import { initAuth } from './src/store/authStore'
 import { useLocaleStore } from './src/store/localeStore'
 import { usePendingObservationSync } from './src/hooks/usePendingObservationSync'
@@ -78,7 +79,7 @@ export default function App() {
     <ErrorBoundary>
       <I18nextProvider i18n={i18n}>
         <StatusBar style={Platform.OS === 'ios' ? 'dark' : 'auto'} />
-        <NavigationContainer linking={{ enabled: false, prefixes: [] }}>
+        <NavigationContainer ref={navRef} linking={{ enabled: false, prefixes: [] }}>
           <AppNavigator deepLinkToken={deepLinkToken} />
         </NavigationContainer>
       </I18nextProvider>
