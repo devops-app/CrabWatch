@@ -237,7 +237,7 @@ export function ProfileScreen() {
           variant="secondary"
           onPress={() => {
             Alert.alert(t('signOut'), t('signOutConfirm'), [
-              { text: t('common.cancel'), style: 'cancel' },
+              { text: t('cancel', { ns: 'common' }), style: 'cancel' },
               { text: t('signOut'), style: 'destructive', onPress: () => logout() },
             ])
           }}

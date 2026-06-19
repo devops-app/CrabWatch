@@ -1,25 +1,23 @@
 import type { NavigatorScreenParams } from '@react-navigation/native'
 import type { ObservationResponse, CrabAnalysisResult, PhotoView } from '@crabwatch/shared'
 
-export type AuthStackParamList = {
+export type MainTabParamList = {
+  Home: undefined
+  New: undefined
+  Analytics: undefined
+  Researcher: undefined
+  Admin: undefined
+  Profile: undefined
+}
+
+export type RootStackParamList = {
+  // Auth screens
   Login: undefined
   Register: undefined
   ForgotPassword: undefined
   ResetPassword: { token: string }
-  Terms: undefined
-  Privacy: undefined
-}
-
-export type MainTabParamList = {
-   Home: undefined
-   New: undefined
-   Analytics: undefined
-   Researcher: undefined
-   Admin: undefined
-   Profile: undefined
- }
-
-export type RootStackParamList = {
+  Consent: undefined
+  // Main app
   MainTabs: NavigatorScreenParams<MainTabParamList>
   SpeciesList: undefined
   SpeciesDetail: { speciesId: string }

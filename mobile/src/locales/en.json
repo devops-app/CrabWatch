@@ -69,16 +69,16 @@
     "signIn": "Sign in",
     "registrationFailed": "Registration Failed",
     "couldNotCreate": "Could not create account",
-    "consentPrefix": "I agree to the",
-    "consentSuffix": "I understand my location and observation data will be used for crab conservation research.",
-    "termsOfService": "Terms of Service",
-    "privacyPolicy": "Privacy Policy",
-    "termsPlaceholder": "Terms of Service content coming soon.",
-    "privacyPlaceholder": "Privacy Policy content coming soon."
+    "consentPrefix": "I agree to the ",
+    "userConsent": "User Consent",
+    "consentSuffix": ".",
+    "registrationSuccess": "Registration Successful",
+    "registrationSuccessMessage": "Your account has been created. Welcome to CrabWatch!"
   },
   "legal": {
     "termsTitle": "Terms of Service",
-    "privacyTitle": "Privacy Policy"
+    "privacyTitle": "Privacy Policy",
+    "consentTitle": "User Consent"
   },
   "forgotPassword": {
     "title": "Forgot Password",

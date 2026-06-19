@@ -30,7 +30,7 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 ## Progress
 
 ### Completed (Image Quality Plan — Phase 1 Architecture)
-- Completed: Created `image-quality-plan.md` with 3-phase rollout (on-device gates, server preprocessing, advanced features)
+- Completed: Created image quality plan with 3-phase rollout (on-device gates, server preprocessing, advanced features); content consolidated into AGENTS.md
 - Completed: Mapped 7 Expo mobile components with roles, current state, required improvements, and field-capture benefits
 - Completed: Defined platform split: mobile = real-time frame analysis & sensor feedback; web = post-capture Canvas validation
 - Completed: Added single-crab hard constraint — AI must return `crabCount`, 0 or >1 rejected with no override
@@ -91,8 +91,7 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Verified: `tsc --noEmit` passes cleanly for mobile, shared, and server packages.
 
 ### Completed (Image Quality Plan — Resolved Gaps)
-- Completed: Both "Out of Scope" gaps in `image-quality-plan.md` resolved: mobile analytics map tab and reset password i18n.
-- Completed: Updated `image-quality-plan.md` to mark gaps as resolved.
+- Completed: Both "Out of Scope" gaps resolved: mobile analytics map tab and reset password i18n.
 - Remaining future work: Phase 3 advanced items, calibration sign-off, QA matrix execution, production alerting.
 
 ### Completed Areas
@@ -320,7 +319,7 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Completed: Fixed invite email namespace bug — `inviteController.ts` uses `'invite'` ns; `authController.ts` uses `'auth'` ns
 - Completed: Added missing password reset email keys and invite email role key to server locale files
 - Completed: Added translation coverage summary to `translation-tab.tsx` with progress bars per locale
-- Completed: Updated `i18n-plan.md` with all 4 phases marked COMPLETED, body checkmarks updated to match actual state
+- Completed: All 4 i18n phases marked COMPLETED; plan content consolidated into AGENTS.md
 - Verified: `pnpm typecheck` passes cleanly across all 4 packages
 - Verified: `next build` passes cleanly for web (pre-existing lint warnings only)
 - Verified: `pnpm -r test` — all 80 failures are pre-existing Jest infrastructure issues, zero new failures from i18n changes
@@ -440,6 +439,15 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Verified: `pnpm typecheck` passes cleanly for all packages
 - Verified: `next build` passes cleanly with zero new errors
 
+### Completed (Android RouteNotFound Fix — Single Navigator)
+- Completed: Fixed `common.routeNotFound` on Android after registration — root cause was dual-navigator swap: `AppNavigator` unmounted `<AuthStack>` and mounted a new `<Stack.Navigator>` on auth state change, destroying native-stack route registry on Android.
+- Completed: Merged `AuthStack.tsx` into `AppNavigator.tsx` — single `Stack.Navigator` with `key={String(isAuthenticated)}` forces clean remount, `initialRouteName` switches between `Login` and `MainTabs`.
+- Completed: Updated `types.ts` to `RootStackParamList` merging auth and main app routes; removed `AuthStackParamList`.
+- Completed: Updated `LoginScreen.tsx` and `RegisterScreen.tsx` to use `RootStackParamList`, reverted try-catch navigation wrappers.
+- Completed: Deleted `AuthStack.tsx` and stale `AuthStack.test.tsx`.
+- Verified: `pnpm typecheck` passes cleanly for all packages.
+- Verified: `next build` passes cleanly with zero new errors.
+
 ### Completed (Mobile Dependency Upgrade — React 19.2.7 + RN 0.81.6)
 - Completed: Upgraded React from `19.1.0` to `19.2.7` across root, mobile, and web `package.json`
 - Completed: Upgraded React Native from `0.81.5` to `0.81.6` across root and mobile `package.json`
@@ -458,13 +466,28 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Verified: `next build` passes cleanly with zero new errors
 - Verified: Metro bundler starts successfully on Windows
 
+### Completed (Mobile Legal Screen Consolidation)
+- Completed: Merged `TermsScreen.tsx` and `PrivacyScreen.tsx` into single `ConsentScreen.tsx` with locale-aware content
+- Completed: Deleted `TermsScreen.tsx` and `PrivacyScreen.tsx`
+- Completed: Updated `RootStackParamList` — replaced `Terms` and `Privacy` routes with `Consent`
+- Completed: Updated `AppNavigator.tsx` — single `Consent` screen, removed Terms/Privacy entries
+- Completed: Updated `RegisterScreen.tsx` — both consent links now navigate to `Consent`
+- Completed: Added `legal.consentTitle` i18n key to `en.json` ("User Consent") and `ms.json` ("Kebenaran Pengguna")
+- Verified: `pnpm typecheck` passes cleanly for all packages
+
+### Completed (Mobile Registration 404 Fix)
+- Completed: Fixed `common.routeNotFound` on mobile registration — root cause was wrong API endpoint: `api.ts` called `/auth/register` but server registers at `/users/register`
+- Completed: Updated `api.ts` `register()` to use `/users/register` matching `userRoutes.ts`
+- Completed: Removed unnecessary `try...catch` wrappers around `navigation.dispatch` in `LoginScreen.tsx` and `RegisterScreen.tsx` (not needed — `key={String(isAuthenticated)}` handles navigator remount)
+- Completed: Fixed "validation failed" — `RegisterScreen.tsx` validated `consentAccepted` via Zod but dropped it when calling `authService.register`; added `data.consentAccepted` to the call
+- Verified: `tsc --noEmit` passes cleanly for mobile
+
 ## Next Steps
 - Validate mobile staging build with `warn`/`soft_block`/`hard_block` quality gate configs
 - Test researcher observation approval/rejection flow end-to-end on mobile
 - Test admin user management, backup, and invite flows on mobile
 - End-to-end testing of full engagement flow (submission -> XP -> level up -> achievements -> notifications)
-- Run UAT test cases (240 cases across 19 modules) to verify all features
-- Close out i18n integration project
+- Run UAT test cases (270 cases across 20 modules) to verify all features
 
 ## Key Decisions
 - **Dynamic species**: AI identifies any crab species; server auto-creates via `upsert` on `speciesName`
@@ -552,6 +575,7 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - **React Navigation 7 upgrade**: React Navigation 6.x is incompatible with React 19 (causes "Invalid hook call" crash). Upgraded to 7.x which supports React 19. `useFocusEffect` is removed in v7; replaced with `useIsFocused()` + `useEffect`.
 - **Server utility scripts**: `fix-photos.ts` and `migrate-db.ts` excluded from `server/tsconfig.json` to avoid typecheck failures from unused/legacy scripts.
 - **AI JSON extraction**: `foundryAgent.ts` uses `extractJson` to strip markdown code fences before `JSON.parse` to handle LLM responses that wrap JSON in markdown.
+- **Mobile legal consolidation**: `TermsScreen` and `PrivacyScreen` merged into `ConsentScreen` with locale-aware content. Both "Terms of Service" and "Privacy Policy" links on registration navigate to the same `Consent` route.
 
 ## Critical Context
 - **Stack**: Expo SDK 54, React 19, RN 0.81.5, Zustand, React Navigation 7.x, Express, Prisma, Azure Storage, Azure AI Foundry
@@ -599,13 +623,13 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - `mobile/src/utils/formatters.ts` — `formatNumber` handles null values
 
 ### Image Quality
-- `image-quality-plan.md` — 3-phase improvement plan with platform-specific quality gates, Laplacian blur detection, brightness thresholds, and confidence thresholds
-- `mobile/src/hooks/useCaptureAssistance.ts` — Current broken brightness/shake logic (accelerometer-based brightness needs replacement)
-- `mobile/src/utils/viewAnalysis.ts` — Current broken view detection (always returns true, needs color heuristics)
-- `mobile/src/services/photoService.ts` — Current unreliable blur heuristic (compression ratio, needs Laplacian)
-- `web/src/app/[locale]/dashboard/capture/client.tsx` — Web capture page (needs post-capture quality gate & feedback UI)
-- `server/src/services/foundryAgent.ts` — Server AI agent (needs pre-upload quality gate and crab count validation)
-- `shared/src/types/analysis.ts` — Shared types (needs `ImageQualityResult`, `crabCount`, `boundingBox` additions)
+- `mobile/src/hooks/useCaptureAssistance.ts` — Real-time sensor data (shake, brightness, focus)
+- `mobile/src/utils/viewAnalysis.ts` — Post-capture view validation (dorsal/ventral detection)
+- `mobile/src/services/photoService.ts` — Photo capture, manipulation, quality assessment
+- `web/src/app/[locale]/dashboard/capture/client.tsx` — Web capture with quality gates
+- `server/src/services/foundryAgent.ts` — Server AI agent with quality validation
+- `shared/src/types/analysis.ts` — Shared analysis types
+- `shared/src/utils/qualityRollout.ts` — Quality gate rollout modes (off/warn/soft_block/hard_block)
 
 ### Species
 - `server/src/controllers/speciesController.ts` — Species CRUD with auto-upsert

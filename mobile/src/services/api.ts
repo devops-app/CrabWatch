@@ -34,6 +34,7 @@ import type {
   RecalculationJobDto,
   UserStatsDto,
   XPHistoryResponseDto,
+  LeaderboardEntryDto,
   LeaderboardResponseDto,
   ActiveMissionDto,
   OnboardingStatusDto,
@@ -157,7 +158,7 @@ export const api = {
   },
 
  async register(name: string, email: string, password: string, phoneCode?: string, phoneNumber?: string, addressLine1?: string, addressLine2?: string, state?: string, postcode?: string, country?: string, consentAccepted?: boolean): Promise<UserResponse> {
-    return apiRequest('/auth/register', {
+    return apiRequest('/users/register', {
       method: 'POST',
       body: JSON.stringify({ name, email, phoneCode, phoneNumber, addressLine1, addressLine2, state, postcode, country, password, consentAccepted }),
     })
@@ -723,7 +724,12 @@ export const api = {
     if (params?.page) p.set('page', String(params.page))
     if (params?.limit) p.set('limit', String(params.limit))
     const query = p.toString()
-    return apiRequest(`/gamification/leaderboard${query ? `?${query}` : ''}`)
+    const raw = await apiRequest<{ items: LeaderboardEntryDto[]; page: number; limit: number; total: number; myRank?: number }>(`/gamification/leaderboard${query ? `?${query}` : ''}`)
+    return {
+      entries: raw.items,
+      totalPages: Math.ceil(raw.total / raw.limit),
+      currentPage: raw.page,
+    }
   },
 
   // Engagement - Missions

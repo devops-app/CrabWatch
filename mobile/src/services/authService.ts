@@ -29,8 +29,9 @@ export const authService = {
   },
 
   async register(name: string, email: string, password: string, phoneCode?: string, phoneNumber?: string, addressLine1?: string, addressLine2?: string, state?: string, postcode?: string, country?: string, consentAccepted?: boolean) {
-    const user = await api.register(name, email, password, phoneCode, phoneNumber, addressLine1, addressLine2, state, postcode, country, consentAccepted)
+    await api.register(name, email, password, phoneCode, phoneNumber, addressLine1, addressLine2, state, postcode, country, consentAccepted)
     const result = await api.login({ email, password })
+    const user = result.user
     await useAuthStore.getState().login(user, result.token)
     return user
   },
