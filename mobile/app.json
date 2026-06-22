@@ -23,6 +23,7 @@
                                            "projectId":  "2b6450de-2e8d-4d06-a12e-ef9fc444d7b7"
                                        }
                            },
+                 "icon":  "./assets/icons/app-icon-1024.png",
                  "splash":  {
                                 "backgroundColor":  "#0284c7"
                             },
@@ -31,8 +32,10 @@
                              "supportsTablet":  true
                          },
                  "android":  {
+                                 "icon":  "./assets/icons/app-icon-1024.png",
                                  "package":  "com.crabwatch.app",
                                  "adaptiveIcon":  {
+                                                      "foregroundImage":  "./assets/icons/android-adaptive-foreground.png",
                                                       "backgroundColor":  "#0284c7"
                                                   },
                                  "permissions":  [
