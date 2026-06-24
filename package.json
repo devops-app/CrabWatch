@@ -1,7 +1,7 @@
 {
     "name":  "crabwatch",
     "private":  true,
-    "version":  "1.0.0+0013",
+    "version":  "1.0.0+0014",
     "description":  "Citizen science platform for mud crab conservation in Malaysia",
     "scripts":  {
                     "dev":  "pnpm -r --parallel dev",
@@ -50,7 +50,7 @@
                  "overrides":  {
                                    "form-data":  "\u003e=4.0.6",
                                    "shell-quote":  "\u003e=1.8.4",
-                                   "undici":  "\u003e=6.21.1",
+                                   "undici":  "6.27.0",
                                    "uuid":  "\u003e=11.1.0",
                                    "postcss":  "\u003e=8.5.3"
                                }
