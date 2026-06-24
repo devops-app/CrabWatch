@@ -1,7 +1,7 @@
 {
     "name":  "crabwatch",
     "private":  true,
-    "version":  "1.0.0+0014",
+    "version":  "1.0.0+0015",
     "description":  "Citizen science platform for mud crab conservation in Malaysia",
     "scripts":  {
                     "dev":  "pnpm -r --parallel dev",
@@ -48,11 +48,20 @@
                      },
     "pnpm":  {
                  "overrides":  {
+                                   "@babel/core":  "\u003e=7.29.6",
+                                   "@grpc/grpc-js":  "\u003e=1.14.4",
+                                   "@opentelemetry/core":  "\u003e=2.8.0",
+                                   "esbuild":  "\u003e=0.28.1",
                                    "form-data":  "\u003e=4.0.6",
+                                   "joi":  "\u003e=17.13.4",
+                                   "js-yaml":  "\u003e=4.2.0",
+                                   "postcss":  "\u003e=8.5.3",
+                                   "protobufjs":  "\u003e=7.6.3",
                                    "shell-quote":  "\u003e=1.8.4",
+                                   "tar":  "\u003e=7.5.16",
                                    "undici":  "6.27.0",
                                    "uuid":  "\u003e=11.1.0",
-                                   "postcss":  "\u003e=8.5.3"
+                                   "ws":  "\u003e=8.21.0"
                                }
              }
 }
