@@ -24,7 +24,6 @@ export function MainTabs() {
   const isResearcher = user?.role === 'researcher' || user?.role === 'admin'
   const isAdmin = user?.role === 'admin'
 
-  const tabBarHeight = Platform.OS === 'ios' ? 82 : 60
   const bottomPadding = Math.max(insets.bottom, Platform.OS === 'ios' ? 28 : 8)
 
   return (
@@ -40,7 +39,6 @@ export function MainTabs() {
           borderTopColor: colors.border,
           paddingBottom: bottomPadding,
           paddingTop: 8,
-          height: tabBarHeight + (insets.bottom - (Platform.OS === 'ios' ? 28 : 8)),
         },
         tabBarIconStyle: { marginTop: 2 },
         tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
