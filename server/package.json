@@ -1,6 +1,6 @@
 {
     "name":  "@crabwatch/server",
-    "version":  "1.0.0+0018",
+    "version":  "1.0.0+0019",
     "private":  true,
     "engines":  {
                     "node":  "\u003e=22.0.0"

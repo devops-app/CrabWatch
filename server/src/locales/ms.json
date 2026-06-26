@@ -246,16 +246,24 @@
     "bulkCreateSuccess": "Import terjemahan pukal selesai"
   },
   "insights": {
-    "streakWarning.title": "Streak anda berisiko!",
-    "streakWarning.description": "Anda mempunyai streak {{streak}} hari. Hantar pengamatan hari ini untuk terus meneruskan!",
-    "streakWarning.actionText": "Hantar Pengamatan",
-    "milestone.title": "{{remaining}} pengamatan ke tonggak {{milestone}}!",
-    "milestone.description": "Anda sudah {{progress}}% sampai. Teruskan menyumbang kepada sains ketam!",
-    "milestone.actionText": "Hantar Pengamatan",
-    "diversity.title": "Teroka lebih banyak spesies!",
-    "diversity.description": "Anda telah mendokumentasikan {{count}} spesies setakat ini. Cuba cari spesies ketam yang berbeza untuk meningkatkan skor kepelbagaian anda!",
-    "activityDrop.title": "Aktiviti menurun minggu ini",
-    "activityDrop.description": "Anda menghantar {{current}} pengamatan minggu ini berbanding {{previous}} minggu lalu. Kembali ke lapangan!",
-    "activityDrop.actionText": "Hantar Pengamatan"
+    "streakWarning": {
+      "title": "Streak anda berisiko!",
+      "description": "Anda mempunyai streak {{streak}} hari. Hantar pengamatan hari ini untuk terus meneruskan!",
+      "actionText": "Hantar Pengamatan"
+    },
+    "milestone": {
+      "title": "{{remaining}} pengamatan ke tonggak {{milestone}}!",
+      "description": "Anda sudah {{progress}}% sampai. Teruskan menyumbang kepada sains ketam!",
+      "actionText": "Hantar Pengamatan"
+    },
+    "diversity": {
+      "title": "Teroka lebih banyak spesies!",
+      "description": "Anda telah mendokumentasikan {{count}} spesies setakat ini. Cuba cari spesies ketam yang berbeza untuk meningkatkan skor kepelbagaian anda!"
+    },
+    "activityDrop": {
+      "title": "Aktiviti menurun minggu ini",
+      "description": "Anda menghantar {{current}} pengamatan minggu ini berbanding {{previous}} minggu lalu. Kembali ke lapangan!",
+      "actionText": "Hantar Pengamatan"
+    }
   }
 }

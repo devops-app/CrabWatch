@@ -9,6 +9,7 @@ import { ConsentScreen } from '../screens/common/ConsentScreen'
 import { MainTabs } from './MainTabs'
 import { SpeciesListScreen } from '../screens/species/SpeciesListScreen'
 import { SpeciesDetailScreen } from '../screens/species/SpeciesDetailScreen'
+import { SpeciesFormScreen } from '../screens/species/SpeciesFormScreen'
 import { ObservationDetailScreen } from '../screens/observation/ObservationDetailScreen'
 import { EditProfileScreen } from '../screens/profile/EditProfileScreen'
 import { AnalysisLoadingScreen } from '../screens/observation/AnalysisLoadingScreen'
@@ -107,6 +108,11 @@ export function AppNavigator({ deepLinkToken }: AppNavigatorProps) {
       <Stack.Screen
         name="SpeciesDetail"
         component={SpeciesDetailScreen}
+        options={{ headerShown: true, headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
+      />
+      <Stack.Screen
+        name="SpeciesForm"
+        component={SpeciesFormScreen}
         options={{ headerShown: true, headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
       />
       <Stack.Screen

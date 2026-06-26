@@ -10,15 +10,14 @@ function deepMerge(target: Record<string, any>, source: Record<string, any>): Re
   for (const key of Object.keys(source)) {
     const sourceVal = source[key]
     const targetVal = result[key]
-    if (
-      sourceVal &&
-      typeof sourceVal === 'object' &&
-      !Array.isArray(sourceVal) &&
-      targetVal &&
-      typeof targetVal === 'object' &&
-      !Array.isArray(targetVal)
-    ) {
+    const targetIsObject = targetVal && typeof targetVal === 'object' && !Array.isArray(targetVal)
+    const sourceIsObject = sourceVal && typeof sourceVal === 'object' && !Array.isArray(sourceVal)
+
+    if (targetIsObject && sourceIsObject) {
       result[key] = deepMerge(targetVal, sourceVal)
+    } else if (targetIsObject && !sourceIsObject) {
+      // Preserve the web locale's nested object; skip the shared locale's flat string
+      continue
     } else {
       result[key] = sourceVal
     }

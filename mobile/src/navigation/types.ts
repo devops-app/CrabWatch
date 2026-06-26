@@ -21,6 +21,7 @@ export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList>
   SpeciesList: undefined
   SpeciesDetail: { speciesId: string }
+  SpeciesForm: { speciesId?: string }
   ObservationDetail: { observation: ObservationResponse }
   EditProfile: undefined
   AnalysisLoading: {

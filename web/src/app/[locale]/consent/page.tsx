@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation'
 import fs from 'fs'
 import path from 'path'
-import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
+import { Link } from '@/i18n/navigation'
 
 function mdToHtml(md: string): string {
   let html = md
@@ -30,6 +31,7 @@ export default async function ConsentPage({
   params: Promise<{ locale: string }>
 }) {
   const { locale } = await params
+  const t = await getTranslations('auth.register')
   const validLocales = ['en', 'ms']
 
   if (!validLocales.includes(locale)) {
@@ -49,10 +51,10 @@ export default async function ConsentPage({
     <div className="min-h-screen bg-gradient-to-br from-ocean-50 to-ocean-100">
       <div className="max-w-3xl mx-auto py-12 px-4">
         <Link
-          href={`/${locale}/auth/register`}
+          href="/auth/register"
           className="inline-flex items-center text-ocean-600 hover:text-ocean-800 mb-8"
         >
-          ← Back to registration
+          {t('backToRegistration')}
         </Link>
 
         <div

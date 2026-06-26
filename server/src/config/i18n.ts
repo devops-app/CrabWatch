@@ -24,7 +24,7 @@ export async function initServerI18n(): Promise<void> {
     fallbackLng: 'en',
     supportedLngs: ['en', 'ms'],
     defaultNS: 'common',
-    ns: ['common', 'auth', 'user', 'observation', 'species', 'analysis', 'admin', 'invite', 'engagement', 'upload', 'notification', 'gamification'],
+    ns: ['common', 'auth', 'user', 'observation', 'species', 'analysis', 'admin', 'invite', 'engagement', 'upload', 'notification', 'gamification', 'insights'],
     resources: {
       en: {
         common: deepMerge(en.common, sharedEn.common),
@@ -39,6 +39,7 @@ export async function initServerI18n(): Promise<void> {
         upload: en.upload,
         notification: en.notification,
         gamification: sharedEn.gamification,
+        insights: en.insights,
       },
       ms: {
         common: deepMerge(ms.common, sharedMs.common),
@@ -53,6 +54,7 @@ export async function initServerI18n(): Promise<void> {
         upload: ms.upload,
         notification: ms.notification,
         gamification: sharedMs.gamification,
+        insights: ms.insights,
       },
     },
     interpolation: {

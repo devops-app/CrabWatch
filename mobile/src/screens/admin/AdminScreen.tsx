@@ -11,6 +11,7 @@ import {
   RefreshControl,
 } from 'react-native'
 import { useTranslation } from 'react-i18next'
+import { useIsFocused, useNavigation } from '@react-navigation/native'
 import { api } from '../../services/api'
 import { Button } from '../../components/common/Button'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
@@ -18,6 +19,9 @@ import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 import { useFormatters } from '../../hooks/useFormatters'
 import type { UserResponse, SpeciesResponse, Invite, GamificationRuleDto, LevelConfigDto, CampaignDto, AdminAuditLogDto, AbuseSignalDto, EngagementMetricsDto, RecalculationJobDto, RewardActionType } from '@crabwatch/shared'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { RootStackParamList, MainTabParamList } from '../../navigation/types'
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
 
 type Tab = 'users' | 'species' | 'backup' | 'engagement'
 type UserSubTab = 'active' | 'deleted' | 'invites'
@@ -65,6 +69,7 @@ function normalizeAuditStats(raw: unknown): AuditStats | null {
 export function AdminScreen() {
   const { t } = useTranslation('admin')
   const { formatDate, formatDateTime, formatFileSize, formatNumber } = useFormatters()
+  const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList, 'Admin'>>()
   const [activeTab, setActiveTab] = useState<Tab>('users')
   const [userSubTab, setUserSubTab] = useState<UserSubTab>('active')
   const [users, setUsers] = useState<UserResponse[]>([])
@@ -88,8 +93,6 @@ export function AdminScreen() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState('researcher')
   const [engagementSubTab, setEngagementSubTab] = useState<EngagementSubTab>('xp-rules')
-  const [speciesDraft, setSpeciesDraft] = useState({ commonName: '', scientificName: '', description: '' })
-  const [editingSpeciesId, setEditingSpeciesId] = useState<string | null>(null)
   const [ruleDraft, setRuleDraft] = useState({ actionType: '', name: '', description: '', xpReward: 0, active: true })
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null)
   const [levelDraft, setLevelDraft] = useState({ level: 1, xpThreshold: 0, title: '', description: '', active: true })
@@ -196,6 +199,13 @@ export function AdminScreen() {
     setRefreshing(true)
     loadTabData(activeTab, activeTab === 'users' ? userSubTab : undefined)
   }, [activeTab, userSubTab, loadTabData])
+
+  const isFocused = useIsFocused()
+  useEffect(() => {
+    if (isFocused) {
+      loadTabData(activeTab, activeTab === 'users' ? userSubTab : undefined)
+    }
+  }, [isFocused, activeTab, userSubTab, loadTabData])
 
   const handleBackup = () => {
     Alert.alert(
@@ -451,54 +461,14 @@ export function AdminScreen() {
     )
   }
 
-  const resetSpeciesDraft = () => {
-    setSpeciesDraft({ commonName: '', scientificName: '', description: '' })
-    setEditingSpeciesId(null)
+  const handleAddSpecies = () => {
+    const stackNav = navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()
+    stackNav?.navigate({ name: 'SpeciesForm', params: {} })
   }
 
   const handleEditSpecies = (s: SpeciesResponse) => {
-    setEditingSpeciesId(s.id)
-    setSpeciesDraft({
-      commonName: s.commonName || '',
-      scientificName: s.scientificName || '',
-      description: s.description || '',
-    })
-  }
-
-  const handleSaveSpecies = async () => {
-    if (!speciesDraft.commonName.trim() || !speciesDraft.scientificName.trim()) {
-      flash(t('flash.namesRequired'), 'error')
-      return
-    }
-
-    setActionLoading(true)
-    try {
-      if (editingSpeciesId) {
-        await api.updateSpecies(editingSpeciesId, {
-          commonName: speciesDraft.commonName.trim(),
-          scientificName: speciesDraft.scientificName.trim(),
-          description: speciesDraft.description.trim() || undefined,
-        })
-        flash(t('flash.speciesUpdated'), 'success')
-      } else {
-        await api.createSpecies({
-          commonName: speciesDraft.commonName.trim(),
-          scientificName: speciesDraft.scientificName.trim(),
-          description: speciesDraft.description.trim() || '',
-          keyFeatures: [],
-          images: [],
-          distributionZones: [],
-        })
-        flash(t('flash.speciesCreated'), 'success')
-      }
-
-      resetSpeciesDraft()
-      loadTabData('species')
-    } catch (err) {
-      flash(err instanceof Error ? err.message : t('flash.speciesSaveFailed'), 'error')
-    } finally {
-      setActionLoading(false)
-    }
+    const stackNav = navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()
+    stackNav?.navigate({ name: 'SpeciesForm', params: { speciesId: s.id } })
   }
 
   const resetRuleDraft = () => {
@@ -843,7 +813,7 @@ export function AdminScreen() {
             onPress={() => { setUsersRoleFilter(role); setUsersPage(1); loadTabData('users', 'active') }}
           >
             <Text style={[styles.roleOptionText, usersRoleFilter === role && styles.roleOptionTextActive]}>
-              {role ? (role === 'user' ? t('users.role.user') : role === 'researcher' ? t('users.role.researcher') : t('users.role.admin')) : (t('users.role.all') || 'All')}
+              {role ? (role === 'user' ? t('users.roles.user') : role === 'researcher' ? t('users.roles.researcher') : t('users.roles.admin')) : (t('users.roles.all') || 'All')}
             </Text>
           </TouchableOpacity>
         ))}
@@ -885,13 +855,13 @@ export function AdminScreen() {
                     style={[styles.actionBtn, styles.roleChangeBtn]}
                     onPress={() => handleRoleChange(item, 'researcher')}
                   >
-                    <Text style={styles.actionBtnText}>{t('users.role.researcher')}</Text>
+                    <Text style={styles.actionBtnText}>{t('users.roles.researcher')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.actionBtn, styles.roleChangeBtn]}
                     onPress={() => handleRoleChange(item, 'user')}
                   >
-                    <Text style={styles.actionBtnText}>{t('users.role.user')}</Text>
+                    <Text style={styles.actionBtnText}>{t('users.roles.user')}</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -1035,7 +1005,7 @@ export function AdminScreen() {
             onPress={() => setInviteRole('researcher')}
           >
             <Text style={[styles.roleOptionText, inviteRole === 'researcher' && styles.roleOptionTextActive]}>
-              {t('users.role.researcher')}
+              {t('users.roles.researcher')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -1043,7 +1013,7 @@ export function AdminScreen() {
             onPress={() => setInviteRole('admin')}
           >
             <Text style={[styles.roleOptionText, inviteRole === 'admin' && styles.roleOptionTextActive]}>
-              {t('users.role.admin')}
+              {t('users.roles.admin')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -1131,40 +1101,11 @@ export function AdminScreen() {
 
   const renderSpecies = () => (
     <View style={{ flex: 1 }}>
-      <View style={styles.formCard}>
-        <Text style={styles.formTitle}>{editingSpeciesId ? t('species.editTitle') : t('species.addTitle')}</Text>
-        <RNTextInput
-          style={styles.input}
-          placeholder={t('species.commonNamePlaceholder')}
-          value={speciesDraft.commonName}
-          onChangeText={(v) => setSpeciesDraft((prev) => ({ ...prev, commonName: v }))}
-          placeholderTextColor={COLORS.textLight}
+      <View style={styles.toolbar}>
+        <Button
+          title={t('species.addTitle')}
+          onPress={handleAddSpecies}
         />
-        <RNTextInput
-          style={styles.input}
-          placeholder={t('species.scientificNamePlaceholder')}
-          value={speciesDraft.scientificName}
-          onChangeText={(v) => setSpeciesDraft((prev) => ({ ...prev, scientificName: v }))}
-          placeholderTextColor={COLORS.textLight}
-        />
-        <RNTextInput
-          style={styles.input}
-          placeholder={t('species.descriptionPlaceholder')}
-          value={speciesDraft.description}
-          onChangeText={(v) => setSpeciesDraft((prev) => ({ ...prev, description: v }))}
-          placeholderTextColor={COLORS.textLight}
-        />
-        <View style={styles.inlineActions}>
-          <Button
-            title={editingSpeciesId ? t('species.save') : t('species.add')}
-            onPress={handleSaveSpecies}
-            loading={actionLoading}
-          />
-          {editingSpeciesId ? (
-         <Button title={t('cancel', { ns: 'common' })} onPress={resetSpeciesDraft}
-variant="secondary" />
-          ) : null}
-        </View>
       </View>
 
       <FlatList
@@ -1855,16 +1796,6 @@ const styles = StyleSheet.create({
     fontSize: FONT['sm+'],
     color: COLORS.textSecondary,
     marginTop: 4,
-  },
-  formCard: {
-    margin: 16,
-    marginBottom: 0,
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 16,
-    gap: 10,
   },
   formCardInScroll: {
     backgroundColor: COLORS.surface,

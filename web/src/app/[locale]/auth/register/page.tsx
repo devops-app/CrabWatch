@@ -400,7 +400,7 @@ export default function RegisterPage(): React.JSX.Element {
             />
             <label htmlFor="consentAccepted" className="text-sm text-gray-700">
               {t('consentPrefix')}
-              <Link href={`/${locale}/consent`} className="text-ocean-600 hover:underline">{t('userConsent')}</Link>
+              <Link href="/consent" className="text-ocean-600 hover:underline">{t('userConsent')}</Link>
               {t('consentSuffix')}
               <span className="text-red-500">*</span>
             </label>

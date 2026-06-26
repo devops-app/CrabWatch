@@ -20,14 +20,6 @@ const nextConfig = {
         source: '/api/:path*',
         destination: `${backendUrl}/api/:path*`,
       },
-      {
-        source: '/dashboard/:path*',
-        destination: '/en/dashboard/:path*',
-      },
-      {
-        source: '/auth/:path*',
-        destination: '/en/auth/:path*',
-      },
     ]
   },
   async headers() {
@@ -47,9 +39,9 @@ const nextConfig = {
               `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
               "worker-src 'self' blob:",
               "style-src 'self' 'unsafe-inline'",
-              `img-src 'self' blob: data: https://*.azurewebsites.net https://*.blob.core.windows.net https://*.mapbox.com https://*.mapboxcdn.com${isDev ? ' http://127.0.0.1:10000 http://localhost:10000' : ''}`,
+              `img-src 'self' blob: data: https://*.azurewebsites.net https://*.blob.core.windows.net https://*.mapbox.com https://*.mapboxcdn.com${isDev ? ' http://127.0.0.1:10000 http://localhost:10000 http://192.168.1.82:10000' : ''}`,
               "font-src 'self' data: https://*.mapbox.com https://*.mapboxcdn.com",
-              `connect-src 'self' https://*.azurewebsites.net https://*.blob.core.windows.net https://*.mapbox.com https://*.firebaseio.com https://*.googleapis.com https://*.google.com https://*.applicationinsights.azure.com${isDev ? ' http://127.0.0.1:10000 http://localhost:10000' : ''}`,
+              `connect-src 'self' https://*.azurewebsites.net https://*.blob.core.windows.net https://*.mapbox.com https://*.firebaseio.com https://*.googleapis.com https://*.google.com https://*.applicationinsights.azure.com${isDev ? ' http://127.0.0.1:10000 http://localhost:10000 http://192.168.1.82:10000' : ''}`,
               "frame-src 'none'",
               "object-src 'none'",
               "base-uri 'self'",

@@ -20,6 +20,16 @@ function parseJsonArray<T>(value: unknown): T[] {
   return []
 }
 
+function normalizeDistributionZones(zones: unknown[]): DistributionZone[] {
+  return zones
+    .filter(Boolean)
+    .map((z) => {
+      if (typeof z === 'string') return { name: z, polygon: [] }
+      if (z && typeof z === 'object' && 'name' in z) return { name: String(z.name), polygon: (z as DistributionZone).polygon || [] }
+      return { name: String(z), polygon: [] }
+    })
+}
+
 function toJson(value: unknown): Prisma.InputJsonValue {
   return value as Prisma.InputJsonValue
 }

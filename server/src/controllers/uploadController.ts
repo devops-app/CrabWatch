@@ -49,11 +49,17 @@ export const getUploadUrlHandler = asyncHandler(async (req: AuthRequest, res: Re
     permissions: 'w' as unknown as BlobSASPermissions,
   })
 
+  const readSasUrl = await blobClient.generateSasUrl({
+    expiresOn: new Date(Date.now() + 60 * 60 * 1000),
+    permissions: 'r' as unknown as BlobSASPermissions,
+  })
+
   res.json({
     success: true,
     data: {
       uploadUrl: sasUrl,
       blobUrl: blobClient.url,
+      readUrl: readSasUrl,
       fileName: blobPath,
     },
   })
@@ -95,10 +101,16 @@ export const uploadPhoto = asyncHandler(async (req: AuthRequest & { file?: Multe
     blobHTTPHeaders: { blobContentType: safeContentType },
   })
 
+  const readSasUrl = await blobClient.generateSasUrl({
+    expiresOn: new Date(Date.now() + 60 * 60 * 1000),
+    permissions: 'r' as unknown as BlobSASPermissions,
+  })
+
   res.json({
     success: true,
     data: {
       blobUrl: blobClient.url,
+      readUrl: readSasUrl,
       fileName: blobPath,
     },
   })

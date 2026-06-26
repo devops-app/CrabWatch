@@ -141,7 +141,8 @@
       "consentSuffix": ".",
       "userConsent": "Kebenaran Pengguna",
       "consentRequired": "Anda mesti menerima terma untuk terus",
-      "languageSwitch": "Bahasa"
+      "languageSwitch": "Bahasa",
+      "backToRegistration": "← Kembali ke pendaftaran"
     },
     "forgotPassword": {
       "title": "Lupa Kata Laluan",
@@ -156,6 +157,7 @@
       "success": "Jika akaun wujud dengan e-mel tersebut, anda akan menerima pautan untuk menetapkan semula kata laluan.",
       "failed": "Gagal menghantar e-mel penetapan semula. Sila cuba lagi.",
       "rememberPassword": "Ingat kata laluan anda?",
+      "signIn": "Log Masuk",
       "signInLink": "Log Masuk"
     },
     "resetPassword": {
@@ -1055,9 +1057,12 @@
         "invites": "Jemputan"
       },
       "search": "Cari pengguna...",
+      "searchPlaceholder": "Taip untuk cari pengguna...",
       "name": "Nama",
       "email": "E-mel",
       "role": "Peranan",
+      "roleAll": "Semua Peranan",
+      "clear": "Kosongkan",
       "status": "Status",
       "actions": "Tindakan",
       "block": "Sekat",
@@ -1102,10 +1107,12 @@
       "totalUsers": "Jumlah pengguna: {count}",
       "totalDeleted": "Pengguna dipadam: {count}",
       "roles": {
+        "all": "Semua Peranan",
         "user": "Pengguna",
         "researcher": "Pencaris",
         "admin": "Pentadbir"
       },
+      "inputLabel": "Pengesahan",
       "blockUser": {
         "title": "Sekat Pengguna",
         "message": "Adakah anda pasti ingin menyekat \"{name}\" ({email})? Mereka tidak akan dapat log masuk. Taip \"sekat\" untuk sahkan.",
@@ -1150,7 +1157,11 @@
       "invitesAlreadyMessage": "{email} sudah mempunyai jemputan menunggu yang tamat pada {date}. Gunakan butang Hantar Semula dalam jadual di bawah untuk menghantar jemputan baru.",
       "invitesClose": "Tutup",
       "deletedRetentionNote": "Pengguna yang dipadam disimpan selama 30 hari sebelum dipadam secara kekal.",
-      "deletedCleanupButton": "Bersihkan Tamat"
+      "deletedCleanupButton": "Bersihkan Tamat",
+      "pagination": {
+        "next": "Seterusnya",
+        "prev": "Sebelumnya"
+      }
     },
     "backup": {
       "title": "Sandaran Pangkalan Data",
@@ -1193,6 +1204,7 @@
     },
     "engagement": {
       "title": "Pengurusan Kelibatan",
+      "rule": "Peraturan",
       "tabs": {
         "xpRules": "Peraturan XP",
         "levels": "Tahap",
@@ -1425,6 +1437,14 @@
         "catExploration": "Penerokaan",
         "catHidden": "Tersembunyi",
         "catSeasonal": "Musiman",
+        "categories": {
+          "observation": "Pemerhatian",
+          "exploration": "Penerokaan",
+          "species": "Spesies",
+          "quality": "Kualiti",
+          "seasonal": "Musiman",
+          "hidden": "Tersembunyi"
+        },
         "rarityCommon": "Biasa",
         "rarityUncommon": "Tidak biasa",
         "rarityRare": "Jarang",
@@ -1658,14 +1678,18 @@
       "campaignCreated": "Kempen dicipta",
       "campaignDeleted": "Kempen dipadam",
       "campaignLaunched": "Dilancarkan: {sent} dihantar",
+      "launchFailed": "Gagal melancarkan kempen",
       "testSendRequired": "ID pengguna diperlukan untuk penghantaran ujian",
       "testSent": "Ujian dihantar berjaya",
+      "testFailed": "Gagal menghantar ujian",
       "signalResolved": "Isyarat diselesaikan",
+      "resolveFailed": "Gagal menyelesaikan isyarat",
       "achievementCodeNameDescRequired": "Kod, nama, penerangan diperlukan",
       "achievementCreated": "Pencapaian dicipta",
       "achievementUpdated": "Pencapaian dikemas kini",
       "achievementDeleted": "Pencapaian dipadam",
       "achievementAwarded": "Pencapaian dianugerahkan",
+      "awardFailed": "Gagal menganugerahkan pencapaian",
       "missionAllFieldsRequired": "Semua medan diperlukan",
       "criteriaInvalidJson": "Kriteria mesti JSON yang sah",
       "missionCreated": "Misi dicipta",
@@ -1686,7 +1710,10 @@
     "processing": "Memproses...",
     "actionCompleted": "Tindakan berjaya diselesaikan",
     "actionFailed": "Tindakan gagal",
-    "confirmation": "Sahkan"
+    "confirmation": "Sahkan",
+    "requiredFields": "Medan diperlukan hilang",
+    "yes": "Ya",
+    "no": "Tidak"
   },
   "error": {
     "boundary": {

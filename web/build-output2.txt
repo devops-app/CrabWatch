@@ -1,0 +1,16 @@
+﻿   Γû▓ Next.js 15.5.18
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+node.exe : uncaughtException [Error: EPERM: operation not permitted, open 'D:\demo\CrabWatch\web\.next\trace'] {
+At C:\Users\Wilson\AppData\Roaming\npm\npx.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/npm/bin/npx-cli.js" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (uncaughtExcepti....next\trace'] {:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  errno: -4048,
+  code: 'EPERM',
+  syscall: 'open',
+  path: 'D:\\demo\\CrabWatch\\web\\.next\\trace'
+}

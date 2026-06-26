@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { SpeciesResponse } from '@crabwatch/shared'
+import type { SpeciesResponse, CreateSpeciesInput, UpdateSpeciesInput } from '@crabwatch/shared'
 import { api } from '../services/api'
 
 interface SpeciesState {
@@ -10,6 +10,9 @@ interface SpeciesState {
   loadSpecies: () => Promise<void>
   selectSpecies: (species: SpeciesResponse | null) => void
   getSpeciesById: (id: string) => SpeciesResponse | undefined
+  createSpecies: (data: CreateSpeciesInput) => Promise<SpeciesResponse>
+  updateSpecies: (id: string, data: UpdateSpeciesInput) => Promise<SpeciesResponse>
+  deleteSpecies: (id: string) => Promise<void>
 }
 
 export const useSpeciesStore = create<SpeciesState>((set, get) => ({
@@ -37,5 +40,26 @@ export const useSpeciesStore = create<SpeciesState>((set, get) => ({
 
   getSpeciesById: (id) => {
     return get().species.find((s) => s.id === id)
+  },
+
+  createSpecies: async (data) => {
+    const result = await api.createSpecies(data)
+    set((state) => ({ species: [...state.species, result] }))
+    return result
+  },
+
+  updateSpecies: async (id, data) => {
+    const result = await api.updateSpecies(id, data)
+    set((state) => ({
+      species: state.species.map((s) => (s.id === id ? result : s)),
+    }))
+    return result
+  },
+
+  deleteSpecies: async (id) => {
+    await api.deleteSpecies(id)
+    set((state) => ({
+      species: state.species.filter((s) => s.id !== id),
+    }))
   },
 }))

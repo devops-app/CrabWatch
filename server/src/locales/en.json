@@ -247,16 +247,24 @@
     "bulkCreateSuccess": "Bulk translation import completed"
   },
   "insights": {
-    "streakWarning.title": "Your streak is at risk!",
-    "streakWarning.description": "You have a {{streak}}-day streak. Submit an observation today to keep it going!",
-    "streakWarning.actionText": "Submit Observation",
-    "milestone.title": "{{remaining}} observations to {{milestone}} milestone!",
-    "milestone.description": "You're {{progress}}% of the way there. Keep contributing to crab science!",
-    "milestone.actionText": "Submit Observation",
-    "diversity.title": "Explore more species!",
-    "diversity.description": "You've documented {{count}} species so far. Try to find different crab species to boost your diversity score!",
-    "activityDrop.title": "Activity decreased this week",
-    "activityDrop.description": "You submitted {{current}} observations this week vs {{previous}} last week. Get back out there!",
-    "activityDrop.actionText": "Submit Observation"
+    "streakWarning": {
+      "title": "Your streak is at risk!",
+      "description": "You have a {{streak}}-day streak. Submit an observation today to keep it going!",
+      "actionText": "Submit Observation"
+    },
+    "milestone": {
+      "title": "{{remaining}} observations to {{milestone}} milestone!",
+      "description": "You're {{progress}}% of the way there. Keep contributing to crab science!",
+      "actionText": "Submit Observation"
+    },
+    "diversity": {
+      "title": "Explore more species!",
+      "description": "You've documented {{count}} species so far. Try to find different crab species to boost your diversity score!"
+    },
+    "activityDrop": {
+      "title": "Activity decreased this week",
+      "description": "You submitted {{current}} observations this week vs {{previous}} last week. Get back out there!",
+      "actionText": "Submit Observation"
+    }
   }
 }

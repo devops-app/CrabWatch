@@ -1,0 +1,137 @@
+﻿   Γû▓ Next.js 15.5.18
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ Γ£ô Compiled successfully in 6.2s
+   Linting and checking validity of types ...
+
+./src/app/[locale]/dashboard/achievements/client.tsx
+82:6  Warning: React Hook useCallback has a missing dependency: 't'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/[locale]/dashboard/admin/components.tsx
+605:9  Warning: 'tAdmin' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+889:34  Warning: 'flash' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+912:35  Warning: React Hook useEffect has a missing dependency: 'loadLogs'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+1447:36  Warning: 'flash' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+1449:9  Warning: 'tAdmin' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/app/[locale]/dashboard/admin/species-tab.tsx
+82:38  Warning: React Hook useEffect has a missing dependency: 'loadSpecies'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+350:21  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/[locale]/dashboard/admin/users-tab.tsx
+30:46  Warning: 'onReload' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/app/[locale]/dashboard/analytics/client.tsx
+65:10  Warning: 'speciesLoading' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+79:6  Warning: React Hook useEffect has a missing dependency: 'initialSpecies'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+89:10  Warning: 'isPending' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/app/[locale]/dashboard/analytics/map-tab.tsx
+270:25  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+312:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/[locale]/dashboard/capture/client.tsx
+22:3  Warning: 'getConfidenceTone' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+27:10  Warning: 'MapSection' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+375:5  Warning: React Hook useMemo has a missing dependency: 'tCapture'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+1238:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/[locale]/dashboard/capture/review-section.tsx
+90:15  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/[locale]/dashboard/community/client.tsx
+229:21  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/[locale]/dashboard/missions/client.tsx
+28:28  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+29:106  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/[locale]/dashboard/observation/[id]/client.tsx
+147:17  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+276:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/[locale]/dashboard/profile/client.tsx
+92:6  Warning: React Hook useEffect has missing dependencies: 'initialUser', 'logout', 'router', 'setValue', and 'updateUser'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+220:15  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/[locale]/dashboard/researcher/client.tsx
+24:10  Warning: 'loading' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+24:19  Warning: 'setLoading' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+46:9  Warning: 'handleKeyDown' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+270:25  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+336:10  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/[locale]/dashboard/settings/client.tsx
+52:6  Warning: React Hook useEffect has a missing dependency: 'initialPrefs'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/[locale]/dashboard/species/client.tsx
+95:19  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+155:23  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+223:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/AuthGuard.tsx
+71:6  Warning: React Hook useEffect has a missing dependency: 'user'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/ErrorBoundary.tsx
+4:10  Warning: 'api' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/__tests__/AuthGuard.test.tsx
+57:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+89:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+125:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+161:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/api.ts
+32:3  Warning: 'GamificationRuleDto' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+33:3  Warning: 'LevelConfigDto' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+37:3  Warning: 'CampaignDto' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/lib/authStore.ts
+3:30  Warning: 'UserRole' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/lib/ToastProvider.tsx
+52:17  Warning: The ref value 'timersRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'timersRef.current' to a variable inside the effect, and use that variable in the cleanup function.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/2) ...
+ Γ£ô Generating static pages (2/2)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                  Size  First Load JS
+Γöî Γùï /                                       133 B         103 kB
+Γö£ Γùï /_not-found                              1 kB         104 kB
+Γö£ ╞Æ /[locale]                               288 B         120 kB
+Γö£ ╞Æ /[locale]/auth/forgot-password        1.04 kB         153 kB
+Γö£ ╞Æ /[locale]/auth/login                  1.24 kB         154 kB
+Γö£ ╞Æ /[locale]/auth/register               3.13 kB         156 kB
+Γö£ ╞Æ /[locale]/auth/reset-password         1.34 kB         154 kB
+Γö£ ╞Æ /[locale]/consent                       177 B         120 kB
+Γö£ ╞Æ /[locale]/dashboard                   3.94 kB         124 kB
+Γö£ ╞Æ /[locale]/dashboard/about               133 B         103 kB
+Γö£ ╞Æ /[locale]/dashboard/achievements      2.76 kB         139 kB
+Γö£ ╞Æ /[locale]/dashboard/admin             10.5 kB         147 kB
+Γö£ ╞Æ /[locale]/dashboard/analytics         4.05 kB         140 kB
+Γö£ ╞Æ /[locale]/dashboard/capture           19.7 kB         156 kB
+Γö£ ╞Æ /[locale]/dashboard/community         2.73 kB         139 kB
+Γö£ ╞Æ /[locale]/dashboard/leaderboard       2.01 kB         138 kB
+Γö£ ╞Æ /[locale]/dashboard/missions          2.12 kB         138 kB
+Γö£ ╞Æ /[locale]/dashboard/observation/[id]  4.03 kB         145 kB
+Γö£ ╞Æ /[locale]/dashboard/profile           3.27 kB         156 kB
+Γö£ ╞Æ /[locale]/dashboard/researcher        3.19 kB         139 kB
+Γö£ ╞Æ /[locale]/dashboard/settings          2.95 kB         144 kB
+Γö£ ╞Æ /[locale]/dashboard/species           2.13 kB         138 kB
+Γö£ ╞Æ /[locale]/privacy                       177 B         120 kB
+Γö£ ╞Æ /[locale]/public/about                  177 B         120 kB
+Γöö ╞Æ /[locale]/terms                         177 B         120 kB
++ First Load JS shared by all              103 kB
+  Γö£ chunks/3131-bed3f349eb2dc58b.js       46.5 kB
+  Γö£ chunks/c7879cf7-fabe25011515220e.js   54.2 kB
+  Γöö other shared chunks (total)           2.21 kB
+
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+

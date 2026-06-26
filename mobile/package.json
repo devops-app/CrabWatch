@@ -1,6 +1,6 @@
 {
     "name":  "@crabwatch/mobile",
-    "version":  "1.0.0+0018",
+    "version":  "1.0.0+0019",
     "private":  true,
     "main":  "index.js",
     "scripts":  {
@@ -43,6 +43,7 @@
                          "expo-linking":  "~8.0.0",
                          "expo-localization":  "^17.0.9",
                          "expo-location":  "~19.0.8",
+                         "expo-network":  "^56.0.5",
                          "expo-notifications":  "~0.32.17",
                          "expo-print":  "~15.0.8",
                          "expo-screen-orientation":  "~9.0.9",

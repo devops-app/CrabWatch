@@ -42,6 +42,16 @@ function parseDistributionZones(text: string): DistributionZone[] {
     .map((name) => ({ name, polygon: [] }))
 }
 
+function normalizeDistributionZones(zones: unknown[]): DistributionZone[] {
+  return zones
+    .filter(Boolean)
+    .map((z) => {
+      if (typeof z === 'string') return { name: z, polygon: [] as [number, number][] }
+      if (z && typeof z === 'object' && 'name' in z) return { name: String(z.name), polygon: (z as DistributionZone).polygon || [] }
+      return { name: String(z), polygon: [] as [number, number][] }
+    })
+}
+
 function formatKeyFeatures(features: KeyFeature[]): string {
   return features.map((f) => `${f.trait}: ${f.value}`).join('\n')
 }
@@ -99,7 +109,7 @@ export function SpeciesTab({ flash, onConfirm, onReload }: SpeciesTabProps): Rea
     setFormDescription(s.description)
     setFormKeyFeatures(s.keyFeatures || [])
     setFormImages(s.images || [])
-    setFormDistributionZones(s.distributionZones || [])
+    setFormDistributionZones(normalizeDistributionZones(s.distributionZones || []))
     setSpeciesFormOpen(true)
   }
 
@@ -276,15 +286,8 @@ function SpeciesFormModal({
     }
     setUploading(true)
     try {
-      const ext = file.name.split('.').pop() || 'jpg'
-      const res = await api.getUploadUrl(`${Date.now()}.${ext}`, file.type) as { uploadUrl: string; blobUrl: string }
-      await fetch(res.uploadUrl, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': file.type },
-      })
-      const blobUrl = res.blobUrl
-      onImagesChange([...formImages, blobUrl])
+      const res = await api.uploadSinglePhoto(file)
+      onImagesChange([...formImages, res.readUrl])
       flash(t('imageUploadSuccess'), 'success')
     } catch (err: unknown) {
       flash(err instanceof Error ? err.message : t('imageUploadFailed'), 'error')

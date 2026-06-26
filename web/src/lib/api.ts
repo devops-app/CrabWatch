@@ -40,6 +40,12 @@ import type {
 
 const API_URL = ''
 
+function getLocaleFromPath(): string {
+  if (typeof window === 'undefined') return 'en'
+  const match = window.location.pathname.match(/^\/([a-z]{2})(\/|$)/)
+  return match ? match[1] : 'en'
+}
+
 async function request<T>(endpoint: string, options: RequestInit & { signal?: AbortSignal } = {}): Promise<T> {
   const token = useAuthStore.getState().token
   const { signal, ...fetchOptions } = options
@@ -51,6 +57,7 @@ async function request<T>(endpoint: string, options: RequestInit & { signal?: Ab
       signal,
       headers: {
         'Content-Type': 'application/json',
+        'Accept-Language': getLocaleFromPath(),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...fetchOptions.headers,
       },
@@ -63,7 +70,9 @@ async function request<T>(endpoint: string, options: RequestInit & { signal?: Ab
     const data: ApiResponse<T> = await response.json()
 
     if (!response.ok || !data.success) {
-      throw new Error(data.error || 'Request failed')
+      const details = (data as any).details
+      const msg = details ? `${data.error}: ${JSON.stringify(details)}` : (data.error || 'Request failed')
+      throw new Error(msg)
     }
 
     return data.data as T
@@ -363,6 +372,26 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ fileName, contentType, sessionId, photoIndex }),
     }),
+
+   uploadSinglePhoto: async (file: File, fileName?: string): Promise<{ blobUrl: string; readUrl: string }> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('fileName', fileName || file.name)
+
+    const response = await fetch(`${API_URL}/api/v1/upload`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    })
+
+    const data: ApiResponse<{ blobUrl: string; readUrl: string }> = await response.json()
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || 'Upload failed')
+    }
+
+    return data.data as { blobUrl: string; readUrl: string }
+  },
 
   uploadAnalysisPhotos: async (photos: File[], sessionId?: string): Promise<{ blobUrls: string[]; count: number }> => {
     const formData = new FormData()

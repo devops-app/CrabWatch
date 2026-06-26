@@ -396,6 +396,13 @@
         "hint": "Focus on distinctive features",
         "placeholder": "Zoom in on the shell pattern",
         "orientation": "portrait"
+      },
+      "carapace-closeup": {
+        "title": "Close-up (optional)",
+        "label": "Shell Close-up",
+        "hint": "Focus on distinctive features",
+        "placeholder": "Zoom in on the shell pattern",
+        "orientation": "portrait"
       }
     },
     "addPhotos": "Add photos",
@@ -883,13 +890,57 @@
       "engagement": "Engagement"
     },
     "species": {
+      "title": "Species Management",
+      "guideTitle": "Species Guide",
       "add": "Add Species",
       "addTitle": "Add Species",
+      "addButton": "+ Add Species",
+      "noSpecies": "No species found. Add one to get started.",
       "editTitle": "Edit Species",
-      "commonNamePlaceholder": "Common name",
+      "editSpecies": "Edit Species",
+      "scientificName": "Scientific Name",
       "scientificNamePlaceholder": "Scientific name",
+      "commonName": "Common Name",
+      "commonNamePlaceholder": "Common name",
+      "description": "Description",
       "descriptionPlaceholder": "Description",
-      "save": "Save"
+      "keyFeatures": "Key Features",
+      "keyFeaturesPlaceholder": "trait: value (one per line)",
+      "keyFeaturesHint": "One per line, format: trait: value (e.g. Color: Blue-green)",
+      "distributionZones": "Distribution Zones",
+      "distributionZonesPlaceholder": "Zone name (one per line)",
+      "distributionZonesHint": "One zone name per line (e.g. Gulf of Thailand)",
+      "images": "images",
+      "imagesLabel": "Images",
+      "imageUploadTitle": "Upload Image",
+      "imageUploadBtn": "Upload from device",
+      "imageOr": "or",
+      "imageUrlLabel": "Image URL",
+      "imageUrlHint": "Paste a direct image URL",
+      "imageUrlPlaceholder": "https://example.com/image.jpg",
+      "imageRemove": "Remove",
+      "imageUploadSuccess": "Image uploaded",
+      "imageUploadFailed": "Failed to upload image",
+      "imageUploadInvalidType": "Only JPEG, PNG, and WebP images are accepted",
+      "imageUploadTooLarge": "Image must be under 10MB",
+      "imageUploadMaxReached": "Maximum {count} images allowed",
+      "imageUploadUploading": "Uploading...",
+      "imageAddUrl": "Add URL",
+      "save": "Save",
+      "delete": "Delete Species",
+      "confirmDelete": "Are you sure you want to delete this species?",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "update": "Update",
+      "create": "Create",
+      "requiredNames": "Scientific name and common name are required",
+      "loadFailed": "Failed to load species",
+      "saveFailed": "Failed to save species",
+      "deleteFailed": "Failed to delete species",
+      "features": "features",
+      "zones": "zones",
+      "updated": "Species updated",
+      "created": "Species created"
     },
     "users": {
       "subTab": {
@@ -897,7 +948,8 @@
         "deleted": "Deleted",
         "invites": "Invites"
       },
-      "role": {
+      "role": "Role",
+      "roles": {
         "all": "All",
         "user": "User",
         "researcher": "Researcher",

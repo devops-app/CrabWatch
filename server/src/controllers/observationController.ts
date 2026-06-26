@@ -33,6 +33,9 @@ async function refreshPhotoUrls(photos: string[]): Promise<string[]> {
       refreshed.push(url)
       continue
     }
+
+    const isAnalysisBlob = url.includes('/analysis/')
+
     try {
       const afterContainer = url.split(`${containerName}/`)
       if (afterContainer.length < 2) {
@@ -47,9 +50,13 @@ async function refreshPhotoUrls(photos: string[]): Promise<string[]> {
          expiresOn: new Date(Date.now() + 60 * 60 * 1000),
          permissions: BlobSASPermissions.parse('r'),
        })
-       refreshed.push(sasUrl)
+      refreshed.push(sasUrl)
     } catch {
-      refreshed.push(url)
+      if (isAnalysisBlob) {
+        refreshed.push('placeholder://missing')
+      } else {
+        refreshed.push(url)
+      }
     }
   }
   return refreshed

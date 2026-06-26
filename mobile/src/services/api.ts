@@ -131,32 +131,18 @@ async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promi
   }
 
   const fullUrl = `${API_URL}${endpoint}`
-  let response: Response
   try {
-    response = await retryFetch<Response>(fullUrl, {
+    return await retryFetch<T>(fullUrl, {
       ...options,
       headers: { ...headers, ...options.headers },
     })
   } catch (err) {
     console.error('[API] Fetch failed:', { url: fullUrl, error: err })
+    if (err instanceof Error) {
+      throw new Error(err.message || `Network error. Please check your connection and try again. (URL: ${fullUrl})`)
+    }
     throw new Error(`Network error. Please check your connection and try again. (URL: ${fullUrl})`)
   }
-
-  let data: ApiResponse<T> | null = null
-  try {
-    data = (await response.json()) as ApiResponse<T>
-  } catch {
-    if (!response.ok) {
-      throw new Error(`Request failed (${response.status}). Please try again.`)
-    }
-    throw new Error('Invalid server response.')
-  }
-
-  if (!response.ok || !data.success) {
-    throw new Error(data.error || `API error: ${response.status}`)
-  }
-
-  return data.data as T
 }
 
 export const api = {
@@ -381,6 +367,37 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ fileName, contentType, sessionId, photoIndex }),
     })
+  },
+
+  async uploadSinglePhoto(uri: string, fileName: string, contentType: string): Promise<{ readUrl: string }> {
+    const token = await SecureStore.getItemAsync('auth_token')
+    const formData = new FormData()
+    formData.append('file', {
+      uri,
+      name: fileName,
+      type: contentType,
+    } as unknown as File)
+    formData.append('fileName', fileName)
+    formData.append('contentType', contentType)
+
+    const headers: Record<string, string> = {}
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
+    const response = await fetch(`${API_URL}/upload`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+
+    if (!response.ok) {
+      throw new Error(`Upload failed (${response.status}). Please try again.`)
+    }
+
+    const data: ApiResponse<{ readUrl: string; blobUrl: string; fileName: string }> = (await response.json()) as ApiResponse<{ readUrl: string; blobUrl: string; fileName: string }>
+    if (!data.data) throw new Error('Upload returned no data')
+    return { readUrl: data.data.readUrl }
   },
 
   async listUsers(page?: number, limit?: number, search?: string, role?: string): Promise<{ users: UserResponse[]; total: number }> {

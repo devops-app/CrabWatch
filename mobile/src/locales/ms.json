@@ -395,6 +395,13 @@
         "hint": "Fokus pada ciri-ciri khusus",
         "placeholder": "Zum pada corak cengkerang",
         "orientation": "portrait"
+      },
+      "carapace-closeup": {
+        "title": "Zuum dekat (pilihan)",
+        "label": "Zuum Dekat Cengkerang",
+        "hint": "Fokus pada ciri-ciri khusus",
+        "placeholder": "Zum pada corak cengkerang",
+        "orientation": "portrait"
       }
     },
     "addPhotos": "Tambah foto",
@@ -878,13 +885,57 @@
       "engagement": "Kelibatan"
     },
     "species": {
+      "title": "Pengurusan Spesies",
+      "guideTitle": "Panduan Spesies",
       "add": "Tambah Spesies",
       "addTitle": "Tambah Spesies",
+      "addButton": "Tambah Spesies",
+      "noSpecies": "Tiada spesies dijumpai",
       "editTitle": "Sunting Spesies",
-      "commonNamePlaceholder": "Nama biasa",
+      "editSpecies": "Sunting Spesies",
+      "scientificName": "Nama Saintifik",
       "scientificNamePlaceholder": "Nama saintifik",
+      "commonName": "Nama Lazim",
+      "commonNamePlaceholder": "Nama biasa",
+      "description": "Penerangan",
       "descriptionPlaceholder": "Penerangan",
-      "save": "Simpan"
+      "keyFeatures": "Ciri-ciri Utama",
+      "keyFeaturesPlaceholder": "trait: value (satu setiap baris)",
+      "keyFeaturesHint": "Satu setiap baris, format: trait: value (cth. Warna: Biru-hijau)",
+      "distributionZones": "Zon Taburan",
+      "distributionZonesPlaceholder": "Nama zon (satu setiap baris)",
+      "distributionZonesHint": "Satu nama zon setiap baris (cth. Teluk Thailand)",
+      "images": "imej",
+      "imagesLabel": "Imej",
+      "imageUploadTitle": "Muat Naik Imej",
+      "imageUploadBtn": "Muat naik dari peranti",
+      "imageOr": "atau",
+      "imageUrlLabel": "URL Imej",
+      "imageUrlHint": "Tampal URL imej langsung",
+      "imageUrlPlaceholder": "https://example.com/image.jpg",
+      "imageRemove": "Buang",
+      "imageUploadSuccess": "Imej dimuat naik",
+      "imageUploadFailed": "Gagal memuat naik imej",
+      "imageUploadInvalidType": "Hanya imej JPEG, PNG, dan WebP diterima",
+      "imageUploadTooLarge": "Imej mestilah di bawah 10MB",
+      "imageUploadMaxReached": "Maksimum {count} imej dibenarkan",
+      "imageUploadUploading": "Memuat naik...",
+      "imageAddUrl": "Tambah URL",
+      "save": "Simpan",
+      "delete": "Padam Spesies",
+      "confirmDelete": "Adakah anda pasti ingin memadam spesies ini?",
+      "cancel": "Batal",
+      "saving": "Menyimpan...",
+      "update": "Kemas Kini",
+      "create": "Cipta",
+      "requiredNames": "Nama saintifik dan nama lazim diperlukan",
+      "loadFailed": "Gagal memuat spesies",
+      "saveFailed": "Gagal menyimpan spesies",
+      "deleteFailed": "Gagal memadam spesies",
+      "features": "ciri",
+      "zones": "zon",
+      "updated": "Spesies dikemas kini",
+      "created": "Spesies dicipta"
     },
     "users": {
       "subTab": {
@@ -892,7 +943,8 @@
         "deleted": "Dipadam",
         "invites": "Jemputan"
       },
-      "role": {
+      "role": "Peranan",
+      "roles": {
         "all": "Semua",
         "user": "Pengguna",
         "researcher": "Penyelidik",

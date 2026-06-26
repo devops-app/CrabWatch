@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { AppState } from 'react-native'
+import * as Network from 'expo-network'
 import { api } from '../services/api'
 import { useObservationStore, type PendingObservation } from '../store/observationStore'
 
@@ -15,9 +16,37 @@ export function usePendingObservationSync() {
   const removeObservation = useObservationStore((state) => state.removeObservation)
   const setSyncStatus = useObservationStore((state) => state.setSyncStatus)
   const isSyncingRef = useRef(false)
+  const isConnectedRef = useRef(true)
+
+  useEffect(() => {
+    const checkConnectivity = async () => {
+      const state = await Network.getNetworkStateAsync()
+      isConnectedRef.current = state.isInternetReachable ?? state.isConnected ?? false
+      if (isConnectedRef.current && pendingObservations.length > 0) {
+        void syncPending()
+      }
+    }
+    void checkConnectivity()
+
+    const subscription = Network.addNetworkStateListener((state) => {
+      isConnectedRef.current = state.isInternetReachable ?? state.isConnected ?? false
+      if (isConnectedRef.current && pendingObservations.length > 0) {
+        void syncPending()
+      }
+    })
+
+    return () => {
+      subscription.remove()
+    }
+  }, [pendingObservations.length])
 
   const syncPending = useCallback(async () => {
     if (isSyncingRef.current || pendingObservations.length === 0) {
+      return
+    }
+
+    const state = await Network.getNetworkStateAsync()
+    if (!(state.isInternetReachable ?? state.isConnected ?? false)) {
       return
     }
 
@@ -38,15 +67,11 @@ export function usePendingObservationSync() {
   }, [pendingObservations, removeObservation, setSyncStatus])
 
   useEffect(() => {
-    if (pendingObservations.length > 0) {
-      void syncPending()
-    }
-
     const intervalId = setInterval(() => {
       void syncPending()
     }, SYNC_INTERVAL_MS)
 
-    const subscription = AppState.addEventListener('change', (state) => {
+    const appSubscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
         void syncPending()
       }
@@ -54,7 +79,7 @@ export function usePendingObservationSync() {
 
     return () => {
       clearInterval(intervalId)
-      subscription.remove()
+      appSubscription.remove()
     }
-  }, [pendingObservations.length, syncPending])
+  }, [syncPending])
 }

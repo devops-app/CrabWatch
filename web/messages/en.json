@@ -141,7 +141,8 @@
       "consentSuffix": ".",
       "userConsent": "User Consent",
       "consentRequired": "You must accept the terms to continue",
-      "languageSwitch": "Language"
+      "languageSwitch": "Language",
+      "backToRegistration": "← Back to registration"
     },
     "forgotPassword": {
       "title": "Forgot Password",
@@ -156,6 +157,7 @@
       "success": "If an account exists with that email, you'll receive a password reset link.",
       "failed": "Failed to send reset email. Please try again.",
       "rememberPassword": "Remember your password?",
+      "signIn": "Sign In",
       "signInLink": "Sign In"
     },
     "resetPassword": {
@@ -1055,9 +1057,12 @@
         "invites": "Invites"
       },
       "search": "Search users...",
+      "searchPlaceholder": "Type to search users...",
       "name": "Name",
       "email": "Email",
       "role": "Role",
+      "roleAll": "All Roles",
+      "clear": "Clear",
       "status": "Status",
       "actions": "Actions",
       "block": "Block",
@@ -1102,10 +1107,12 @@
       "totalUsers": "Total users: {count}",
       "totalDeleted": "Deleted users: {count}",
       "roles": {
+        "all": "All Roles",
         "user": "User",
         "researcher": "Researcher",
         "admin": "Admin"
       },
+      "inputLabel": "Confirmation",
       "blockUser": {
         "title": "Block User",
         "message": "Are you sure you want to block \"{name}\" ({email})? They will not be able to log in. Please type \"block\" to confirm.",
@@ -1150,7 +1157,11 @@
       "invitesAlreadyMessage": "{email} already has a pending invite expiring on {date}. Use the Resend button in the table below to send a new invite.",
       "invitesClose": "Close",
       "deletedRetentionNote": "Soft-deleted users are retained for 30 days before permanent deletion.",
-      "deletedCleanupButton": "Cleanup Expired"
+      "deletedCleanupButton": "Cleanup Expired",
+      "pagination": {
+        "next": "Next",
+        "prev": "Previous"
+      }
     },
     "backup": {
       "title": "Database Backup",
@@ -1193,6 +1204,7 @@
     },
     "engagement": {
       "title": "Engagement Management",
+      "rule": "Rule",
       "tabs": {
         "xpRules": "XP Rules",
         "levels": "Levels",
@@ -1425,6 +1437,14 @@
         "catExploration": "Exploration",
         "catHidden": "Hidden",
         "catSeasonal": "Seasonal",
+        "categories": {
+          "observation": "Observation",
+          "exploration": "Exploration",
+          "species": "Species",
+          "quality": "Quality",
+          "seasonal": "Seasonal",
+          "hidden": "Hidden"
+        },
         "rarityCommon": "Common",
         "rarityUncommon": "Uncommon",
         "rarityRare": "Rare",
@@ -1630,10 +1650,11 @@
         "importing": "Importing...",
         "import": "Import"
       },
-      "cancel": "Cancel",
-      "processing": "Processing...",
-      "actionCompleted": "Action completed successfully",
-      "actionFailed": "Action failed",
+    "cancel": "Cancel",
+    "processing": "Processing...",
+    "actionCompleted": "Action completed successfully",
+    "actionFailed": "Action failed",
+    "confirmation": "Confirm",
       "loadingEngagement": "Loading engagement admin...",
       "failed": "Failed",
       "requiredFields": "Required fields missing",
@@ -1657,14 +1678,18 @@
       "campaignCreated": "Campaign created",
       "campaignDeleted": "Campaign deleted",
       "campaignLaunched": "Launched: {sent} sent",
+      "launchFailed": "Failed to launch campaign",
       "testSendRequired": "User ID required for test send",
       "testSent": "Test sent successfully",
+      "testFailed": "Failed to send test",
       "signalResolved": "Signal resolved",
+      "resolveFailed": "Failed to resolve signal",
       "achievementCodeNameDescRequired": "Code, name, description required",
       "achievementCreated": "Achievement created",
       "achievementUpdated": "Achievement updated",
       "achievementDeleted": "Achievement deleted",
       "achievementAwarded": "Achievement awarded",
+      "awardFailed": "Failed to award achievement",
       "missionAllFieldsRequired": "All fields required",
       "criteriaInvalidJson": "Criteria must be valid JSON",
       "missionCreated": "Mission created",
@@ -1685,7 +1710,10 @@
     "processing": "Processing...",
     "actionCompleted": "Action completed successfully",
     "actionFailed": "Action failed",
-    "confirmation": "Confirmation"
+    "confirmation": "Confirmation",
+    "requiredFields": "Required fields missing",
+    "yes": "Yes",
+    "no": "No"
   },
   "error": {
     "boundary": {
