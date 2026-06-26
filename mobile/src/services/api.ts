@@ -1,5 +1,6 @@
 import * as SecureStore from 'expo-secure-store'
 import Constants from 'expo-constants'
+import { createRetryFetch } from '@crabwatch/shared'
 import type {
   ApiResponse,
   CreateObservationInput,
@@ -8,6 +9,7 @@ import type {
   ObservationFilters,
   ValidateObservationInput,
   SpeciesResponse,
+  SpeciesTranslation,
   CreateSpeciesInput,
   UpdateSpeciesInput,
   UserResponse,
@@ -73,6 +75,12 @@ const API_URL = normalizeApiBaseUrl(
   'http://localhost:3001/api/v1'
 )
 
+const retryFetch = createRetryFetch({
+  maxRetries: 2,
+  retryableStatuses: [502, 503, 504],
+  backoffMs: (attempt) => Math.pow(2, attempt - 1) * 1000,
+})
+
 const HTTP_URL_PATTERN = /^https?:\/\//i
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1'])
 
@@ -122,14 +130,16 @@ async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promi
     headers['Authorization'] = `Bearer ${token}`
   }
 
+  const fullUrl = `${API_URL}${endpoint}`
   let response: Response
   try {
-    response = await fetch(`${API_URL}${endpoint}`, {
+    response = await retryFetch<Response>(fullUrl, {
       ...options,
       headers: { ...headers, ...options.headers },
     })
-  } catch {
-    throw new Error('Network error. Please check your connection and try again.')
+  } catch (err) {
+    console.error('[API] Fetch failed:', { url: fullUrl, error: err })
+    throw new Error(`Network error. Please check your connection and try again. (URL: ${fullUrl})`)
   }
 
   let data: ApiResponse<T> | null = null
@@ -221,6 +231,10 @@ export const api = {
 
   async getSpecies(id: string): Promise<SpeciesResponse> {
     return apiRequest(`/species/${id}`)
+  },
+
+  async translateSpecies(id: string, to: string): Promise<SpeciesTranslation> {
+    return apiRequest(`/species/${id}/translate?to=${to}`)
   },
 
   async createObservation(input: CreateObservationInput): Promise<ObservationResponse> {
@@ -369,10 +383,12 @@ export const api = {
     })
   },
 
-  async listUsers(page?: number, limit?: number): Promise<{ users: UserResponse[]; total: number }> {
+  async listUsers(page?: number, limit?: number, search?: string, role?: string): Promise<{ users: UserResponse[]; total: number }> {
     const p = new URLSearchParams()
     if (page) p.set('page', String(page))
     if (limit) p.set('limit', String(limit))
+    if (search) p.set('search', search)
+    if (role) p.set('role', role)
     const query = p.toString()
     return apiRequest(`/users${query ? `?${query}` : ''}`)
   },
@@ -409,8 +425,12 @@ export const api = {
     })
   },
 
-  async listDeletedUsers(): Promise<{ users: UserResponse[]; total: number }> {
-    return apiRequest('/admin/deleted-users')
+  async listDeletedUsers(page?: number, limit?: number): Promise<{ users: UserResponse[]; total: number }> {
+    const p = new URLSearchParams()
+    if (page) p.set('page', String(page))
+    if (limit) p.set('limit', String(limit))
+    const query = p.toString()
+    return apiRequest(`/admin/deleted-users${query ? `?${query}` : ''}`)
   },
 
   async cleanupDeletedUsers(): Promise<{ deletedCount: number; users: UserResponse[]; retentionDays: number }> {

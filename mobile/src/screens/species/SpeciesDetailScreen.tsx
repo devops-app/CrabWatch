@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   View,
@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
   FlatList,
+  ActivityIndicator,
 } from 'react-native'
 import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -18,22 +19,56 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { Button } from '../../components/common/Button'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
-import type { SpeciesResponse } from '@crabwatch/shared'
+import type { SpeciesResponse, SpeciesTranslation } from '@crabwatch/shared'
 import type { RootStackParamList } from '../../navigation/types'
 
 type SpeciesDetailRouteProp = RouteProp<RootStackParamList, 'SpeciesDetail'>
 
 export function SpeciesDetailScreen() {
-  const { t } = useTranslation('speciesDetail')
+  const { t, i18n } = useTranslation('speciesDetail')
   const route = useRoute<SpeciesDetailRouteProp>()
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
   const { speciesId } = route.params
   const [species, setSpecies] = useState<SpeciesResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [translation, setTranslation] = useState<SpeciesTranslation | null>(null)
+  const [translating, setTranslating] = useState(false)
+
+  const needsTranslation = i18n.language !== 'en'
 
   useEffect(() => {
     loadSpecies()
   }, [speciesId])
+
+  useEffect(() => {
+    if (!species || !needsTranslation) {
+      setTranslation(null)
+      return
+    }
+    let cancelled = false
+    setTranslating(true)
+    api.translateSpecies(species.id, i18n.language)
+      .then((data) => {
+        if (!cancelled) setTranslation(data)
+      })
+      .catch(() => {
+        if (!cancelled) setTranslation(null)
+      })
+      .finally(() => {
+        if (!cancelled) setTranslating(false)
+      })
+    return () => { cancelled = true }
+  }, [species, needsTranslation, i18n.language])
+
+  const displayName = useMemo(() => {
+    if (translation && needsTranslation) return translation.commonName
+    return species?.commonName ?? ''
+  }, [species, translation, needsTranslation])
+
+  const displayDescription = useMemo(() => {
+    if (translation && needsTranslation) return translation.description
+    return species?.description ?? ''
+  }, [species, translation, needsTranslation])
 
   const loadSpecies = async () => {
     try {
@@ -70,7 +105,11 @@ export function SpeciesDetailScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.scientificName}>{species.scientificName}</Text>
-        <Text style={styles.commonName}>{species.commonName}</Text>
+        {translating ? (
+          <ActivityIndicator color={COLORS.primary} style={{ marginTop: 4, marginBottom: 16 }} />
+        ) : (
+          <Text style={styles.commonName}>{displayName}</Text>
+        )}
 
         {species.images.length > 0 && (
           <FlatList
@@ -87,7 +126,11 @@ export function SpeciesDetailScreen() {
 
         <Card padding={16}>
           <Text style={styles.cardTitle}>{t('description')}</Text>
-          <Text style={styles.description}>{species.description}</Text>
+          {translating ? (
+            <ActivityIndicator color={COLORS.textSecondary} />
+          ) : (
+            <Text style={styles.description}>{displayDescription}</Text>
+          )}
         </Card>
 
         {species.keyFeatures.length > 0 && (

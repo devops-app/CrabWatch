@@ -4,6 +4,7 @@ import { AuthRequest } from '../middleware/auth'
 import { asyncHandler, NotFoundError } from '../utils/errors'
 import { createTranslator } from '../middleware/i18n'
 import { getPrisma } from '../services/container'
+import { translateSpecies as translateSpeciesText } from '../services/translatorService'
 import { SpeciesResponse, KeyFeature, DistributionZone } from '@crabwatch/shared'
 import { getFromCache, setCache, clearCache } from '../utils/cache'
 
@@ -140,4 +141,24 @@ export const deleteSpecies = asyncHandler(async (req: AuthRequest, res: Response
   await getPrisma().species.delete({ where: { id } })
   clearCache('species:')
   res.json({ success: true, data: null })
+})
+
+export const translateSpecies = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { id } = req.params
+  const { to } = req.query
+  const targetLocale = typeof to === 'string' ? to : 'ms'
+
+  const species = await getPrisma().species.findUnique({ where: { id } })
+  if (!species) {
+    throw new NotFoundError('Species not found')
+  }
+
+  const translated = await translateSpeciesText({
+    speciesId: species.id,
+    commonName: species.commonName,
+    description: species.description,
+    to: targetLocale,
+  })
+
+  res.json({ success: true, data: translated })
 })

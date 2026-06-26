@@ -1026,6 +1026,7 @@
       "imageUploadFailed": "Failed to upload image",
       "imageUploadInvalidType": "Only JPEG, PNG, and WebP images are accepted",
       "imageUploadTooLarge": "Image must be under 10MB",
+      "imageUploadMaxReached": "Maximum {count} images allowed",
       "imageUploadUploading": "Uploading...",
       "imageAddUrl": "Add URL",
       "save": "Save Species",

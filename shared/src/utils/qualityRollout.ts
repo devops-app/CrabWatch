@@ -27,5 +27,5 @@ export function isGateBlocking(status: 'pass' | 'warn' | 'fail', mode: GateMode)
 }
 
 export function isGateOverridable(mode: GateMode): boolean {
-  return mode === 'soft_block'
+  return mode === 'soft_block' || mode === 'warn'
 }

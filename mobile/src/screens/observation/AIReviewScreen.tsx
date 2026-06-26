@@ -284,7 +284,7 @@ export function AIReviewScreen() {
         [
           {
             text: t('ok'),
-            onPress: () => navigation.navigate('Home'),
+            onPress: () => navigation.navigate('MainTabs', { screen: 'Home' }),
           },
         ]
       )
@@ -316,7 +316,7 @@ export function AIReviewScreen() {
             title={t('captureAnother')}
             onPress={() => {
               setShowSuccess(false)
-              navigation.navigate('New')
+              navigation.navigate('MainTabs', { screen: 'New' })
             }}
             style={styles.successButton}
             accessibilityLabel={t('captureAnotherA11y')}

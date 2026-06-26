@@ -1,15 +1,49 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { useTranslations } from 'next-intl'
-import type { SpeciesResponse } from '@crabwatch/shared'
+import { useState, useMemo, useEffect } from 'react'
+import { useTranslations, useLocale } from 'next-intl'
+import type { SpeciesResponse, SpeciesTranslation } from '@crabwatch/shared'
+import { api } from '@/lib/api'
 
 export function SpeciesClient({ initialSpecies }: { initialSpecies: SpeciesResponse[] }) {
   const t = useTranslations('species')
+  const locale = useLocale()
   const [species] = useState(initialSpecies)
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<SpeciesResponse | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
+  const [translation, setTranslation] = useState<SpeciesTranslation | null>(null)
+  const [translating, setTranslating] = useState(false)
+
+  useEffect(() => {
+    if (!selected || locale === 'en') {
+      setTranslation(null)
+      return
+    }
+    let cancelled = false
+    setTranslating(true)
+    api.translateSpecies(selected.id, locale)
+      .then((data) => {
+        if (!cancelled) setTranslation(data)
+      })
+      .catch(() => {
+        if (!cancelled) setTranslation(null)
+      })
+      .finally(() => {
+        if (!cancelled) setTranslating(false)
+      })
+    return () => { cancelled = true }
+  }, [selected, locale])
+
+  const displayName = useMemo(() => {
+    if (translation && locale !== 'en') return translation.commonName
+    return selected?.commonName ?? ''
+  }, [selected, translation, locale])
+
+  const displayDescription = useMemo(() => {
+    if (translation && locale !== 'en') return translation.description
+    return selected?.description ?? ''
+  }, [selected, translation, locale])
 
   const filtered = useMemo(() => {
     const list = Array.isArray(species) ? species : []
@@ -90,7 +124,13 @@ export function SpeciesClient({ initialSpecies }: { initialSpecies: SpeciesRespo
           >
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-start justify-between rounded-t-xl z-10">
               <div>
-                <h2 className="text-xl font-bold text-ocean-900">{selected.commonName}</h2>
+                <h2 className="text-xl font-bold text-ocean-900">
+                  {translating ? (
+                    <span className="inline-block w-32 h-5 bg-gray-200 animate-pulse rounded" />
+                  ) : (
+                    displayName
+                  )}
+                </h2>
                 <p className="text-sm text-gray-500 italic">{selected.scientificName}</p>
               </div>
               <button
@@ -121,7 +161,15 @@ export function SpeciesClient({ initialSpecies }: { initialSpecies: SpeciesRespo
               {selected.description && (
                 <div>
                   <h3 className="text-sm font-semibold text-ocean-800 mb-2">{t('description')}</h3>
-                  <p className="text-sm text-gray-700 leading-relaxed">{selected.description}</p>
+                  {translating ? (
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-200 animate-pulse rounded w-full" />
+                      <div className="h-4 bg-gray-200 animate-pulse rounded w-4/5" />
+                      <div className="h-4 bg-gray-200 animate-pulse rounded w-3/5" />
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-700 leading-relaxed">{displayDescription}</p>
+                  )}
                 </div>
               )}
 

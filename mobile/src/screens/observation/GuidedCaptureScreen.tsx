@@ -466,13 +466,20 @@ export function GuidedCaptureScreen() {
 
     const blurBlocking = isGateBlocking(assessment.blurStatus, QUALITY_GATE_MODES.blur)
     const brightBlocking = isGateBlocking(assessment.brightnessStatus, QUALITY_GATE_MODES.brightness)
-    const anyBlocking = blurBlocking || brightBlocking
-    if (!anyBlocking) return false
+    if (blurBlocking || brightBlocking) {
+      const anyOverridable = isGateOverridable(QUALITY_GATE_MODES.blur) || isGateOverridable(QUALITY_GATE_MODES.brightness)
+      if (anyOverridable && hasValidOverride) return false
+      return true
+    }
 
-    const anyOverridable = isGateOverridable(QUALITY_GATE_MODES.blur) || isGateOverridable(QUALITY_GATE_MODES.brightness)
-    if (anyOverridable && hasValidOverride) return false
+    // In warn mode: require acknowledgment before proceeding
+    const hasWarn = assessment.blurStatus === 'warn' || assessment.brightnessStatus === 'warn'
+    if (hasWarn && isGateOverridable(QUALITY_GATE_MODES.blur)) {
+      if (hasValidOverride) return false
+      return true
+    }
 
-    return true
+    return false
   }, [qualityByView, qualityOverrides])
 
   const handleTakePhoto = async (view: PhotoView) => {

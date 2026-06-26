@@ -1,3 +1,7 @@
+import { formatCoordinates } from '@crabwatch/shared'
+
+export { formatCoordinates }
+
 export function formatDate(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date
   return d.toLocaleDateString('en-MY', {
@@ -21,10 +25,6 @@ export function formatDateTime(date: Date | string): string {
 export function formatNumber(value: number | null, decimals: number = 1): string {
   if (value == null) return 'N/A'
   return value.toFixed(decimals)
-}
-
-export function formatCoordinates(lat: number, lng: number): string {
-  return `${lat.toFixed(4)}, ${lng.toFixed(4)}`
 }
 
 export function formatConditionFactor(cw: number, bw: number | null): string {

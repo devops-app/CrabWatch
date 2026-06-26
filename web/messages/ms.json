@@ -1026,6 +1026,7 @@
       "imageUploadFailed": "Gagal memuat naik imej",
       "imageUploadInvalidType": "Hanya imej JPEG, PNG, dan WebP diterima",
       "imageUploadTooLarge": "Imej mestilah di bawah 10MB",
+      "imageUploadMaxReached": "Maksimum {count} imej dibenarkan",
       "imageUploadUploading": "Memuat naik...",
       "imageAddUrl": "Tambah URL",
       "save": "Simpan Spesies",

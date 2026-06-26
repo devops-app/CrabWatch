@@ -41,7 +41,7 @@ export function PhotoTipsModal({ visible, onClose }: { visible: boolean; onClose
               <Image
                 source={require('../../../assets/images/dorsal-example.jpg')}
                 style={styles.image}
-                contentFit="cover"
+                contentFit="contain"
               />
               <Text style={styles.label}>{t('dorsalExample')}</Text>
             </View>
@@ -50,7 +50,7 @@ export function PhotoTipsModal({ visible, onClose }: { visible: boolean; onClose
               <Image
                 source={require('../../../assets/images/ventral-example.jpg')}
                 style={styles.image}
-                contentFit="cover"
+                contentFit="contain"
               />
               <Text style={styles.label}>{t('ventralExample')}</Text>
             </View>
@@ -59,7 +59,7 @@ export function PhotoTipsModal({ visible, onClose }: { visible: boolean; onClose
               <Image
                 source={require('../../../assets/images/closeup-example.png')}
                 style={styles.image}
-                contentFit="cover"
+                contentFit="contain"
               />
               <Text style={styles.label}>{t('closeupExample')}</Text>
             </View>

@@ -1,4 +1,5 @@
 import { useCallback } from 'react'
+import { formatCoordinates } from '@crabwatch/shared'
 import { useLocaleStore } from '../store/localeStore'
 
 const LOCALE_MAP: Record<string, string> = {
@@ -46,10 +47,6 @@ export function useFormatters() {
       minimumSignificantDigits: 1,
     }).format(value / 100)
   }, [intlLocale])
-
-  const formatCoordinates = useCallback((lat: number, lng: number) => {
-    return `${lat.toFixed(4)}, ${lng.toFixed(4)}`
-  }, [])
 
   const formatConditionFactor = useCallback((cw: number, bw: number | null) => {
     if (bw == null || cw === 0) return 'N/A'

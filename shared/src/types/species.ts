@@ -45,3 +45,8 @@ export interface SpeciesResponse {
   images: string[]
   distributionZones: DistributionZone[]
 }
+
+export interface SpeciesTranslation {
+  commonName: string
+  description: string
+}

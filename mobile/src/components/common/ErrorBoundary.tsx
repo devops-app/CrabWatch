@@ -25,6 +25,16 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     console.error('[ErrorBoundary]', error, errorInfo)
+
+    const { api } = require('@/services/api')
+    api.reportTelemetryError({
+      message: error.message,
+      stack: error.stack || undefined,
+      componentStack: errorInfo.componentStack || undefined,
+      timestamp: new Date().toISOString(),
+    }).catch(() => {
+      /* telemetry failure should never crash the app */
+    })
   }
 
   handleReset = (): void => {

@@ -1,16 +1,9 @@
 import { z } from 'zod'
+import { registerSchemaBase, loginSchemaBase } from '@crabwatch/shared'
 
-export const registerSchema = z.object({
-  name: z.string().min(1).max(100),
-  email: z.string().email(),
-  phoneCode: z.string().min(1, 'Country code is required').max(5),
-  phoneNumber: z.string().min(7, 'Phone number must be at least 7 digits').max(20),
-  addressLine1: z.string().min(1, 'Address line 1 is required').max(200),
-  addressLine2: z.string().max(200).optional(),
-  state: z.string().min(1, 'State is required').max(100),
-  postcode: z.string().min(1, 'Postcode is required').max(20),
-  country: z.string().min(1, 'Country is required').max(100),
-  password: z.string().min(8),
+export const loginSchema = loginSchemaBase
+
+export const registerSchema = registerSchemaBase.extend({
   consentAccepted: z.literal(true, {
     errorMap: () => ({ message: 'You must accept the consent terms to register' }),
   }),
@@ -38,11 +31,6 @@ export const blockUserSchema = z.object({
 })
 
 export const restoreUserSchema = z.object({})
-
-export const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-})
 
 export const verifyTokenSchema = z.object({
   token: z.string(),

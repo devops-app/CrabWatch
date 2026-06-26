@@ -74,9 +74,11 @@ export function QualityGateCard({
         </View>
       </View>
 
-      {assessment.overallStatus === 'fail' ? (
+      {(assessment.overallStatus === 'fail' || assessment.overallStatus === 'warn') ? (
         <>
-          <Text style={styles.failHint}>{t('quality.failHint')}</Text>
+          <Text style={[styles.failHint, assessment.overallStatus === 'warn' && { color: '#b45309' }]}>
+            {assessment.overallStatus === 'fail' ? t('quality.failHint') : t('quality.warnHint')}
+          </Text>
           <TextInput
             value={override.reason}
             onChangeText={onReasonChange}

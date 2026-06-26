@@ -258,6 +258,7 @@ function SpeciesFormModal({
   const [imageUrl, setImageUrl] = useState('')
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const MAX_IMAGES = 10
 
   const handleFileUpload = async (file: File) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
@@ -267,6 +268,10 @@ function SpeciesFormModal({
     }
     if (file.size > 10 * 1024 * 1024) {
       flash(t('imageUploadTooLarge'), 'error')
+      return
+    }
+    if (formImages.length >= MAX_IMAGES) {
+      flash(t('imageUploadMaxReached', { count: MAX_IMAGES }), 'error')
       return
     }
     setUploading(true)
@@ -291,10 +296,14 @@ function SpeciesFormModal({
   const handleAddImageUrl = useCallback(() => {
     const url = imageUrl.trim()
     if (url) {
+      if (formImages.length >= MAX_IMAGES) {
+        flash(t('imageUploadMaxReached', { count: MAX_IMAGES }), 'error')
+        return
+      }
       onImagesChange([...formImages, url])
       setImageUrl('')
     }
-  }, [imageUrl, formImages, onImagesChange])
+  }, [imageUrl, formImages, onImagesChange, flash, t])
 
   const removeImage = (idx: number) => {
     onImagesChange(formImages.filter((_, i) => i !== idx))
@@ -351,6 +360,7 @@ function SpeciesFormModal({
               </div>
             )}
             <div className="flex gap-2 items-center">
+              <span className="text-xs text-gray-500">{formImages.length}/{MAX_IMAGES} {t('images')}</span>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -365,7 +375,7 @@ function SpeciesFormModal({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
+                disabled={uploading || formImages.length >= MAX_IMAGES}
                 className="px-3 py-1.5 text-sm bg-ocean-100 text-ocean-700 rounded-lg hover:bg-ocean-200 transition-colors disabled:opacity-50"
               >
                 {uploading ? t('imageUploadUploading') : t('imageUploadBtn')}
@@ -377,11 +387,12 @@ function SpeciesFormModal({
                 onChange={(e) => setImageUrl(e.target.value)}
                 className="input-field flex-1 text-sm"
                 placeholder={t('imageUrlPlaceholder')}
+                disabled={formImages.length >= MAX_IMAGES}
               />
               <button
                 type="button"
                 onClick={handleAddImageUrl}
-                disabled={!imageUrl.trim()}
+                disabled={!imageUrl.trim() || formImages.length >= MAX_IMAGES}
                 className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
               >
                 {t('imageAddUrl')}

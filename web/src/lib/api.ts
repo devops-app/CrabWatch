@@ -1,8 +1,10 @@
-﻿import { useAuthStore } from './authStore'
+﻿import { retryWithBackoff } from '@crabwatch/shared'
+import { useAuthStore } from './authStore'
 
 import type {
   ApiResponse,
   SpeciesResponse,
+  SpeciesTranslation,
   UserListResponse,
   User,
   DashboardStats,
@@ -42,46 +44,30 @@ async function request<T>(endpoint: string, options: RequestInit & { signal?: Ab
   const token = useAuthStore.getState().token
   const { signal, ...fetchOptions } = options
 
-  const maxRetries = 2
-  const retryableStatuses = new Set([502, 503, 504])
+  return retryWithBackoff(async () => {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      ...fetchOptions,
+      credentials: 'include',
+      signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...fetchOptions.headers,
+      },
+    })
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    if (attempt > 0) {
-      const delay = Math.pow(2, attempt - 1) * 1000
-      await new Promise<void>(resolve => setTimeout(() => resolve(), delay))
+    if ([502, 503, 504].includes(response.status)) {
+      throw new Error('Request failed')
     }
 
-    try {
-      const response = await fetch(`${API_URL}${endpoint}`, {
-        ...fetchOptions,
-        credentials: 'include',
-        signal,
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...fetchOptions.headers,
-        },
-      })
+    const data: ApiResponse<T> = await response.json()
 
-      if (retryableStatuses.has(response.status) && attempt < maxRetries) {
-        continue
-      }
-
-      const data: ApiResponse<T> = await response.json()
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Request failed')
-      }
-
-      return data.data as T
-    } catch (err: unknown) {
-      if (err instanceof Error && err.name === 'AbortError') throw err
-      if (err instanceof Error && err.message === 'Request failed' && attempt < maxRetries) continue
-      throw err
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || 'Request failed')
     }
-  }
 
-  throw new Error('Request failed after retries')
+    return data.data as T
+  })
 }
 
 export const api = {
@@ -270,6 +256,9 @@ export const api = {
   listSpecies: (): Promise<SpeciesResponse[]> => request<SpeciesResponse[]>('/api/v1/species'),
 
   getSpecies: (id: string) => request(`/api/v1/species/${id}`),
+
+  translateSpecies: (id: string, to: string) =>
+    request<SpeciesTranslation>(`/api/v1/species/${id}/translate?to=${to}`),
 
   createSpecies: (body: {
     scientificName: string

@@ -52,6 +52,11 @@ export const config = {
     coverageWarnThresholdPct: Number(process.env.QUALITY_COVERAGE_WARN_THRESHOLD_PCT || 35),
     autoCropSecondPassEnabled: process.env.QUALITY_AUTOCROP_SECOND_PASS_ENABLED === 'true',
   },
+  azureTranslator: {
+    apiKey: process.env.AZURE_TRANSLATOR_KEY,
+    endpoint: process.env.AZURE_TRANSLATOR_ENDPOINT || 'https://api.cognitive.microsofttranslator.com',
+    region: process.env.AZURE_TRANSLATOR_REGION || 'global',
+  },
 }
 
 if (!config.databaseUrl) {

@@ -466,6 +466,7 @@
         "fail": "Gagal"
       },
       "failHint": "Foto ini gagal semakan kualiti minimum. Ambil semula disyorkan.",
+      "warnHint": "Foto ini mempunyai amaran kualiti. Ambil semula untuk hasil terbaik, atau akui untuk teruskan.",
       "retake": "Ambil Semula",
       "submitAnyway": "Hantar Juga",
       "clearOverride": "Kosongkan Override",
@@ -892,6 +893,7 @@
         "invites": "Jemputan"
       },
       "role": {
+        "all": "Semua",
         "user": "Pengguna",
         "researcher": "Penyelidik",
         "admin": "Admin"
@@ -906,7 +908,13 @@
       },
       "cleanup": {
         "title": "Bersihkan Kadaluarsa"
-      }
+      },
+      "searchPlaceholder": "Cari mengikut nama atau e-mel..."
+    },
+    "pagination": {
+      "prev": "Sebelumnya",
+      "next": "Seterusnya",
+      "page": "{{current}} / {{total}}"
     },
     "invite": {
       "send": "Hantar Jemputan",

@@ -5,6 +5,7 @@ import {
   createSpecies,
   updateSpecies,
   deleteSpecies,
+  translateSpecies,
 } from '../controllers/speciesController'
 import { authMiddleware, requireAuth, resolveUser, requireRole } from '../middleware/auth'
 import { createSpeciesSchema, updateSpeciesSchema } from '../utils/schemas'
@@ -59,6 +60,40 @@ router.get('/', listSpecies)
  *       404:
  *         description: Species not found
  */
+router.get('/:id/translate', translateSpecies)
+
+/**
+ * @openapi
+ * /api/species/{id}/translate:
+ *   get:
+ *     tags: [Species]
+ *     summary: Translate species common name and description
+ *     security: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *       - in: query
+ *         name: to
+ *         schema: { type: string, enum: [ms, en] }
+ *         description: Target locale
+ *     responses:
+ *       200:
+ *         description: Translated species text
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     commonName: { type: string }
+ *                     description: { type: string }
+ */
+
 router.get('/:id', getSpecies)
 
 /**

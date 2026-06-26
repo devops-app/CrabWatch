@@ -467,6 +467,7 @@
         "fail": "Fail"
       },
       "failHint": "This photo fails minimum quality checks. Retake recommended.",
+      "warnHint": "This photo has quality warnings. Retake for best results, or acknowledge to proceed.",
       "retake": "Retake",
       "submitAnyway": "Submit Anyway",
       "clearOverride": "Clear Override",
@@ -897,6 +898,7 @@
         "invites": "Invites"
       },
       "role": {
+        "all": "All",
         "user": "User",
         "researcher": "Researcher",
         "admin": "Admin"
@@ -911,7 +913,13 @@
       },
       "cleanup": {
         "title": "Cleanup Expired"
-      }
+      },
+      "searchPlaceholder": "Search by name or email..."
+    },
+    "pagination": {
+      "prev": "Previous",
+      "next": "Next",
+      "page": "{{current}} / {{total}}"
     },
     "invite": {
       "send": "Send Invite",

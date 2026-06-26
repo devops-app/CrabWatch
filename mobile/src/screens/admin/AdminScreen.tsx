@@ -68,7 +68,13 @@ export function AdminScreen() {
   const [activeTab, setActiveTab] = useState<Tab>('users')
   const [userSubTab, setUserSubTab] = useState<UserSubTab>('active')
   const [users, setUsers] = useState<UserResponse[]>([])
+  const [usersTotal, setUsersTotal] = useState(0)
+  const [usersPage, setUsersPage] = useState(1)
+  const [usersSearch, setUsersSearch] = useState('')
+  const [usersRoleFilter, setUsersRoleFilter] = useState('')
   const [deletedUsers, setDeletedUsers] = useState<UserResponse[]>([])
+  const [deletedUsersTotal, setDeletedUsersTotal] = useState(0)
+  const [deletedUsersPage, setDeletedUsersPage] = useState(1)
   const [species, setSpecies] = useState<SpeciesResponse[]>([])
   const [backups, setBackups] = useState<{ fileName: string; size: number; timestamp: string }[]>([])
   const [invites, setInvites] = useState<Invite[]>([])
@@ -127,12 +133,14 @@ export function AdminScreen() {
       switch (tab) {
         case 'users': {
           if (subTab === 'active' || !subTab) {
-            const data = await api.listUsers()
+            const data = await api.listUsers(usersPage, 20, usersSearch || undefined, usersRoleFilter || undefined)
             setUsers(data.users)
+            setUsersTotal(data.total)
           }
           if (subTab === 'deleted' || !subTab) {
-            const data = await api.listDeletedUsers()
+            const data = await api.listDeletedUsers(deletedUsersPage, 20)
             setDeletedUsers(data.users)
+            setDeletedUsersTotal(data.total)
           }
           if (subTab === 'invites' || !subTab) {
             const data = await api.listInvites()
@@ -806,8 +814,47 @@ export function AdminScreen() {
 
   // --- Renders ---
 
-  const renderActiveUsers = () => (
+  const renderActiveUsers = () => {
+    const usersTotalPages = Math.ceil(usersTotal / 20)
+    return (
     <View style={{ flex: 1 }}>
+      <View style={styles.toolbar}>
+        <RNTextInput
+          style={[styles.input, { flex: 1, marginRight: 8 }]}
+          placeholder={t('users.searchPlaceholder') || 'Search by name or email...'}
+          value={usersSearch}
+          onChangeText={setUsersSearch}
+          placeholderTextColor={COLORS.textLight}
+          onSubmitEditing={() => { setUsersPage(1); loadTabData('users', 'active') }}
+        />
+        <TouchableOpacity
+          style={[styles.actionBtn, styles.searchBtn]}
+          onPress={() => { setUsersPage(1); loadTabData('users', 'active') }}
+        >
+          <Text style={styles.actionBtnText}>{t('search') || 'Search'}</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={[styles.toolbar, { marginBottom: 8 }]}>
+        <Text style={{ fontSize: 14, color: COLORS.text, marginRight: 8 }}>{t('users.role') || 'Role'}:</Text>
+        {['', 'user', 'researcher', 'admin'].map((role) => (
+          <TouchableOpacity
+            key={role || 'all'}
+            style={[styles.roleOption, usersRoleFilter === role && styles.roleOptionActive]}
+            onPress={() => { setUsersRoleFilter(role); setUsersPage(1); loadTabData('users', 'active') }}
+          >
+            <Text style={[styles.roleOptionText, usersRoleFilter === role && styles.roleOptionTextActive]}>
+              {role ? (role === 'user' ? t('users.role.user') : role === 'researcher' ? t('users.role.researcher') : t('users.role.admin')) : (t('users.role.all') || 'All')}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      {(usersSearch || usersRoleFilter) && (
+        <View style={{ marginBottom: 8, alignItems: 'center' }}>
+          <TouchableOpacity onPress={() => { setUsersSearch(''); setUsersRoleFilter(''); setUsersPage(1); loadTabData('users', 'active') }}>
+            <Text style={{ fontSize: 13, color: COLORS.textLight }}>{t('clear') || 'Clear filters'}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       <FlatList
         data={users}
         keyExtractor={(item) => item.id}
@@ -874,11 +921,37 @@ export function AdminScreen() {
         )}
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        ListFooterComponent={() =>
+          usersTotalPages > 1 ? (
+            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 16, gap: 12 }}>
+              <TouchableOpacity
+                disabled={usersPage <= 1}
+                onPress={() => { setUsersPage(usersPage - 1); loadTabData('users', 'active') }}
+                style={{ opacity: usersPage <= 1 ? 0.5 : 1 }}
+              >
+                <Text style={{ fontSize: 14, color: COLORS.primary }}>{t('pagination.prev') || 'Previous'}</Text>
+              </TouchableOpacity>
+              <Text style={{ fontSize: 14, color: COLORS.text }}>
+                {t('pagination.page', { current: usersPage, total: usersTotalPages }) || `${usersPage} / ${usersTotalPages}`}
+              </Text>
+              <TouchableOpacity
+                disabled={usersPage >= usersTotalPages}
+                onPress={() => { setUsersPage(usersPage + 1); loadTabData('users', 'active') }}
+                style={{ opacity: usersPage >= usersTotalPages ? 0.5 : 1 }}
+              >
+                <Text style={{ fontSize: 14, color: COLORS.primary }}>{t('pagination.next') || 'Next'}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null
+        }
       />
     </View>
-  )
+    )
+  }
 
-  const renderDeletedUsers = () => (
+  const renderDeletedUsers = () => {
+    const deletedTotalPages = Math.ceil(deletedUsersTotal / 20)
+    return (
     <View style={{ flex: 1 }}>
       <View style={styles.toolbar}>
         <Button
@@ -915,10 +988,34 @@ export function AdminScreen() {
           )}
           contentContainerStyle={styles.listContent}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          ListFooterComponent={() =>
+            deletedTotalPages > 1 ? (
+              <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 16, gap: 12 }}>
+                <TouchableOpacity
+                  disabled={deletedUsersPage <= 1}
+                  onPress={() => { setDeletedUsersPage(deletedUsersPage - 1); loadTabData('users', 'deleted') }}
+                  style={{ opacity: deletedUsersPage <= 1 ? 0.5 : 1 }}
+                >
+                  <Text style={{ fontSize: 14, color: COLORS.primary }}>{t('pagination.prev') || 'Previous'}</Text>
+                </TouchableOpacity>
+                <Text style={{ fontSize: 14, color: COLORS.text }}>
+                  {t('pagination.page', { current: deletedUsersPage, total: deletedTotalPages }) || `${deletedUsersPage} / ${deletedTotalPages}`}
+                </Text>
+                <TouchableOpacity
+                  disabled={deletedUsersPage >= deletedTotalPages}
+                  onPress={() => { setDeletedUsersPage(deletedUsersPage + 1); loadTabData('users', 'deleted') }}
+                  style={{ opacity: deletedUsersPage >= deletedTotalPages ? 0.5 : 1 }}
+                >
+                  <Text style={{ fontSize: 14, color: COLORS.primary }}>{t('pagination.next') || 'Next'}</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null
+          }
         />
       </View>
     </View>
-  )
+    )
+  }
 
   const renderInvites = () => (
     <View style={{ flex: 1 }}>
@@ -1700,6 +1797,10 @@ const styles = StyleSheet.create({
   actionBtnText: {
     fontSize: FONT.sm,
     fontWeight: '600',
+  },
+  searchBtn: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   roleChangeBtn: {
     backgroundColor: COLORS.primary,

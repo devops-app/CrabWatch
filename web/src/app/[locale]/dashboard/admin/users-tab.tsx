@@ -25,6 +25,8 @@ interface UsersTabProps {
   onReload: () => void
 }
 
+const PAGE_SIZE = 15
+
 export function UsersTab({ flash, onConfirm, onReload }: UsersTabProps): React.JSX.Element {
   const t = useTranslations('admin.users')
   const [userSubTab, setUserSubTab] = useState<UserSubTab>('active')
@@ -37,14 +39,27 @@ export function UsersTab({ flash, onConfirm, onReload }: UsersTabProps): React.J
   const [inviteRole, setInviteRole] = useState('researcher')
   const [sendingInvite, setSendingInvite] = useState(false)
 
+  // Active users filters
+  const [searchQuery, setSearchQuery] = useState('')
+  const [roleFilter, setRoleFilter] = useState('')
+  const [activePage, setActivePage] = useState(1)
+
+  // Deleted users pagination
+  const [deletedPage, setDeletedPage] = useState(1)
+
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
       if (userSubTab === 'active') {
-        const data = await api.listUsers()
+        const data = await api.listUsers({
+          page: activePage,
+          limit: PAGE_SIZE,
+          search: searchQuery || undefined,
+          role: roleFilter || undefined,
+        })
         setUsers(data)
       } else if (userSubTab === 'deleted') {
-        const data = await api.listDeletedUsers() as DeletedUserListResponse
+        const data = await api.listDeletedUsers({ page: deletedPage, limit: PAGE_SIZE }) as DeletedUserListResponse
         setDeletedUsers(data)
       } else if (userSubTab === 'invites') {
         const data = await api.listInvites()
@@ -56,11 +71,22 @@ export function UsersTab({ flash, onConfirm, onReload }: UsersTabProps): React.J
     } finally {
       setLoading(false)
     }
-  }, [userSubTab, flash, t])
+  }, [userSubTab, activePage, deletedPage, searchQuery, roleFilter, flash, t])
 
   useEffect(() => {
     loadData()
   }, [loadData])
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    setActivePage(1)
+    loadData()
+  }
+
+  const handleRoleFilterChange = (value: string) => {
+    setRoleFilter(value)
+    setActivePage(1)
+  }
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     try {
@@ -194,8 +220,8 @@ export function UsersTab({ flash, onConfirm, onReload }: UsersTabProps): React.J
           </button>
         ))}
       </div>
-      {userSubTab === 'active' && users && <ActiveUsers t={t} users={users} onRoleChange={handleRoleChange} onBlock={handleBlock} onUnblock={handleUnblock} onDelete={handleDelete} />}
-      {userSubTab === 'deleted' && <DeletedUsers t={t} deletedUsers={deletedUsers} onRestore={handleRestore} onCleanup={handleCleanup} />}
+      {userSubTab === 'active' && users && <ActiveUsers t={t} users={users} searchQuery={searchQuery} roleFilter={roleFilter} activePage={activePage} onRoleChange={handleRoleChange} onBlock={handleBlock} onUnblock={handleUnblock} onDelete={handleDelete} onSearch={handleSearch} onSearchChange={setSearchQuery} onRoleFilterChange={handleRoleFilterChange} onActivePageChange={setActivePage} />}
+      {userSubTab === 'deleted' && <DeletedUsers t={t} deletedUsers={deletedUsers} deletedPage={deletedPage} onRestore={handleRestore} onCleanup={handleCleanup} onDeletedPageChange={setDeletedPage} />}
       {userSubTab === 'invites' && <Invites t={t} invites={invites} inviteEmail={inviteEmail} inviteRole={inviteRole} sendingInvite={sendingInvite} onEmailChange={setInviteEmail} onRoleChange={setInviteRole} onSend={handleSendInvite} />}
     </div>
   )
@@ -204,21 +230,60 @@ export function UsersTab({ flash, onConfirm, onReload }: UsersTabProps): React.J
 function ActiveUsers({
   t,
   users,
+  searchQuery,
+  roleFilter,
+  activePage,
   onRoleChange,
   onBlock,
   onUnblock,
   onDelete,
+  onSearch,
+  onSearchChange,
+  onRoleFilterChange,
+  onActivePageChange,
 }: {
   t: ReturnType<typeof useTranslations>
   users: UserListResponse
+  searchQuery: string
+  roleFilter: string
+  activePage: number
   onRoleChange: (userId: string, newRole: string) => void
   onBlock: (user: UserResponse) => void
   onUnblock: (user: UserResponse) => void
   onDelete: (user: UserResponse) => void
+  onSearch: (e: React.FormEvent) => void
+  onSearchChange: (v: string) => void
+  onRoleFilterChange: (v: string) => void
+  onActivePageChange: (v: number) => void
 }) {
+  const totalPages = Math.ceil(users.total / PAGE_SIZE)
+
   return (
     <>
       <div className="text-sm text-gray-500 mb-4">{t('totalUsers', { count: users.total })}</div>
+      <form onSubmit={onSearch} className="flex gap-3 mb-4">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder={t('searchPlaceholder') || 'Search by name or email...'}
+          className="input-field flex-1"
+        />
+        <select
+          value={roleFilter}
+          onChange={(e) => onRoleFilterChange(e.target.value)}
+          className="input-field w-40"
+        >
+          <option value="">{t('roles.all') || 'All Roles'}</option>
+          <option value="user">{t('roles.user')}</option>
+          <option value="researcher">{t('roles.researcher')}</option>
+          <option value="admin">{t('roles.admin')}</option>
+        </select>
+        <button type="submit" className="btn-primary text-sm">{t('search') || 'Search'}</button>
+        {(searchQuery || roleFilter) && (
+          <button type="button" onClick={() => { onSearchChange(''); onRoleFilterChange(''); onActivePageChange(1) }} className="text-sm text-gray-500 hover:text-gray-700">{t('clear') || 'Clear'}</button>
+        )}
+      </form>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -282,6 +347,25 @@ function ActiveUsers({
           </tbody>
         </table>
       </div>
+      {totalPages > 1 && (
+        <div className="flex justify-center gap-2 mt-4">
+          <button
+            onClick={() => onActivePageChange(activePage - 1)}
+            disabled={activePage <= 1}
+            className="text-sm px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {t('pagination.prev') || 'Previous'}
+          </button>
+          <span className="text-sm px-3 py-1">{t('pagination.page', { current: activePage, total: totalPages }) || `${activePage} / ${totalPages}`}</span>
+          <button
+            onClick={() => onActivePageChange(activePage + 1)}
+            disabled={activePage >= totalPages}
+            className="text-sm px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {t('pagination.next') || 'Next'}
+          </button>
+        </div>
+      )}
     </>
   )
 }
@@ -289,14 +373,19 @@ function ActiveUsers({
 function DeletedUsers({
   t,
   deletedUsers,
+  deletedPage,
   onRestore,
   onCleanup,
+  onDeletedPageChange,
 }: {
   t: ReturnType<typeof useTranslations>
   deletedUsers: DeletedUserListResponse | null
+  deletedPage: number
   onRestore: (user: DeletedUserResponse) => void
   onCleanup: () => void
+  onDeletedPageChange: (v: number) => void
 }) {
+  const deletedTotalPages = deletedUsers ? Math.ceil(deletedUsers.total / PAGE_SIZE) : 0
   return (
     <>
       <div className="flex justify-between items-center mb-4">
@@ -353,6 +442,25 @@ function DeletedUsers({
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+          {deletedTotalPages > 1 && (
+            <div className="flex justify-center gap-2 mt-4">
+              <button
+                onClick={() => onDeletedPageChange(deletedPage - 1)}
+                disabled={deletedPage <= 1}
+                className="text-sm px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {t('pagination.prev') || 'Previous'}
+              </button>
+              <span className="text-sm px-3 py-1">{t('pagination.page', { current: deletedPage, total: deletedTotalPages }) || `${deletedPage} / ${deletedTotalPages}`}</span>
+              <button
+                onClick={() => onDeletedPageChange(deletedPage + 1)}
+                disabled={deletedPage >= deletedTotalPages}
+                className="text-sm px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {t('pagination.next') || 'Next'}
+              </button>
             </div>
           )}
         </>
