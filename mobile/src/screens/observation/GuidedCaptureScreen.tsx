@@ -275,6 +275,7 @@ export function GuidedCaptureScreen() {
   const [qualityByView, setQualityByView] = useState<Partial<Record<PhotoView, MobileQualityAssessment>>>({})
   const [qualityOverrides, setQualityOverrides] = useState<Record<PhotoView, QualityOverrideState>>(createDefaultOverrides)
   const [analyzingQuality, setAnalyzingQuality] = useState(false)
+  const [sessionId] = useState(createUploadSessionId)
 
   const { quality, sampleBrightnessFromUri } = useCaptureAssistance()
 
@@ -711,7 +712,7 @@ export function GuidedCaptureScreen() {
     navigation.navigate('AnalysisLoading', {
       photos: photoList,
       views: viewList,
-      sessionId: createUploadSessionId(),
+      sessionId,
       coinType: coinType || undefined,
       qualityOverrides,
     })
