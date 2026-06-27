@@ -1160,7 +1160,8 @@
       "deletedCleanupButton": "Cleanup Expired",
       "pagination": {
         "next": "Next",
-        "prev": "Previous"
+        "prev": "Previous",
+        "page": "{current} / {total}"
       }
     },
     "backup": {

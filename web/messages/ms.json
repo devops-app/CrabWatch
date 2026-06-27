@@ -1160,7 +1160,8 @@
       "deletedCleanupButton": "Bersihkan Tamat",
       "pagination": {
         "next": "Seterusnya",
-        "prev": "Sebelumnya"
+        "prev": "Sebelumnya",
+        "page": "{current} / {total}"
       }
     },
     "backup": {

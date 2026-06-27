@@ -1,6 +1,6 @@
 {
     "name":  "@crabwatch/server",
-    "version":  "1.0.0+0019",
+    "version":  "1.0.0+0020",
     "private":  true,
     "engines":  {
                     "node":  "\u003e=22.0.0"
@@ -21,6 +21,7 @@
                     "db:seed:i18n:ms":  "npx tsx src/services/seedMalayTranslations.ts",
                     "calibrate":  "npx tsx scripts/calibrateQuality.ts",
                     "qa:matrix":  "npx tsx scripts/runQAMatrix.ts",
+                    "db:seed:test-users":  "npx tsx src/services/seedTestUsers.ts",
                     "test":  "jest",
                     "test:watch":  "jest --watch",
                     "test:coverage":  "jest --coverage"
