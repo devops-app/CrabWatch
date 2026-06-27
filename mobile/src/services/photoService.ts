@@ -102,6 +102,24 @@ async function applyExifOrientation(uri: string): Promise<string> {
   return result.uri
 }
 
+/**
+ * Ensure the image URI is JPEG. Converts HEIC/HEIF to JPEG via ImageManipulator
+ * so the blob stored on Azure and displayed on web is universally decodable.
+ * Passes through URIs that are already JPEG/PNG/WebP.
+ */
+async function ensureJpeg(uri: string): Promise<string> {
+  const lower = uri.toLowerCase()
+  if (lower.endsWith('.heic') || lower.endsWith('.heif')) {
+    const result = await ImageManipulator.manipulateAsync(
+      uri,
+      [],
+      { compress: 0.92, format: ImageManipulator.SaveFormat.JPEG }
+    )
+    return result.uri
+  }
+  return uri
+}
+
 function base64ToUint8Array(base64: string): Uint8Array {
   if (typeof atob === 'function') {
     const binary = atob(base64)
@@ -149,7 +167,7 @@ export const photoService = {
     })
 
     if (result.canceled) return null
-    return result.assets[0].uri
+    return ensureJpeg(result.assets[0].uri)
   },
 
   async captureGuidedPhoto(): Promise<string | null> {
@@ -169,7 +187,7 @@ export const photoService = {
     })
 
     if (result.canceled) return null
-    return result.assets[0].uri
+    return ensureJpeg(result.assets[0].uri)
   },
 
   async pickFromLibrary(max: number = 5): Promise<string[]> {
@@ -193,7 +211,7 @@ export const photoService = {
     })
 
     if (result.canceled) return null
-    return result.assets[0].uri
+    return ensureJpeg(result.assets[0].uri)
   },
 
   async pickMultiplePhotos(max: number = 5): Promise<string[]> {

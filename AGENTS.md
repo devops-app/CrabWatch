@@ -527,7 +527,14 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Migration: Created `fixAnalysisPaths.ts` script to match restored `/analysis/` blobs to observations by `userId + date` with chronological ordering.
 - Migration results: 6 blobs found in `/analysis/` for user `a944b293` on `2026-06-27`. Copied to `/observations/` and updated DB. 3 observations fully fixed. 15 observations remain with irrecoverable placeholders (source blobs were deleted before restore).
 
+### Completed (CI/CD + Session ID Fixes)
+- Completed: Fixed API deployment CI failure — added `DOM` to `shared/tsconfig.json` `lib` array to resolve missing `setTimeout`, `RequestInit`, `AbortSignal`, `fetch` types.
+- Completed: Fixed mobile session ID mismatch bug — `GuidedCaptureScreen.tsx` now generates session ID once at component mount via `useState(createUploadSessionId)`, instead of regenerating at navigation time.
+- Verified: `pnpm typecheck` passes cleanly across all 4 packages.
+- Verified: Pushed to `origin/main` (commit `d37d4b9`, version `1.0.0+0023`).
+
 ## Next Steps
+- Verify API deployment succeeds with fixed `shared/tsconfig.json`
 - Validate — Mobile staging build with `warn`/`soft_block`/`hard_block` quality gate configs
 - Test researcher observation approval/rejection flow end-to-end on — Mobile
 - Test admin user management, backup, and invite flows on — Mobile
@@ -550,6 +557,8 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - **Blob cleanup**: Analysis photos deleted from Azure Storage 60s after analysis completes
 - **Legacy image path bug**: `copyAnalysisBlobsToObservation` falls back to original `/analysis/` URL on copy failure. `refreshPhotoUrls` fails silently when source blobs are gone. 15 observations have permanently broken images (source blobs deleted before restore). 3 observations fixed via migration script.
 - **Migration script**: `fixAnalysisPaths.ts` matches blobs to observations by `userId + date` with chronological ordering. Only works when source blobs exist in `/analysis/` folder.
+- **Shared tsconfig DOM lib**: `shared/tsconfig.json` requires `"DOM"` in `lib` array for browser globals (`setTimeout`, `RequestInit`, `AbortSignal`, `fetch`) used in `retry.ts` and `schemas.ts`. CI/CD build fails without this fix.
+- **Mobile session ID bug**: `GuidedCaptureScreen.tsx` must call `createUploadSessionId()` once at component mount via `useState`, not at navigation time. Regenerating the ID on each navigation causes session mismatch between uploaded blobs and observation DB records.
 - **Capture assistance**: Gyroscope detects hand shake (std dev > 6 = slight, > 15 = heavy). Accelerometer Z-axis estimates lighting. Tap-to-focus triggers autofocus with visual indicator.
 - **Portrait lock**: `expo-screen-orientation` locks camera to portrait mode. Accelerometer X/Y detects landscape tilt, shows "Rotate to portrait" overlay.
 - **View validation**: Post-capture analysis checks brightness/aspect ratio to detect wrong view (e.g., ventral when dorsal expected). Shows warning card with specific issues.
