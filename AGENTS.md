@@ -1,7 +1,7 @@
 ﻿# CrabWatch — Work Progress Tracker
 
 > **Last Updated**: 2026-06-27
-> **Current Focus**: Legacy image path migration complete. 3 observations fixed, 15 remain with lost source blobs.
+> **Current Focus**: HEIC conversion complete. 117 blobs converted to JPEG. 15 observations remain with irrecoverable placeholders.
 
 ## Goal
 Build an AI-guided crab observation capture flow with fully dynamic species detection. The AI identifies any crab species in photos, and unknown species are auto-created in the database.
@@ -527,6 +527,16 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Migration: Created `fixAnalysisPaths.ts` script to match restored `/analysis/` blobs to observations by `userId + date` with chronological ordering.
 - Migration results: 6 blobs found in `/analysis/` for user `a944b293` on `2026-06-27`. Copied to `/observations/` and updated DB. 3 observations fully fixed. 15 observations remain with irrecoverable placeholders (source blobs were deleted before restore).
 
+### Completed (HEIC Conversion + Zod CI Fix)
+- Completed: Converted 117 HEIC blobs to JPEG via `server/scripts/convertHeicToJpg.ts` using `heic-convert` + `libheif-js` (WASM-based, no system deps).
+- Completed: Re-uploaded converted JPEGs to Azure Blob Storage and updated DB `photos` arrays for all affected observations.
+- Completed: Added `ensureJpeg()` helper to `mobile/src/services/photoService.ts` — converts HEIC to JPEG at 92% quality before upload.
+- Completed: Wired `ensureJpeg()` into `takePhoto`, `captureGuidedPhoto`, `pickGuidedPhotoFromLibrary` flows.
+- Completed: Added explicit `zod` dependency to `shared/package.json` to fix CI/CD build failure (`Cannot find module 'zod'`).
+- Completed: Created `broken-observations.md` and `heic-observations.md` reports for audit trail.
+- Verified: 0 observations with `/analysis/` paths. 145 observations with `/observations/` paths. 15 with `placeholder://missing` (irrecoverable).
+- Verified: Pushed to `origin/main` (commit `bf7ca53`, version `1.0.0+0024`).
+
 ### Completed (CI/CD + Session ID Fixes)
 - Completed: Fixed API deployment CI failure — added `DOM` to `shared/tsconfig.json` `lib` array to resolve missing `setTimeout`, `RequestInit`, `AbortSignal`, `fetch` types.
 - Completed: Fixed mobile session ID mismatch bug — `GuidedCaptureScreen.tsx` now generates session ID once at component mount via `useState(createUploadSessionId)`, instead of regenerating at navigation time.
@@ -559,6 +569,7 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - **Migration script**: `fixAnalysisPaths.ts` matches blobs to observations by `userId + date` with chronological ordering. Only works when source blobs exist in `/analysis/` folder.
 - **Shared tsconfig DOM lib**: `shared/tsconfig.json` requires `"DOM"` in `lib` array for browser globals (`setTimeout`, `RequestInit`, `AbortSignal`, `fetch`) used in `retry.ts` and `schemas.ts`. CI/CD build fails without this fix.
 - **Mobile session ID bug**: `GuidedCaptureScreen.tsx` must call `createUploadSessionId()` once at component mount via `useState`, not at navigation time. Regenerating the ID on each navigation causes session mismatch between uploaded blobs and observation DB records.
+- **HEIC handling**: Mobile-side `ensureJpeg()` in `photoService.ts` converts HEIC to JPEG at 92% quality before upload. Server-side `convertHeicToJpg.ts` uses `heic-convert` + `libheif-js` for legacy DB records (117 blobs converted). `sharp` ruled out on Windows (no `libheif` HEVC plugin).
 - **Capture assistance**: Gyroscope detects hand shake (std dev > 6 = slight, > 15 = heavy). Accelerometer Z-axis estimates lighting. Tap-to-focus triggers autofocus with visual indicator.
 - **Portrait lock**: `expo-screen-orientation` locks camera to portrait mode. Accelerometer X/Y detects landscape tilt, shows "Rotate to portrait" overlay.
 - **View validation**: Post-capture analysis checks brightness/aspect ratio to detect wrong view (e.g., ventral when dorsal expected). Shows warning card with specific issues.
