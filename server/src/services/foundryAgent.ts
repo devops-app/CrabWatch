@@ -488,28 +488,36 @@ export async function cleanupAnalysisBlobs(blobUrls: string[]): Promise<void> {
   }
 }
 
+export interface BlobCopyResult {
+  /** New SAS URLs for the observation (may include original URLs for failed copies) */
+  observationUrls: string[]
+  /** Original analysis blob URLs that were successfully copied and can be safely cleaned up */
+  cleanedUpUrls: string[]
+}
+
 export async function copyAnalysisBlobsToObservation(
   blobUrls: string[],
   userId: string,
   observationId: string
-): Promise<string[]> {
+): Promise<BlobCopyResult> {
   const service = getBlobService()
   const containerName = process.env.AZURE_STORAGE_CONTAINER || 'crabwatch-uploads'
   const containerClient = service.getContainerClient(containerName)
 
-  const copiedUrls: string[] = []
+  const observationUrls: string[] = []
+  const cleanedUpUrls: string[] = []
 
-  for (const [index, url] of blobUrls.entries()) {
+  for (const url of blobUrls) {
     try {
       const sourceBlobName = extractBlobName(url, containerName)
       if (!sourceBlobName) {
-        copiedUrls.push(url)
+        observationUrls.push(url)
         continue
       }
 
       const dateStr = new Date().toISOString().slice(0, 10)
       const ext = sourceBlobName.split('.').pop() || 'jpg'
-      const destBlobName = `observations/${userId}/${dateStr}/${observationId}-${index}.${ext}`
+      const destBlobName = `observations/${userId}/${dateStr}/${observationId}-${observationUrls.length}.${ext}`
 
       const sourceBlobClient = containerClient.getBlockBlobClient(sourceBlobName)
       const destBlobClient = containerClient.getBlockBlobClient(destBlobName)
@@ -534,13 +542,14 @@ export async function copyAnalysisBlobsToObservation(
         permissions: BlobSASPermissions.parse('r'),
       })
 
-      copiedUrls.push(sasUrl)
+      observationUrls.push(sasUrl)
+      cleanedUpUrls.push(url)
     } catch {
-      copiedUrls.push(url)
+      observationUrls.push(url)
     }
   }
 
-  return copiedUrls
+  return { observationUrls, cleanedUpUrls }
 }
 
 function validateResult(result: CrabAnalysisResult): CrabAnalysisResult {

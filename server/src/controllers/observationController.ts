@@ -5,6 +5,7 @@ import { AuthRequest } from '../middleware/auth'
 import { ObservationResponse, ObservationListResponse } from '@crabwatch/shared'
 import { sendObservationApproved, sendObservationRejected } from '../services/fcm'
 import { copyAnalysisBlobsToObservation, cleanupAnalysisBlobs } from '../services/foundryAgent'
+import type { BlobCopyResult } from '../services/foundryAgent'
 import { markAnalysisSessionDone } from './analysisController'
 import { OBSERVATION_INCLUDE, parsePagination, ObservationWithRelations } from '../utils/query'
 import { sanitizeText } from '../utils/sanitize'
@@ -78,8 +79,11 @@ export const createObservation = asyncHandler(async (req: AuthRequest, res: Resp
 
   if (hasAnalysisBlobs) {
     const tempObservationId = `temp_${Date.now()}`
-    finalPhotos = await copyAnalysisBlobsToObservation(photoUrls, dbUser.id, tempObservationId)
-    cleanupAnalysisBlobs(photoUrls).catch(() => {})
+    const { observationUrls, cleanedUpUrls }: BlobCopyResult = await copyAnalysisBlobsToObservation(photoUrls, dbUser.id, tempObservationId)
+    finalPhotos = observationUrls
+    if (cleanedUpUrls.length > 0) {
+      cleanupAnalysisBlobs(cleanedUpUrls).catch(() => {})
+    }
     markAnalysisSessionDone(dbUser.id)
   }
 
