@@ -1,6 +1,6 @@
 {
     "name":  "@crabwatch/mobile",
-    "version":  "1.0.0+0021",
+    "version":  "1.0.0+0022",
     "private":  true,
     "main":  "index.js",
     "scripts":  {

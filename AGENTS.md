@@ -1,7 +1,7 @@
 ﻿# CrabWatch — Work Progress Tracker
 
-> **Last Updated**: 2026-06-26
-> **Current Focus**: User management pagination + search complete. Legacy image path investigation done.
+> **Last Updated**: 2026-06-27
+> **Current Focus**: Legacy image path migration complete. 3 observations fixed, 15 remain with lost source blobs.
 
 ## Goal
 Build an AI-guided crab observation capture flow with fully dynamic species detection. The AI identifies any crab species in photos, and unknown species are auto-created in the database.
@@ -519,11 +519,13 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Completed: Updated both navigation calls to `navigation.navigate('MainTabs', { screen: 'New' })` and `navigation.navigate('MainTabs', { screen: 'Home' })` to properly route through the nested Tab navigator.
 - Verified: `tsc --noEmit` passes cleanly for all packages
 
-### Completed (Legacy Image Path Investigation)
+### Completed (Legacy Image Path Migration)
 - Investigated: 3 out of 12 observations still reference `/analysis/` folder URLs with expired SAS tokens (May 2026). 9 observations use `example.com` seed data. 0 observations have `/observation/` folder URLs.
 - Root cause: `copyAnalysisBlobsToObservation` (line 538) catches copy errors and falls back to original `/analysis/` URL. Later `cleanupAnalysisBlobs` deletes the source blobs, making images permanently inaccessible.
 - `refreshPhotoUrls` regenerates SAS for `/analysis/` paths, but fails silently when blobs no longer exist, returning stale expired URLs.
 - Impact: 3 observations have broken images. No migration possible — source blobs are gone.
+- Migration: Created `fixAnalysisPaths.ts` script to match restored `/analysis/` blobs to observations by `userId + date` with chronological ordering.
+- Migration results: 6 blobs found in `/analysis/` for user `a944b293` on `2026-06-27`. Copied to `/observations/` and updated DB. 3 observations fully fixed. 15 observations remain with irrecoverable placeholders (source blobs were deleted before restore).
 
 ## Next Steps
 - Validate — Mobile staging build with `warn`/`soft_block`/`hard_block` quality gate configs
@@ -546,7 +548,8 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - **AI Species Matching (Web)**: `findSpeciesMatch` tries UUID -> exact text match -> partial/fuzzy match (normalized names, genus fallback). `isUuid` enforces strict validation before submission.
 - **Offline support**: Analysis failure falls back to manual observation form with photos
 - **Blob cleanup**: Analysis photos deleted from Azure Storage 60s after analysis completes
-- **Legacy image path bug**: `copyAnalysisBlobsToObservation` falls back to original `/analysis/` URL on copy failure. `refreshPhotoUrls` fails silently when source blobs are gone. 3 observations have permanently broken images.
+- **Legacy image path bug**: `copyAnalysisBlobsToObservation` falls back to original `/analysis/` URL on copy failure. `refreshPhotoUrls` fails silently when source blobs are gone. 15 observations have permanently broken images (source blobs deleted before restore). 3 observations fixed via migration script.
+- **Migration script**: `fixAnalysisPaths.ts` matches blobs to observations by `userId + date` with chronological ordering. Only works when source blobs exist in `/analysis/` folder.
 - **Capture assistance**: Gyroscope detects hand shake (std dev > 6 = slight, > 15 = heavy). Accelerometer Z-axis estimates lighting. Tap-to-focus triggers autofocus with visual indicator.
 - **Portrait lock**: `expo-screen-orientation` locks camera to portrait mode. Accelerometer X/Y detects landscape tilt, shows "Rotate to portrait" overlay.
 - **View validation**: Post-capture analysis checks brightness/aspect ratio to detect wrong view (e.g., ventral when dorsal expected). Shows warning card with specific issues.
@@ -694,6 +697,8 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - `server/src/utils/schemas.ts` — Zod validation (nullable `bw`, `detectedCoin`, strict UUID `speciesId`, invites, password reset)
 - `server/src/services/analytics.ts` — Skips null `bw` in condition factor calc
 - `server/prisma/schema.prisma` — DB schema with `gender @map("sex")`, nullable `bw`, `detectedCoin`, `Invite` model, `PasswordReset` model
+- `server/scripts/fixAnalysisPaths.ts` — Migration script matching `/analysis/` blobs to observations by `userId + date`
+- `server/scripts/checkPhotoPaths.ts` — Audit script for observation photo paths
 - `server/.env` — Added `RESEND_API_KEY`, `FRONTEND_URL`, `APPLICATIONINSIGHTS_CONNECTION_STRING`
 - `server/src/index.ts` — App Insights init (`useAzureMonitor`), telem``retry`` endpoint (`POST /api/v1/telem``retry``/error`)
 - `server/src/services/rewardEngine.ts` — Core XP award with idempotency, level calculation, streak tracking, leaderboard cache invalidation
