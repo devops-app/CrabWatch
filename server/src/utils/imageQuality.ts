@@ -1,4 +1,5 @@
 import sharp from 'sharp'
+import { isSafeImageUrl } from './urlValidation'
 import {
   calculateLaplacianVariance,
   classifyBlurScore,
@@ -307,6 +308,9 @@ function evaluateBrightness(brightness: number): 'fail' | 'warn' | 'pass' {
 }
 
 async function fetchImageBuffer(imageUrl: string): Promise<Buffer> {
+  if (!isSafeImageUrl(imageUrl)) {
+    throw new Error(`Blocked unsafe image URL: ${imageUrl.slice(0, 100)}`)
+  }
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 12000)
 

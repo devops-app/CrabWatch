@@ -2,6 +2,7 @@ import { Request, Response } from 'express'
 import path from 'path'
 import fs from 'fs'
 import zlib from 'zlib'
+import { sanitizeFilename } from '../utils/sanitize'
 import { AuthRequest } from '../middleware/auth'
 import { getPrisma } from '../services/container'
 import { BackupResult } from '@crabwatch/shared'
@@ -34,8 +35,11 @@ export const listBackups = asyncHandler(async (_req: AuthRequest, res: Response)
 
 export const deleteBackup = asyncHandler(async (req: AuthRequest, res: Response) => {
   const __ = createTranslator(req)
-  const fileName = req.params.fileName
+  const fileName = sanitizeFilename(req.params.fileName)
   const filePath = path.join(BACKUP_DIR, fileName)
+  if (!filePath.startsWith(BACKUP_DIR + path.sep)) {
+    throw new NotFoundError(__('admin.backup.notFound', 'admin'))
+  }
 
   if (!fs.existsSync(filePath)) {
     throw new NotFoundError(__('admin.backup.notFound', 'admin'))
@@ -47,8 +51,11 @@ export const deleteBackup = asyncHandler(async (req: AuthRequest, res: Response)
 
 export const downloadBackup = asyncHandler(async (req: Request, res: Response) => {
   const __ = createTranslator(req)
-  const fileName = req.params.fileName
+  const fileName = sanitizeFilename(req.params.fileName)
   const filePath = path.join(BACKUP_DIR, fileName)
+  if (!filePath.startsWith(BACKUP_DIR + path.sep)) {
+    throw new NotFoundError(__('admin.backup.notFound', 'admin'))
+  }
 
   if (!fs.existsSync(filePath)) {
     throw new NotFoundError(__('admin.backup.notFound', 'admin'))

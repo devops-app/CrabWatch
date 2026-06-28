@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto'
+import { isSafeImageUrl } from '../utils/urlValidation'
 import { BlobSASPermissions } from '@azure/storage-blob'
 import { getBlobService } from '../services/upload'
 import { buildAnalysisBlobPath } from '../utils/blobPath'
@@ -199,6 +200,9 @@ async function parseAgentResponse(body: AgentResponse): Promise<string> {
 async function toDataUrl(imageUrl: string): Promise<string> {
   if (imageUrl.startsWith('data:')) {
     return imageUrl
+  }
+  if (!isSafeImageUrl(imageUrl)) {
+    throw new Error(`Blocked unsafe image URL: ${imageUrl.slice(0, 100)}`)
   }
 
   const controller = new AbortController()
