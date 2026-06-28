@@ -9,12 +9,14 @@ try {
 }
 
 import express from 'express'
+import fs from 'fs'
 import path from 'path'
 
 const resolvePkg = (): { version: string } => {
   for (const rel of ['../../package.json', '../package.json', './package.json']) {
     try {
-      return require(path.join(__dirname, rel)) as { version: string }
+      const p = path.resolve(__dirname, rel)
+      return JSON.parse(fs.readFileSync(p, 'utf-8')) as { version: string }
     } catch { /* try next */ }
   }
   return { version: 'unknown' }
@@ -58,8 +60,8 @@ createContainer(prisma, config, admin, getBlobService)
 const app = express()
 
 // Azure App Service sits behind a reverse proxy that adds X-Forwarded-For headers.
-// Enable trust proxy so express-rate-limit can accurately identify user IPs.
-app.set('trust proxy', true)
+// Use 'loopback' to trust only Azure's internal proxy (not 'true' which is a security risk).
+app.set('trust proxy', 'loopback')
 
 app.use(requestIdMiddleware)
 app.use(compression())
@@ -99,11 +101,14 @@ app.use(express.json({ limit: '1mb' }))
 app.use(cookieParser())
 app.use(performanceMiddleware)
 
+const stripPort = (ip: string | undefined) => (ip || '127.0.0.1').replace(/:\d+$/, '')
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: config.nodeEnv === 'production' ? 20 : 100,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => stripPort(req.ip),
   message: { success: false, error: 'Too many authentication attempts. Please try again later.' },
 })
 app.use('/api/v1/auth/login', authLimiter)
@@ -114,6 +119,7 @@ const analyticsLimiter = rateLimit({
   max: config.nodeEnv === 'production' ? 100 : 300,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => stripPort(req.ip),
 })
 app.use('/api/v1/analytics', analyticsLimiter)
 
@@ -122,6 +128,7 @@ const apiLimiter = rateLimit({
   max: config.nodeEnv === 'production' ? 500 : 1000,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => stripPort(req.ip),
 })
 app.use('/api/', apiLimiter)
 
@@ -130,6 +137,7 @@ const adminEngagementLimiter = rateLimit({
   max: config.nodeEnv === 'production' ? 60 : 200,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => stripPort(req.ip),
   message: { success: false, error: 'Too many admin engagement requests. Please try again later.' },
 })
 app.use('/api/v1/admin/engagement/gamification/rules', adminEngagementLimiter)
