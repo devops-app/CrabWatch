@@ -44,10 +44,10 @@ jobs:
           npm install --omit=dev --no-audit --no-fund --no-package-lock
           npx prisma generate
           # Bundle @crabwatch/shared (workspace package — npm install doesn't know about it)
-          mkdir -p node_modules/@crabwatch
-          cp -r ../shared/dist node_modules/@crabwatch/shared-dist
-          cp ../shared/package.json node_modules/@crabwatch/shared-dist/
-          mv node_modules/@crabwatch/shared-dist node_modules/@crabwatch/shared
+          # Must match package.json "main": "dist/index.js" — wrap contents in dist/ subdirectory
+          mkdir -p node_modules/@crabwatch/shared/dist
+          cp ../shared/package.json node_modules/@crabwatch/shared/
+          cp -r ../shared/dist/* node_modules/@crabwatch/shared/dist/
           # Rename to bundled_modules so Oryx doesn't detect/destroy it
           mv node_modules bundled_modules
           # Include startup wrapper to bypass Oryx node_modules handling
