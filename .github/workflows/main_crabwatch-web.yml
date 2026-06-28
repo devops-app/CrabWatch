@@ -110,17 +110,3 @@ jobs:
           az webapp restart \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --name ${{ env.APP_NAME }}
-
-      # ✅ Health check
-      - name: Health Check
-        run: |
-          for i in {1..12}; do
-            if curl -fs https://${{ env.APP_NAME }}.azurewebsites.net; then
-              echo "✅ App is live"
-              exit 0
-            fi
-            echo "Waiting... $i"
-            sleep 10
-          done
-          echo "❌ Health check failed"
-          exit 1

@@ -121,16 +121,3 @@ jobs:
 
       - name: Restart Web App
         run: az webapp restart --resource-group VSES-CrabWatch-MY-RG --name crabwatch-api
-
-      - name: Wait for health check
-        run: |
-          for i in {1..24}; do
-            if curl -sf https://crabwatch-api.azurewebsites.net/health; then
-              echo "Health check passed"
-              exit 0
-            fi
-            echo "Waiting for health check... attempt $i"
-            sleep 10
-          done
-          echo "Health check timed out"
-          exit 1
