@@ -20,6 +20,8 @@ fi
 # Clean Oryx cache to prevent re-extraction on next boot
 rm -f /home/site/node_modules.tar.gz /home/site/oryx-manifest.toml
 rm -f /home/site/wwwroot/oryx-manifest.toml
+# Clean stale shared backup from previous deploy cycles
+rm -rf /home/site/shared-backup
 
 # --- Restore bundled dependencies ---
 # Deploy zip includes `bundled_modules` (renamed from node_modules to avoid
@@ -41,24 +43,15 @@ else
   echo "[STARTUP] node_modules already present, skipping install"
 fi
 
-# --- Restore bundled @crabwatch/shared ---
-# Only restore from backup if the bundled version is missing or broken
-# (i.e. lacks the dist/ subdirectory expected by package.json "main" field)
-if [ -d node_modules/@crabwatch/shared/dist ]; then
-  echo "[STARTUP] @crabwatch/shared already bundled with dist/, skipping backup restore"
-elif [ -d /home/site/shared-backup/@crabwatch/shared ]; then
-  echo "[STARTUP] Restoring @crabwatch/shared from backup"
-  mkdir -p node_modules/@crabwatch
-  rm -rf node_modules/@crabwatch/shared
-  cp -R /home/site/shared-backup/@crabwatch/shared node_modules/@crabwatch/shared
-elif [ -f node_modules.tar.gz ]; then
-  echo "[STARTUP] Extracting @crabwatch/shared from node_modules.tar.gz"
-  mkdir -p node_modules/@crabwatch
-  tar -xzf node_modules.tar.gz -C node_modules ./@crabwatch/shared 2>/dev/null || true
-  mkdir -p /home/site/shared-backup
-  cp -R node_modules/@crabwatch/shared /home/site/shared-backup/@crabwatch/shared 2>/dev/null || true
+# --- Validate bundled @crabwatch/shared ---
+# CI bundles shared into node_modules/@crabwatch/shared/ with dist/ subdirectory
+# matching package.json "main": "dist/index.js". No fallback needed — if the
+# bundle is broken, the deploy should be re-run.
+if [ -f node_modules/@crabwatch/shared/dist/index.js ]; then
+  echo "[STARTUP] @crabwatch/shared bundled correctly"
 else
-  echo "[STARTUP] WARNING: @crabwatch/shared not found — app may fail to start"
+  echo "[STARTUP] ERROR: @crabwatch/shared missing or malformed — aborting"
+  exit 1
 fi
 
 # --- Start the server ---
