@@ -9,7 +9,17 @@ try {
 }
 
 import express from 'express'
-const pkg = require('../package.json') as { version: string }
+import path from 'path'
+
+const resolvePkg = (): { version: string } => {
+  for (const rel of ['../../package.json', '../package.json', './package.json']) {
+    try {
+      return require(path.join(__dirname, rel)) as { version: string }
+    } catch { /* try next */ }
+  }
+  return { version: 'unknown' }
+}
+const pkg = resolvePkg()
 import cors from 'cors'
 import helmet from 'helmet'
 import compression from 'compression'
