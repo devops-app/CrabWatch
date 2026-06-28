@@ -9,6 +9,7 @@ try {
 }
 
 import express from 'express'
+const pkg = require('../package.json') as { version: string }
 import cors from 'cors'
 import helmet from 'helmet'
 import compression from 'compression'
@@ -199,9 +200,9 @@ app.post('/api/v1/telemetry/error', (req, res) => {
 app.get('/health', async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`
-    res.json({ status: 'ok', timestamp: new Date().toISOString() })
+    res.json({ status: 'ok', version: pkg.version, timestamp: new Date().toISOString() })
   } catch {
-    res.status(503).json({ status: 'degraded', database: 'unreachable' })
+    res.status(503).json({ status: 'degraded', version: pkg.version, database: 'unreachable' })
   }
 })
 

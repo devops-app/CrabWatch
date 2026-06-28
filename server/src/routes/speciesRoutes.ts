@@ -6,6 +6,7 @@ import {
   updateSpecies,
   deleteSpecies,
   translateSpecies,
+  refreshSpeciesImages,
 } from '../controllers/speciesController'
 import { authMiddleware, requireAuth, resolveUser, requireRole } from '../middleware/auth'
 import { createSpeciesSchema, updateSpeciesSchema } from '../utils/schemas'
@@ -34,6 +35,32 @@ router.use(authMiddleware)
  *                 data: { type: array, items: { $ref: '#/components/schemas/Species' } }
  */
 router.get('/', listSpecies)
+
+/**
+ * @openapi
+ * /api/species/images/refresh:
+ *   post:
+ *     tags: [Species]
+ *     summary: Refresh SAS URLs for all species images (Admin only)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Refresh result
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalSpecies: { type: integer }
+ *                     updated: { type: integer }
+ *     x-ai-summary: Refresh SAS URLs for all species images (Admin only)
+ */
+router.post('/images/refresh', requireAuth, resolveUser, requireRole('ADMIN'), refreshSpeciesImages)
 
 /**
  * @openapi

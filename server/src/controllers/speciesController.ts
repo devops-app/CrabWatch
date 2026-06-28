@@ -1,9 +1,11 @@
 import { Response } from 'express'
 import { Prisma } from '@prisma/client'
+import { BlobSASPermissions } from '@azure/storage-blob'
 import { AuthRequest } from '../middleware/auth'
 import { asyncHandler, NotFoundError } from '../utils/errors'
 import { createTranslator } from '../middleware/i18n'
 import { getPrisma } from '../services/container'
+import { getBlobService } from '../services/upload'
 import { translateSpecies as translateSpeciesText } from '../services/translatorService'
 import { SpeciesResponse, KeyFeature, DistributionZone } from '@crabwatch/shared'
 import { getFromCache, setCache, clearCache } from '../utils/cache'
@@ -153,6 +155,71 @@ export const deleteSpecies = asyncHandler(async (req: AuthRequest, res: Response
   res.json({ success: true, data: null })
 })
 
+async function refreshSpeciesImageUrls(images: string[]): Promise<string[]> {
+  const refreshed: string[] = []
+  const containerName = process.env.AZURE_STORAGE_CONTAINER || 'crabwatch-uploads'
+  const service = getBlobService()
+  const containerClient = service.getContainerClient(containerName)
+
+  for (const url of images) {
+    if (!url.includes('?sv=')) {
+      refreshed.push(url)
+      continue
+    }
+
+    try {
+      const afterContainer = url.split(`${containerName}/`)
+      if (afterContainer.length < 2) {
+        refreshed.push(url)
+        continue
+      }
+      const blobPath = afterContainer.slice(1).join('/')
+      const decodedName = decodeURIComponent(blobPath.split('?')[0])
+      const blobClient = containerClient.getBlockBlobClient(decodedName)
+      const sasUrl = await blobClient.generateSasUrl({
+        startsOn: new Date(Date.now() - 2 * 60 * 1000),
+        expiresOn: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        permissions: BlobSASPermissions.parse('r'),
+      })
+      refreshed.push(sasUrl)
+    } catch {
+      refreshed.push(url)
+    }
+  }
+  return refreshed
+}
+
+export const refreshSpeciesImages = asyncHandler(async (_req: AuthRequest, res: Response) => {
+  const speciesList = await getPrisma().species.findMany()
+
+  let updated = 0
+  for (const species of speciesList) {
+    const images = parseJsonArray<string>(species.images)
+    if (images.length === 0) continue
+
+    const refreshed = await refreshSpeciesImageUrls(images)
+    const changed = refreshed.some((url, i) => url !== images[i])
+
+    if (changed) {
+      await getPrisma().species.update({
+        where: { id: species.id },
+        data: { images: toJson(refreshed) },
+      })
+      updated++
+    }
+  }
+
+  clearCache('species:')
+
+  res.json({
+    success: true,
+    data: {
+      totalSpecies: speciesList.length,
+      updated,
+    },
+  })
+})
+
 export const translateSpecies = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params
   const { to } = req.query
@@ -167,6 +234,8 @@ export const translateSpecies = asyncHandler(async (req: AuthRequest, res: Respo
     speciesId: species.id,
     commonName: species.commonName,
     description: species.description,
+    keyFeatures: parseJsonArray<KeyFeature>(species.keyFeatures),
+    distributionZones: parseJsonArray<DistributionZone>(species.distributionZones),
     to: targetLocale,
   })
 

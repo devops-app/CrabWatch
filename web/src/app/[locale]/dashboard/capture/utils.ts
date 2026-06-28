@@ -1,21 +1,6 @@
 import type { CrabAnalysisResult, PhotoView, SpeciesResponse, ViewDetectionResult } from '@crabwatch/shared'
 import { api } from '@/lib/api'
 
-export const COIN_SERIES = {
-  'Third Series (Current)': [
-    { label: '5 sen (17.78mm)', value: '5 sen (Third Series, 17.78 mm)' },
-    { label: '10 sen (18.80mm)', value: '10 sen (Third Series, 18.80 mm)' },
-    { label: '20 sen (20.60mm)', value: '20 sen (Third Series, 20.60 mm)' },
-    { label: '50 sen (22.65mm)', value: '50 sen (Third Series, 22.65 mm)' },
-  ],
-  'Second Series (1989-2011)': [
-    { label: '5 sen (16.20mm)', value: '5 sen (Second Series, 16.20 mm)' },
-    { label: '10 sen (19.40mm)', value: '10 sen (Second Series, 19.40 mm)' },
-    { label: '20 sen (23.59mm)', value: '20 sen (Second Series, 23.59 mm)' },
-    { label: '50 sen (27.76mm)', value: '50 sen (Second Series, 27.76 mm)' },
-  ],
-}
-
 export const CAPTURE_STEPS: Array<{ key: PhotoView; required: boolean }> = [
   { key: 'dorsal', required: true },
   { key: 'ventral', required: true },

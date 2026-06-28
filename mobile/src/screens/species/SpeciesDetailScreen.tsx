@@ -70,6 +70,16 @@ export function SpeciesDetailScreen() {
     return species?.description ?? ''
   }, [species, translation, needsTranslation])
 
+  const displayKeyFeatures = useMemo(() => {
+    if (translation && needsTranslation) return translation.keyFeatures
+    return species?.keyFeatures ?? []
+  }, [species, translation, needsTranslation])
+
+  const displayDistributionZones = useMemo(() => {
+    if (translation && needsTranslation) return translation.distributionZones
+    return species?.distributionZones ?? []
+  }, [species, translation, needsTranslation])
+
   const loadSpecies = async () => {
     try {
       const data = await api.getSpecies(speciesId)
@@ -133,10 +143,10 @@ export function SpeciesDetailScreen() {
           )}
         </Card>
 
-        {species.keyFeatures.length > 0 && (
+        {displayKeyFeatures.length > 0 && (
           <Card padding={16}>
             <Text style={styles.cardTitle}>{t('keyFeatures')}</Text>
-            {species.keyFeatures.map((feature: { trait: string; value: string }, i: number) => (
+            {displayKeyFeatures.map((feature: { trait: string; value: string }, i: number) => (
               <View key={i} style={styles.featureRow}>
                 <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
                 <View style={styles.featureText}>
@@ -148,12 +158,12 @@ export function SpeciesDetailScreen() {
           </Card>
         )}
 
-        {species.distributionZones.length > 0 && (
+        {displayDistributionZones.length > 0 && (
           <Card padding={16}>
             <Text style={styles.cardTitle}>
-              {t('distributionZones', { count: species.distributionZones.length })}
+              {t('distributionZones', { count: displayDistributionZones.length })}
             </Text>
-            {species.distributionZones.map((zone: { name: string }, i: number) => (
+            {displayDistributionZones.map((zone: { name: string }, i: number) => (
               <View key={i} style={styles.zoneRow}>
                 <Ionicons name="location" size={18} color={COLORS.primary} />
                 <Text style={styles.zoneName}>{zone.name}</Text>

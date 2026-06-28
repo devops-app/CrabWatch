@@ -50,7 +50,7 @@ export const getUploadUrlHandler = asyncHandler(async (req: AuthRequest, res: Re
   })
 
   const readSasUrl = await blobClient.generateSasUrl({
-    expiresOn: new Date(Date.now() + 60 * 60 * 1000),
+    expiresOn: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
     permissions: 'r' as unknown as BlobSASPermissions,
   })
 
@@ -102,7 +102,7 @@ export const uploadPhoto = asyncHandler(async (req: AuthRequest & { file?: Multe
   })
 
   const readSasUrl = await blobClient.generateSasUrl({
-    expiresOn: new Date(Date.now() + 60 * 60 * 1000),
+    expiresOn: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
     permissions: 'r' as unknown as BlobSASPermissions,
   })
 

@@ -1,4 +1,5 @@
 import { getTranslations } from 'next-intl/server'
+import pkg from '../../../../../package.json'
 
 export default async function AboutPage(): Promise<React.JSX.Element> {
   const t = await getTranslations('about')
@@ -7,7 +8,7 @@ export default async function AboutPage(): Promise<React.JSX.Element> {
     <div className="max-w-3xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-ocean-900 mb-2">{t('title')}</h1>
-        <p className="text-gray-500">{t('version')} 1.0.0</p>
+        <p className="text-gray-500">{t('version')} {pkg.version}</p>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">

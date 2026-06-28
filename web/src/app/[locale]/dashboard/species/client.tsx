@@ -24,9 +24,11 @@ export function SpeciesClient({ initialSpecies }: { initialSpecies: SpeciesRespo
     setTranslating(true)
     api.translateSpecies(selected.id, locale)
       .then((data) => {
+        console.log('[Species] translateSpecies result:', data)
         if (!cancelled) setTranslation(data)
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error('[Species] translateSpecies failed:', err)
         if (!cancelled) setTranslation(null)
       })
       .finally(() => {
@@ -43,6 +45,16 @@ export function SpeciesClient({ initialSpecies }: { initialSpecies: SpeciesRespo
   const displayDescription = useMemo(() => {
     if (translation && locale !== 'en') return translation.description
     return selected?.description ?? ''
+  }, [selected, translation, locale])
+
+  const displayKeyFeatures = useMemo(() => {
+    if (translation && locale !== 'en') return translation.keyFeatures
+    return selected?.keyFeatures ?? []
+  }, [selected, translation, locale])
+
+  const displayDistributionZones = useMemo(() => {
+    if (translation && locale !== 'en') return translation.distributionZones
+    return selected?.distributionZones ?? []
   }, [selected, translation, locale])
 
   const filtered = useMemo(() => {
@@ -173,11 +185,11 @@ export function SpeciesClient({ initialSpecies }: { initialSpecies: SpeciesRespo
                 </div>
               )}
 
-              {selected.keyFeatures.length > 0 && (
+              {displayKeyFeatures.length > 0 && (
                 <div>
                   <h3 className="text-sm font-semibold text-ocean-800 mb-2">{t('keyFeatures')}</h3>
                   <div className="space-y-2">
-                    {selected.keyFeatures.map((kf, i) => (
+                    {displayKeyFeatures.map((kf, i) => (
                       <div key={i} className="flex gap-3 py-2 border-b border-gray-100 last:border-0">
                         <span className="text-xs font-medium text-gray-500 w-28 flex-shrink-0">{kf.trait}</span>
                         <span className="text-sm text-gray-800">{kf.value}</span>
@@ -187,11 +199,11 @@ export function SpeciesClient({ initialSpecies }: { initialSpecies: SpeciesRespo
                 </div>
               )}
 
-              {selected.distributionZones.length > 0 && (
+              {displayDistributionZones.length > 0 && (
                 <div>
                   <h3 className="text-sm font-semibold text-ocean-800 mb-2">{t('distributionZones')}</h3>
                   <div className="flex flex-wrap gap-2">
-                    {selected.distributionZones.map((dz, i) => (
+                    {displayDistributionZones.map((dz, i) => (
                       <span
                         key={i}
                         className="px-3 py-1 bg-ocean-50 text-ocean-800 rounded-full text-xs font-medium"

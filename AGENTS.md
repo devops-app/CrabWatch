@@ -1,7 +1,7 @@
 ﻿# CrabWatch — Work Progress Tracker
 
 > **Last Updated**: 2026-06-27
-> **Current Focus**: HEIC conversion complete. 117 blobs converted to JPEG. 15 observations remain with irrecoverable placeholders.
+> **Current Focus**: Dynamic version display across all 3 platforms. `GET /health` exposes server version.
 
 ## Goal
 Build an AI-guided crab observation capture flow with fully dynamic species detection. The AI identifies any crab species in photos, and unknown species are auto-created in the database.
@@ -543,6 +543,14 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Verified: `pnpm typecheck` passes cleanly across all 4 packages.
 - Verified: Pushed to `origin/main` (commit `d37d4b9`, version `1.0.0+0023`).
 
+### Completed (Dynamic Version Display)
+- Completed: Web `about/page.tsx` — replaced hardcoded `1.0.0` with `pkg.version` from `package.json` (read at build time via Server Component import).
+- Completed: Mobile `AboutScreen.tsx` — replaced hardcoded `1.0.0` with `Application.nativeApplicationVersion` from `expo-application` (read at runtime from `app.json`).
+- Completed: Server `index.ts` — `GET /health` now returns `version` field from `package.json` (e.g., `{"status":"ok","version":"1.0.0+0025","timestamp":"..."}`).
+- Completed: Updated health check test in `api.test.ts` to assert `res.body.version` is defined.
+- Verified: `next build` passes cleanly for web.
+- Verified: `tsc --noEmit` passes cleanly for mobile.
+
 ## Next Steps
 - Verify API deployment succeeds with fixed `shared/tsconfig.json`
 - Validate — Mobile staging build with `warn`/`soft_block`/`hard_block` quality gate configs
@@ -667,6 +675,7 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - **Metro config**: `— Mobile/metro.config.js` pins `react` via `extraNodeModules`, but resolver still watches root `node_modules`. React Navigation 7.x packages resolve from root hoisted `node_modules`. `watchman: false` + narrowed `watchFolders` required on Windows to avoid "Failed to start watch mode" error.
 - **Expo Go React mismatch**: Expo Go SDK 54 bundles React `19.2.0-canary` but app uses `19.2.7`, causing "Invalid hook call" + `useId` crash. Must use a development build (`expo-dev-client`) instead of Expo Go for React 19 apps.
 - **expo-dev-client SDK pin**: `expo-dev-client` must stay at SDK 54 (`~4.0.x`). Other packages (`expo-system-ui`, `react`, etc.) can be upgraded independently.
+- **Dynamic version display**: All 3 platforms read version from auto-incremented `package.json` on every commit. Web uses Server Component import at build time. Mobile uses `expo-application` at runtime. Server exposes `version` in `GET /health` response.
 
 ## Relevant Files
 ### AI Analysis

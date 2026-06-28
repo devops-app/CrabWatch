@@ -10,10 +10,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useTranslation } from 'react-i18next'
+import * as Application from 'expo-application'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
-
-const APP_VERSION = '1.0.0'
 
 export function AboutScreen() {
   const { t } = useTranslation()
@@ -30,7 +29,7 @@ export function AboutScreen() {
             <Ionicons name="finger-print" size={48} color={COLORS.primary} />
           </View>
           <Text style={styles.appName}>{t('about.appName')}</Text>
-          <Text style={styles.appVersion}>v{APP_VERSION}</Text>
+          <Text style={styles.appVersion}>v{Application.nativeApplicationVersion ?? '1.0.0'}</Text>
         </View>
 
         <View style={styles.card}>

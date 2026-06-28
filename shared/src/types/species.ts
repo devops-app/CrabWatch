@@ -49,4 +49,6 @@ export interface SpeciesResponse {
 export interface SpeciesTranslation {
   commonName: string
   description: string
+  keyFeatures: KeyFeature[]
+  distributionZones: { name: string }[]
 }

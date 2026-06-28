@@ -1,7 +1,7 @@
 'use client'
 
+import { useMemo } from 'react'
 import { useTranslations } from 'next-intl'
-import { COIN_SERIES } from './utils'
 
 interface CoinSelectorProps {
   coinType: string
@@ -23,6 +23,27 @@ export function CoinSelector({
   onChangeCoin,
 }: CoinSelectorProps) {
   const t = useTranslations('capture')
+
+  const coinSeries = useMemo(() => [
+    {
+      series: t('coinSelector.thirdSeries'),
+      options: [
+        { label: t('coins.third5'), value: '5 sen (Third Series, 17.78 mm)' },
+        { label: t('coins.third10'), value: '10 sen (Third Series, 18.80 mm)' },
+        { label: t('coins.third20'), value: '20 sen (Third Series, 20.60 mm)' },
+        { label: t('coins.third50'), value: '50 sen (Third Series, 22.65 mm)' },
+      ],
+    },
+    {
+      series: t('coinSelector.secondSeries'),
+      options: [
+        { label: t('coins.second5'), value: '5 sen (Second Series, 16.20 mm)' },
+        { label: t('coins.second10'), value: '10 sen (Second Series, 19.40 mm)' },
+        { label: t('coins.second20'), value: '20 sen (Second Series, 23.59 mm)' },
+        { label: t('coins.second50'), value: '50 sen (Second Series, 27.76 mm)' },
+      ],
+    },
+  ], [t])
 
   if (coinSelected) {
     return (
@@ -50,7 +71,7 @@ export function CoinSelector({
         <span className="font-semibold text-amber-700">{t('coinSelector.letAiDetect')}</span>
       </button>
 
-      {Object.entries(COIN_SERIES).map(([series, options]) => (
+      {coinSeries.map(({ series, options }) => (
         <div key={series} className="mb-2">
           <button
             type="button"
