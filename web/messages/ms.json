@@ -839,10 +839,19 @@
     "languageSaveFailed": "Gagal menyimpan pilihan bahasa"
   },
   "researcher": {
-    "title": "Barisan Pengesahan",
+    "title": "Papan Pemuka Penyelidik",
+    "tabs": {
+      "pending": "Barisan Pengesahan",
+      "approved": "Disahkan"
+    },
     "pendingCount_one": "{count} pemerhatian menunggu semakan",
     "pendingCount_other": "{count} pemerhatian menunggu semakan",
-    "empty": "Tiada pemerhatian menunggu. Semua selesai!",
+    "pendingEmpty": "Tiada pemerhatian menunggu. Semua selesai!",
+    "approvedCount_one": "{count} pemerhatian disahkan",
+    "approvedCount_other": "{count} pemerhatian disahkan",
+    "approvedEmpty": "Belum ada pemerhatian yang disahkan.",
+    "close": "Tutup",
+    "loading": "Memuatkan...",
     "na": "T/A",
     "previous": "Sebelumnya",
     "next": "Seterusnya",
@@ -868,7 +877,22 @@
     "fullScreen": "Pemerhatian skrin penuh",
     "viewPhoto": "Lihat gambar {index} skrin penuh",
     "photoAlt": "Gambar pemerhatian {index}",
-    "reviewObservation": "Semak pemerhatian untuk {species}"
+    "reviewObservation": "Semak pemerhatian untuk {species}",
+    "filters": {
+      "date": "Julang Tarikh",
+      "allTime": "Semua Masa",
+      "clear": "Kosongkan"
+    },
+    "dateRanges": {
+      "oneWeek": "1 Minggu",
+      "oneMonth": "1 Bulan",
+      "threeMonths": "3 Bulan",
+      "sixMonths": "6 Bulan",
+      "oneYear": "1 Tahun",
+      "custom": "Tersuai",
+      "from": "Dari",
+      "to": "Ke"
+    }
   },
   "leaderboard": {
     "title": "Papan Pendahulu",

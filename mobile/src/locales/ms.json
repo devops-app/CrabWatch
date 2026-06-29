@@ -860,11 +860,14 @@
   "researcher": {
     "title": "Penyelidik",
     "pending": "Menunggu",
+    "approved": "Disahkan",
     "rejected": "Ditolak",
     "noPending": "Tiada pemerhatian menunggu",
+    "noApproved": "Tiada pemerhatian disahkan",
     "noRejected": "Tiada pemerhatian ditolak",
     "allCaughtUp": "Semua Selesai!",
     "allCaughtUpHint": "Tiada pemerhatian menunggu untuk disemak.",
+    "approvedEmpty": "Belum ada pemerhatian yang disahkan.",
     "validate": "Sahkan",
     "reject": "Tolak",
     "approveTitle": "Sahkan Pemerhatian",
@@ -904,7 +907,21 @@
     "photoCount_other": "{{count}} foto",
     "loading": "Memuatkan...",
     "errorLoading": "Ralat memuatkan pemerhatian",
-    "pullToRefresh": "Tarik untuk segar semula"
+    "pullToRefresh": "Tarik untuk segar semula",
+    "filters": {
+      "date": "Julang Tarikh",
+      "clear": "Kosongkan"
+    },
+    "dateRanges": {
+      "oneWeek": "Minggu Lalu",
+      "oneMonth": "Bulan Lalu",
+      "threeMonths": "3 Bulan Lalu",
+      "sixMonths": "6 Bulan Lalu",
+      "oneYear": "Tahun Lalu",
+      "custom": "Julang Custom...",
+      "from": "Dari",
+      "to": "Ke"
+    }
   },
   "admin": {
     "tab": {

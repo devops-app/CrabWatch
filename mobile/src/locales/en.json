@@ -864,11 +864,14 @@
   "researcher": {
     "title": "Researcher",
     "pending": "Pending",
+    "approved": "Approved",
     "rejected": "Rejected",
     "noPending": "No pending observations",
+    "noApproved": "No approved observations",
     "noRejected": "No rejected observations",
     "allCaughtUp": "All Caught Up!",
     "allCaughtUpHint": "No pending observations to review.",
+    "approvedEmpty": "No approved observations yet.",
     "validate": "Validate",
     "reject": "Reject",
     "approveTitle": "Approve Observation",
@@ -909,7 +912,21 @@
     "photoCount_other": "{{count}} photos",
     "loading": "Loading...",
     "errorLoading": "Error loading observations",
-    "pullToRefresh": "Pull to refresh"
+    "pullToRefresh": "Pull to refresh",
+    "filters": {
+      "date": "Date Range",
+      "clear": "Clear"
+    },
+    "dateRanges": {
+      "oneWeek": "Last Week",
+      "oneMonth": "Last Month",
+      "threeMonths": "Last 3 Months",
+      "sixMonths": "Last 6 Months",
+      "oneYear": "Last Year",
+      "custom": "Custom Range...",
+      "from": "From",
+      "to": "To"
+    }
   },
   "admin": {
     "tab": {

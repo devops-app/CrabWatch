@@ -839,10 +839,19 @@
     "languageSaveFailed": "Failed to save language preference"
   },
   "researcher": {
-    "title": "Validation Queue",
+    "title": "Researcher Dashboard",
+    "tabs": {
+      "pending": "Validation Queue",
+      "approved": "Approved"
+    },
     "pendingCount_one": "{count} observation pending review",
     "pendingCount_other": "{count} observations pending review",
-    "empty": "No pending observations. All caught up!",
+    "pendingEmpty": "No pending observations. All caught up!",
+    "approvedCount_one": "{count} approved observation",
+    "approvedCount_other": "{count} approved observations",
+    "approvedEmpty": "No approved observations yet.",
+    "close": "Close",
+    "loading": "Loading...",
     "na": "N/A",
     "previous": "Previous",
     "next": "Next",
@@ -868,7 +877,22 @@
     "fullScreen": "Observation full screen",
     "viewPhoto": "View photo {index} full screen",
     "photoAlt": "Observation photo {index}",
-    "reviewObservation": "Review observation for {species}"
+    "reviewObservation": "Review observation for {species}",
+    "filters": {
+      "date": "Date Range",
+      "allTime": "All Time",
+      "clear": "Clear"
+    },
+    "dateRanges": {
+      "oneWeek": "1 Week",
+      "oneMonth": "1 Month",
+      "threeMonths": "3 Months",
+      "sixMonths": "6 Months",
+      "oneYear": "1 Year",
+      "custom": "Custom",
+      "from": "From",
+      "to": "To"
+    }
   },
   "leaderboard": {
     "title": "Leaderboard",

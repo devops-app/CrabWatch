@@ -1,11 +1,15 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 import { useFormatters } from '@/hooks/useFormatters'
 import { api } from '@/lib/api'
 import { logger } from '@/lib/logger'
 import type { ObservationResponse } from '@crabwatch/shared'
+
+type DateRange = '1week' | '1month' | '3months' | '6months' | '1year' | 'custom' | null
+
+type ResearcherTab = 'pending' | 'approved'
 
 interface ResearcherClientProps {
   initialObservations?: ObservationResponse[] | null
@@ -18,6 +22,7 @@ export function ResearcherClient({
 }: ResearcherClientProps): React.JSX.Element {
   const t = useTranslations('researcher')
   const fmt = useFormatters()
+  const [activeTab, setActiveTab] = useState<ResearcherTab>('pending')
   const [observations, setObservations] = useState<ObservationResponse[]>(initialObservations ?? [])
   const [total, setTotal] = useState(initialTotal ?? 0)
   const [page, setPage] = useState(1)
@@ -26,8 +31,13 @@ export function ResearcherClient({
   const [rejectionReason, setRejectionReason] = useState('')
   const [fullscreenPhoto, setFullscreenPhoto] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
+  const [dateRange, setDateRange] = useState<DateRange>(null)
+  const [customDateFrom, setCustomDateFrom] = useState('')
+  const [customDateTo, setCustomDateTo] = useState('')
+  const [dateDropdownOpen, setDateDropdownOpen] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
+  const dateDropdownRef = useRef<HTMLDivElement>(null)
 
   const openModal = useCallback((obs: ObservationResponse) => {
     previousFocusRef.current = document.activeElement as HTMLElement
@@ -41,6 +51,40 @@ export function ResearcherClient({
     if (previousFocusRef.current) {
       previousFocusRef.current.focus()
     }
+  }, [])
+
+  const effectiveDates = useMemo(() => {
+    if (!dateRange || dateRange === 'custom') {
+      return { from: customDateFrom || undefined, to: customDateTo || undefined }
+    }
+    const now = new Date()
+    const to = now.toISOString().split('T')[0]
+    const offsets: Record<string, number> = { '1week': 7, '1month': 30, '3months': 90, '6months': 180, '1year': 365 }
+    const from = new Date(now.getTime() - offsets[dateRange] * 86400000).toISOString().split('T')[0]
+    return { from, to }
+  }, [dateRange, customDateFrom, customDateTo])
+
+  const dateRangeLabel = useMemo(() => {
+    if (!dateRange) return t('filters.allTime')
+    const labels: Record<string, string> = {
+      '1week': t('dateRanges.oneWeek'),
+      '1month': t('dateRanges.oneMonth'),
+      '3months': t('dateRanges.threeMonths'),
+      '6months': t('dateRanges.sixMonths'),
+      '1year': t('dateRanges.oneYear'),
+      custom: t('dateRanges.custom'),
+    }
+    return labels[dateRange]
+  }, [dateRange, t])
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dateDropdownRef.current && !dateDropdownRef.current.contains(e.target as Node)) {
+        setDateDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
   }, [])
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -72,20 +116,46 @@ export function ResearcherClient({
     }
   }, [selectedObs, closeModal])
 
-  const loadPending = useCallback(async () => {
+  const loadObservations = useCallback(async () => {
+    setLoading(true)
     try {
-      const data = await api.getPendingObservations({ page, limit: 20 })
+      const data = await api.listObservations({
+        page,
+        limit: 20,
+        status: activeTab === 'pending' ? 'pending' : 'approved',
+        dateFrom: effectiveDates.from,
+        dateTo: effectiveDates.to,
+      })
       setObservations(data.observations)
       setTotal(data.total)
     } catch (err) {
-      logger.error('Failed to load pending observations', err)
+      logger.error('Failed to load observations', err)
+    } finally {
+      setLoading(false)
     }
-  }, [page])
+  }, [page, activeTab, effectiveDates])
 
   useEffect(() => {
     if (initialObservations) return
-    loadPending()
-  }, [initialObservations, loadPending])
+    loadObservations()
+  }, [initialObservations, loadObservations])
+
+  const handleTabChange = (tab: ResearcherTab) => {
+    setActiveTab(tab)
+    setPage(1)
+  }
+
+  useEffect(() => {
+    if (!initialObservations) {
+      loadObservations()
+    }
+  }, [activeTab, loadObservations, initialObservations])
+
+  useEffect(() => {
+    if (!initialObservations) {
+      setPage(1)
+    }
+  }, [dateRange, customDateFrom, customDateTo, initialObservations])
 
   const handleValidate = async (status: 'approved' | 'rejected') => {
     if (!selectedObs) return
@@ -97,7 +167,7 @@ export function ResearcherClient({
       })
       setSelectedObs(null)
       setRejectionReason('')
-      loadPending()
+      loadObservations()
     } catch (err) {
       logger.error('Validation failed', err)
     } finally {
@@ -105,19 +175,152 @@ export function ResearcherClient({
     }
   }
 
+  const subtitleKey =
+    activeTab === 'pending'
+      ? total === 1 ? 'pendingCount_one' : 'pendingCount_other'
+      : total === 1 ? 'approvedCount_one' : 'approvedCount_other'
+  const emptyKey = activeTab === 'pending' ? 'pendingEmpty' : 'approvedEmpty'
+
   return (
     <>
       <h1 className="text-3xl font-bold text-ocean-900 mb-2">
         {t('title')}
       </h1>
+
+      <div className="flex gap-1 mb-6 border-b border-gray-200">
+        <button
+          onClick={() => handleTabChange('pending')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'pending'
+              ? 'border-ocean-600 text-ocean-700'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          {t('tabs.pending')}
+          {activeTab !== 'pending' && total > 0 && (
+            <span className="ml-2 px-2 py-0.5 text-xs bg-amber-100 text-amber-800 rounded-full">
+              {total}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => handleTabChange('approved')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'approved'
+              ? 'border-ocean-600 text-ocean-700'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          {t('tabs.approved')}
+        </button>
+      </div>
+
       <p className="text-gray-600 mb-8">
-        {t(total === 1 ? 'pendingCount_one' : 'pendingCount_other', { count: total })}
+        {t(subtitleKey, { count: total })}
       </p>
 
-      {observations.length === 0 ? (
+      {activeTab === 'approved' && (
+        <div className="mb-6 flex items-end gap-3">
+          <div ref={dateDropdownRef} className="relative">
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('filters.date')}</label>
+            <button
+              type="button"
+              onClick={() => setDateDropdownOpen(!dateDropdownOpen)}
+              className={`input-field text-sm py-1.5 text-left flex items-center justify-between gap-2 ${
+                dateRange ? 'text-ocean-700 font-medium' : 'text-gray-500'
+              }`}
+            >
+              <span>{dateRangeLabel}</span>
+              <svg className={`w-4 h-4 transition-transform ${dateDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {dateDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-lg border border-gray-200 z-50 min-w-[200px] overflow-hidden">
+                <div className="py-1">
+                  {(
+                    [
+                      { id: '1week', label: t('dateRanges.oneWeek') },
+                      { id: '1month', label: t('dateRanges.oneMonth') },
+                      { id: '3months', label: t('dateRanges.threeMonths') },
+                      { id: '6months', label: t('dateRanges.sixMonths') },
+                      { id: '1year', label: t('dateRanges.oneYear') },
+                    ] as const
+                  ).map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                        dateRange === r.id
+                          ? 'bg-ocean-50 text-ocean-700 font-medium'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                      onClick={() => { setDateRange(r.id as DateRange); setDateDropdownOpen(false) }}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                  <div className="border-t border-gray-100 mt-1 pt-1">
+                    <button
+                      type="button"
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                        dateRange === 'custom'
+                          ? 'bg-ocean-50 text-ocean-700 font-medium'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                      onClick={() => { setDateRange('custom'); setDateDropdownOpen(false) }}
+                    >
+                      {t('dateRanges.custom')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          {dateRange === 'custom' && (
+            <div className="flex gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('dateRanges.from')}</label>
+                <input
+                  type="date"
+                  value={customDateFrom}
+                  onChange={(e) => setCustomDateFrom(e.target.value)}
+                  className="input-field text-sm py-1.5 w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('dateRanges.to')}</label>
+                <input
+                  type="date"
+                  value={customDateTo}
+                  onChange={(e) => setCustomDateTo(e.target.value)}
+                  className="input-field text-sm py-1.5 w-full"
+                />
+              </div>
+            </div>
+          )}
+          {dateRange && (
+            <div>
+              <button
+                type="button"
+                className="btn-secondary text-sm py-1.5"
+                onClick={() => { setDateRange(null); setCustomDateFrom(''); setCustomDateTo('') }}
+              >
+                {t('filters.clear')}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="card text-center py-12">
+          <p className="text-gray-500 text-lg">{t('loading')}</p>
+        </div>
+      ) : observations.length === 0 ? (
         <div className="card text-center py-12">
           <p className="text-gray-500 text-lg">
-            {t('empty')}
+            {t(emptyKey)}
           </p>
         </div>
       ) : (
@@ -149,7 +352,11 @@ export function ResearcherClient({
                     </p>
                   </div>
                   <div className="text-right">
-                    <span className="inline-block px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded-full">
+                    <span className={`inline-block px-2 py-1 text-xs rounded-full ${
+                      activeTab === 'approved'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-amber-100 text-amber-800'
+                    }`}>
                       CW: {obs.cw}cm | BW: {obs.bw ?? t('na')}g
                     </span>
                   </div>
@@ -278,42 +485,56 @@ export function ResearcherClient({
                 </div>
               )}
 
-              <div className="mb-4">
-                <label htmlFor="rejection-reason" className="block text-sm text-gray-500 mb-1">
-                  {t('rejectionReason')}
-                </label>
-                <textarea
-                  id="rejection-reason"
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  className="input-field"
-                  rows={3}
-                  placeholder={t('rejectionPlaceholder')}
-                />
-              </div>
+              {activeTab === 'pending' && (
+                <>
+                  <div className="mb-4">
+                    <label htmlFor="rejection-reason" className="block text-sm text-gray-500 mb-1">
+                      {t('rejectionReason')}
+                    </label>
+                    <textarea
+                      id="rejection-reason"
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      className="input-field"
+                      rows={3}
+                      placeholder={t('rejectionPlaceholder')}
+                    />
+                  </div>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={() => handleValidate('approved')}
-                  disabled={actionLoading}
-                  className="btn-primary flex-1 bg-mangrove-600 hover:bg-mangrove-700"
-                >
-                  {actionLoading ? t('processing') : t('approve')}
-                </button>
-                <button
-                  onClick={() => handleValidate('rejected')}
-                  disabled={actionLoading}
-                  className="btn-danger flex-1"
-                >
-                  {t('reject')}
-                </button>
-                <button
-                  onClick={closeModal}
-                  className="btn-secondary"
-                >
-                  {t('cancel')}
-                </button>
-              </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => handleValidate('approved')}
+                      disabled={actionLoading}
+                      className="btn-primary flex-1 bg-mangrove-600 hover:bg-mangrove-700"
+                    >
+                      {actionLoading ? t('processing') : t('approve')}
+                    </button>
+                    <button
+                      onClick={() => handleValidate('rejected')}
+                      disabled={actionLoading}
+                      className="btn-danger flex-1"
+                    >
+                      {t('reject')}
+                    </button>
+                    <button
+                      onClick={closeModal}
+                      className="btn-secondary"
+                    >
+                      {t('cancel')}
+                    </button>
+                  </div>
+                </>
+              )}
+              {activeTab === 'approved' && (
+                <div className="flex justify-end">
+                  <button
+                    onClick={closeModal}
+                    className="btn-secondary"
+                  >
+                    {t('close')}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

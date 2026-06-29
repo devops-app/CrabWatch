@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
@@ -16,41 +16,109 @@ import { useTranslation } from 'react-i18next'
 import { useFormatters } from '../../hooks/useFormatters'
 import { api } from '../../services/api'
 import { Button } from '../../components/common/Button'
+import { PickerWithAlert } from '../../components/common/Picker'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 import type { ObservationResponse } from '@crabwatch/shared'
 
+type ResearcherTab = 'pending' | 'approved'
+type DateRange = '1week' | '1month' | '3months' | '6months' | '1year' | 'custom' | null
+
 export function ResearcherScreen() {
   const { t } = useTranslation('researcher')
   const { formatDateTime, formatNumber, formatCoordinates } = useFormatters()
+  const [activeTab, setActiveTab] = useState<ResearcherTab>('pending')
   const [observations, setObservations] = useState<ObservationResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [selectedObs, setSelectedObs] = useState<ObservationResponse | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
+  const [dateRange, setDateRange] = useState<DateRange>(null)
+  const [customDateFrom, setCustomDateFrom] = useState('')
+  const [customDateTo, setCustomDateTo] = useState('')
 
-  const loadPending = useCallback(async () => {
+  const effectiveDates = useMemo(() => {
+    if (!dateRange || dateRange === 'custom') return null
+    const now = new Date()
+    let from: Date
+    switch (dateRange) {
+      case '1week': from = new Date(now.getTime() - 7 * 86400000); break
+      case '1month': from = new Date(now.getTime() - 30 * 86400000); break
+      case '3months': from = new Date(now.getTime() - 90 * 86400000); break
+      case '6months': from = new Date(now.getTime() - 180 * 86400000); break
+      case '1year': from = new Date(now.getTime() - 365 * 86400000); break
+      default: return null
+    }
+    return { from: from.toISOString().split('T')[0], to: now.toISOString().split('T')[0] }
+  }, [dateRange])
+
+  const customDates = useMemo(() => {
+    if (dateRange !== 'custom') return null
+    if (!customDateFrom || !customDateTo) return null
+    return { from: customDateFrom, to: customDateTo }
+  }, [dateRange, customDateFrom, customDateTo])
+
+  const dateRangeLabel = useMemo(() => {
+    if (!dateRange) return ''
+    const labels: Record<string, string> = {
+      '1week': t('dateRanges.oneWeek'),
+      '1month': t('dateRanges.oneMonth'),
+      '3months': t('dateRanges.threeMonths'),
+      '6months': t('dateRanges.sixMonths'),
+      '1year': t('dateRanges.oneYear'),
+      'custom': t('dateRanges.custom'),
+    }
+    return labels[dateRange] || ''
+  }, [dateRange, t])
+
+  const dateOptions = useMemo(() => [
+    { label: t('dateRanges.oneWeek'), value: '1week' },
+    { label: t('dateRanges.oneMonth'), value: '1month' },
+    { label: t('dateRanges.threeMonths'), value: '3months' },
+    { label: t('dateRanges.sixMonths'), value: '6months' },
+    { label: t('dateRanges.oneYear'), value: '1year' },
+    { label: t('dateRanges.custom'), value: 'custom' },
+  ], [t])
+
+  const loadObservations = useCallback(async () => {
     try {
-      const data = await api.getPendingObservations()
+      const dates = effectiveDates || customDates
+      const data = await api.listObservations({
+        page: 1,
+        limit: 50,
+        status: activeTab === 'pending' ? 'pending' : 'approved',
+        dateFrom: dates?.from,
+        dateTo: dates?.to,
+      })
       setObservations(data.observations)
     } catch (err) {
-      console.error('Failed to load pending observations:', err)
+      console.error('Failed to load observations:', err)
     } finally {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [])
+  }, [activeTab, effectiveDates, customDates])
 
   useEffect(() => {
-    loadPending()
-  }, [loadPending])
+    loadObservations()
+  }, [loadObservations])
 
   const onRefresh = useCallback(() => {
     setRefreshing(true)
-    loadPending()
-  }, [loadPending])
+    loadObservations()
+  }, [loadObservations])
+
+  const handleTabChange = (tab: ResearcherTab) => {
+    setActiveTab(tab)
+  }
+
+  const handleDateClear = () => {
+    setDateRange(null)
+    setCustomDateFrom('')
+    setCustomDateTo('')
+  }
 
   const handleApprove = (obs: ObservationResponse) => {
     Alert.alert(
@@ -91,7 +159,7 @@ export function ResearcherScreen() {
       setSelectedObs(null)
       setRejectionReason('')
       Alert.alert(t('success'), status === 'approved' ? t('approvedSuccess') : t('rejectedSuccess'))
-      loadPending()
+      loadObservations()
     } catch (err) {
       Alert.alert(
         t('error'),
@@ -116,8 +184,10 @@ export function ResearcherScreen() {
           <Text style={styles.speciesName}>{item.species.commonName}</Text>
           <Text style={styles.speciesScientific}>{item.species.scientificName}</Text>
         </View>
-        <View style={styles.statusBadge}>
-          <Text style={styles.statusText}>{t('pending').toUpperCase()}</Text>
+        <View style={[styles.statusBadge, activeTab === 'approved' && styles.approvedBadge]}>
+          <Text style={[styles.statusText, activeTab === 'approved' && styles.approvedText]}>
+            {t(activeTab === 'pending' ? 'pending' : 'approved').toUpperCase()}
+          </Text>
         </View>
       </View>
 
@@ -149,11 +219,77 @@ export function ResearcherScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.tabBar}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'pending' && styles.activeTab]}
+          onPress={() => handleTabChange('pending')}
+        >
+          <Text style={[styles.tabText, activeTab === 'pending' && styles.activeTabText]}>
+            {t('tabs.pending')}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'approved' && styles.activeTab]}
+          onPress={() => handleTabChange('approved')}
+        >
+          <Text style={[styles.tabText, activeTab === 'approved' && styles.activeTabText]}>
+            {t('tabs.approved')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {activeTab === 'approved' && (
+        <View style={styles.filterBar}>
+          <View style={{ flex: 1 }}>
+            <PickerWithAlert
+              label={t('filters.date')}
+              options={dateOptions}
+              selectedValue={dateRange || ''}
+              onValueChange={(val) => setDateRange(val as DateRange)}
+              placeholder={t('filters.date')}
+            />
+          </View>
+          {dateRange === 'custom' && (
+            <View style={styles.dateInputs}>
+              <View style={styles.dateInputWrap}>
+                <Text style={styles.dateLabel}>{t('dateRanges.from')}</Text>
+                <RNTextInput
+                  style={styles.dateInput}
+                  value={customDateFrom}
+                  onChangeText={setCustomDateFrom}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={COLORS.textLight}
+                />
+              </View>
+              <View style={styles.dateInputWrap}>
+                <Text style={styles.dateLabel}>{t('dateRanges.to')}</Text>
+                <RNTextInput
+                  style={styles.dateInput}
+                  value={customDateTo}
+                  onChangeText={setCustomDateTo}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={COLORS.textLight}
+                />
+              </View>
+            </View>
+          )}
+          {dateRange && (
+            <TouchableOpacity style={styles.clearBtn} onPress={handleDateClear}>
+              <Text style={styles.clearBtnText}>{t('filters.clear')}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
       {observations.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>✓</Text>
-          <Text style={styles.emptyTitle}>{t('allCaughtUp')}</Text>
-          <Text style={styles.emptyText}>{t('allCaughtUpHint')}</Text>
+          <Text style={styles.emptyTitle}>
+            {activeTab === 'pending' ? t('allCaughtUp') : t('approvedEmpty')}
+          </Text>
+          <Text style={styles.emptyText}>
+            {activeTab === 'pending' ? t('allCaughtUpHint') : t('noApproved')}
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -246,7 +382,8 @@ export function ResearcherScreen() {
           )}
         </View>
 
-      <View style={styles.rejectSection}>
+      {activeTab === 'pending' && (
+              <View style={styles.rejectSection}>
                 <Text style={styles.sectionLabel}>{t('rejectionReason')}</Text>
                 <RNTextInput
                   style={styles.rejectInput}
@@ -259,29 +396,32 @@ export function ResearcherScreen() {
                   placeholderTextColor={COLORS.textLight}
                 />
               </View>
+            )}
 
-       <View style={styles.modalActions}>
-              <Button
-                title={t('validate')}
-                onPress={() => handleApprove(selectedObs)}
-                loading={actionLoading}
-                style={styles.approveBtn}
-              />
-              <Button
-                title={t('reject')}
-                onPress={() => handleRejectConfirm(selectedObs)}
-                loading={actionLoading}
-                variant="danger"
-                style={styles.rejectBtn}
-              />
-            </View>
-
-            <TouchableOpacity
-              onPress={() => setSelectedObs(null)}
-              style={styles.closeBtn}
-            >
-              <Text style={styles.closeBtnText}>{t('close')}</Text>
-            </TouchableOpacity>
+        {activeTab === 'pending' ? (
+              <View style={styles.modalActions}>
+                <Button
+                  title={t('validate')}
+                  onPress={() => handleApprove(selectedObs)}
+                  loading={actionLoading}
+                  style={styles.approveBtn}
+                />
+                <Button
+                  title={t('reject')}
+                  onPress={() => handleRejectConfirm(selectedObs)}
+                  loading={actionLoading}
+                  variant="danger"
+                  style={styles.rejectBtn}
+                />
+              </View>
+            ) : (
+              <TouchableOpacity
+                onPress={() => setSelectedObs(null)}
+                style={styles.closeBtn}
+              >
+                <Text style={styles.closeBtnText}>{t('close')}</Text>
+              </TouchableOpacity>
+            )}
               </ScrollView>
             )}
           </View>
@@ -295,6 +435,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: COLORS.primary,
+  },
+  tabText: {
+    fontSize: FONT.base,
+    fontWeight: '600',
+    color: COLORS.textLight,
+  },
+  activeTabText: {
+    color: COLORS.primary,
   },
   listContent: {
     padding: 16,
@@ -329,10 +491,16 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
   },
+  approvedBadge: {
+    backgroundColor: '#d1fae5',
+  },
   statusText: {
     fontSize: FONT['2xs'],
     fontWeight: '700',
     color: '#92400e',
+  },
+  approvedText: {
+    color: '#065f46',
   },
   cardRow: {
     flexDirection: 'row',
@@ -480,5 +648,49 @@ const styles = StyleSheet.create({
   closeBtnText: {
     fontSize: FONT.base,
     color: COLORS.textSecondary,
+  },
+  filterBar: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: COLORS.background,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  dateInputs: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  dateInputWrap: {
+    flex: 1,
+  },
+  dateLabel: {
+    fontSize: FONT.sm,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  dateInput: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: FONT.base,
+    color: COLORS.text,
+    backgroundColor: COLORS.surface,
+  },
+  clearBtn: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: COLORS.border,
+    borderRadius: 8,
+  },
+  clearBtnText: {
+    fontSize: FONT.sm,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
   },
 })

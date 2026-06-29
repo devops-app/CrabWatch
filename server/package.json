@@ -1,6 +1,6 @@
 {
     "name":  "@crabwatch/server",
-    "version":  "1.0.0+0036",
+    "version":  "1.0.1+0002",
     "private":  true,
     "engines":  {
                     "node":  "\u003e=22.0.0"
@@ -28,6 +28,7 @@
                     "test:coverage":  "jest --coverage"
                 },
     "dependencies":  {
+                         "@crabwatch/shared":  "workspace:*",
                          "@azure/monitor-opentelemetry":  "^1.18.1",
                          "@azure/storage-blob":  "^12.17.0",
                          "@prisma/client":  "5.22.0",

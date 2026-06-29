@@ -1,6 +1,6 @@
 {
     "name":  "@crabwatch/web",
-    "version":  "1.0.0+0036",
+    "version":  "1.0.1+0002",
     "private":  true,
     "scripts":  {
                     "dev":  "next dev",
