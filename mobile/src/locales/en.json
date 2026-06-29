@@ -926,7 +926,12 @@
       "custom": "Custom Range...",
       "from": "From",
       "to": "To"
-    }
+    },
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this observation? This cannot be undone.",
+    "deleteSuccess": "Observation deleted",
+    "deleteFailed": "Failed to delete observation"
   },
   "admin": {
     "tab": {

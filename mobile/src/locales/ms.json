@@ -921,7 +921,12 @@
       "custom": "Julang Custom...",
       "from": "Dari",
       "to": "Ke"
-    }
+    },
+    "edit": "Sunting",
+    "delete": "Padam",
+    "confirmDelete": "Adakah anda pasti mahu memadam pemerhatian ini? Tindakan ini tidak boleh dibatalkan.",
+    "deleteSuccess": "Pemerhatian dipadam",
+    "deleteFailed": "Gagal memadam pemerhatian"
   },
   "admin": {
     "tab": {
