@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { HomeScreen } from '../screens/home/HomeScreen'
 import { GuidedCaptureScreen } from '../screens/observation/GuidedCaptureScreen'
 import { AnalyticsScreen } from '../screens/analytics/AnalyticsScreen'
-import { ResearcherScreen } from '../screens/researcher/ResearcherScreen'
+import { ObservationScreen } from '../screens/researcher/ObservationScreen'
 import { AdminScreen } from '../screens/admin/AdminScreen'
 import { ProfileScreen } from '../screens/profile/ProfileScreen'
 import { useAuthStore } from '../store/authStore'
@@ -84,8 +84,8 @@ export function MainTabs() {
       />
       {isResearcher && (
         <Tab.Screen
-          name="Researcher"
-          component={ResearcherScreen}
+          name="Observation"
+          component={ObservationScreen}
           options={{
             title: t('tabs.review'),
             tabBarAccessibilityLabel: t('tabs.review'),

@@ -191,7 +191,7 @@
     "missions": "Missions",
     "achievements": "Achievements",
     "community": "Community",
-    "researcher": "Researcher",
+    "observation": "Observation",
     "admin": "Admin",
     "about": "About",
     "home": "Home",
@@ -841,10 +841,11 @@
     "languageSaveFailed": "Failed to save language preference"
   },
   "researcher": {
-    "title": "Researcher Dashboard",
+    "title": "Observation Dashboard",
     "tabs": {
       "pending": "Validation Queue",
-      "approved": "Approved"
+      "approved": "Approved",
+      "rejected": "Rejected"
     },
     "pendingCount_one": "{count} observation pending review",
     "pendingCount_other": "{count} observations pending review",
@@ -852,6 +853,9 @@
     "approvedCount_one": "{count} approved observation",
     "approvedCount_other": "{count} approved observations",
     "approvedEmpty": "No approved observations yet.",
+    "rejectedCount_one": "{count} rejected observation",
+    "rejectedCount_other": "{count} rejected observations",
+    "rejectedEmpty": "No rejected observations yet.",
     "close": "Close",
     "loading": "Loading...",
     "na": "N/A",

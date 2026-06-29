@@ -191,7 +191,7 @@
     "missions": "Misi",
     "achievements": "Pencapaian",
     "community": "Komuniti",
-    "researcher": "Penyelidik",
+    "observation": "Pemerhatian",
     "admin": "Admin",
     "about": "Mengenai",
     "home": "Laman Utama",
@@ -841,10 +841,11 @@
     "languageSaveFailed": "Gagal menyimpan pilihan bahasa"
   },
   "researcher": {
-    "title": "Papan Pemuka Penyelidik",
+    "title": "Papan Pemuka Pemerhatian",
     "tabs": {
       "pending": "Barisan Pengesahan",
-      "approved": "Disahkan"
+      "approved": "Disahkan",
+      "rejected": "Ditolak"
     },
     "pendingCount_one": "{count} pemerhatian menunggu semakan",
     "pendingCount_other": "{count} pemerhatian menunggu semakan",
@@ -852,6 +853,9 @@
     "approvedCount_one": "{count} pemerhatian disahkan",
     "approvedCount_other": "{count} pemerhatian disahkan",
     "approvedEmpty": "Belum ada pemerhatian yang disahkan.",
+    "rejectedCount_one": "{count} pemerhatian ditolak",
+    "rejectedCount_other": "{count} pemerhatian ditolak",
+    "rejectedEmpty": "Belum ada pemerhatian yang ditolak.",
     "close": "Tutup",
     "loading": "Memuatkan...",
     "na": "T/A",

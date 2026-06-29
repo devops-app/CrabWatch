@@ -22,13 +22,13 @@ import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 import type { ObservationResponse } from '@crabwatch/shared'
 
-type ResearcherTab = 'pending' | 'approved'
+type ObservationTab = 'pending' | 'approved' | 'rejected'
 type DateRange = '1week' | '1month' | '3months' | '6months' | '1year' | 'custom' | null
 
-export function ResearcherScreen() {
+export function ObservationScreen() {
   const { t } = useTranslation('researcher')
   const { formatDateTime, formatNumber, formatCoordinates } = useFormatters()
-  const [activeTab, setActiveTab] = useState<ResearcherTab>('pending')
+  const [activeTab, setActiveTab] = useState<ObservationTab>('pending')
   const [observations, setObservations] = useState<ObservationResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -88,7 +88,7 @@ export function ResearcherScreen() {
       const data = await api.listObservations({
         page: 1,
         limit: 50,
-        status: activeTab === 'pending' ? 'pending' : 'approved',
+        status: activeTab === 'pending' ? 'pending' : activeTab === 'approved' ? 'approved' : 'rejected',
         dateFrom: dates?.from,
         dateTo: dates?.to,
       })
@@ -110,7 +110,7 @@ export function ResearcherScreen() {
     loadObservations()
   }, [loadObservations])
 
-  const handleTabChange = (tab: ResearcherTab) => {
+  const handleTabChange = (tab: ObservationTab) => {
     setActiveTab(tab)
   }
 
@@ -236,9 +236,17 @@ export function ResearcherScreen() {
             {t('tabs.approved')}
           </Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'rejected' && styles.activeTab]}
+          onPress={() => handleTabChange('rejected')}
+        >
+          <Text style={[styles.tabText, activeTab === 'rejected' && styles.activeTabText]}>
+            {t('tabs.rejected')}
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      {activeTab === 'approved' && (
+      {(activeTab === 'approved' || activeTab === 'rejected') && (
         <View style={styles.filterBar}>
           <View style={{ flex: 1 }}>
             <PickerWithAlert
@@ -285,7 +293,7 @@ export function ResearcherScreen() {
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>✓</Text>
           <Text style={styles.emptyTitle}>
-            {activeTab === 'pending' ? t('allCaughtUp') : t('approvedEmpty')}
+            {activeTab === 'pending' ? t('allCaughtUp') : activeTab === 'approved' ? t('approvedEmpty') : t('noRejected')}
           </Text>
           <Text style={styles.emptyText}>
             {activeTab === 'pending' ? t('allCaughtUpHint') : t('noApproved')}

@@ -9,20 +9,20 @@ import type { ObservationResponse } from '@crabwatch/shared'
 
 type DateRange = '1week' | '1month' | '3months' | '6months' | '1year' | 'custom' | null
 
-type ResearcherTab = 'pending' | 'approved'
+type ObservationTab = 'pending' | 'approved' | 'rejected'
 
 interface ResearcherClientProps {
   initialObservations?: ObservationResponse[] | null
   initialTotal?: number | null
 }
 
-export function ResearcherClient({
+export function ObservationClient({
   initialObservations,
   initialTotal,
 }: ResearcherClientProps): React.JSX.Element {
   const t = useTranslations('researcher')
   const fmt = useFormatters()
-  const [activeTab, setActiveTab] = useState<ResearcherTab>('pending')
+  const [activeTab, setActiveTab] = useState<ObservationTab>('pending')
   const [observations, setObservations] = useState<ObservationResponse[]>(initialObservations ?? [])
   const [total, setTotal] = useState(initialTotal ?? 0)
   const [page, setPage] = useState(1)
@@ -122,7 +122,7 @@ export function ResearcherClient({
       const data = await api.listObservations({
         page,
         limit: 20,
-        status: activeTab === 'pending' ? 'pending' : 'approved',
+        status: activeTab === 'pending' ? 'pending' : activeTab === 'approved' ? 'approved' : 'rejected',
         dateFrom: effectiveDates.from,
         dateTo: effectiveDates.to,
       })
@@ -140,7 +140,7 @@ export function ResearcherClient({
     loadObservations()
   }, [initialObservations, loadObservations])
 
-  const handleTabChange = (tab: ResearcherTab) => {
+  const handleTabChange = (tab: ObservationTab) => {
     setActiveTab(tab)
     setPage(1)
   }
@@ -178,8 +178,9 @@ export function ResearcherClient({
   const subtitleKey =
     activeTab === 'pending'
       ? total === 1 ? 'pendingCount_one' : 'pendingCount_other'
-      : total === 1 ? 'approvedCount_one' : 'approvedCount_other'
-  const emptyKey = activeTab === 'pending' ? 'pendingEmpty' : 'approvedEmpty'
+      : activeTab === 'approved' ? (total === 1 ? 'approvedCount_one' : 'approvedCount_other')
+      : total === 1 ? 'rejectedCount_one' : 'rejectedCount_other'
+  const emptyKey = activeTab === 'pending' ? 'pendingEmpty' : activeTab === 'approved' ? 'approvedEmpty' : 'rejectedEmpty'
 
   return (
     <>
@@ -212,6 +213,16 @@ export function ResearcherClient({
           }`}
         >
           {t('tabs.approved')}
+        </button>
+        <button
+          onClick={() => handleTabChange('rejected')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'rejected'
+              ? 'border-ocean-600 text-ocean-700'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          {t('tabs.rejected')}
         </button>
       </div>
 
@@ -525,7 +536,7 @@ export function ResearcherClient({
                   </div>
                 </>
               )}
-              {activeTab === 'approved' && (
+      {(activeTab === 'approved' || activeTab === 'rejected') && (
                 <div className="flex justify-end">
                   <button
                     onClick={closeModal}

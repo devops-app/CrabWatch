@@ -5,7 +5,7 @@ export type MainTabParamList = {
   Home: undefined
   New: undefined
   Analytics: undefined
-  Researcher: undefined
+  Observation: undefined
   Admin: undefined
   Profile: undefined
 }

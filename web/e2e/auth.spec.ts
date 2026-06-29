@@ -208,7 +208,7 @@ test.describe('Authentication', () => {
   test('unauthenticated user is redirected to login from researcher page', async ({
     page,
   }) => {
-    await page.goto('/dashboard/researcher')
+    await page.goto('/dashboard/observation')
 
     await expect(page).toHaveURL(/\/auth\/login/)
   })

@@ -862,7 +862,7 @@
     }
   },
   "researcher": {
-    "title": "Researcher",
+    "title": "Observation",
     "pending": "Pending",
     "approved": "Approved",
     "rejected": "Rejected",

@@ -266,7 +266,7 @@ export function DashboardClient({
         </Link>
 
         {(userRole === 'researcher' || userRole === 'admin') && (
-          <Link href="/dashboard/researcher" className="card hover:shadow-md transition-shadow">
+          <Link href="/dashboard/observation" className="card hover:shadow-md transition-shadow">
             <h2 className="text-xl font-semibold text-ocean-800 mb-2">
               {t('validationQueue')}
             </h2>
@@ -301,7 +301,7 @@ export function DashboardClient({
       <div className="card mt-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-ocean-800">{t('recentSubmissions')}</h2>
-          <Link href="/dashboard/researcher" className="text-sm text-ocean-600 hover:underline">
+          <Link href="/dashboard/observation" className="text-sm text-ocean-600 hover:underline">
             {t('viewAll')}
           </Link>
         </div>
