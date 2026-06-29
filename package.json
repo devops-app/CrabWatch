@@ -1,7 +1,7 @@
 {
     "name":  "crabwatch",
     "private":  true,
-    "version":  "1.0.1+0002",
+    "version":  "1.0.1+0003",
     "description":  "Citizen science platform for mud crab conservation in Malaysia",
     "scripts":  {
                     "dev":  "pnpm -r --parallel dev",

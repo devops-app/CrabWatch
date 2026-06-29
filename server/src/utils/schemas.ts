@@ -92,6 +92,7 @@ export const updateObservationSchema = z.object({
   ).optional(),
   detectedCoin: z.string().max(200).optional().nullable(),
   notes: z.string().max(1000).optional().nullable(),
+  status: z.literal('PENDING').optional(),
 }).refine(data => Object.keys(data).length > 0, {
   message: 'At least one field must be provided for update',
 })

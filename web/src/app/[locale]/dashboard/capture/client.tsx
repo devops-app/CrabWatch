@@ -909,10 +909,10 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
 
       setAnalysisStage('idle')
       if (editObservationId) {
-        setFlash({ tone: 'success', text: t('editSuccess') })
+        resetState()
         setEditObservationId(null)
         window.history.replaceState(null, '', window.location.pathname)
-        resetState()
+        setFlash({ tone: 'success', text: t('editSuccess') })
       } else {
         setSubmitted(true)
       }

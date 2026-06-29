@@ -130,6 +130,7 @@ export function EditObservationScreen() {
         locationMethod: data.locationMethod,
         detectedCoin: data.detectedCoin ?? null,
         notes: data.notes ?? null,
+        status: 'PENDING',
       }
       await api.updateObservation(observationId, payload)
       Alert.alert(t('updateSuccess'))
