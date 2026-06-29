@@ -13,14 +13,18 @@ import {
   TextInput as RNTextInput,
 } from 'react-native'
 import { useTranslation } from 'react-i18next'
+import { useIsFocused, useNavigation } from '@react-navigation/native'
 import { useFormatters } from '../../hooks/useFormatters'
 import { api } from '../../services/api'
+import { useAuthStore } from '../../store/authStore'
 import { Button } from '../../components/common/Button'
 import { PickerWithAlert } from '../../components/common/Picker'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 import type { ObservationResponse } from '@crabwatch/shared'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { RootStackParamList } from '../../navigation/types'
 
 type ObservationTab = 'pending' | 'approved' | 'rejected'
 type DateRange = '1week' | '1month' | '3months' | '6months' | '1year' | 'custom' | null
@@ -28,6 +32,9 @@ type DateRange = '1week' | '1month' | '3months' | '6months' | '1year' | 'custom'
 export function ObservationScreen() {
   const { t } = useTranslation('researcher')
   const { formatDateTime, formatNumber, formatCoordinates } = useFormatters()
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  const user = useAuthStore((s) => s.user)
+  const isFocused = useIsFocused()
   const [activeTab, setActiveTab] = useState<ObservationTab>('pending')
   const [observations, setObservations] = useState<ObservationResponse[]>([])
   const [loading, setLoading] = useState(true)
@@ -170,48 +177,93 @@ export function ObservationScreen() {
     }
   }
 
+  const handleEdit = (obs: ObservationResponse) => {
+    navigation.navigate('EditObservation', { observationId: obs.id })
+  }
 
-  const renderItem = ({ item }: { item: ObservationResponse }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => {
-        setSelectedObs(item)
-        setRejectionReason('')
-      }}
-    >
-      <View style={styles.cardHeader}>
-        <View>
-          <Text style={styles.speciesName}>{item.species.commonName}</Text>
-          <Text style={styles.speciesScientific}>{item.species.scientificName}</Text>
-        </View>
-        <View style={[styles.statusBadge, activeTab === 'approved' && styles.approvedBadge]}>
-          <Text style={[styles.statusText, activeTab === 'approved' && styles.approvedText]}>
-            {t(activeTab === 'pending' ? 'pending' : 'approved').toUpperCase()}
-          </Text>
-        </View>
-      </View>
+  const handleDelete = (obs: ObservationResponse) => {
+    Alert.alert(
+      t('observation.delete'),
+      t('observation.confirmDelete'),
+      [
+        { text: t('cancel'), style: 'cancel' },
+        {
+          text: t('observation.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.deleteObservation(obs.id)
+              Alert.alert(t('success'), t('observation.deleteSuccess'))
+              loadObservations()
+            } catch (err) {
+              Alert.alert(t('error'), err instanceof Error ? err.message : t('observation.deleteFailed'))
+            }
+          },
+        },
+      ]
+    )
+  }
 
-      <View style={styles.cardRow}>
-        <View style={styles.infoBlock}>
-          <Text style={styles.infoLabel}>{t('submitter')}</Text>
-          <Text style={styles.infoValue}>{item.user.name}</Text>
+  const renderItem = ({ item }: { item: ObservationResponse }) => {
+    const isOwner = item.userId === user?.id
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => {
+          setSelectedObs(item)
+          setRejectionReason('')
+        }}
+      >
+        <View style={styles.cardHeader}>
+          <View>
+            <Text style={styles.speciesName}>{item.species.commonName}</Text>
+            <Text style={styles.speciesScientific}>{item.species.scientificName}</Text>
+          </View>
+          <View style={[styles.statusBadge, activeTab === 'approved' && styles.approvedBadge]}>
+            <Text style={[styles.statusText, activeTab === 'approved' && styles.approvedText]}>
+              {t(activeTab === 'pending' ? 'pending' : 'approved').toUpperCase()}
+            </Text>
+          </View>
         </View>
-        <View style={styles.infoBlock}>
-          <Text style={styles.infoLabel}>{t('cw')}</Text>
-          <Text style={styles.infoValue}>{formatNumber(item.cw, 1)} mm</Text>
-        </View>
-        <View style={styles.infoBlock}>
-          <Text style={styles.infoLabel}>{t('gender')}</Text>
-          <Text style={styles.infoValue}>{item.gender}</Text>
-        </View>
-      </View>
 
-      <View style={styles.cardFooter}>
-        <Text style={styles.dateText}>{formatDateTime(item.createdAt)}</Text>
-        <Text style={styles.photoCount}>{t('photoCount', { count: item.photos.length })}</Text>
-      </View>
-    </TouchableOpacity>
-  )
+        <View style={styles.cardRow}>
+          <View style={styles.infoBlock}>
+            <Text style={styles.infoLabel}>{t('submitter')}</Text>
+            <Text style={styles.infoValue}>{item.user.name}</Text>
+          </View>
+          <View style={styles.infoBlock}>
+            <Text style={styles.infoLabel}>{t('cw')}</Text>
+            <Text style={styles.infoValue}>{formatNumber(item.cw, 1)} mm</Text>
+          </View>
+          <View style={styles.infoBlock}>
+            <Text style={styles.infoLabel}>{t('gender')}</Text>
+            <Text style={styles.infoValue}>{item.gender}</Text>
+          </View>
+        </View>
+
+        <View style={styles.cardFooter}>
+          <Text style={styles.dateText}>{formatDateTime(item.createdAt)}</Text>
+          <Text style={styles.photoCount}>{t('photoCount', { count: item.photos.length })}</Text>
+          {isOwner && (
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                onPress={(e) => { e.stopPropagation(); handleEdit(item) }}
+                style={styles.editButton}
+              >
+                <Text style={styles.editButtonText}>{t('observation.edit')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={(e) => { e.stopPropagation(); handleDelete(item) }}
+                style={styles.deleteButton}
+              >
+                <Text style={styles.deleteButtonText}>{t('observation.delete')}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+    )
+  }
 
   if (loading) {
     return <LoadingSpinner fullScreen />
@@ -531,10 +583,12 @@ const styles = StyleSheet.create({
   },
   cardFooter: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
     paddingTop: 8,
+    gap: 4,
   },
   dateText: {
     fontSize: FONT.xs,
@@ -699,6 +753,33 @@ const styles = StyleSheet.create({
   clearBtnText: {
     fontSize: FONT.sm,
     color: COLORS.textSecondary,
+    fontWeight: '600',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 6,
+    marginLeft: 8,
+  },
+  editButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: COLORS.primary + '20',
+  },
+  editButtonText: {
+    fontSize: FONT.sm,
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  deleteButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: '#ef444420',
+  },
+  deleteButtonText: {
+    fontSize: FONT.sm,
+    color: '#ef4444',
     fontWeight: '600',
   },
 })

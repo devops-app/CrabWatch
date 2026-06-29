@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 import { useFormatters } from '@/hooks/useFormatters'
+import { useRouter } from '@/i18n/navigation'
 import { api } from '@/lib/api'
 import { logger } from '@/lib/logger'
+import { useAuthStore } from '@/lib/authStore'
 import type { ObservationResponse } from '@crabwatch/shared'
 
 type DateRange = '1week' | '1month' | '3months' | '6months' | '1year' | 'custom' | null
@@ -22,6 +24,8 @@ export function ObservationClient({
 }: ResearcherClientProps): React.JSX.Element {
   const t = useTranslations('researcher')
   const fmt = useFormatters()
+  const router = useRouter()
+  const user = useAuthStore((s) => s.user)
   const [activeTab, setActiveTab] = useState<ObservationTab>('pending')
   const [observations, setObservations] = useState<ObservationResponse[]>(initialObservations ?? [])
   const [total, setTotal] = useState(initialTotal ?? 0)
@@ -31,6 +35,7 @@ export function ObservationClient({
   const [rejectionReason, setRejectionReason] = useState('')
   const [fullscreenPhoto, setFullscreenPhoto] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
+  const [flash, setFlash] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [dateRange, setDateRange] = useState<DateRange>(null)
   const [customDateFrom, setCustomDateFrom] = useState('')
   const [customDateTo, setCustomDateTo] = useState('')
@@ -175,6 +180,28 @@ export function ObservationClient({
     }
   }
 
+  const handleEdit = (obs: ObservationResponse) => {
+    router.push(`/dashboard/capture?edit=${obs.id}`)
+    setSelectedObs(null)
+  }
+
+  const handleDelete = (obs: ObservationResponse) => {
+    if (!confirm(t('observation.confirmDelete'))) return
+    api.deleteObservation(obs.id)
+      .then(() => {
+        setFlash({ type: 'success', message: t('observation.deleteSuccess') })
+        setSelectedObs(null)
+        loadObservations()
+      })
+      .catch((err) => {
+        logger.error('Delete observation failed', err)
+        setFlash({ type: 'error', message: t('observation.deleteFailed') })
+      })
+      .finally(() => {
+        setTimeout(() => setFlash(null), 4000)
+      })
+  }
+
   const subtitleKey =
     activeTab === 'pending'
       ? total === 1 ? 'pendingCount_one' : 'pendingCount_other'
@@ -229,6 +256,14 @@ export function ObservationClient({
       <p className="text-gray-600 mb-8">
         {t(subtitleKey, { count: total })}
       </p>
+
+      {flash && (
+        <div className={`mb-6 px-4 py-3 rounded-lg text-sm font-medium ${
+          flash.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
+        }`}>
+          {flash.message}
+        </div>
+      )}
 
       {activeTab === 'approved' && (
         <div className="mb-6 flex items-end gap-3">
@@ -337,43 +372,64 @@ export function ObservationClient({
       ) : (
         <>
           <div className="space-y-4">
-            {observations.map((obs) => (
-              <div
-                key={obs.id}
-                className="card cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => openModal(obs)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    openModal(obs)
-                  }
-                }}
-                tabIndex={0}
-                role="button"
-                aria-label={t('reviewObservation', { species: obs.species.commonName })}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-semibold text-ocean-800">
-                      {obs.species.commonName} ({obs.species.scientificName})
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      by {obs.user.name} &middot;{' '}
-                      {fmt.formatDate(new Date(obs.createdAt))}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-                      activeTab === 'approved'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-amber-100 text-amber-800'
-                    }`}>
-                      CW: {obs.cw}cm | BW: {obs.bw ?? t('na')}g
-                    </span>
+            {observations.map((obs) => {
+              const isOwner = obs.userId === user?.id
+              return (
+                <div
+                  key={obs.id}
+                  className="card cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => openModal(obs)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      openModal(obs)
+                    }
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={t('reviewObservation', { species: obs.species.commonName })}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-semibold text-ocean-800">
+                        {obs.species.commonName} ({obs.species.scientificName})
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        by {obs.user.name} &middot;{' '}
+                        {fmt.formatDate(new Date(obs.createdAt))}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-block px-2 py-1 text-xs rounded-full ${
+                        activeTab === 'approved'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        CW: {obs.cw}cm | BW: {obs.bw ?? t('na')}g
+                      </span>
+                      {isOwner && (
+                        <>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleEdit(obs) }}
+                            className="px-2 py-1 text-xs rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+                            aria-label={t('observation.edit')}
+                          >
+                            {t('observation.edit')}
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDelete(obs) }}
+                            className="px-2 py-1 text-xs rounded-md bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+                            aria-label={t('observation.delete')}
+                          >
+                            {t('observation.delete')}
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           {total > 20 && (
