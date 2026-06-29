@@ -7,6 +7,7 @@ import { useRouter } from '@/i18n/navigation'
 import { api } from '@/lib/api'
 import { logger } from '@/lib/logger'
 import { useAuthStore } from '@/lib/authStore'
+import { getCoinKey } from '@crabwatch/shared'
 import type { ObservationResponse } from '@crabwatch/shared'
 
 type DateRange = '1week' | '1month' | '3months' | '6months' | '1year' | 'custom' | null
@@ -23,6 +24,7 @@ export function ObservationClient({
   initialTotal,
 }: ResearcherClientProps): React.JSX.Element {
   const t = useTranslations('researcher')
+  const tCapture = useTranslations('capture')
   const fmt = useFormatters()
   const router = useRouter()
   const user = useAuthStore((s) => s.user)
@@ -186,16 +188,16 @@ export function ObservationClient({
   }
 
   const handleDelete = (obs: ObservationResponse) => {
-    if (!confirm(t('observation.confirmDelete'))) return
+    if (!confirm(t('confirmDelete'))) return
     api.deleteObservation(obs.id)
       .then(() => {
-        setFlash({ type: 'success', message: t('observation.deleteSuccess') })
+        setFlash({ type: 'success', message: t('deleteSuccess') })
         setSelectedObs(null)
         loadObservations()
       })
       .catch((err) => {
         logger.error('Delete observation failed', err)
-        setFlash({ type: 'error', message: t('observation.deleteFailed') })
+        setFlash({ type: 'error', message: t('deleteFailed') })
       })
       .finally(() => {
         setTimeout(() => setFlash(null), 4000)
@@ -374,6 +376,10 @@ export function ObservationClient({
           <div className="space-y-4">
             {observations.map((obs) => {
               const isOwner = obs.userId === user?.id
+              const userRole = user?.role
+              const status = obs.status
+              const canEdit = status !== 'approved' && (status === 'rejected' ? isOwner : isOwner || userRole === 'researcher' || userRole === 'admin')
+              const canDelete = status !== 'approved' && (status === 'rejected' ? isOwner : isOwner || userRole === 'admin')
               return (
                 <div
                   key={obs.id}
@@ -407,23 +413,22 @@ export function ObservationClient({
                       }`}>
                         CW: {obs.cw}cm | BW: {obs.bw ?? t('na')}g
                       </span>
-                      {isOwner && (
-                        <>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleEdit(obs) }}
-                            className="px-2 py-1 text-xs rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
-                            aria-label={t('observation.edit')}
+                      {canEdit && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleEdit(obs) }}
+                          className="px-2 py-1 text-xs rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+                          aria-label={t('edit')}
                           >
-                            {t('observation.edit')}
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleDelete(obs) }}
-                            className="px-2 py-1 text-xs rounded-md bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
-                            aria-label={t('observation.delete')}
+                          {t('edit')}
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDelete(obs) }}
+                          aria-label={t('delete')}
                           >
-                            {t('observation.delete')}
-                          </button>
-                        </>
+                          {t('delete')}
+                        </button>
                       )}
                     </div>
                   </div>
@@ -515,11 +520,11 @@ export function ObservationClient({
                   </p>
                 </div>
                 {selectedObs.detectedCoin && (
-                  <div>
-                    <span className="text-sm text-gray-500">{t('referenceCoin')}</span>
-                    <p className="font-medium">{selectedObs.detectedCoin}</p>
-                  </div>
-                )}
+                    <div>
+                      <span className="text-sm text-gray-500">{t('referenceCoin')}</span>
+                      <p className="font-medium">{tCapture(`coins.${getCoinKey(selectedObs.detectedCoin)}`) || selectedObs.detectedCoin}</p>
+                    </div>
+                  )}
               </div>
 
               {selectedObs.notes && (

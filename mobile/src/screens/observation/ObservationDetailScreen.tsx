@@ -23,6 +23,7 @@ import { COLORS, STATUS_COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 import { useFormatters } from '../../hooks/useFormatters'
 import { useAuthStore } from '../../store/authStore'
+import { getCoinKey } from '@crabwatch/shared'
 import { api } from '../../services/api'
 import type { RootStackParamList } from '../../navigation/types'
 
@@ -117,7 +118,7 @@ export function ObservationDetailScreen() {
         <table>
           <tr><td>${t('gender')}</td><td>${formatLocalizedGender(observation.gender)}</td></tr>
           <tr><td>${t('maturation')}</td><td>${formatLocalizedMaturation(observation.maturationStatus)}</td></tr>
-          ${observation.detectedCoin ? `<tr><td>${t('referenceCoin')}</td><td>${observation.detectedCoin}</td></tr>` : ''}
+          ${observation.detectedCoin ? `<tr><td>${t('referenceCoin')}</td><td>${t(`capture:coins.${getCoinKey(observation.detectedCoin)}`) || observation.detectedCoin}</td></tr>` : ''}
         </table>
 
         <div class="section-title">${t('location')}</div>
@@ -238,7 +239,7 @@ export function ObservationDetailScreen() {
       {observation.detectedCoin && (
           <Card padding={16}>
             <Text style={styles.cardTitle}>{t('referenceCoin')}</Text>
-            <DetailRow label={t('coin')} value={observation.detectedCoin} />
+            <DetailRow label={t('coin')} value={t(`capture:coins.${getCoinKey(observation.detectedCoin)}`) || observation.detectedCoin} />
           </Card>
         )}
 

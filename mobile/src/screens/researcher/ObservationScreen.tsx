@@ -22,6 +22,7 @@ import { PickerWithAlert } from '../../components/common/Picker'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
+import { getCoinKey } from '@crabwatch/shared'
 import type { ObservationResponse } from '@crabwatch/shared'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { RootStackParamList } from '../../navigation/types'
@@ -183,20 +184,20 @@ export function ObservationScreen() {
 
   const handleDelete = (obs: ObservationResponse) => {
     Alert.alert(
-      t('observation.delete'),
-      t('observation.confirmDelete'),
+      t('delete'),
+      t('confirmDelete'),
       [
         { text: t('cancel'), style: 'cancel' },
         {
-          text: t('observation.delete'),
+          text: t('delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               await api.deleteObservation(obs.id)
-              Alert.alert(t('success'), t('observation.deleteSuccess'))
+              Alert.alert(t('success'), t('deleteSuccess'))
               loadObservations()
             } catch (err) {
-              Alert.alert(t('error'), err instanceof Error ? err.message : t('observation.deleteFailed'))
+              Alert.alert(t('error'), err instanceof Error ? err.message : t('deleteFailed'))
             }
           },
         },
@@ -206,6 +207,10 @@ export function ObservationScreen() {
 
   const renderItem = ({ item }: { item: ObservationResponse }) => {
     const isOwner = item.userId === user?.id
+    const userRole = user?.role
+    const status = item.status
+    const canEdit = status !== 'approved' && (status === 'rejected' ? isOwner : isOwner || userRole === 'researcher' || userRole === 'admin')
+    const canDelete = status !== 'approved' && (status === 'rejected' ? isOwner : isOwner || userRole === 'admin')
     return (
       <TouchableOpacity
         style={styles.card}
@@ -244,20 +249,24 @@ export function ObservationScreen() {
         <View style={styles.cardFooter}>
           <Text style={styles.dateText}>{formatDateTime(item.createdAt)}</Text>
           <Text style={styles.photoCount}>{t('photoCount', { count: item.photos.length })}</Text>
-          {isOwner && (
+          {(canEdit || canDelete) && (
             <View style={styles.actionButtons}>
-              <TouchableOpacity
-                onPress={(e) => { e.stopPropagation(); handleEdit(item) }}
-                style={styles.editButton}
-              >
-                <Text style={styles.editButtonText}>{t('observation.edit')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={(e) => { e.stopPropagation(); handleDelete(item) }}
-                style={styles.deleteButton}
-              >
-                <Text style={styles.deleteButtonText}>{t('observation.delete')}</Text>
-              </TouchableOpacity>
+              {canEdit && (
+                <TouchableOpacity
+                  onPress={(e) => { e.stopPropagation(); handleEdit(item) }}
+                  style={styles.editButton}
+                >
+                  <Text style={styles.editButtonText}>{t('edit')}</Text>
+                </TouchableOpacity>
+              )}
+              {canDelete && (
+                <TouchableOpacity
+                  onPress={(e) => { e.stopPropagation(); handleDelete(item) }}
+                  style={styles.deleteButton}
+                >
+                  <Text style={styles.deleteButtonText}>{t('delete')}</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
         </View>
@@ -430,8 +439,8 @@ export function ObservationScreen() {
           </View>
           {selectedObs.detectedCoin && (
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>{t('coinReference')}</Text>
-              <Text style={styles.detailValue}>{selectedObs.detectedCoin}</Text>
+              <Text style={styles.detailLabel}>{t('referenceCoin')}</Text>
+              <Text style={styles.detailValue}>{t(`capture:coins.${getCoinKey(selectedObs.detectedCoin)}`) || selectedObs.detectedCoin}</Text>
             </View>
           )}
           {selectedObs.notes && (

@@ -324,17 +324,17 @@
       "letAiDetect": "Let AI detect",
       "coinLabel": "Coin:",
       "aiDetect": "AI detect",
-      "change": "Change",
-      "coins": {
-        "third5": "5 sen (17.78mm)",
-        "third10": "10 sen (18.80mm)",
-        "third20": "20 sen (20.60mm)",
-        "third50": "50 sen (22.65mm)",
-        "second5": "5 sen (16.20mm)",
-        "second10": "10 sen (19.40mm)",
-        "second20": "20 sen (23.59mm)",
-        "second50": "50 sen (27.76mm)"
-      }
+      "change": "Change"
+    },
+    "coins": {
+      "third5": "5 sen (17.78mm)",
+      "third10": "10 sen (18.80mm)",
+      "third20": "20 sen (20.60mm)",
+      "third50": "50 sen (22.65mm)",
+      "second5": "5 sen (16.20mm)",
+      "second10": "10 sen (19.40mm)",
+      "second20": "20 sen (23.59mm)",
+      "second50": "50 sen (27.76mm)"
     },
     "stepLabels": {
       "dorsal": "Dorsal View",

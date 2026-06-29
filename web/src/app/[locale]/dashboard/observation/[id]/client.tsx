@@ -7,6 +7,7 @@ import { logger } from '@/lib/logger'
 import { useAuthStore } from '@/lib/authStore'
 import { useTranslations } from 'next-intl'
 import { useFormatters } from '@/hooks/useFormatters'
+import { getCoinKey } from '@crabwatch/shared'
 import type { ObservationResponse } from '@crabwatch/shared'
 
 interface ObservationClientProps {
@@ -20,6 +21,7 @@ export function ObservationClient({
 }: ObservationClientProps): React.JSX.Element {
   const router = useRouter()
   const t = useTranslations('observation')
+  const tCapture = useTranslations('capture')
   const fmt = useFormatters()
   const [observation, setObservation] = useState<ObservationResponse | null>(initialObservation ?? null)
   const [loading, setLoading] = useState(false)
@@ -28,8 +30,8 @@ export function ObservationClient({
   const [flash, setFlash] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const user = useAuthStore(state => state.user)
   const isOwner = user?.id === observation?.userId
-  const canEdit = isOwner && observation?.status !== 'approved'
-  const canDelete = isOwner && (observation?.status === 'pending' || observation?.status === 'rejected')
+  const canEdit = observation?.status !== 'approved' && (observation?.status === 'rejected' ? isOwner : isOwner || user?.role === 'researcher' || user?.role === 'admin')
+  const canDelete = observation?.status !== 'approved' && (observation?.status === 'rejected' ? isOwner : isOwner || user?.role === 'admin')
   const canResubmit = isOwner && observation?.status === 'rejected'
 
   useEffect(() => {
@@ -270,7 +272,7 @@ export function ObservationClient({
           </div>
           <div>
             <p className="text-xs text-gray-500 mb-1">{t('referenceCoin')}</p>
-            <p className="font-medium">{observation.detectedCoin || t('weightNa')}</p>
+            <p className="font-medium">{observation.detectedCoin ? (tCapture(`coins.${getCoinKey(observation.detectedCoin)}`) || observation.detectedCoin) : t('weightNa')}</p>
           </div>
           <div>
             <p className="text-xs text-gray-500 mb-1">{t('locationMethod')}</p>
