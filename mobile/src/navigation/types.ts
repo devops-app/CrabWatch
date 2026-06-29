@@ -23,6 +23,7 @@ export type RootStackParamList = {
   SpeciesDetail: { speciesId: string }
   SpeciesForm: { speciesId?: string }
   ObservationDetail: { observation: ObservationResponse }
+  EditObservation: { observationId: string }
   EditProfile: undefined
   AnalysisLoading: {
     photos: string[]

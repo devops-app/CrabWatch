@@ -366,6 +366,33 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
+  updateObservation: (
+    id: string,
+    body: {
+      speciesId?: string
+      cw?: number
+      bw?: number | null
+      gender?: string
+      maturationStatus?: string
+      lat?: number
+      lng?: number
+      locationMethod?: string
+      photos?: string[]
+      detectedCoin?: string | null
+      notes?: string | null
+      status?: 'PENDING'
+    },
+  ) =>
+    request<ObservationResponse>(`/api/v1/observations/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+
+  deleteObservation: (id: string) =>
+    request(`/api/v1/observations/${id}`, {
+      method: 'DELETE',
+    }),
+
   // Upload
   getUploadUrl: (fileName: string, contentType: string, sessionId?: string, photoIndex?: number) =>
     request('/api/v1/upload/url', {

@@ -1,7 +1,9 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
-import type { CrabAnalysisResult, SpeciesResponse, PhotoView } from '@crabwatch/shared'
+import { useState, useMemo, useEffect } from 'react'
+import { useTranslations, useLocale } from 'next-intl'
+import type { CrabAnalysisResult, SpeciesResponse, PhotoView, SpeciesTranslation } from '@crabwatch/shared'
+import { api } from '@/lib/api'
 import { CAPTURE_STEPS, ReviewFormState, getConfidenceTone, normalizeSpeciesText } from './utils'
 import { MapSection } from './map-section'
 
@@ -64,6 +66,9 @@ export function ReviewSection({
   onViewportChange,
 }: ReviewSectionProps) {
   const t = useTranslations('capture')
+  const locale = useLocale()
+  const [translation, setTranslation] = useState<SpeciesTranslation | null>(null)
+  const [translating, setTranslating] = useState(false)
   const tone = getConfidenceTone(analysis.confidence)
   const coveragePct = analysis.crabCoveragePct
   const hasLowCoverage = typeof coveragePct === 'number' && coveragePct < 35
@@ -80,6 +85,31 @@ export function ReviewSection({
   const cropTargetKey = photos.dorsal
     ? 'dorsal'
     : CAPTURE_STEPS.find((step) => photos[step.key])?.key
+
+  useEffect(() => {
+    if (!analysis.speciesId || locale === 'en') {
+      setTranslation(null)
+      return
+    }
+    let cancelled = false
+    setTranslating(true)
+    api.translateSpecies(analysis.speciesId, locale)
+      .then((data) => {
+        if (!cancelled) setTranslation(data)
+      })
+      .catch(() => {
+        if (!cancelled) setTranslation(null)
+      })
+      .finally(() => {
+        if (!cancelled) setTranslating(false)
+      })
+    return () => { cancelled = true }
+  }, [analysis.speciesId, locale])
+
+  const displayName = useMemo(() => {
+    if (translation && locale !== 'en') return translation.commonName
+    return analysis.speciesName
+  }, [analysis.speciesName, translation, locale])
 
   return (
     <>
@@ -144,7 +174,7 @@ export function ReviewSection({
             {t(`confidence.${tone.level}`)} {t('review.confidence')}
           </span>
         </div>
-        <p className="text-gray-700"><span className="font-semibold">{t('review.speciesLabel')}</span> {analysis.speciesName}</p>
+        <p className="text-gray-700"><span className="font-semibold">{t('review.speciesLabel')}</span> {translating ? <span className="inline-block w-3 h-3 border-2 border-amber-400 border-t-transparent rounded-full animate-spin ml-1 align-middle" /> : displayName}</p>
         <p className="text-gray-700"><span className="font-semibold">{t('review.confidenceLabel')}</span> {(analysis.confidence * 100).toFixed(1)}%</p>
         {typeof coveragePct === 'number' && (
           <p className="text-gray-700">
@@ -209,7 +239,7 @@ export function ReviewSection({
       <section className="card grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('review.species')}{analysis.speciesName && normalizeSpeciesText(analysis.speciesName) !== 'unknown species' && <AIBadge label="AI" />}
+            {t('review.species')}{displayName && normalizeSpeciesText(displayName) !== 'unknown species' && <AIBadge label="AI" />}
           </label>
           <select className="input-field" value={review.speciesId} onChange={(e) => onReviewChange({ ...review, speciesId: e.target.value })}>
             <option value="">{t('review.selectSpecies')}</option>

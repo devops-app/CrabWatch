@@ -36,7 +36,7 @@ import { Input } from '../../components/common/Input'
 import { PickerWithAlert } from '../../components/common/Picker'
 import { Button } from '../../components/common/Button'
 import { GPSCapture } from '../../components/observation/GPSCapture'
-import { CrabAnalysisResult, PhotoView } from '@crabwatch/shared'
+import { CrabAnalysisResult, PhotoView, SpeciesTranslation } from '@crabwatch/shared'
 
 interface AIReviewRouteParams {
   analysis: CrabAnalysisResult
@@ -83,9 +83,12 @@ export function AIReviewScreen() {
   const { analysis, photos, sessionId, coinType, blobUrls, isManualFallback } = route.params as AIReviewRouteParams
   const displayPhotos = blobUrls || photos
 
-  const { t } = useTranslation('review')
+  const { t, i18n } = useTranslation('review')
   const { submitObservation, submitting, error: submitError } = useObservation()
   const { species, loadSpecies, getSpeciesById } = useSpeciesStore()
+  const [translation, setTranslation] = useState<SpeciesTranslation | null>(null)
+  const [translating, setTranslating] = useState(false)
+  const needsTranslation = i18n.language !== 'en'
 
   const GENDER_OPTIONS = useMemo(
     () => [
@@ -173,6 +176,31 @@ export function AIReviewScreen() {
       () => setFullscreenNaturalSize(null)
     )
   }, [fullscreenPhoto, showFullscreen])
+
+  useEffect(() => {
+    if (!analysis.speciesId || !needsTranslation) {
+      setTranslation(null)
+      return
+    }
+    let cancelled = false
+    setTranslating(true)
+    api.translateSpecies(analysis.speciesId, i18n.language)
+      .then((data) => {
+        if (!cancelled) setTranslation(data)
+      })
+      .catch(() => {
+        if (!cancelled) setTranslation(null)
+      })
+      .finally(() => {
+        if (!cancelled) setTranslating(false)
+      })
+    return () => { cancelled = true }
+  }, [analysis.speciesId, needsTranslation, i18n.language])
+
+  const displayName = useMemo(() => {
+    if (translation && needsTranslation) return translation.commonName
+    return analysis.speciesName
+  }, [analysis.speciesName, translation, needsTranslation])
 
   const findMatchingSpecies = (): string => {
     if (!analysis.speciesId || analysis.speciesId === 'unknown') return ''
@@ -370,7 +398,7 @@ export function AIReviewScreen() {
                 </View>
               </View>
 
-              <Text style={styles.aiSpeciesName}>{analysis.speciesName}</Text>
+              <Text style={styles.aiSpeciesName}>{translating ? `${t('common.loading')}...` : displayName}</Text>
 
               {typeof coveragePct === 'number' && (
                 <View style={styles.coverageRow}>

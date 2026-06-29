@@ -11,6 +11,7 @@ import { SpeciesListScreen } from '../screens/species/SpeciesListScreen'
 import { SpeciesDetailScreen } from '../screens/species/SpeciesDetailScreen'
 import { SpeciesFormScreen } from '../screens/species/SpeciesFormScreen'
 import { ObservationDetailScreen } from '../screens/observation/ObservationDetailScreen'
+import { EditObservationScreen } from '../screens/observation/EditObservationScreen'
 import { EditProfileScreen } from '../screens/profile/EditProfileScreen'
 import { AnalysisLoadingScreen } from '../screens/observation/AnalysisLoadingScreen'
 import { AIReviewScreen } from '../screens/observation/AIReviewScreen'
@@ -119,6 +120,11 @@ export function AppNavigator({ deepLinkToken }: AppNavigatorProps) {
         name="ObservationDetail"
         component={ObservationDetailScreen}
         options={{ headerShown: true, headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
+      />
+      <Stack.Screen
+        name="EditObservation"
+        component={EditObservationScreen}
+        options={{ headerShown: true, headerTitle: t('observation.editTitle'), headerStyle: { backgroundColor: '#0284c7' }, headerTintColor: '#fff' }}
       />
       <Stack.Screen
         name="EditProfile"

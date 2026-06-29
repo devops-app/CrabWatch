@@ -76,6 +76,26 @@ export const validateObservationSchema = z.object({
   rejectionReason: z.string().max(500).optional(),
 })
 
+export const updateObservationSchema = z.object({
+  speciesId: z.string().uuid().optional(),
+  cw: z.number().positive().max(50).optional(),
+  bw: z.number().positive().max(5000).optional().nullable(),
+  gender: z.enum(['MALE', 'FEMALE', 'UNKNOWN', 'male', 'female', 'unknown']).optional(),
+  maturationStatus: z.enum(['MATURE', 'IMMATURE', 'UNKNOWN', 'mature', 'immature', 'unknown']).optional(),
+  lat: z.number().min(-90).max(90).optional(),
+  lng: z.number().min(-180).max(180).optional(),
+  locationMethod: z.enum(['GPS', 'MANUAL', 'gps', 'manual']).optional(),
+  photos: z.array(
+    z.string().url().refine((url) => /^https?:\/\//i.test(url), {
+      message: 'Photo URL must use http or https',
+    })
+  ).optional(),
+  detectedCoin: z.string().max(200).optional().nullable(),
+  notes: z.string().max(1000).optional().nullable(),
+}).refine(data => Object.keys(data).length > 0, {
+  message: 'At least one field must be provided for update',
+})
+
 export const createInviteSchema = z.object({
   email: z.string().email(),
   role: z.enum(['RESEARCHER', 'ADMIN', 'researcher', 'admin']),

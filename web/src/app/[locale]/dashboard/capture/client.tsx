@@ -293,6 +293,62 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
     api.listSpecies().then(setSpecies).catch(() => setSpecies([]))
   }, [initialSpecies])
 
+  const [editObservationId, setEditObservationId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const editId = params.get('edit')
+    if (!editId) return
+    setEditObservationId(editId)
+    api.getObservation(editId).then((obs) => {
+      setPhotos({
+        dorsal: obs.photos[0] || null,
+        ventral: obs.photos[1] || null,
+        'carapace-closeup': obs.photos[2] || null,
+      })
+      setUploadedPhotoUrls(obs.photos)
+      setCoinType(obs.detectedCoin || '')
+      setCoinSelected(Boolean(obs.detectedCoin))
+      setAnalysis({
+        speciesId: obs.speciesId,
+        speciesName: obs.species.commonName,
+        confidence: 1,
+        speciesConfidence: 1,
+        estimatedCW: obs.cw,
+        estimatedBW: obs.bw,
+        gender: obs.gender,
+        maturationStatus: obs.maturationStatus,
+        detectedCoin: obs.detectedCoin,
+        coinConfidence: 1,
+        crabCount: 1,
+        suggestions: [],
+        rawAnalysis: '',
+      })
+      setReview({
+        speciesId: obs.speciesId,
+        cw: String(obs.cw),
+        bw: obs.bw != null ? String(obs.bw) : '',
+        gender: obs.gender,
+        maturationStatus: obs.maturationStatus,
+        lat: String(obs.lat),
+        lng: String(obs.lng),
+        locationMethod: obs.locationMethod,
+        notes: obs.notes || '',
+      })
+      setAnalysisStage('reviewing')
+      if (obs.lat && obs.lng) {
+        setMapViewport({
+          latitude: obs.lat,
+          longitude: obs.lng,
+          zoom: 14,
+        })
+      }
+    }).catch(() => {
+      setFlash({ tone: 'error', text: t('editFailed') })
+      setEditObservationId(null)
+    })
+  }, [])
+
   const current = CAPTURE_STEPS[currentStep]
   const currentView = current.key
   const isLastStep = currentStep === CAPTURE_STEPS.length - 1
@@ -810,20 +866,36 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
       } catch { /* non-blocking */ }
 
       setBusyMessage(t('submitting'))
-      await api.createObservation({
-        speciesId: review.speciesId,
-        cw,
-        bw: bw || undefined,
-        gender: review.gender,
-        maturationStatus: review.maturationStatus,
-        lat,
-        lng,
-        locationMethod: review.locationMethod,
-        photos: uploadedPhotoUrls,
-        uploadSessionId,
-        detectedCoin: coinType || analysis?.detectedCoin || null,
-        notes: review.notes || undefined,
-      })
+      if (editObservationId) {
+        await api.updateObservation(editObservationId, {
+          speciesId: review.speciesId,
+          cw,
+          bw: bw || null,
+          gender: review.gender,
+          maturationStatus: review.maturationStatus,
+          lat,
+          lng,
+          locationMethod: review.locationMethod,
+          detectedCoin: coinType || analysis?.detectedCoin || null,
+          notes: review.notes || null,
+          status: 'PENDING',
+        })
+      } else {
+        await api.createObservation({
+          speciesId: review.speciesId,
+          cw,
+          bw: bw || undefined,
+          gender: review.gender,
+          maturationStatus: review.maturationStatus,
+          lat,
+          lng,
+          locationMethod: review.locationMethod,
+          photos: uploadedPhotoUrls,
+          uploadSessionId,
+          detectedCoin: coinType || analysis?.detectedCoin || null,
+          notes: review.notes || undefined,
+        })
+      }
 
       try {
         const newStats = await api.getMyStats()
@@ -836,7 +908,14 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
       } catch { /* non-blocking */ }
 
       setAnalysisStage('idle')
-      setSubmitted(true)
+      if (editObservationId) {
+        setFlash({ tone: 'success', text: t('editSuccess') })
+        setEditObservationId(null)
+        window.history.replaceState(null, '', window.location.pathname)
+        resetState()
+      } else {
+        setSubmitted(true)
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : t('submitFailed')
       setSubmitError(message)

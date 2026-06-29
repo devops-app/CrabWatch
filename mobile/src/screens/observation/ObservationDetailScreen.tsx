@@ -8,6 +8,7 @@ import {
   Modal,
   Alert,
   Platform,
+  ActivityIndicator,
 } from 'react-native'
 import { Image } from 'expo-image'
 import * as Print from 'expo-print'
@@ -21,6 +22,8 @@ import { Button } from '../../components/common/Button'
 import { COLORS, STATUS_COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 import { useFormatters } from '../../hooks/useFormatters'
+import { useAuthStore } from '../../store/authStore'
+import { api } from '../../services/api'
 import type { RootStackParamList } from '../../navigation/types'
 
 type ObservationDetailRouteProp = RouteProp<RootStackParamList, 'ObservationDetail'>
@@ -32,6 +35,12 @@ export function ObservationDetailScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
   const observation = route.params?.observation
   const [fullscreenPhoto, setFullscreenPhoto] = useState<string | null>(null)
+  const [processing, setProcessing] = useState(false)
+  const user = useAuthStore(state => state.user)
+  const isOwner = user?.id === observation?.userId
+  const canEdit = isOwner && observation?.status !== 'approved'
+  const canDelete = isOwner && (observation?.status === 'pending' || observation?.status === 'rejected')
+  const canResubmit = isOwner && observation?.status === 'rejected'
 
   if (!observation) {
     return (
@@ -147,6 +156,61 @@ export function ObservationDetailScreen() {
     }
   }
 
+  const handleDelete = () => {
+    Alert.alert(
+      t('confirmDeleteTitle'),
+      t('confirmDelete'),
+      [
+        { text: t('cancel'), style: 'cancel' },
+        {
+          text: t('delete'),
+          style: 'destructive',
+          onPress: async () => {
+            setProcessing(true)
+            try {
+              await api.deleteObservation(observation.id)
+              Alert.alert(t('deleteSuccess'))
+              navigation.goBack()
+            } catch {
+              Alert.alert(t('deleteFailed'))
+            } finally {
+              setProcessing(false)
+            }
+          },
+        },
+      ]
+    )
+  }
+
+  const handleResubmit = () => {
+    Alert.alert(
+      t('confirmResubmitTitle'),
+      t('confirmResubmit'),
+      [
+        { text: t('cancel'), style: 'cancel' },
+        {
+          text: t('resubmit'),
+          onPress: async () => {
+            setProcessing(true)
+            try {
+              await api.updateObservation(observation.id, { status: 'PENDING' })
+              Alert.alert(t('resubmitSuccess'))
+              navigation.goBack()
+            } catch {
+              Alert.alert(t('resubmitFailed'))
+            } finally {
+              setProcessing(false)
+            }
+          },
+        },
+      ]
+    )
+  }
+
+  const handleEdit = () => {
+    navigation.navigate('EditObservation', { observationId: observation.id })
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -229,14 +293,47 @@ export function ObservationDetailScreen() {
             variant="secondary"
             onPress={() => navigation.goBack()}
             style={styles.actionBtn}
+            disabled={processing}
           />
           <Button
             title={t('print')}
             variant="secondary"
             onPress={handlePrint}
             style={styles.actionBtn}
+            disabled={processing}
           />
         </View>
+        {(canEdit || canDelete || canResubmit) && (
+          <View style={styles.actionRow}>
+            {canEdit && (
+              <Button
+                title={t('edit')}
+                variant="primary"
+                onPress={handleEdit}
+                style={styles.actionBtn}
+                disabled={processing}
+              />
+            )}
+            {canResubmit && (
+              <Button
+                title={t('resubmit')}
+                variant="primary"
+                onPress={handleResubmit}
+                style={styles.actionBtn}
+                disabled={processing}
+              />
+            )}
+            {canDelete && (
+              <Button
+                title={t('delete')}
+                variant="danger"
+                onPress={handleDelete}
+                style={styles.actionBtn}
+                disabled={processing}
+              />
+            )}
+          </View>
+        )}
       </ScrollView>
 
       <Modal

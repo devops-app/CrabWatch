@@ -95,6 +95,7 @@ model Observation {
   validatedBy      String?           @db.Uuid
   validatedAt      DateTime?
   rejectionReason  String?
+  deletedAt        DateTime?
   createdAt        DateTime          @default(now())
   uploadSessionId  String?
   species          Species           @relation(fields: [speciesId], references: [id])
@@ -109,6 +110,7 @@ model Observation {
   @@index([status, speciesId])
   @@index([status, createdAt])
   @@index([speciesId, status])
+  @@index([deletedAt])
   @@map("observations")
 }
 
@@ -338,8 +340,9 @@ model Challenge {
   startsAt    DateTime
   endsAt      DateTime
   active      Boolean       @default(true)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
 }
 
 model UserInsight {

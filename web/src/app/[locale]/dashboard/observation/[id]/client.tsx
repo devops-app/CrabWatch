@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from '@/i18n/navigation'
 import { api } from '@/lib/api'
 import { logger } from '@/lib/logger'
+import { useAuthStore } from '@/lib/authStore'
 import { useTranslations } from 'next-intl'
 import { useFormatters } from '@/hooks/useFormatters'
 import type { ObservationResponse } from '@crabwatch/shared'
@@ -23,6 +24,13 @@ export function ObservationClient({
   const [observation, setObservation] = useState<ObservationResponse | null>(initialObservation ?? null)
   const [loading, setLoading] = useState(false)
   const [fullscreenPhoto, setFullscreenPhoto] = useState<string | null>(null)
+  const [confirmModal, setConfirmModal] = useState<{ type: 'delete' | 'resubmit'; visible: boolean }>({ type: 'delete', visible: false })
+  const [flash, setFlash] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const user = useAuthStore(state => state.user)
+  const isOwner = user?.id === observation?.userId
+  const canEdit = isOwner && observation?.status !== 'approved'
+  const canDelete = isOwner && (observation?.status === 'pending' || observation?.status === 'rejected')
+  const canResubmit = isOwner && observation?.status === 'rejected'
 
   useEffect(() => {
     if (initialObservation) return
@@ -51,6 +59,37 @@ export function ObservationClient({
    const handlePrint = useCallback(() => {
     window.print()
   }, [])
+
+  const showFlash = (type: 'success' | 'error', message: string) => {
+    setFlash({ type, message })
+    setTimeout(() => setFlash(null), 3000)
+  }
+
+  const handleDelete = async () => {
+    if (!observation) return
+    try {
+      await api.deleteObservation(observation.id)
+      showFlash('success', t('deleteSuccess'))
+      setTimeout(() => router.back(), 800)
+    } catch (err) {
+      logger.error('Failed to delete observation', err)
+      showFlash('error', t('deleteFailed'))
+    }
+    setConfirmModal({ type: 'delete', visible: false })
+  }
+
+  const handleResubmit = async () => {
+    if (!observation) return
+    try {
+      await api.updateObservation(observation.id, { status: 'PENDING' })
+      showFlash('success', t('resubmitSuccess'))
+      setObservation(prev => prev ? { ...prev, status: 'pending', rejectionReason: null, validatedBy: null, validatedAt: null } : null)
+    } catch (err) {
+      logger.error('Failed to resubmit observation', err)
+      showFlash('error', t('resubmitFailed'))
+    }
+    setConfirmModal({ type: 'resubmit', visible: false })
+  }
 
   const statusColors: Record<string, string> = {
     pending: 'bg-yellow-100 text-yellow-800',
@@ -124,6 +163,42 @@ export function ObservationClient({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                 </svg>
               </button>
+              {canResubmit && (
+                <button
+                  onClick={() => setConfirmModal({ type: 'resubmit', visible: true })}
+                  className="p-2 text-ocean-600 hover:text-ocean-800 hover:bg-ocean-50 rounded-lg transition-colors print:hidden"
+                  aria-label={t('resubmit')}
+                  title={t('resubmit')}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+              )}
+              {canEdit && (
+                <button
+                  onClick={() => router.push(`/dashboard/capture?edit=${observation.id}`)}
+                  className="p-2 text-gray-500 hover:text-ocean-600 hover:bg-ocean-50 rounded-lg transition-colors print:hidden"
+                  aria-label={t('edit')}
+                  title={t('edit')}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+              )}
+              {canDelete && (
+                <button
+                  onClick={() => setConfirmModal({ type: 'delete', visible: true })}
+                  className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors print:hidden"
+                  aria-label={t('delete')}
+                  title={t('delete')}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
         <div className="flex items-center gap-4 text-sm text-gray-500">
@@ -258,6 +333,41 @@ export function ObservationClient({
         {t('back')}
       </button>
       </div>
+
+      {/* Flash Message */}
+      {flash && (
+        <div className={`fixed bottom-6 right-6 px-4 py-3 rounded-lg shadow-lg text-sm font-medium z-[70] print:hidden ${flash.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
+          {flash.message}
+        </div>
+      )}
+
+      {/* Confirm Modal */}
+      {confirmModal.visible && (
+        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4 print:hidden">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {confirmModal.type === 'delete' ? t('confirmDeleteTitle') : t('confirmResubmitTitle')}
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              {confirmModal.type === 'delete' ? t('confirmDelete') : t('confirmResubmit')}
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmModal({ type: 'delete', visible: false })}
+                className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                {t('cancel')}
+              </button>
+              <button
+                onClick={confirmModal.type === 'delete' ? handleDelete : handleResubmit}
+                className={`px-4 py-2 text-sm text-white rounded-lg transition-colors ${confirmModal.type === 'delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-ocean-600 hover:bg-ocean-700'}`}
+              >
+                {confirmModal.type === 'delete' ? t('delete') : t('resubmit')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Fullscreen Photo Modal */}
       {fullscreenPhoto && (
