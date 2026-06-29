@@ -435,7 +435,8 @@
       "notes": "Nota (pilihan)",
       "useBrowserGps": "Gunakan GPS Pelayar",
       "backToCapture": "Kembali ke Rakaman",
-      "submitObservation": "Hantar Pemerhatian"
+      "submitObservation": "Hantar Pemerhatian",
+      "updateObservation": "Kemas Kini Pemerhatian"
     },
     "analysis": {
       "analyzing": "Menganalisis gambar...",
@@ -518,6 +519,7 @@
       "useGps": "Gunakan GPS pelayar untuk mendapatkan lokasi semasa",
       "backCapture": "Kembali dan ambil semula gambar",
       "submitObs": "Hantar pemerhatian ke pelayan",
+      "updateObs": "Kemas kini pemerhatian",
       "letAiDetect": "Biarkan AI mengesan syiling secara automatik",
       "toggleSeries": "Togol pilihan syiling {series}",
       "selectCoin": "Pilih {coin}",

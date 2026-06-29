@@ -1212,6 +1212,7 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
           coinType={coinType}
           busyMessage={busyMessage}
           submitError={submitError}
+          isEditing={!!editObservationId}
           onReviewChange={setReview}
           onRequestGPS={requestBrowserLocation}
           onBackToCapture={onBackToCapture}

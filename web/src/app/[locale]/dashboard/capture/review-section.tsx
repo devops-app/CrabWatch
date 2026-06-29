@@ -26,6 +26,7 @@ interface ReviewSectionProps {
   coinType: string
   busyMessage: string | null
   submitError: string | null
+  isEditing: boolean
   onReviewChange: (review: ReviewFormState) => void
   onRequestGPS: () => void
   onBackToCapture: () => void
@@ -54,6 +55,7 @@ export function ReviewSection({
   coinType,
   busyMessage,
   submitError,
+  isEditing,
   onReviewChange,
   onRequestGPS,
   onBackToCapture,
@@ -333,7 +335,7 @@ export function ReviewSection({
       <div className="flex flex-wrap gap-2">
         <button type="button" className="btn-secondary" onClick={onRequestGPS} disabled={Boolean(busyMessage)} aria-label={t('client.useGps')}>{t('review.useBrowserGps')}</button>
         <button type="button" className="btn-secondary" onClick={onBackToCapture} disabled={Boolean(busyMessage)} aria-label={t('client.backCapture')}>{t('review.backToCapture')}</button>
-        <button type="button" className="btn-primary" onClick={onSubmit} disabled={Boolean(busyMessage)} aria-label={t('client.submitObs')}>{t('review.submitObservation')}</button>
+        <button type="button" className="btn-primary" onClick={onSubmit} disabled={Boolean(busyMessage)} aria-label={isEditing ? t('client.updateObs') : t('client.submitObs')}>{isEditing ? t('review.updateObservation') : t('review.submitObservation')}</button>
       </div>
     </>
   )

@@ -435,7 +435,8 @@
       "notes": "Notes (optional)",
       "useBrowserGps": "Use Browser GPS",
       "backToCapture": "Back to Capture",
-      "submitObservation": "Submit Observation"
+      "submitObservation": "Submit Observation",
+      "updateObservation": "Update Observation"
     },
     "analysis": {
       "analyzing": "Analyzing photos...",
@@ -518,6 +519,7 @@
       "useGps": "Use browser GPS to get current location",
       "backCapture": "Go back and retake photos",
       "submitObs": "Submit observation to server",
+      "updateObs": "Update observation",
       "letAiDetect": "Let AI detect coin automatically",
       "toggleSeries": "Toggle {series} coin options",
       "selectCoin": "Select {coin}",
