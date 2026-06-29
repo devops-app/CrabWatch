@@ -13,7 +13,7 @@ import fs from 'fs'
 import path from 'path'
 
 const resolvePkg = (): { version: string } => {
-  for (const rel of ['../../../package.json', '../../package.json', '../package.json', './package.json'])
+  for (const rel of ['../../../../package.json', '../../../package.json', '../../package.json', '../package.json', './package.json'])
     try {
       const p = path.resolve(__dirname, rel)
       return JSON.parse(fs.readFileSync(p, 'utf-8')) as { version: string }
