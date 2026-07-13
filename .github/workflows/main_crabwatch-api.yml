@@ -38,8 +38,9 @@ jobs:
           cp -r server/dist deploy/
           mkdir -p deploy/dist/server/src/locales
           cp server/src/locales/*.json deploy/dist/server/src/locales/
-          cp server/package.json deploy/
           cp -r server/prisma deploy/
+          # Strip workspace:* protocol so npm can resolve dependencies
+          sed 's/"workspace:\*"/"*"/g' server/package.json > deploy/package.json
           cd deploy
           npm install --omit=dev --no-audit --no-fund --no-package-lock
           npx prisma generate
