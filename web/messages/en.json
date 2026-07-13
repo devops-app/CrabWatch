@@ -191,7 +191,7 @@
     "missions": "Missions",
     "achievements": "Achievements",
     "community": "Community",
-    "researcher": "Researcher",
+    "observation": "Observation",
     "admin": "Admin",
     "about": "About",
     "home": "Home",
@@ -324,17 +324,17 @@
       "letAiDetect": "Let AI detect",
       "coinLabel": "Coin:",
       "aiDetect": "AI detect",
-      "change": "Change",
-      "coins": {
-        "third5": "5 sen (17.78mm)",
-        "third10": "10 sen (18.80mm)",
-        "third20": "20 sen (20.60mm)",
-        "third50": "50 sen (22.65mm)",
-        "second5": "5 sen (16.20mm)",
-        "second10": "10 sen (19.40mm)",
-        "second20": "20 sen (23.59mm)",
-        "second50": "50 sen (27.76mm)"
-      }
+      "change": "Change"
+    },
+    "coins": {
+      "third5": "5 sen (17.78mm)",
+      "third10": "10 sen (18.80mm)",
+      "third20": "20 sen (20.60mm)",
+      "third50": "50 sen (22.65mm)",
+      "second5": "5 sen (16.20mm)",
+      "second10": "10 sen (19.40mm)",
+      "second20": "20 sen (23.59mm)",
+      "second50": "50 sen (27.76mm)"
     },
     "stepLabels": {
       "dorsal": "Dorsal View",
@@ -435,7 +435,8 @@
       "notes": "Notes (optional)",
       "useBrowserGps": "Use Browser GPS",
       "backToCapture": "Back to Capture",
-      "submitObservation": "Submit Observation"
+      "submitObservation": "Submit Observation",
+      "updateObservation": "Update Observation"
     },
     "analysis": {
       "analyzing": "Analyzing photos...",
@@ -498,6 +499,8 @@
       "levelUp": "Level Up! You're now level {level} ({title})",
       "xpEarned": "+{xp} XP earned!",
       "submitFailed": "Failed to submit",
+      "editSuccess": "Observation updated successfully",
+      "editFailed": "Failed to load observation for editing",
       "cameraRequiresHttps": "Camera requires HTTPS. Open via https:// or use Upload Photo.",
       "cameraNotSupported": "Browser does not support camera. Use Upload Photo.",
       "cameraPreviewFailed": "Camera preview failed. Tap Open Camera again or use Upload Photo.",
@@ -516,6 +519,7 @@
       "useGps": "Use browser GPS to get current location",
       "backCapture": "Go back and retake photos",
       "submitObs": "Submit observation to server",
+      "updateObs": "Update observation",
       "letAiDetect": "Let AI detect coin automatically",
       "toggleSeries": "Toggle {series} coin options",
       "selectCoin": "Select {coin}",
@@ -576,7 +580,24 @@
     "byUser": "by user",
     "rejectionReason": "Rejection Reason",
     "back": "← Back",
-    "fullView": "Full view"
+    "fullView": "Full view",
+    "edit": "Edit",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "resubmit": "Resubmit",
+    "confirmDelete": "Are you sure you want to delete this observation? This action cannot be undone.",
+    "confirmDeleteTitle": "Delete Observation",
+    "confirmResubmit": "Resubmit this observation for validation? It will be set to pending status.",
+    "confirmResubmitTitle": "Resubmit Observation",
+    "deleteSuccess": "Observation deleted",
+    "deleteFailed": "Failed to delete observation",
+    "updateSuccess": "Observation updated",
+    "updateFailed": "Failed to update observation",
+    "resubmitSuccess": "Observation resubmitted",
+    "resubmitFailed": "Failed to resubmit observation",
+    "editNotAllowed": "Only the owner can edit this observation.",
+    "deleteNotAllowed": "Only the owner can delete this observation.",
+    "statusLocked": "Approved observations cannot be edited or deleted."
   },
   "species": {
     "title": "Species",
@@ -820,10 +841,23 @@
     "languageSaveFailed": "Failed to save language preference"
   },
   "researcher": {
-    "title": "Validation Queue",
+    "title": "Observation Dashboard",
+    "tabs": {
+      "pending": "Validation Queue",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
     "pendingCount_one": "{count} observation pending review",
     "pendingCount_other": "{count} observations pending review",
-    "empty": "No pending observations. All caught up!",
+    "pendingEmpty": "No pending observations. All caught up!",
+    "approvedCount_one": "{count} approved observation",
+    "approvedCount_other": "{count} approved observations",
+    "approvedEmpty": "No approved observations yet.",
+    "rejectedCount_one": "{count} rejected observation",
+    "rejectedCount_other": "{count} rejected observations",
+    "rejectedEmpty": "No rejected observations yet.",
+    "close": "Close",
+    "loading": "Loading...",
     "na": "N/A",
     "previous": "Previous",
     "next": "Next",
@@ -849,7 +883,27 @@
     "fullScreen": "Observation full screen",
     "viewPhoto": "View photo {index} full screen",
     "photoAlt": "Observation photo {index}",
-    "reviewObservation": "Review observation for {species}"
+    "reviewObservation": "Review observation for {species}",
+    "filters": {
+      "date": "Date Range",
+      "allTime": "All Time",
+      "clear": "Clear"
+    },
+    "dateRanges": {
+      "oneWeek": "1 Week",
+      "oneMonth": "1 Month",
+      "threeMonths": "3 Months",
+      "sixMonths": "6 Months",
+      "oneYear": "1 Year",
+      "custom": "Custom",
+      "from": "From",
+      "to": "To"
+    },
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this observation? This action cannot be undone.",
+    "deleteSuccess": "Observation deleted",
+    "deleteFailed": "Failed to delete observation"
   },
   "leaderboard": {
     "title": "Leaderboard",

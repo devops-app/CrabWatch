@@ -4,7 +4,7 @@ export class ResearcherPage {
   constructor(private page: Page) {}
 
   goto() {
-    return this.page.goto('/dashboard/researcher')
+    return this.page.goto('/dashboard/observation')
   }
 
   get heading() {

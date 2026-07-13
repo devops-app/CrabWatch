@@ -1,6 +1,6 @@
 {
     "name":  "@crabwatch/server",
-    "version":  "1.0.0+0033",
+    "version":  "1.0.1+0008",
     "private":  true,
     "engines":  {
                     "node":  "\u003e=22.0.0"
@@ -21,12 +21,14 @@
                     "db:seed:i18n:ms":  "npx tsx src/services/seedMalayTranslations.ts",
                     "calibrate":  "npx tsx scripts/calibrateQuality.ts",
                     "qa:matrix":  "npx tsx scripts/runQAMatrix.ts",
+                    "cleanup:broken":  "npx tsx scripts/cleanupBrokenObservations.ts",
                     "db:seed:test-users":  "npx tsx src/services/seedTestUsers.ts",
                     "test":  "jest",
                     "test:watch":  "jest --watch",
                     "test:coverage":  "jest --coverage"
                 },
     "dependencies":  {
+                         "@crabwatch/shared":  "workspace:*",
                          "@azure/monitor-opentelemetry":  "^1.18.1",
                          "@azure/storage-blob":  "^12.17.0",
                          "@prisma/client":  "5.22.0",

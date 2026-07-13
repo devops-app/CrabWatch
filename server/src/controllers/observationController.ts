@@ -226,7 +226,7 @@ export const listObservations = asyncHandler(async (req: AuthRequest, res: Respo
   const dateTo = typeof req.query.dateTo === 'string' ? req.query.dateTo : undefined
 
   const skip = (page - 1) * limit
-  const where: Prisma.ObservationWhereInput = {}
+  const where: Prisma.ObservationWhereInput = { deletedAt: null }
 
   if (dbUser.role === 'USER') {
     where.userId = dbUser.id
@@ -275,7 +275,7 @@ export const getObservation = asyncHandler(async (req: AuthRequest, res: Respons
     include: OBSERVATION_INCLUDE,
   })
 
-  if (!observation) {
+  if (!observation || observation.deletedAt) {
     throw new NotFoundError(__('observation.notFound', 'observation'))
   }
 
@@ -287,6 +287,7 @@ export const getObservation = asyncHandler(async (req: AuthRequest, res: Respons
 })
 
 export const validateObservation = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const __ = createTranslator(req)
   const { id } = req.params
   const dbUser = getDbUser(req)
   const { status, rejectionReason } = req.body
@@ -294,6 +295,11 @@ export const validateObservation = asyncHandler(async (req: AuthRequest, res: Re
   const sanitizedRejectionReason = normalizedStatus === 'rejected' ? sanitizeText(rejectionReason) : null
 
   const prisma = getPrisma()
+  const existing = await prisma.observation.findUnique({ where: { id } })
+  if (!existing || existing.deletedAt) {
+    throw new NotFoundError(__('observation.notFound', 'observation'))
+  }
+
   const observation = await prisma.observation.update({
     where: { id },
     data: {
@@ -389,12 +395,90 @@ export const validateObservation = asyncHandler(async (req: AuthRequest, res: Re
   res.json({ success: true, data: await formatObservation(observation) })
 })
 
+export const updateObservation = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const __ = createTranslator(req)
+  const { id } = req.params
+  const dbUser = getDbUser(req)
+
+  const prisma = getPrisma()
+  const observation = await prisma.observation.findUnique({
+    where: { id },
+  })
+
+  if (!observation) {
+    throw new NotFoundError(__('observation.notFound', 'observation'))
+  }
+
+  if (observation.userId !== dbUser.id) {
+    throw new ForbiddenError(__('observation.unauthorized', 'observation'))
+  }
+
+  if (observation.status === 'APPROVED') {
+    throw new ValidationError(__('observation.alreadyProcessed', 'observation'))
+  }
+
+  const { speciesId, cw, bw, gender, maturationStatus, lat, lng, locationMethod, photos, detectedCoin, notes, status } = req.body
+
+  const data: Prisma.ObservationUncheckedUpdateInput = {}
+  if (speciesId !== undefined) data.speciesId = speciesId
+  if (cw !== undefined) data.cw = cw
+  if (bw !== undefined) data.bw = bw
+  if (gender !== undefined) data.gender = gender.toUpperCase()
+  if (maturationStatus !== undefined) data.maturationStatus = maturationStatus.toUpperCase()
+  if (lat !== undefined) data.lat = lat
+  if (lng !== undefined) data.lng = lng
+  if (locationMethod !== undefined) data.locationMethod = locationMethod.toUpperCase()
+  if (photos !== undefined) data.photos = photos
+  if (detectedCoin !== undefined) data.detectedCoin = detectedCoin
+  if (notes !== undefined) data.notes = sanitizeText(notes)
+  if (status === 'PENDING' && observation.status === 'REJECTED') {
+    data.status = 'PENDING'
+    data.rejectionReason = null
+    data.validatedBy = null
+    data.validatedAt = null
+  }
+
+  const updated = await prisma.observation.update({
+    where: { id },
+    data,
+    include: OBSERVATION_INCLUDE,
+  })
+
+  res.json({ success: true, data: await formatObservation(updated) })
+})
+
+export const deleteObservation = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const __ = createTranslator(req)
+  const { id } = req.params
+  const dbUser = getDbUser(req)
+
+  const prisma = getPrisma()
+  const observation = await prisma.observation.findUnique({
+    where: { id },
+  })
+
+  if (!observation) {
+    throw new NotFoundError(__('observation.notFound', 'observation'))
+  }
+
+  if (observation.userId !== dbUser.id) {
+    throw new ForbiddenError(__('observation.unauthorized', 'observation'))
+  }
+
+  await prisma.observation.update({
+    where: { id },
+    data: { deletedAt: new Date() },
+  })
+
+  res.json({ success: true, message: __('observation.delete.success', 'observation') })
+})
+
 export const getPendingObservations = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
   const { page, limit } = parsePagination(req.query)
   const speciesId = typeof req.query.speciesId === 'string' ? req.query.speciesId : undefined
 
   const skip = (page - 1) * limit
-  const where: Prisma.ObservationWhereInput = { status: 'PENDING' }
+  const where: Prisma.ObservationWhereInput = { status: 'PENDING', deletedAt: null }
   if (speciesId) where.speciesId = speciesId
 
   const prisma = getPrisma()

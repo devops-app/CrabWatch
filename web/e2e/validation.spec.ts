@@ -84,8 +84,8 @@ test.describe('Observation Validation', () => {
     await login.login(testUsers.user.email, testUsers.user.password)
     await page.waitForURL(/\/dashboard/)
 
-    await page.goto('/dashboard/researcher')
-    await expect(page).toHaveURL(/\/dashboard\/researcher/)
+    await page.goto('/dashboard/observation')
+    await expect(page).toHaveURL(/\/dashboard\/observation/)
 
     const apiRequest = await playwrightRequest.newContext({
       baseURL: API_URL,

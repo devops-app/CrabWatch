@@ -191,7 +191,7 @@
     "missions": "Misi",
     "achievements": "Pencapaian",
     "community": "Komuniti",
-    "researcher": "Penyelidik",
+    "observation": "Pemerhatian",
     "admin": "Admin",
     "about": "Mengenai",
     "home": "Laman Utama",
@@ -324,17 +324,17 @@
       "letAiDetect": "Biarkan AI mengesan",
       "coinLabel": "Syiling:",
       "aiDetect": "AI kesan",
-      "change": "Tukar",
-      "coins": {
-        "third5": "5 sen (17.78mm)",
-        "third10": "10 sen (18.80mm)",
-        "third20": "20 sen (20.60mm)",
-        "third50": "50 sen (22.65mm)",
-        "second5": "5 sen (16.20mm)",
-        "second10": "10 sen (19.40mm)",
-        "second20": "20 sen (23.59mm)",
-        "second50": "50 sen (27.76mm)"
-      }
+      "change": "Tukar"
+    },
+    "coins": {
+      "third5": "5 sen (17.78mm)",
+      "third10": "10 sen (18.80mm)",
+      "third20": "20 sen (20.60mm)",
+      "third50": "50 sen (22.65mm)",
+      "second5": "5 sen (16.20mm)",
+      "second10": "10 sen (19.40mm)",
+      "second20": "20 sen (23.59mm)",
+      "second50": "50 sen (27.76mm)"
     },
     "stepLabels": {
       "dorsal": "Pandangan Dorsal",
@@ -435,7 +435,8 @@
       "notes": "Nota (pilihan)",
       "useBrowserGps": "Gunakan GPS Pelayar",
       "backToCapture": "Kembali ke Rakaman",
-      "submitObservation": "Hantar Pemerhatian"
+      "submitObservation": "Hantar Pemerhatian",
+      "updateObservation": "Kemas Kini Pemerhatian"
     },
     "analysis": {
       "analyzing": "Menganalisis gambar...",
@@ -498,6 +499,8 @@
       "levelUp": "Naik Tahap! Anda kini di tahap {level} ({title})",
       "xpEarned": "+{xp} XP diperoleh!",
       "submitFailed": "Gagal menghantar",
+      "editSuccess": "Pemerhatian berjaya dikemas kini",
+      "editFailed": "Gagal memuatkan pemerhatian untuk disunting",
       "cameraRequiresHttps": "Kamera memerlukan HTTPS. Buka melalui https:// atau gunakan Muat Naik Gambar.",
       "cameraNotSupported": "Pelayar tidak menyokong kamera. Gunakan Muat Naik Gambar.",
       "cameraPreviewFailed": "Pratonton kamera gagal. Tekan Buka Kamera lagi atau gunakan Muat Naik Gambar.",
@@ -516,6 +519,7 @@
       "useGps": "Gunakan GPS pelayar untuk mendapatkan lokasi semasa",
       "backCapture": "Kembali dan ambil semula gambar",
       "submitObs": "Hantar pemerhatian ke pelayan",
+      "updateObs": "Kemas kini pemerhatian",
       "letAiDetect": "Biarkan AI mengesan syiling secara automatik",
       "toggleSeries": "Togol pilihan syiling {series}",
       "selectCoin": "Pilih {coin}",
@@ -576,7 +580,24 @@
     "byUser": "oleh pengguna",
     "rejectionReason": "Sebab Penolakan",
     "back": "← Kembali",
-    "fullView": "Pandangan penuh"
+    "fullView": "Pandangan penuh",
+    "edit": "Sunting",
+    "cancel": "Batal",
+    "delete": "Padam",
+    "resubmit": "Hantar Semula",
+    "confirmDelete": "Adakah anda pasti mahu memadam pemerhatian ini? Tindakan ini tidak boleh dibatalkan.",
+    "confirmDeleteTitle": "Padam Pemerhatian",
+    "confirmResubmit": "Hantar semula pemerhatian ini untuk pengesahan? Ia akan ditetapkan sebagai status menunggu.",
+    "confirmResubmitTitle": "Hantar Semula Pemerhatian",
+    "deleteSuccess": "Pemerhatian dipadam",
+    "deleteFailed": "Gagal memadam pemerhatian",
+    "updateSuccess": "Pemerhatian dikemas kini",
+    "updateFailed": "Gagal mengemas kini pemerhatian",
+    "resubmitSuccess": "Pemerhatian dihantar semula",
+    "resubmitFailed": "Gagal menghantar semula pemerhatian",
+    "editNotAllowed": "Hanya pemilik boleh menyunting pemerhatian ini.",
+    "deleteNotAllowed": "Hanya pemilik boleh memadam pemerhatian ini.",
+    "statusLocked": "Pemerhatian yang disahkan tidak boleh disunting atau dipadam."
   },
   "species": {
     "title": "Spesies",
@@ -820,10 +841,23 @@
     "languageSaveFailed": "Gagal menyimpan pilihan bahasa"
   },
   "researcher": {
-    "title": "Barisan Pengesahan",
+    "title": "Papan Pemuka Pemerhatian",
+    "tabs": {
+      "pending": "Barisan Pengesahan",
+      "approved": "Disahkan",
+      "rejected": "Ditolak"
+    },
     "pendingCount_one": "{count} pemerhatian menunggu semakan",
     "pendingCount_other": "{count} pemerhatian menunggu semakan",
-    "empty": "Tiada pemerhatian menunggu. Semua selesai!",
+    "pendingEmpty": "Tiada pemerhatian menunggu. Semua selesai!",
+    "approvedCount_one": "{count} pemerhatian disahkan",
+    "approvedCount_other": "{count} pemerhatian disahkan",
+    "approvedEmpty": "Belum ada pemerhatian yang disahkan.",
+    "rejectedCount_one": "{count} pemerhatian ditolak",
+    "rejectedCount_other": "{count} pemerhatian ditolak",
+    "rejectedEmpty": "Belum ada pemerhatian yang ditolak.",
+    "close": "Tutup",
+    "loading": "Memuatkan...",
     "na": "T/A",
     "previous": "Sebelumnya",
     "next": "Seterusnya",
@@ -849,7 +883,27 @@
     "fullScreen": "Pemerhatian skrin penuh",
     "viewPhoto": "Lihat gambar {index} skrin penuh",
     "photoAlt": "Gambar pemerhatian {index}",
-    "reviewObservation": "Semak pemerhatian untuk {species}"
+    "reviewObservation": "Semak pemerhatian untuk {species}",
+    "filters": {
+      "date": "Julang Tarikh",
+      "allTime": "Semua Masa",
+      "clear": "Kosongkan"
+    },
+    "dateRanges": {
+      "oneWeek": "1 Minggu",
+      "oneMonth": "1 Bulan",
+      "threeMonths": "3 Bulan",
+      "sixMonths": "6 Bulan",
+      "oneYear": "1 Tahun",
+      "custom": "Tersuai",
+      "from": "Dari",
+      "to": "Ke"
+    },
+    "edit": "Sunting",
+    "delete": "Padam",
+    "confirmDelete": "Adakah anda pasti mahu memadam pemerhatian ini? Tindakan ini tidak boleh dibatalkan.",
+    "deleteSuccess": "Pemerhatian dipadam",
+    "deleteFailed": "Gagal memadam pemerhatian"
   },
   "leaderboard": {
     "title": "Papan Pendahulu",

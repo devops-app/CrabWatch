@@ -539,6 +539,7 @@
   },
   "review": {
     "title": "Semakan",
+    "loading": "Memuatkan...",
     "aiFindings": "Penemuan AI",
     "species": "Spesies",
     "gender": "Jantina",
@@ -677,7 +678,35 @@
     "printFailedBody": "Tidak dapat menjana dokumen cetak. Sila cuba lagi.",
     "back": "Kembali",
     "mm": "mm",
-    "g": "g"
+    "g": "g",
+    "edit": "Sunting",
+    "cancel": "Batal",
+    "delete": "Padam",
+    "resubmit": "Hantar Semula",
+    "confirmDelete": "Adakah anda pasti mahu memadam pemerhatian ini? Tindakan ini tidak boleh dibatalkan.",
+    "confirmDeleteTitle": "Padam Pemerhatian",
+    "confirmResubmit": "Hantar semula pemerhatian ini untuk pengesahan?",
+    "confirmResubmitTitle": "Hantar Semula Pemerhatian",
+    "deleteSuccess": "Pemerhatian dipadam",
+    "deleteFailed": "Gagal memadam pemerhatian",
+    "updateSuccess": "Pemerhatian dikemas kini",
+    "updateFailed": "Gagal mengemas kini pemerhatian",
+    "resubmitSuccess": "Pemerhatian dihantar semula",
+    "resubmitFailed": "Gagal menghantar semula pemerhatian",
+    "editNotAllowed": "Hanya pemilik boleh menyunting pemerhatian ini.",
+    "deleteNotAllowed": "Hanya pemilik boleh memadam pemerhatian ini.",
+    "statusLocked": "Pemerhatian yang disahkan tidak boleh disunting atau dipadam.",
+    "editTitle": "Sunting Pemerhatian",
+    "editFailed": "Gagal memuat data pemerhatian",
+    "save": "Simpan Perubahan",
+    "optional": "(Pilihan)",
+    "speciesPlaceholder": "Pilih spesies",
+    "genderPlaceholder": "Pilih jantina",
+    "maturationPlaceholder": "Pilih pematangan",
+    "coinPlaceholder": "cth. 50 sen",
+    "notesPlaceholder": "Nota tambahan tentang pemerhatian ini",
+    "cw": "Lebar Carapace",
+    "bw": "Berat Badan"
   },
   "newObservation": {
     "sections": {
@@ -829,13 +858,16 @@
     }
   },
   "researcher": {
-    "title": "Penyelidik",
+    "title": "Pemerhatian",
     "pending": "Menunggu",
+    "approved": "Disahkan",
     "rejected": "Ditolak",
     "noPending": "Tiada pemerhatian menunggu",
+    "noApproved": "Tiada pemerhatian disahkan",
     "noRejected": "Tiada pemerhatian ditolak",
     "allCaughtUp": "Semua Selesai!",
     "allCaughtUpHint": "Tiada pemerhatian menunggu untuk disemak.",
+    "approvedEmpty": "Belum ada pemerhatian yang disahkan.",
     "validate": "Sahkan",
     "reject": "Tolak",
     "approveTitle": "Sahkan Pemerhatian",
@@ -875,7 +907,26 @@
     "photoCount_other": "{{count}} foto",
     "loading": "Memuatkan...",
     "errorLoading": "Ralat memuatkan pemerhatian",
-    "pullToRefresh": "Tarik untuk segar semula"
+    "pullToRefresh": "Tarik untuk segar semula",
+    "filters": {
+      "date": "Julang Tarikh",
+      "clear": "Kosongkan"
+    },
+    "dateRanges": {
+      "oneWeek": "Minggu Lalu",
+      "oneMonth": "Bulan Lalu",
+      "threeMonths": "3 Bulan Lalu",
+      "sixMonths": "6 Bulan Lalu",
+      "oneYear": "Tahun Lalu",
+      "custom": "Julang Custom...",
+      "from": "Dari",
+      "to": "Ke"
+    },
+    "edit": "Sunting",
+    "delete": "Padam",
+    "confirmDelete": "Adakah anda pasti mahu memadam pemerhatian ini? Tindakan ini tidak boleh dibatalkan.",
+    "deleteSuccess": "Pemerhatian dipadam",
+    "deleteFailed": "Gagal memadam pemerhatian"
   },
   "admin": {
     "tab": {

@@ -8,6 +8,7 @@ import type {
   ObservationListResponse,
   ObservationFilters,
   ValidateObservationInput,
+  UpdateObservationInput,
   SpeciesResponse,
   SpeciesTranslation,
   CreateSpeciesInput,
@@ -294,6 +295,24 @@ export const api = {
     })
 
     return normalizeObservationPhotos(data)
+  },
+
+  async updateObservation(
+    id: string,
+    input: UpdateObservationInput
+  ): Promise<ObservationResponse> {
+    const data = await apiRequest<ObservationResponse>(`/observations/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    })
+
+    return normalizeObservationPhotos(data)
+  },
+
+  async deleteObservation(id: string): Promise<ApiResponse> {
+    return apiRequest<ApiResponse>(`/observations/${id}`, {
+      method: 'DELETE',
+    })
   },
 
   async getDashboardStats(): Promise<DashboardStats> {

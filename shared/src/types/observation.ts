@@ -46,6 +46,21 @@ export interface ValidateObservationInput {
   rejectionReason?: string
 }
 
+export interface UpdateObservationInput {
+  speciesId?: string
+  cw?: number
+  bw?: number | null
+  gender?: Gender
+  maturationStatus?: MaturationStatus
+  lat?: number
+  lng?: number
+  locationMethod?: LocationMethod
+  photos?: string[]
+  detectedCoin?: string | null
+  notes?: string | null
+  status?: 'PENDING'
+}
+
 export interface ObservationResponse {
   id: string
   userId: string

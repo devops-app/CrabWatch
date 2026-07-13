@@ -3,11 +3,13 @@ import {
   createObservation,
   listObservations,
   getObservation,
+  updateObservation,
+  deleteObservation,
   validateObservation,
   getPendingObservations,
 } from '../controllers/observationController'
 import { authMiddleware, requireAuth, resolveUser, requireRole } from '../middleware/auth'
-import { createObservationSchema, validateObservationSchema } from '../utils/schemas'
+import { createObservationSchema, updateObservationSchema, validateObservationSchema } from '../utils/schemas'
 import { validate } from '../middleware/validation'
 
 const router: Router = Router()
@@ -153,6 +155,80 @@ router.get('/pending', requireAuth, resolveUser, requireRole('RESEARCHER', 'ADMI
  *         description: Observation not found
  */
 router.get('/:id', requireAuth, resolveUser, getObservation)
+
+/**
+ * @openapi
+ * /api/observations/{id}:
+ *   patch:
+ *     tags: [Observations]
+ *     summary: Update an observation (owner only, pending/rejected status)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               speciesId: { type: string, format: uuid }
+ *               cw: { type: number, minimum: 0, maximum: 50 }
+ *               bw: { type: number, minimum: 0, maximum: 5000 }
+ *               gender: { type: string, enum: [MALE, FEMALE, UNKNOWN] }
+ *               maturationStatus: { type: string, enum: [MATURE, IMMATURE, UNKNOWN] }
+ *               lat: { type: number, minimum: -90, maximum: 90 }
+ *               lng: { type: number, minimum: -180, maximum: 180 }
+ *               locationMethod: { type: string, enum: [GPS, MANUAL] }
+ *               photos: { type: array, items: { type: string, format: url } }
+ *               detectedCoin: { type: string }
+ *               notes: { type: string, maxLength: 1000 }
+ *     responses:
+ *       200:
+ *         description: Observation updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data: { $ref: '#/components/schemas/Observation' }
+ *       403:
+ *         description: Not authorized or observation approved
+ *       404:
+ *         description: Observation not found
+ */
+router.patch('/:id', requireAuth, resolveUser, validate(updateObservationSchema), updateObservation)
+
+/**
+ * @openapi
+ * /api/observations/{id}:
+ *   delete:
+ *     tags: [Observations]
+ *     summary: Soft-delete an observation (owner only)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Observation deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 message: { type: string }
+ *       403:
+ *         description: Not authorized
+ *       404:
+ *         description: Observation not found
+ */
+router.delete('/:id', requireAuth, resolveUser, deleteObservation)
 
 /**
  * @openapi
