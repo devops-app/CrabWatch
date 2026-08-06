@@ -17,5 +17,6 @@
     }
   },
   "include": ["src", "scripts", "../shared/src"],
+  // fix-photos.ts and migrate-db.ts are one-off legacy migration scripts with hardcoded credentials/blob paths — excluded from typecheck
   "exclude": ["src/**/__tests__", "src/**/__mocks__", "../shared/src/**/__tests__", "scripts/fix-photos.ts", "scripts/migrate-db.ts"]
 }
