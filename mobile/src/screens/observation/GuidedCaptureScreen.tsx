@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   useWindowDimensions,
 } from 'react-native'
+import * as FileSystem from 'expo-file-system'
 import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, useIsFocused } from '@react-navigation/native'
@@ -251,6 +252,26 @@ export function GuidedCaptureScreen() {
   const cameraVisibleRef = useRef(false)
   const focusSamplingInFlightRef = useRef(false)
   const lastFocusSampleAtRef = useRef(0)
+
+  // Central lock — prevents concurrent takePictureAsync calls across all 4 callers
+  // (capture, focus tap, initial sample, periodic tick). Without this, overlapping
+  // calls crash Expo Camera with "Camera is not running".
+  const cameraBusyRef = useRef(false)
+  const safeCapture = useCallback(
+    async (opts: Parameters<NonNullable<CameraView['takePictureAsync']>>[0]) => {
+      if (cameraBusyRef.current || !cameraRef.current) return null
+      cameraBusyRef.current = true
+      try {
+        return await cameraRef.current.takePictureAsync(opts)
+      } finally {
+        cameraBusyRef.current = false
+      }
+    },
+    [],
+  )
+
+  // Keep a ref to handleFocus so the PanResponder closure stays current.
+  const handleFocusRef = useRef<() => void>(() => {})
   const [cameraPermission, requestCameraPermission] = useCameraPermissions()
   const [coinType, setCoinType] = useState<string>('')
   const [coinSelected, setCoinSelected] = useState(false)
@@ -332,7 +353,7 @@ export function GuidedCaptureScreen() {
   }, [isFocused])
 
   const handleFocus = useCallback(async () => {
-    if (!cameraRef.current || capturing) return
+    if (capturing) return
 
     const now = Date.now()
     if (focusSamplingInFlightRef.current) return
@@ -343,7 +364,7 @@ export function GuidedCaptureScreen() {
 
     try {
       // Higher quality frame (0.5) for more accurate blur-based focus proxy
-      const frame = await cameraRef.current.takePictureAsync({
+      const frame = await safeCapture({
         quality: 0.5,
         skipProcessing: true,
       })
@@ -355,13 +376,19 @@ export function GuidedCaptureScreen() {
     } finally {
       focusSamplingInFlightRef.current = false
     }
-  }, [capturing, sampleBrightnessFromUri])
+  }, [safeCapture, sampleBrightnessFromUri, capturing])
+
+  // Keep PanResponder closure current via refs — cameraVisible changes every render,
+  // but the PanResponder instance is created once inside useRef.
+  useEffect(() => {
+    handleFocusRef.current = handleFocus
+  }, [handleFocus])
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => cameraVisible,
+      onStartShouldSetPanResponder: () => cameraVisibleRef.current,
       onPanResponderRelease: () => {
-        if (cameraVisible) handleFocus()
+        if (cameraVisibleRef.current) handleFocusRef.current()
       },
     })
   ).current
@@ -371,11 +398,11 @@ export function GuidedCaptureScreen() {
  
   // Initial brightness + focus sample when camera opens
   useEffect(() => {
-    if (!cameraVisible || !cameraRef.current || capturing) return
+    if (!cameraVisible || capturing) return
 
     ;(async () => {
       try {
-        const frame = await cameraRef.current!.takePictureAsync({
+        const frame = await safeCapture({
           quality: 0.5,
           skipProcessing: true,
         })
@@ -386,9 +413,11 @@ export function GuidedCaptureScreen() {
         // Ignore initial brightness sampling errors
       }
     })()
-  }, [cameraVisible, capturing, sampleBrightnessFromUri])
+  }, [cameraVisible, capturing, sampleBrightnessFromUri, safeCapture])
 
-  // Delegate periodic brightness re-sampling to the hook
+  // Delegate periodic brightness re-sampling to the hook.
+  // safeCapture provides the component-wide lock so the tick never overlaps
+  // with manual capture, focus tap, or the initial sample.
   useEffect(() => {
     if (!cameraVisible || capturing) {
       stopSampling()
@@ -396,8 +425,7 @@ export function GuidedCaptureScreen() {
     }
 
     startSampling(async () => {
-      if (!cameraRef.current) return
-      const frame = await cameraRef.current.takePictureAsync({
+      const frame = await safeCapture({
         quality: 0.3,
         skipProcessing: true,
       })
@@ -407,7 +435,7 @@ export function GuidedCaptureScreen() {
     })
 
     return () => stopSampling()
-  }, [cameraVisible, capturing, sampleBrightnessFromUri, startSampling, stopSampling])
+  }, [cameraVisible, capturing, sampleBrightnessFromUri, startSampling, stopSampling, safeCapture])
 
   const currentView = CAPTURE_STEP_KEYS[currentStep]?.key || 'dorsal'
   const isLastStep = currentStep === CAPTURE_STEP_KEYS.length - 1
@@ -544,11 +572,11 @@ export function GuidedCaptureScreen() {
   }
 
    const handleCaptureFromCamera = async () => {
-    if (!cameraRef.current || capturing) return
+    if (capturing) return
 
     setCapturing(true)
     try {
-      const captured = await cameraRef.current.takePictureAsync({ quality: 1 })
+      const captured = await safeCapture({ quality: 1 })
       if (captured?.uri) {
         const normalizedUri = await photoService.normalizeForAnalysis(captured.uri)
 
@@ -616,7 +644,16 @@ export function GuidedCaptureScreen() {
     }
   }
 
-  const handleRetakePhoto = (view: PhotoView) => {
+  const handleRetakePhoto = async (view: PhotoView) => {
+    // Delete the old normalized capture file to prevent storage leak on repeated retakes.
+    const old = photos[view]
+    if (old) {
+      try {
+        await FileSystem.deleteAsync(old, { idempotent: true })
+      } catch {
+        // Best-effort cleanup
+      }
+    }
     setPhotos((prev) => ({ ...prev, [view]: null }))
     setQualityByView((prev) => {
       const next = { ...prev }
@@ -713,6 +750,11 @@ export function GuidedCaptureScreen() {
 
     if (!dorsalPhoto) {
       Alert.alert(t('alertPhotoRequired'), t('alertPhotoRequiredDorsal'))
+      return
+    }
+
+    if (!ventralPhoto) {
+      Alert.alert(t('alertPhotoRequired'), t('alertPhotoRequiredMessage', { view: 'ventral' }))
       return
     }
 
