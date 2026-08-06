@@ -56,12 +56,22 @@ export const DARK_COLORS = {
   rejected: '#f87171',
 }
 
+/**
+ * @deprecated Use i18n keys via `useMemo` + `t()` in components instead.
+ * These hardcoded English labels are kept only for `EditObservationScreen.tsx` which maps them dynamically.
+ * New code should build options from translation keys at render time.
+ */
 export const GENDER_OPTIONS = [
   { label: 'Male', value: 'male' },
   { label: 'Female', value: 'female' },
   { label: 'Unknown', value: 'unknown' },
 ] as const
 
+/**
+ * @deprecated Use i18n keys via `useMemo` + `t()` in components instead.
+ * These hardcoded English labels are kept only for `EditObservationScreen.tsx` which maps them dynamically.
+ * New code should build options from translation keys at render time.
+ */
 export const MATURATION_OPTIONS = [
   { label: 'Mature', value: 'mature' },
   { label: 'Immature', value: 'immature' },

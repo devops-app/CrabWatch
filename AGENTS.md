@@ -543,6 +543,15 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Verified: `pnpm typecheck` passes cleanly across all 4 packages.
 - Verified: Pushed to `origin/main` (commit `d37d4b9`, version `1.0.0+0023`).
 
+### Completed (Observation Approve/Edit Fixes)
+- Completed: **Route ordering bug (ROOT CAUSE)** — Fixed `server/src/routes/observationRoutes.ts` by moving `router.patch('/:id/validate', ...)` BEFORE `router.patch('/:id', ...)`. Express matches routes sequentially; the generic `/:id` was shadowing `/:id/validate`, causing all approve/reject requests to fail with UUID validation error.
+- Completed: Web `observation/client.tsx` — Added flash messages for approve/reject success and error states in `handleValidate`, with 4-second auto-dismiss timer.
+- Completed: Added `approveSuccess`, `rejectSuccess`, `validationFailed` i18n keys to `web/messages/en.json` and `ms.json`.
+- Completed: Web `capture/client.tsx` — Fixed `resetState` pathname check from `=== '/dashboard/capture'` to `.endsWith('/dashboard/capture')` (handles locale prefix `/en/dashboard/capture`).
+- Completed: Web `capture/client.tsx` — `resetState` now calls `setEditObservationId(null)` to clear edit state on reset.
+- Completed: Web `capture/client.tsx` — Edit mode useEffect deps changed from `[]` to `[pathname, t]` so it re-reads URL on navigation.
+- Verified: Route order is now `/:id/validate` → `/:id` → `/:id` (delete), ensuring specific routes match before generic ones.
+
 ### Completed (Dynamic Version Display)
 - Completed: Web `about/page.tsx` — replaced hardcoded `1.0.0` with `pkg.version` from `package.json` (read at build time via Server Component import).
 - Completed: Mobile `AboutScreen.tsx` — replaced hardcoded `1.0.0` with `Application.nativeApplicationVersion` from `expo-application` (read at runtime from `app.json`).
@@ -652,6 +661,7 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - **AI JSON extraction**: `foundryAgent.ts` uses `extractJson` to strip markdown code fences before `JSON.parse` to handle LLM responses that wrap JSON in markdown.
 - **— Mobile legal consolidation**: `TermsScreen` and `PrivacyScreen` merged into `ConsentScreen` with locale-aware content. Both "Terms of Service" and "Privacy Policy" links on registration navigate to the same `Consent` route.
 - **— Mobile nested navigation**: Stack screens (e.g., `AIReview`, `AnalysisLoading`) must navigate to Tab routes via `navigation.navigate('MainTabs', { screen: 'Home' })`, not `navigation.navigate('Home')`. Tab screens can navigate to sibling tabs directly.
+- **Express route ordering**: Specific routes (`/:id/validate`) MUST be registered BEFORE generic routes (`/:id`). Express matches routes sequentially; `/:id` will shadow `/:id/validate`, causing all validate requests to fail with UUID validation error. See `observationRoutes.ts` — `PATCH /:id/validate` comes before `PATCH /:id`.
 
 ## Critical Context
 - **Stack**: Expo SDK 54, React 19, RN 0.81.5, Zustand, React Navigation 7.x, Express, Prisma, Azure Storage, Azure AI Foundry

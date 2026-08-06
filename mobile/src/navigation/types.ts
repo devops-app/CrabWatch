@@ -32,7 +32,7 @@ export type RootStackParamList = {
     coinType?: string
     qualityOverrides?: Partial<Record<PhotoView, { approved: boolean; reason?: string }>>
   }
-  AIReview: { analysis: CrabAnalysisResult; photos: string[]; views: PhotoView[]; sessionId: string; coinType?: string; blobUrls?: string[] }
+  AIReview: { analysis: CrabAnalysisResult; photos: string[]; views: PhotoView[]; sessionId: string; coinType?: string; blobUrls?: string[]; isManualFallback?: boolean }
   About: undefined
   Leaderboard: undefined
   Missions: undefined

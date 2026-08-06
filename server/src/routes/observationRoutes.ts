@@ -158,6 +158,42 @@ router.get('/:id', requireAuth, resolveUser, getObservation)
 
 /**
  * @openapi
+ * /api/observations/{id}/validate:
+ *   patch:
+ *     tags: [Observations]
+ *     summary: Validate or reject an observation (Researcher/Admin only)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [status]
+ *             properties:
+ *               status: { type: string, enum: [APPROVED, REJECTED] }
+ *               rejectionReason: { type: string, maxLength: 500 }
+ *     responses:
+ *       200:
+ *         description: Observation validated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data: { $ref: '#/components/schemas/Observation' }
+ *       403:
+ *         description: Researcher/Admin only
+ */
+router.patch('/:id/validate', requireAuth, resolveUser, requireRole('RESEARCHER', 'ADMIN'), validate(validateObservationSchema), validateObservation)
+
+/**
+ * @openapi
  * /api/observations/{id}:
  *   patch:
  *     tags: [Observations]
@@ -229,41 +265,5 @@ router.patch('/:id', requireAuth, resolveUser, validate(updateObservationSchema)
  *         description: Observation not found
  */
 router.delete('/:id', requireAuth, resolveUser, deleteObservation)
-
-/**
- * @openapi
- * /api/observations/{id}/validate:
- *   patch:
- *     tags: [Observations]
- *     summary: Validate or reject an observation (Researcher/Admin only)
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema: { type: string, format: uuid }
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [status]
- *             properties:
- *               status: { type: string, enum: [APPROVED, REJECTED] }
- *               rejectionReason: { type: string, maxLength: 500 }
- *     responses:
- *       200:
- *         description: Observation validated
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean }
- *                 data: { $ref: '#/components/schemas/Observation' }
- *       403:
- *         description: Researcher/Admin only
- */
-router.patch('/:id/validate', requireAuth, resolveUser, requireRole('RESEARCHER', 'ADMIN'), validate(validateObservationSchema), validateObservation)
 
 export default router

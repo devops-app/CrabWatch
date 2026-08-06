@@ -347,7 +347,7 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
       setFlash({ tone: 'error', text: t('editFailed') })
       setEditObservationId(null)
     })
-  }, [])
+  }, [pathname, t])
 
   const current = CAPTURE_STEPS[currentStep]
   const currentView = current.key
@@ -402,6 +402,7 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
     setShowFullscreen(false)
     setFullscreenPhoto(null)
     setWebcamWarning(null)
+    setEditObservationId(null)
     setMapViewport({
       latitude: MALAYSIA_BOUNDS.center.lat,
       longitude: MALAYSIA_BOUNDS.center.lng,
@@ -421,7 +422,7 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
   }, [])
 
   useEffect(() => {
-    if (prevPathnameRef.current && prevPathnameRef.current !== '/dashboard/capture' && pathname === '/dashboard/capture') {
+    if (prevPathnameRef.current && prevPathnameRef.current !== pathname && pathname.endsWith('/dashboard/capture')) {
       resetState()
     }
     prevPathnameRef.current = pathname

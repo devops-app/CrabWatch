@@ -164,6 +164,12 @@ export function ObservationClient({
     }
   }, [dateRange, customDateFrom, customDateTo, initialObservations])
 
+  useEffect(() => {
+    if (!flash) return
+    const timer = window.setTimeout(() => setFlash(null), 4000)
+    return () => window.clearTimeout(timer)
+  }, [flash])
+
   const handleValidate = async (status: 'approved' | 'rejected') => {
     if (!selectedObs) return
     setActionLoading(true)
@@ -174,9 +180,11 @@ export function ObservationClient({
       })
       setSelectedObs(null)
       setRejectionReason('')
+      setFlash({ type: 'success', message: status === 'approved' ? t('approveSuccess') : t('rejectSuccess') })
       loadObservations()
     } catch (err) {
       logger.error('Validation failed', err)
+      setFlash({ type: 'error', message: err instanceof Error ? err.message : t('validationFailed') })
     } finally {
       setActionLoading(false)
     }

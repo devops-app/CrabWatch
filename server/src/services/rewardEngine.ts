@@ -1,5 +1,5 @@
 import crypto from 'crypto'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, RewardActionType } from '@prisma/client'
 import { getContainer } from './container'
 import { invalidateLeaderboardCache } from './leaderboardService'
 import { sendNotification } from './notificationService'
@@ -15,7 +15,7 @@ function getPrisma(): PrismaClient {
 
 interface AwardXPParams {
   userId: string
-  actionType: string
+  actionType: RewardActionType
   sourceType: string
   sourceId?: string
   reason?: string
@@ -64,7 +64,7 @@ export async function awardXP(params: AwardXPParams): Promise<XPResult> {
   const now = new Date()
   const rule = await getPrisma().gamificationRule.findFirst({
     where: {
-      actionType: actionType as any,
+      actionType,
       active: true,
       OR: [
         { startsAt: null, endsAt: null },
@@ -96,7 +96,7 @@ export async function awardXP(params: AwardXPParams): Promise<XPResult> {
     await tx.xPTransaction.create({
       data: {
         userId,
-        actionType: actionType as any,
+        actionType,
         deltaXP,
         sourceType,
         sourceId,
@@ -200,7 +200,10 @@ export async function calculateLevel(totalXP: number): Promise<{ level: number; 
 /**
  * Calculate level within a transaction context.
  */
-async function calculateLevelFromDB(totalXP: number, tx: any): Promise<{ level: number; title: string; xpToNext: number }> {
+async function calculateLevelFromDB(
+  totalXP: number,
+  tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>
+): Promise<{ level: number; title: string; xpToNext: number }> {
   const activeLevels = await tx.levelConfig.findMany({
     where: { active: true },
     orderBy: { xpThreshold: 'desc' },
@@ -208,7 +211,7 @@ async function calculateLevelFromDB(totalXP: number, tx: any): Promise<{ level: 
 
   for (const lvl of activeLevels) {
     if (totalXP >= lvl.xpThreshold) {
-      const nextLevel = activeLevels.find((l: any) => l.xpThreshold > lvl.xpThreshold)
+      const nextLevel = activeLevels.find(l => l.xpThreshold > lvl.xpThreshold)
       const xpToNext = nextLevel ? nextLevel.xpThreshold - totalXP : 0
       return { level: lvl.level, title: lvl.title, xpToNext }
     }

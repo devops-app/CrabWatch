@@ -15,6 +15,8 @@ import {
 import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, useRoute } from '@react-navigation/native'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { RouteProp } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -31,22 +33,13 @@ import {
   CW_MAX,
   BW_MAX,
 } from '../../utils/constants'
+import type { RootStackParamList } from '../../navigation/types'
 import { FONT } from '../../utils/fonts'
 import { Input } from '../../components/common/Input'
 import { PickerWithAlert } from '../../components/common/Picker'
 import { Button } from '../../components/common/Button'
 import { GPSCapture } from '../../components/observation/GPSCapture'
-import { CrabAnalysisResult, PhotoView, SpeciesTranslation } from '@crabwatch/shared'
-
-interface AIReviewRouteParams {
-  analysis: CrabAnalysisResult
-  photos: string[]
-  views: PhotoView[]
-  sessionId: string
-  coinType?: string
-  blobUrls?: string[]
-  isManualFallback?: boolean
-}
+import { SpeciesTranslation } from '@crabwatch/shared'
 
 interface FormValues extends ObservationFormValues {}
 
@@ -77,10 +70,13 @@ function AIBadge({ label }: { label: string }) {
   )
 }
 
+type AIReviewNavigationProp = NativeStackNavigationProp<RootStackParamList, 'AIReview'>
+type AIReviewRouteProp = RouteProp<RootStackParamList, 'AIReview'>
+
 export function AIReviewScreen() {
-  const navigation = useNavigation<any>()
-  const route = useRoute<any>()
-  const { analysis, photos, sessionId, coinType, blobUrls, isManualFallback } = route.params as AIReviewRouteParams
+  const navigation = useNavigation<AIReviewNavigationProp>()
+  const route = useRoute<AIReviewRouteProp>()
+  const { analysis, photos, sessionId, coinType, blobUrls, isManualFallback } = route.params
   const displayPhotos = blobUrls || photos
 
   const { t, i18n } = useTranslation('review')
