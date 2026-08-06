@@ -23,11 +23,12 @@ export type CaptureMessageKey =
   | 'holdStill'
   | 'holdSteadier'
 
+// Optimistic defaults — camera auto-focuses on mount; first frame sample corrects if wrong.
 const DEFAULT_QUALITY: CaptureQuality = {
   isSteady: true,
   isWellLit: true,
-  isFocused: false,
-  overallReady: false,
+  isFocused: true,
+  overallReady: true,
   shakeLevel: 'none',
   brightnessLevel: 'good',
   messages: [],
@@ -37,6 +38,7 @@ export function useCaptureAssistance() {
   const [quality, setQuality] = useState<CaptureQuality>(DEFAULT_QUALITY)
   const gyroSubRef = useRef<GyroscopeSubscription | null>(null)
   const motionHistoryRef = useRef<number[]>([])
+  const samplingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const setFocused = useCallback((focused: boolean) => {
     setQuality((prev) => {
@@ -131,13 +133,26 @@ export function useCaptureAssistance() {
       gyroSubRef.current?.remove()
       gyroSubRef.current = null
       motionHistoryRef.current = []
+      if (samplingIntervalRef.current) {
+        clearInterval(samplingIntervalRef.current)
+        samplingIntervalRef.current = null
+      }
     }
   }, [processMotion])
+
+  /** Stop periodic brightness sampling interval (called by consumer on unmount/camera close). */
+  const stopSampling = useCallback(() => {
+    if (samplingIntervalRef.current) {
+      clearInterval(samplingIntervalRef.current)
+      samplingIntervalRef.current = null
+    }
+  }, [])
 
   return {
     quality,
     setFocused,
     setBrightness,
     sampleBrightnessFromUri,
+    stopSampling,
   }
 }

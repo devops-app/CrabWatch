@@ -188,7 +188,7 @@ function CameraModalContent({
             !quality.overallReady && styles.captureButtonDimmed,
           ]}
           onPress={handleCaptureFromCamera}
-          disabled={capturing}
+          disabled={capturing || !quality.overallReady}
           accessibilityLabel={t('takePhotoA11y')}
         >
           <View
@@ -342,8 +342,9 @@ export function GuidedCaptureScreen() {
     lastFocusSampleAtRef.current = now
 
     try {
+      // Higher quality frame (0.5) for more accurate blur-based focus proxy
       const frame = await cameraRef.current.takePictureAsync({
-        quality: 0.2,
+        quality: 0.5,
         skipProcessing: true,
       })
       if (frame?.uri) {
@@ -368,13 +369,14 @@ export function GuidedCaptureScreen() {
  
 
  
+  // Initial brightness + focus sample when camera opens
   useEffect(() => {
     if (!cameraVisible || !cameraRef.current || capturing) return
 
     ;(async () => {
       try {
         const frame = await cameraRef.current!.takePictureAsync({
-          quality: 0.2,
+          quality: 0.5,
           skipProcessing: true,
         })
         if (frame?.uri) {
@@ -384,6 +386,29 @@ export function GuidedCaptureScreen() {
         // Ignore initial brightness sampling errors
       }
     })()
+  }, [cameraVisible, capturing, sampleBrightnessFromUri])
+
+  // Continuous brightness re-sampling every 3s while camera is visible
+  useEffect(() => {
+    if (!cameraVisible || !cameraRef.current || capturing) return
+
+    const SAMPLE_INTERVAL_MS = 3000
+    const intervalId = setInterval(async () => {
+      if (!cameraRef.current || capturing) return
+      try {
+        const frame = await cameraRef.current.takePictureAsync({
+          quality: 0.3,
+          skipProcessing: true,
+        })
+        if (frame?.uri) {
+          await sampleBrightnessFromUri(frame.uri)
+        }
+      } catch {
+        // Ignore periodic sampling errors
+      }
+    }, SAMPLE_INTERVAL_MS)
+
+    return () => clearInterval(intervalId)
   }, [cameraVisible, capturing, sampleBrightnessFromUri])
 
   const currentView = CAPTURE_STEP_KEYS[currentStep]?.key || 'dorsal'
