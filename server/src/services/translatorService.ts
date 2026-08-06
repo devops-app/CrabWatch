@@ -17,6 +17,7 @@ interface SpeciesTranslation {
 }
 
 const translationCache = new Map<string, SpeciesTranslation>()
+const MAX_TRANSLATION_CACHE = 200
 
 function getCacheKey(speciesId: string, to: string): string {
   return `${speciesId}:${to}`
@@ -125,6 +126,13 @@ export async function translateSpecies({
       distributionZones: translatedDistributionZones,
     }
 
+    // Evict oldest entry if cache exceeds max size
+    if (translationCache.size >= MAX_TRANSLATION_CACHE) {
+      const oldestKey = translationCache.keys().next().value
+      if (oldestKey !== undefined) {
+        translationCache.delete(oldestKey)
+      }
+    }
     translationCache.set(cacheKey, result)
     return result
   } catch (err) {
