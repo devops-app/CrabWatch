@@ -278,7 +278,7 @@ export function GuidedCaptureScreen() {
   const [analyzingQuality, setAnalyzingQuality] = useState(false)
   const [sessionId] = useState(createUploadSessionId)
 
-  const { quality, sampleBrightnessFromUri } = useCaptureAssistance()
+  const { quality, sampleBrightnessFromUri, startSampling, stopSampling } = useCaptureAssistance()
 
   const CAPTURE_STEPS = useMemo(() => CAPTURE_STEP_KEYS.map((s) => ({
     ...s,
@@ -388,28 +388,26 @@ export function GuidedCaptureScreen() {
     })()
   }, [cameraVisible, capturing, sampleBrightnessFromUri])
 
-  // Continuous brightness re-sampling every 3s while camera is visible
+  // Delegate periodic brightness re-sampling to the hook
   useEffect(() => {
-    if (!cameraVisible || !cameraRef.current || capturing) return
+    if (!cameraVisible || capturing) {
+      stopSampling()
+      return
+    }
 
-    const SAMPLE_INTERVAL_MS = 3000
-    const intervalId = setInterval(async () => {
-      if (!cameraRef.current || capturing) return
-      try {
-        const frame = await cameraRef.current.takePictureAsync({
-          quality: 0.3,
-          skipProcessing: true,
-        })
-        if (frame?.uri) {
-          await sampleBrightnessFromUri(frame.uri)
-        }
-      } catch {
-        // Ignore periodic sampling errors
+    startSampling(async () => {
+      if (!cameraRef.current) return
+      const frame = await cameraRef.current.takePictureAsync({
+        quality: 0.3,
+        skipProcessing: true,
+      })
+      if (frame?.uri) {
+        await sampleBrightnessFromUri(frame.uri)
       }
-    }, SAMPLE_INTERVAL_MS)
+    })
 
-    return () => clearInterval(intervalId)
-  }, [cameraVisible, capturing, sampleBrightnessFromUri])
+    return () => stopSampling()
+  }, [cameraVisible, capturing, sampleBrightnessFromUri, startSampling, stopSampling])
 
   const currentView = CAPTURE_STEP_KEYS[currentStep]?.key || 'dorsal'
   const isLastStep = currentStep === CAPTURE_STEP_KEYS.length - 1
