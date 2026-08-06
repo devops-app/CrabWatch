@@ -110,7 +110,7 @@ async function ensureSpeciesExists(result: CrabAnalysisResult): Promise<void> {
   const commonName = sanitizeInput(commonMatch ? commonMatch[1] : result.speciesId.replace(/-/g, ' '), 100)
 
   if (!scientificName || !commonName) {
-    console.warn('ensureSpeciesExists: Invalid species name from AI, skipping upsert')
+    logger.warn({ scientificName, commonName }, 'ensureSpeciesExists: Invalid species name from AI, skipping upsert')
     return
   }
 

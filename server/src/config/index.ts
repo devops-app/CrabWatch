@@ -1,13 +1,14 @@
 import "dotenv/config"
 import crypto from 'crypto'
+import logger from '../utils/logger'
 
 const jwtSecret = process.env.JWT_SECRET
 if (!jwtSecret) {
   if (process.env.NODE_ENV === 'production') {
-    console.error('ERROR: JWT_SECRET is required in production')
+    logger.error('JWT_SECRET is required in production')
     process.exit(1)
   }
-  console.warn('WARNING: JWT_SECRET not set, generating random secret for development only. Do NOT use in production.')
+  logger.warn('JWT_SECRET not set, generating random secret for development only. Do NOT use in production.')
 }
 
 export const config = {
@@ -60,6 +61,6 @@ export const config = {
 }
 
 if (!config.databaseUrl) {
-  console.error('ERROR: DATABASE_URL is required')
+  logger.error('DATABASE_URL is required')
   process.exit(1)
 }

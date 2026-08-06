@@ -7,6 +7,7 @@ import { getPrisma } from '../services/container'
 import { UserResponse, UserListResponse, UserRole } from '@crabwatch/shared'
 import { asyncHandler, AppError, ConflictError, NotFoundError, ValidationError } from '../utils/errors'
 import { createTranslator, detectLocale } from '../middleware/i18n'
+import logger from '../utils/logger'
 
 const SOFT_DELETE_RETENTION_DAYS = 30
 
@@ -83,7 +84,7 @@ export const createUser = asyncHandler(async (req: AuthRequest, res: Response) =
       if (existingByFirebase.email.toLowerCase() === email.toLowerCase() && !existingByFirebase.deletedAt) {
         throw new ConflictError(__('register.emailTaken', 'auth'))
       }
-      console.log(`Clearing firebaseUid from existing user ${existingByFirebase.id} (${existingByFirebase.email}) for new registration ${email}`)
+      logger.info({ existingUserId: existingByFirebase.id, existingEmail: existingByFirebase.email, newEmail: email }, 'Clearing firebaseUid from existing user for new registration')
       await db.user.update({
         where: { id: existingByFirebase.id },
         data: { firebaseUid: null },

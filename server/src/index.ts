@@ -1,3 +1,5 @@
+import logger from './utils/logger'
+
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { useAzureMonitor } = require('@azure/monitor-opentelemetry') as {
@@ -5,7 +7,7 @@ try {
   }
   useAzureMonitor()
 } catch (err) {
-  console.warn('[STARTUP] Azure Monitor auto-instrumentation disabled:', err)
+  logger.warn({ err }, 'Azure Monitor auto-instrumentation disabled')
 }
 
 import express from 'express'
@@ -51,8 +53,6 @@ import { createContainer } from './services/container'
 import admin from './config/firebase'
 import { getBlobService } from './services/upload'
 import { initServerI18n } from './config/i18n'
-import logger from './utils/logger'
-
 // Initialize DI container before any services are used
 createContainer(prisma, config, admin, getBlobService)
 
@@ -210,7 +210,7 @@ app.post('/api/v1/telemetry/error', (req, res) => {
     return
   }
 
-  console.error(`[FRONTEND-ERROR] ${message} - ComponentStack: ${componentStack || 'N/A'} - Stack: ${stack || 'N/A'}`)
+  logger.error({ message, componentStack: componentStack || 'N/A', stack: stack || 'N/A' }, 'Frontend error')
   res.status(204).end()
 })
 
@@ -237,14 +237,14 @@ function scheduleJob(fn: () => Promise<any>, name: string, getNextRun: () => Dat
   const nextRun = getNextRun()
   const delay = nextRun.getTime() - Date.now()
 
-  console.log(`[SCHEDULER] ${name} scheduled for ${nextRun.toISOString()} (${Math.round(delay / 1000 / 60)}min from now)`)
+  logger.info({ name, nextRun: nextRun.toISOString(), delayMin: Math.round(delay / 1000 / 60) }, 'Scheduler job scheduled')
 
   setTimeout(async () => {
     try {
       const result = await fn()
-      console.log(`[SCHEDULER] ${name} completed:`, result)
+      logger.info({ name, result }, 'Scheduler job completed')
     } catch (err) {
-      console.error(`[SCHEDULER] ${name} failed:`, err)
+      logger.error({ name, err }, 'Scheduler job failed')
     }
     // Re-schedule for next run
     const next = getNextRun()
@@ -256,15 +256,15 @@ function scheduleJob(fn: () => Promise<any>, name: string, getNextRun: () => Dat
 }
 
 const server = app.listen(config.port, config.host, async () => {
-  console.log(`CrabWatch API running on http://${config.host}:${config.port}`)
-  console.log(`Environment: ${config.nodeEnv}`)
+  logger.info({ host: config.host, port: config.port }, 'CrabWatch API running')
+  logger.info({ nodeEnv: config.nodeEnv }, 'Environment')
 
   // Initialize server i18n
   try {
     await initServerI18n()
-    console.log('[STARTUP] Server i18n initialized')
+    logger.info('Server i18n initialized')
   } catch (err) {
-    console.error('[STARTUP] Failed to initialize server i18n:', err)
+    logger.error({ err }, 'Failed to initialize server i18n')
   }
 
   // Seed engagement defaults (idempotent)
@@ -273,10 +273,10 @@ const server = app.listen(config.port, config.host, async () => {
       const { seedEngagement } = await import('./services/seedEngagement')
       await seedEngagement()
     } catch (err) {
-      console.error('[STARTUP] Failed to seed engagement data:', err)
+      logger.error({ err }, 'Failed to seed engagement data')
     }
   } else {
-    console.log('[STARTUP] Skipping engagement seed (SEED_ENGAGEMENT_ON_STARTUP=false)')
+    logger.info('Skipping engagement seed (SEED_ENGAGEMENT_ON_STARTUP=false)')
   }
 
   // Schedule daily mission assignment (runs at midnight UTC)
@@ -304,19 +304,19 @@ const server = app.listen(config.port, config.host, async () => {
       return nextMonday
     })
   } catch (err) {
-    console.error('[STARTUP] Failed to schedule mission jobs:', err)
+    logger.error({ err }, 'Failed to schedule mission jobs')
   }
 })
 
 async function gracefulShutdown(): Promise<void> {
-  console.log('Shutting down gracefully...')
+  logger.info('Shutting down gracefully...')
   server.close(async () => {
     await prisma.$disconnect()
-    console.log('Prisma disconnected')
+    logger.info('Prisma disconnected')
     process.exit(0)
   })
   setTimeout(() => {
-    console.error('Forced shutdown after timeout')
+    logger.error('Forced shutdown after timeout')
     process.exit(1)
   }, 10000)
 }

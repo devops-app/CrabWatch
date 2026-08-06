@@ -1,4 +1,5 @@
 import { getContainer } from './container'
+import logger from '../utils/logger'
 
 export interface PushNotificationPayload {
   title: string
@@ -19,7 +20,7 @@ export async function sendToToken(
   payload: PushNotificationPayload
 ): Promise<void> {
   if (!getContainer().firebase.apps.length) {
-    console.warn('FCM not initialized, skipping notification')
+    logger.warn('FCM not initialized, skipping notification')
     return
   }
 
@@ -45,13 +46,13 @@ export async function sendToToken(
       },
     })
   } catch (error: unknown) {
-    console.error('FCM send error:', error)
+    logger.error({ err: error }, 'FCM send error')
     if (error instanceof Error && 'response' in error) {
       const resp = (error as { response?: { body?: string } }).response
       if (resp?.body) {
         const body = JSON.parse(resp.body)
         if (body.error?.status === 'UNREGISTERED') {
-          console.warn('FCM token is invalid, should be removed')
+          logger.warn({ fcmToken }, 'FCM token is invalid, should be removed')
         }
       }
     }
@@ -63,7 +64,7 @@ export async function sendToTopic(
   payload: PushNotificationPayload
 ): Promise<void> {
   if (!getContainer().firebase.apps.length) {
-    console.warn('FCM not initialized, skipping notification')
+    logger.warn('FCM not initialized, skipping notification')
     return
   }
 
@@ -77,7 +78,7 @@ export async function sendToTopic(
       data: payload.data,
     })
   } catch (error: unknown) {
-    console.error('FCM topic send error:', error)
+    logger.error({ err: error, topic }, 'FCM topic send error')
   }
 }
 

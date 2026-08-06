@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
+import logger from '../utils/logger'
 
 interface PerformanceMetrics {
   requests: number
@@ -38,7 +39,7 @@ export function performanceMiddleware(req: Request, res: Response, next: NextFun
     }
 
     if (res.statusCode >= 400) {
-      console.warn(`[${res.statusCode}] ${req.method} ${req.path} ${duration}ms`)
+      logger.warn({ statusCode: res.statusCode, method: req.method, path: req.path, durationMs: duration }, 'HTTP error response')
     }
   })
 

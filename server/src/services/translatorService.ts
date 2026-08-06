@@ -1,4 +1,5 @@
 import { config } from '../config'
+import logger from '../utils/logger'
 
 interface KeyFeature {
   trait: string
@@ -58,7 +59,7 @@ export async function translateSpecies({
 
   const { apiKey, endpoint, region } = config.azureTranslator
   if (!apiKey || !endpoint) {
-    console.warn('[Translate] Missing Azure Translator config — returning original text')
+    logger.warn({ speciesId }, 'Missing Azure Translator config — returning original text')
     return fallbackResponse({ commonName, description, keyFeatures, distributionZones })
   }
 
@@ -89,7 +90,7 @@ export async function translateSpecies({
 
     if (!response.ok) {
       const body = await response.text()
-      console.error(`[Translate] API error ${response.status}: ${body}`)
+      logger.error({ status: response.status, body, speciesId }, 'Azure Translator API error')
       return fallbackResponse({ commonName, description, keyFeatures, distributionZones })
     }
 
@@ -136,7 +137,7 @@ export async function translateSpecies({
     translationCache.set(cacheKey, result)
     return result
   } catch (err) {
-    console.error('[Translate] Exception:', err)
+    logger.error({ err, speciesId }, 'Azure Translator exception')
     return fallbackResponse({ commonName, description, keyFeatures, distributionZones })
   }
 }
