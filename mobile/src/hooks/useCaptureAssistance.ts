@@ -61,9 +61,12 @@ export function useCaptureAssistance() {
   const motionHistoryRef = useRef<number[]>([])
   const isMountedRef = useRef(true)
 
-  // Periodic sampling state — hook owns the full sensor lifecycle
+  // Periodic sampling state — hook owns the full sensor lifecycle.
+  // `samplingActive` is state (not a ref) so the interval effect re-runs when toggled.
+  // The callback itself stays in a ref to avoid re-creating the interval on consumer re-renders.
+  const [samplingActive, setSamplingActive] = useState(false)
   const sampleFrameFnRef = useRef<(() => Promise<void>) | null>(null)
-  const samplingActiveRef = useRef(false)
+  const tickInFlightRef = useRef(false)
 
   const setFocused = useCallback(
     (focused: boolean) => {
@@ -132,6 +135,9 @@ export function useCaptureAssistance() {
     async (uri: string) => {
       try {
         const qualityResult = await photoService.assessImageQuality(uri)
+        // Guard against setState after unmount — async sample may resolve
+        // after the camera closes and the component unmounts.
+        if (!isMountedRef.current) return
         setBrightness(qualityResult.brightnessLevel)
         // blurStatus 'warn' still counts as focused — a slightly shaken but
         // optically focused frame reads as "focused". Acceptable proxy.
@@ -169,31 +175,35 @@ export function useCaptureAssistance() {
     }
   }, [])
 
-  // Periodic brightness re-sampling — hook owns the interval lifecycle
-  // Consumer passes a `sampleFrame` callback; hook calls it every 3s while active.
+  // Periodic brightness re-sampling — hook owns the interval lifecycle.
+  // Driven by `samplingActive` state so the effect re-runs when toggled.
   useEffect(() => {
-    if (!samplingActiveRef.current || !sampleFrameFnRef.current) return
+    if (!samplingActive) return
 
     const SAMPLE_INTERVAL_MS = 3000
     const intervalId = setInterval(async () => {
-      if (!isMountedRef.current || !sampleFrameFnRef.current) return
+      // Skip if unmounted, previous tick still in-flight, or callback cleared.
+      if (!isMountedRef.current || tickInFlightRef.current || !sampleFrameFnRef.current) return
+      tickInFlightRef.current = true
       try {
         await sampleFrameFnRef.current()
       } catch {
         // Ignore periodic sampling errors
+      } finally {
+        tickInFlightRef.current = false
       }
     }, SAMPLE_INTERVAL_MS)
 
     return () => clearInterval(intervalId)
-  }, [])
+  }, [samplingActive])
 
   const startSampling = useCallback((sampleFrame: () => Promise<void>) => {
     sampleFrameFnRef.current = sampleFrame
-    samplingActiveRef.current = true
+    setSamplingActive(true)
   }, [])
 
   const stopSampling = useCallback(() => {
-    samplingActiveRef.current = false
+    setSamplingActive(false)
     sampleFrameFnRef.current = null
   }, [])
 
