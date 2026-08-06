@@ -347,11 +347,11 @@ export async function analyzeCrabWithAgent(
       throw new Error(`Agent analysis failed: ${response.status} ${errorText}`)
     }
 
-    const body: any = await response.json()
+    const body = await response.json() as { output?: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }> }
     let content: string
 
-    const firstMessage = body.output?.find((item: any) => item?.type === 'message')
-    const firstTextPart = firstMessage?.content?.find((part: any) => part?.type === 'output_text')
+    const firstMessage = body.output?.find((item) => item?.type === 'message')
+    const firstTextPart = firstMessage?.content?.find((part) => part?.type === 'output_text')
     if (typeof firstTextPart?.text === 'string') {
       content = firstTextPart.text
     } else {
@@ -435,7 +435,7 @@ export async function detectView(
       }
     }
 
-    const body: any = await response.json()
+    const body = await response.json() as { output?: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }> }
     const content = await parseAgentResponse(body)
     const parsed = JSON.parse(extractJson(content))
 
