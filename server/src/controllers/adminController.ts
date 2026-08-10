@@ -5,9 +5,10 @@ import zlib from 'zlib'
 import { sanitizeFilename } from '../utils/sanitize'
 import { AuthRequest } from '../middleware/auth'
 import { getPrisma } from '../services/container'
-import { BackupResult } from '@crabwatch/shared'
-import { asyncHandler, AppError, NotFoundError } from '../utils/errors'
+import { BackupResult, CsvExportTable } from '@crabwatch/shared'
+import { asyncHandler, AppError, NotFoundError, ValidationError } from '../utils/errors'
 import { createTranslator } from '../middleware/i18n'
+import logger from '../utils/logger'
 
 const BACKUP_DIR = path.resolve(process.env.BACKUP_DIR || './backups')
 const SOFT_DELETE_RETENTION_DAYS = 30
@@ -104,6 +105,149 @@ export const backupDatabase = asyncHandler(async (_req: AuthRequest, res: Respon
   }
 
   res.json({ success: true, data: result })
+})
+
+export const exportCsv = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const table = (req.query.table as string)?.toLowerCase()
+  const validTables: CsvExportTable[] = ['observations', 'species', 'users']
+
+  if (!table || !validTables.includes(table as CsvExportTable)) {
+    throw new ValidationError('Invalid or missing table parameter. Use: observations, species, users')
+  }
+
+  const db = getPrisma()
+  let headers: string[] = []
+  let rows: string[][] = []
+  let fileName: string
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+
+  if (table === 'observations') {
+    const observations = await db.observation.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { species: true, user: { select: { email: true, name: true } } },
+    })
+
+    headers = [
+      'id', 'userId', 'userName', 'userEmail', 'speciesId', 'speciesName',
+      'cw', 'bw', 'gender', 'maturationStatus', 'lat', 'lng', 'locationMethod',
+      'status', 'validatedBy', 'validatedAt', 'rejectionReason',
+      'detectedCoin', 'notes', 'photoCount', 'uploadSessionId', 'createdAt',
+    ]
+
+    rows = observations.map((obs) => [
+      obs.id,
+      obs.userId,
+      obs.user?.name ?? '',
+      obs.user?.email ?? '',
+      obs.speciesId,
+      obs.species?.scientificName ?? '',
+      String(obs.cw),
+      obs.bw != null ? String(obs.bw) : '',
+      obs.gender,
+      obs.maturationStatus,
+      String(obs.lat),
+      String(obs.lng),
+      obs.locationMethod,
+      obs.status,
+      obs.validatedBy ?? '',
+      obs.validatedAt?.toISOString() ?? '',
+      obs.rejectionReason ?? '',
+      obs.detectedCoin ?? '',
+      obs.notes ?? '',
+      String(Array.isArray(obs.photos) ? obs.photos.length : 0),
+      obs.uploadSessionId ?? '',
+      obs.createdAt.toISOString(),
+    ])
+
+    fileName = `crabwatch_observations_${timestamp}.csv`
+  } else if (table === 'species') {
+    const species = await db.species.findMany({ orderBy: { scientificName: 'asc' } })
+
+    headers = [
+      'id', 'scientificName', 'commonName', 'description',
+      'keyFeatures', 'images', 'distributionZones', 'observationCount',
+    ]
+
+    rows = species.map((sp) => {
+      const obsCount = 0
+      return [
+        sp.id,
+        sp.scientificName,
+        sp.commonName,
+        sp.description,
+        JSON.stringify(sp.keyFeatures),
+        JSON.stringify(sp.images),
+        JSON.stringify(sp.distributionZones),
+        String(obsCount),
+      ]
+    })
+
+    fileName = `crabwatch_species_${timestamp}.csv`
+  } else {
+    // users
+    const users = await db.user.findMany({
+      orderBy: { createdAt: 'desc' },
+      where: { deletedAt: null },
+    })
+
+    headers = [
+      'id', 'name', 'email', 'phoneCode', 'phoneNumber', 'role',
+      'country', 'state', 'postcode',
+      'level', 'title', 'totalXP', 'currentStreak', 'longestStreak',
+      'totalSubmissions', 'approvedCount',
+      'preferredLocale', 'consentAccepted',
+      'blockedAt', 'blockReason', 'deletedAt', 'createdAt',
+    ]
+
+    rows = users.map((u) => [
+      u.id,
+      u.name,
+      u.email,
+      u.phoneCode ?? '',
+      u.phoneNumber ?? '',
+      u.role,
+      u.country ?? '',
+      u.state ?? '',
+      u.postcode ?? '',
+      String(u.level),
+      u.title,
+      String(u.totalXP),
+      String(u.currentStreak),
+      String(u.longestStreak),
+      String(u.totalSubmissions),
+      String(u.approvedCount),
+      u.preferredLocale ?? 'en',
+      String(u.consentAccepted),
+      u.blockedAt?.toISOString() ?? '',
+      u.blockReason ?? '',
+      u.deletedAt?.toISOString() ?? '',
+      u.createdAt.toISOString(),
+    ])
+
+    fileName = `crabwatch_users_${timestamp}.csv`
+  }
+
+  // Build CSV content
+  const escapeCsv = (value: string | number | boolean): string => {
+    const str = String(value)
+    if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+      return `"${str.replace(/"/g, '""')}"`
+    }
+    return str
+  }
+
+  const csvLines = [headers.map(escapeCsv).join(',')]
+  for (const row of rows) {
+    csvLines.push(row.map((cell) => escapeCsv(cell ?? '')).join(','))
+  }
+  const csvContent = csvLines.join('\r\n')
+
+  logger.info({ table, rowCount: rows.length, fileName }, 'CSV export generated')
+
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+  res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`)
+  res.send(csvContent)
 })
 
 export const cleanupDeletedUsers = asyncHandler(async (_req: AuthRequest, res: Response) => {

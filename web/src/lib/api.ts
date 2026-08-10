@@ -227,6 +227,9 @@ export const api = {
   downloadBackup: (fileName: string) =>
     window.open(`/api/v1/admin/backups/${encodeURIComponent(fileName)}/download`, '_blank'),
 
+  exportCsv: (table: 'observations' | 'species' | 'users') =>
+    window.open(`/api/v1/admin/export/csv?table=${encodeURIComponent(table)}`, '_blank'),
+
   cleanupDeletedUsers: () =>
     request<{ deletedCount: number }>('/api/v1/admin/cleanup-users', {
       method: 'POST',

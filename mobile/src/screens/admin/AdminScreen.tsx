@@ -232,6 +232,40 @@ export function AdminScreen() {
     )
   }
 
+  const handleExportCsv = () => {
+    Alert.alert(
+      t('backup.exportCsv'),
+      t('backup.selectTable'),
+      [
+        { text: t('cancel', { ns: 'common' }), style: 'cancel' },
+        {
+          text: t('backup.observations'),
+          onPress: () => runExportCsv('observations'),
+        },
+        {
+          text: t('backup.species'),
+          onPress: () => runExportCsv('species'),
+        },
+        {
+          text: t('backup.users'),
+          onPress: () => runExportCsv('users'),
+        },
+      ]
+    )
+  }
+
+  const runExportCsv = async (table: 'observations' | 'species' | 'users') => {
+    setActionLoading(true)
+    try {
+      await api.exportCsv(table)
+      flash(t('backup.exportSuccess'), 'success')
+    } catch (err: unknown) {
+      flash(err instanceof Error ? err.message : t('backup.exportFailed'), 'error')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   const handleCleanup = () => {
     Alert.alert(
       t('alerts.cleanup.title'),
@@ -1594,11 +1628,21 @@ variant="secondary" />
   const renderBackup = () => (
     <View style={styles.container}>
       <View style={styles.toolbar}>
-       <Button
-          title={t('backup.create')}
-          onPress={handleBackup}
-          loading={actionLoading}
-        />
+        <View style={{ flexDirection: 'row', gap: 8, flex: 1 }}>
+          <Button
+            title={t('backup.create')}
+            onPress={handleBackup}
+            loading={actionLoading}
+            style={{ flex: 1 }}
+          />
+          <Button
+            title={t('backup.exportCsv')}
+            onPress={handleExportCsv}
+            loading={actionLoading}
+            variant="secondary"
+            style={{ flex: 1 }}
+          />
+        </View>
       </View>
       <FlatList
         data={backups}

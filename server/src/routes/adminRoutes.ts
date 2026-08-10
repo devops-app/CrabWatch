@@ -2,6 +2,7 @@ import { Router } from 'express'
 import {
   backupDatabase,
   cleanupDeletedUsers,
+  exportCsv,
   listDeletedUsers,
   listBackups,
   deleteBackup,
@@ -50,6 +51,35 @@ router.use(authMiddleware)
  *         description: Backup failed
  */
 router.post('/backup', requireAuth, resolveUser, requireRole('ADMIN'), backupDatabase)
+
+/**
+ * @openapi
+ * /api/admin/export/csv:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Export data as CSV for Excel/PowerBI analysis (Admin only)
+ *     parameters:
+ *       - in: query
+ *         name: table
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [observations, species, users]
+ *     responses:
+ *       200:
+ *         description: CSV file download
+ *         content:
+ *           text/csv:
+ *             schema:
+ *               type: string
+ *       400:
+ *         description: Invalid table parameter
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: Admin only
+ */
+router.get('/export/csv', requireAuth, resolveUser, requireRole('ADMIN'), exportCsv)
 
 /**
  * @openapi

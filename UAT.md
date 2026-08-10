@@ -1,8 +1,8 @@
 # CrabWatch — User Acceptance Test (UAT)
 
-> **Version**: 1.2
-> **Date**: 2026-06-01
-> **Scope**: Full end-to-end testing across Web, Mobile, and Server (270 test cases across 20 modules)
+> **Version**: 1.3
+> **Date**: 2026-08-10
+> **Scope**: Full end-to-end testing across Web, Mobile, and Server (253 test cases across 20 modules)
 > **Seed Password**: `Pa55w.rd` (all seeded accounts)
 
 ---
@@ -162,6 +162,11 @@
 | OBS-023 | SAS URL refresh | 1. View observation with photos | Photos load with fresh SAS URLs (valid for 1 hour) | | |
 | OBS-024 | USER cannot view other's observation | 1. Login as citizen<br>2. Access another user's observation detail URL | Error: "Access denied" (403) | | |
 | OBS-025 | Observation not found | 1. Access non-existent observation ID | Error: "Observation not found" (404) | | |
+| OBS-026 | ADMIN can edit any observation | 1. Login as admin<br>2. Navigate to capture page in edit mode for another user's observation<br>3. Modify fields and save | Observation updated successfully | | |
+| OBS-027 | RESEARCHER can edit any observation | 1. Login as researcher<br>2. Navigate to capture page in edit mode for another user's observation<br>3. Modify fields and save | Observation updated successfully | | |
+| OBS-028 | USER cannot edit another's observation | 1. Login as citizen<br>2. Attempt to edit another user's observation via API | Error: "Access denied" (403) | | |
+| OBS-029 | USER can edit own observation | 1. Login as citizen<br>2. Navigate to capture page in edit mode for own observation<br>3. Modify fields and save | Observation updated successfully | | |
+| OBS-030 | Post-edit redirect to detail page | 1. Edit any observation<br>2. Save changes | Redirected to observation detail page showing updated data | | |
 
 ---
 
@@ -552,7 +557,7 @@
 | 2. Profile Management | 7 | | | | |
 | 3. Capture Flow | 20 | | | | |
 | 4. Observation Submission | 12 | | | | |
-| 5. Observation Management | 13 | | | | |
+| 5. Observation Management | 18 | | | | |
 | 6. Researcher Validation | 10 | | | | |
 | 7. Species Management | 10 | | | | |
 | 8. Analytics | 8 | | | | |
@@ -568,4 +573,4 @@
 | 18. Typography & Accessibility | 9 | | | | |
 | 19. Observation Print | 8 | | | | |
 | 20. Mobile Analytics Map | 8 | | | | |
-| **TOTAL** | **248** | | | | |
+| **TOTAL** | **253** | | | | |

@@ -105,6 +105,8 @@ export interface BackupFileInfo {
   createdAt: string
 }
 
+export type CsvExportTable = 'observations' | 'species' | 'users'
+
 export interface Invite {
   id: string
   email: string

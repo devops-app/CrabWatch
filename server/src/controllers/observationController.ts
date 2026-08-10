@@ -16,6 +16,7 @@ import { sendNotification } from '../services/notificationService'
 import { getPrisma, getConfig } from '../services/container'
 import { asyncHandler, NotFoundError, ForbiddenError, ValidationError } from '../utils/errors'
 import { createTranslator, detectLocale } from '../middleware/i18n'
+import logger from '../utils/logger'
 
 type DbUser = { id: string; role: string; email: string }
 
@@ -125,6 +126,20 @@ export const createObservation = asyncHandler(async (req: AuthRequest, res: Resp
       cleanupAnalysisBlobs(cleanedUpUrls).catch(() => {})
     }
     markAnalysisSessionDone(dbUser.id)
+
+    // Post-copy validation: warn if any URLs still reference /analysis/ (copy fallback)
+    const remainingAnalysisUrls = finalPhotos.filter((url: string) => url.includes('/analysis/'))
+    if (remainingAnalysisUrls.length > 0) {
+      logger.warn(
+        {
+          userId: dbUser.id,
+          totalPhotos: finalPhotos.length,
+          remainingAnalysisCount: remainingAnalysisUrls.length,
+          uploadSessionId,
+        },
+        'createObservation: some photos still reference /analysis/ after copy — images may become inaccessible'
+      )
+    }
   }
 
   const prisma = getPrisma()
@@ -449,7 +464,8 @@ export const updateObservation = asyncHandler(async (req: AuthRequest, res: Resp
     throw new NotFoundError(__('observation.notFound', 'observation'))
   }
 
-  if (observation.userId !== dbUser.id) {
+  // ADMIN and RESEARCHER can edit any observation; users can only edit their own
+  if (observation.userId !== dbUser.id && dbUser.role !== 'ADMIN' && dbUser.role !== 'RESEARCHER') {
     throw new ForbiddenError(__('observation.unauthorized', 'observation'))
   }
 
@@ -501,7 +517,8 @@ export const deleteObservation = asyncHandler(async (req: AuthRequest, res: Resp
     throw new NotFoundError(__('observation.notFound', 'observation'))
   }
 
-  if (observation.userId !== dbUser.id) {
+  // ADMIN and RESEARCHER can delete any observation; users can only delete their own
+  if (observation.userId !== dbUser.id && dbUser.role !== 'ADMIN' && dbUser.role !== 'RESEARCHER') {
     throw new ForbiddenError(__('observation.unauthorized', 'observation'))
   }
 

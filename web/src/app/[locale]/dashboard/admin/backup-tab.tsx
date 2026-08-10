@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { api } from '@/lib/api'
-import type { BackupFileInfo } from '@crabwatch/shared'
+import type { BackupFileInfo, CsvExportTable } from '@crabwatch/shared'
 
 interface ConfirmState {
   title: string
@@ -26,6 +26,8 @@ export function BackupTab({ flash, onConfirm }: BackupTabProps): React.JSX.Eleme
   const tAdmin = useTranslations('admin')
   const [loading, setLoading] = useState(true)
   const [backupLoading, setBackupLoading] = useState(false)
+  const [csvLoading, setCsvLoading] = useState(false)
+  const [csvTable, setCsvTable] = useState<CsvExportTable>('observations')
   const [backups, setBackups] = useState<BackupFileInfo[]>([])
 
   const loadBackups = useCallback(async () => {
@@ -78,13 +80,25 @@ export function BackupTab({ flash, onConfirm }: BackupTabProps): React.JSX.Eleme
     api.downloadBackup(backup.fileName)
   }
 
+  const handleExportCsv = async () => {
+    setCsvLoading(true)
+    try {
+      api.exportCsv(csvTable)
+      flash(t('exportCsv.exportSuccess', { table: csvTable }), 'success')
+    } catch (err: unknown) {
+      flash(err instanceof Error ? err.message : t('exportCsv.exportFailed'), 'error')
+    } finally {
+      setCsvLoading(false)
+    }
+  }
+
   if (loading) return <LoadingSkeleton />
 
   return (
     <div className="card">
       <h2 className="text-xl font-semibold text-ocean-800 mb-6">{t('title')}</h2>
 
-      <div className="mb-6">
+      <div className="mb-6 flex flex-wrap gap-3 items-center">
         <button
           onClick={handleBackup}
           disabled={backupLoading}
@@ -92,6 +106,26 @@ export function BackupTab({ flash, onConfirm }: BackupTabProps): React.JSX.Eleme
         >
           {backupLoading ? t('creating') : t('createNow')}
         </button>
+
+        <div className="flex items-center gap-2">
+          <select
+            value={csvTable}
+            onChange={(e) => setCsvTable(e.target.value as CsvExportTable)}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-ocean-500"
+            disabled={csvLoading}
+          >
+            <option value="observations">{t('exportCsv.observations')}</option>
+            <option value="species">{t('exportCsv.species')}</option>
+            <option value="users">{t('exportCsv.users')}</option>
+          </select>
+          <button
+            onClick={handleExportCsv}
+            disabled={csvLoading}
+            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {csvLoading ? t('exportCsv.exporting') : t('exportCsv.title')}
+          </button>
+        </div>
       </div>
 
       {backups.length === 0 ? (

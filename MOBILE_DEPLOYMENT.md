@@ -7,7 +7,25 @@
 1. **Node.js** >= 20.0.0
 2. **pnpm** >= 8.0.0
 3. **PostgreSQL** running (Docker or local)
-4. **Expo Go** app installed for **SDK 54** (iOS App Store / Android Play Store)
+4. **Azurite** (local Azure Blob emulator) — required for photo upload during local dev
+5. **Development build** (`expo-dev-client`) — Expo Go is incompatible with React 19; use a development build instead
+
+### Step 0: Start Azurite (Local Blob Storage)
+
+The server uses Azure Blob Storage for photo uploads. For local development, run Azurite as an emulator:
+
+```powershell
+# Start Azurite (run in a separate terminal)
+npx --package=azurite azurite --location C:\Works\CrabWatch\azurite-data --skipApiVersionCheck
+```
+
+> **Note:** The `--skipApiVersionCheck` flag is required because the Azure SDK may use a newer API version than Azurite supports by default.
+
+Ensure `server/.env` has these settings for local blob storage:
+```env
+AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;
+AZURE_BLOB_CONTAINER=crabwatch
+```
 
 ### Step 1: Start the Backend Server
 
@@ -22,6 +40,8 @@ pnpm dev:server
 ```
 
 Server should be running on `http://localhost:3001`. All API endpoints are versioned under `/api/v1/`.
+
+> **Note:** The seed script uses `bcryptjs` (not `bcrypt`). If you see `Cannot find module 'bcrypt'`, check `server/prisma/seed.ts` imports.
 
 ### Step 2: Configure Environment
 
@@ -56,8 +76,16 @@ This starts Metro bundler on port `8081` and prints a QR code.
 
 ### Step 4: Open on Your Device
 
-1. **iOS**: Open the **Camera app** (not Expo Go), point it at the QR code, tap the notification banner
-2. **Android**: Open **Expo Go**, scan the QR code directly
+> **Important:** Expo Go is incompatible with React 19. You must use a development build instead.
+
+**Create a development build (first time only):**
+```powershell
+cd mobile
+npx eas-cli build --platform android --profile development   # or --platform ios
+```
+
+1. **iOS**: Open the **Camera app**, point it at the QR code, tap the notification banner
+2. **Android**: Open the development build app, scan the QR code directly
 3. The app will load on your device
 
 ### Alternative: Run on Simulator/Emulator

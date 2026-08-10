@@ -1268,7 +1268,16 @@
       },
       "backupCreated": "Backup created: {file} ({size})",
       "deletedFlash": "Deleted: {file}",
-      "loadFailed": "Failed to load backups"
+      "loadFailed": "Failed to load backups",
+      "exportCsv": {
+        "title": "Export CSV",
+        "exporting": "Exporting...",
+        "observations": "Observations",
+        "species": "Species",
+        "users": "Users",
+        "exportSuccess": "CSV exported for {table}",
+        "exportFailed": "Failed to export CSV"
+      }
     },
     "engagement": {
       "title": "Engagement Management",
