@@ -838,19 +838,21 @@ export function AdminScreen() {
           <Text style={styles.actionBtnText}>{t('search') || 'Search'}</Text>
         </TouchableOpacity>
       </View>
-      <View style={[styles.toolbar, { marginBottom: 8 }]}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
         <Text style={{ fontSize: 14, color: COLORS.text, marginRight: 8 }}>{t('users.role') || 'Role'}:</Text>
-        {['', 'user', 'researcher', 'admin'].map((role) => (
-          <TouchableOpacity
-            key={role || 'all'}
-            style={[styles.roleOption, usersRoleFilter === role && styles.roleOptionActive]}
-            onPress={() => { setUsersRoleFilter(role); setUsersPage(1); loadTabData('users', 'active') }}
-          >
-            <Text style={[styles.roleOptionText, usersRoleFilter === role && styles.roleOptionTextActive]}>
-              {role ? (role === 'user' ? t('users.roles.user') : role === 'researcher' ? t('users.roles.researcher') : t('users.roles.admin')) : (t('users.roles.all') || 'All')}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        <View style={{ flexDirection: 'row', flex: 1, gap: 6 }}>
+          {['', 'user', 'researcher', 'admin'].map((role) => (
+            <TouchableOpacity
+              key={role || 'all'}
+              style={[styles.roleOption, usersRoleFilter === role && styles.roleOptionActive]}
+              onPress={() => { setUsersRoleFilter(role); setUsersPage(1); loadTabData('users', 'active') }}
+            >
+              <Text style={[styles.roleOptionText, usersRoleFilter === role && styles.roleOptionTextActive]}>
+                {role ? (role === 'user' ? t('users.roles.user') : role === 'researcher' ? t('users.roles.researcher') : t('users.roles.admin')) : (t('users.roles.all') || 'All')}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
       {(usersSearch || usersRoleFilter) && (
         <View style={{ marginBottom: 8, alignItems: 'center' }}>
