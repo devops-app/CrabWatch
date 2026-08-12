@@ -188,7 +188,7 @@ export function AdminScreen() {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [flash])
+  }, [flash, usersPage, usersSearch, usersRoleFilter, deletedUsersPage])
 
   useEffect(() => {
     setLoading(true)
