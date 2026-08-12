@@ -43,7 +43,7 @@
     },
     "peerDependencies": {
         "expo": "~54.0.35",
-        "react": "19.2.7",
+        "react": "19.1.4",
         "react-native": "0.81.6"
     },
     "pnpm": {

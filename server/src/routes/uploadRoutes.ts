@@ -11,7 +11,6 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: MAX_UPLOAD_SIZE,
-    // @ts-expect-error - fieldNestingDepth is available in multer 2.2.0+ but types haven't been updated
     fieldNestingDepth: 3,
   },
   fileFilter: (_req, file, cb) => {
