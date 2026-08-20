@@ -1,24 +1,24 @@
 {
-  "name": "@crabwatch/shared",
-  "version": "1.0.1+0011",
-  "private": true,
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "npx tsc",
-    "typecheck": "npx tsc --noEmit",
-    "lint": "eslint src --ext .ts",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
-  },
-  "dependencies": {
-    "zod": "^3.24.4"
-  },
-  "devDependencies": {
-    "@types/jest": "~29.5.14",
-    "jest": "~29.7.0",
-    "ts-jest": "^29.4.9",
-    "typescript": "^5.5.0"
-  }
+    "name":  "@crabwatch/shared",
+    "version":  "1.0.1+0012",
+    "private":  true,
+    "main":  "dist/index.js",
+    "types":  "dist/index.d.ts",
+    "scripts":  {
+                    "build":  "npx tsc",
+                    "typecheck":  "npx tsc --noEmit",
+                    "lint":  "eslint src --ext .ts",
+                    "test":  "jest",
+                    "test:watch":  "jest --watch",
+                    "test:coverage":  "jest --coverage"
+                },
+    "dependencies":  {
+                         "zod":  "^3.24.4"
+                     },
+    "devDependencies":  {
+                            "@types/jest":  "~29.5.14",
+                            "jest":  "~29.7.0",
+                            "ts-jest":  "^29.4.9",
+                            "typescript":  "^5.5.0"
+                        }
 }
