@@ -1038,7 +1038,15 @@
       }
     },
     "backup": {
-      "create": "Create Backup"
+      "create": "Create Backup",
+      "exportCsv": "Export CSV",
+      "exporting": "Exporting...",
+      "selectTable": "Select table to export",
+      "observations": "Observations",
+      "species": "Species",
+      "users": "Users",
+      "exportSuccess": "CSV exported successfully",
+      "exportFailed": "Failed to export CSV"
     },
     "rules": {
       "add": "Add Rule",

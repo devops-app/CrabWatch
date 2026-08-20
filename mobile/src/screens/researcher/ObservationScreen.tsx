@@ -286,7 +286,7 @@ export function ObservationScreen() {
           onPress={() => handleTabChange('pending')}
         >
           <Text style={[styles.tabText, activeTab === 'pending' && styles.activeTabText]}>
-            {t('tabs.pending')}
+            {t('pending')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -294,7 +294,7 @@ export function ObservationScreen() {
           onPress={() => handleTabChange('approved')}
         >
           <Text style={[styles.tabText, activeTab === 'approved' && styles.activeTabText]}>
-            {t('tabs.approved')}
+            {t('approved')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -302,7 +302,7 @@ export function ObservationScreen() {
           onPress={() => handleTabChange('rejected')}
         >
           <Text style={[styles.tabText, activeTab === 'rejected' && styles.activeTabText]}>
-            {t('tabs.rejected')}
+            {t('rejected')}
           </Text>
         </TouchableOpacity>
       </View>

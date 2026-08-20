@@ -1,6 +1,7 @@
 import { api } from './api'
-import { CrabAnalysisRequest, CrabAnalysisResult, PhotoView, AnalysisStatus, ViewDetectionResult } from '@crabwatch/shared'
+import { CrabAnalysisRequest, CrabAnalysisResult, PhotoView, AnalysisStatus, ViewDetectionResult, isGateBlocking } from '@crabwatch/shared'
 import { photoService } from './photoService'
+import { QUALITY_GATE_MODES } from '../utils/constants'
 
 export interface AnalysisProgress {
   status: AnalysisStatus
@@ -43,7 +44,13 @@ export const analysisService = {
         const view = views[index] || 'dorsal'
         const override = qualityOverrides?.[view]
         const canOverride = Boolean(override?.approved && (override.reason || '').trim().length >= 5)
-        const hasBlockingFailure = quality.blurStatus === 'fail' || quality.brightnessLevel === 'dark'
+        const blurBlocking = isGateBlocking(quality.blurStatus, QUALITY_GATE_MODES.blur)
+        const brightnessStatus: 'pass' | 'warn' | 'fail' =
+          quality.brightnessLevel === 'dark' ? 'fail'
+            : quality.brightnessLevel === 'low' ? 'warn'
+              : 'pass'
+        const brightnessBlocking = isGateBlocking(brightnessStatus, QUALITY_GATE_MODES.brightness)
+        const hasBlockingFailure = blurBlocking || brightnessBlocking
         return {
           view,
           quality,

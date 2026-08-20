@@ -1,5 +1,6 @@
 import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
+import logger from '../utils/logger'
 
 // Use raw PrismaClient to bypass i18n middleware (no request-scoped locale in seed scripts)
 const prisma = new PrismaClient()
@@ -169,7 +170,7 @@ async function seedLevelTranslations() {
     }
   }
 
-  console.log(`[SEED] LevelConfig translations: ${count}/${levels.length} translated`)
+  logger.info({ count, total: levels.length }, '[SEED] LevelConfig translations')
 }
 
 async function seedAchievementTranslations() {
@@ -190,9 +191,7 @@ async function seedAchievementTranslations() {
     }
   }
 
-  console.log(
-    `[SEED] Achievement translations: ${nameCount}/${achievements.length} names, ${descCount}/${achievements.length} descriptions`,
-  )
+  logger.info({ nameCount, descCount, total: achievements.length }, '[SEED] Achievement translations')
 }
 
 async function seedMissionTranslations() {
@@ -213,9 +212,7 @@ async function seedMissionTranslations() {
     }
   }
 
-  console.log(
-    `[SEED] MissionDefinition translations: ${nameCount}/${missions.length} names, ${descCount}/${missions.length} descriptions`,
-  )
+  logger.info({ nameCount, descCount, total: missions.length }, '[SEED] MissionDefinition translations')
 }
 
 async function seedOnboardingTranslations() {
@@ -249,7 +246,7 @@ async function seedOnboardingTranslations() {
     }
   }
 
-  console.log(`[SEED] OnboardingFlow translations: ${count}/${flows.length} translated`)
+  logger.info({ count, total: flows.length }, '[SEED] OnboardingFlow translations')
 }
 
 async function seedSpeciesTranslations() {
@@ -280,11 +277,11 @@ async function seedSpeciesTranslations() {
     }
   }
 
-  console.log(`[SEED] Species translations: ${count}/${species.length} translated`)
+  logger.info({ count, total: species.length }, '[SEED] Species translations')
 }
 
 async function main() {
-  console.log(`🌱 Seeding Malay (${LOCALE}) translations...`)
+  logger.info(`🌱 Seeding Malay (${LOCALE}) translations...`)
 
   await seedLevelTranslations()
   await seedAchievementTranslations()
@@ -293,13 +290,13 @@ async function main() {
   await seedSpeciesTranslations()
 
   const total = await prisma.translation.count({ where: { locale: LOCALE } })
-  console.log(`\n✅ Total Malay translations in DB: ${total}`)
-  console.log('🎉 Malay translation seed completed!')
+  logger.info({ total }, '✅ Total Malay translations in DB')
+  logger.info('🎉 Malay translation seed completed!')
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Translation seed failed:', e)
+    logger.error({ err: e }, '❌ Translation seed failed')
     process.exit(1)
   })
   .finally(async () => {

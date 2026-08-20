@@ -36,7 +36,7 @@ describe('Sidebar', () => {
     expect(screen.getByText('dashboard')).toBeInTheDocument()
     expect(screen.getByText('analytics')).toBeInTheDocument()
     expect(screen.getByText('capture')).toBeInTheDocument()
-    expect(screen.getByText('researcher')).toBeInTheDocument()
+    expect(screen.getByText('observation')).toBeInTheDocument() // labelKey for researcher validation page
     expect(screen.getByText('admin')).toBeInTheDocument()
   })
 

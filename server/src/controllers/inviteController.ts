@@ -6,6 +6,7 @@ import { asyncHandler, NotFoundError, ValidationError, ConflictError } from '../
 import { getPrisma, getConfig } from '../services/container'
 import { createInviteSchema, validateInviteSchema } from '../utils/schemas'
 import { createTranslator } from '../middleware/i18n'
+import logger from '../utils/logger'
 
 export const createInvite = asyncHandler(async (req: AuthRequest, res: Response) => {
   const __ = createTranslator(req)
@@ -57,7 +58,7 @@ export const createInvite = asyncHandler(async (req: AuthRequest, res: Response)
         `,
       })
     } catch (emailError) {
-      console.error('Failed to send invite email:', emailError)
+      logger.error({ err: emailError }, 'Failed to send invite email')
     }
   }
 

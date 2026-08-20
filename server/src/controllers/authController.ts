@@ -10,6 +10,7 @@ import { setAuthCookie } from '../middleware/cookieAuth'
 import { requestPasswordResetSchema, resetPasswordSchema } from '../utils/schemas'
 import { asyncHandler, UnauthorizedError, ValidationError } from '../utils/errors'
 import { createTranslator } from '../middleware/i18n'
+import logger from '../utils/logger'
 
 let _resend: Resend | null | undefined
 
@@ -61,7 +62,7 @@ export const login = asyncHandler(async (req: AuthRequest, res: Response) => {
         })
       } catch (createError: unknown) {
         const err = createError instanceof Error ? createError : new Error(String(createError))
-        console.error('Firebase createUser error:', err.message)
+        logger.error({ err: err.message }, 'Firebase createUser error')
       }
     }
 
@@ -173,7 +174,7 @@ export const requestPasswordReset = asyncHandler(async (req: AuthRequest, res: R
         `,
       })
     } catch (emailError) {
-      console.error('Failed to send reset email:', emailError)
+      logger.error({ err: emailError }, 'Failed to send reset email')
     }
   }
 
@@ -217,7 +218,7 @@ export const resetPassword = asyncHandler(async (req: AuthRequest, res: Response
         await admin.auth().updateUser(user.firebaseUid, { password })
       }
     } catch (firebaseError) {
-      console.error('Firebase password update error:', firebaseError)
+      logger.error({ err: firebaseError }, 'Firebase password update error')
     }
   }
 

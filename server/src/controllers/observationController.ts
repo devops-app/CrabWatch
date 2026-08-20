@@ -16,8 +16,40 @@ import { sendNotification } from '../services/notificationService'
 import { getPrisma, getConfig } from '../services/container'
 import { asyncHandler, NotFoundError, ForbiddenError, ValidationError } from '../utils/errors'
 import { createTranslator, detectLocale } from '../middleware/i18n'
+import logger from '../utils/logger'
 
 type DbUser = { id: string; role: string; email: string }
+
+// TTL cache for SAS URL regeneration — avoids redundant Azure API calls for the same blob
+interface SasCacheEntry {
+  sasUrl: string
+  expiresAt: number
+}
+const sasCache = new Map<string, SasCacheEntry>()
+const SAS_CACHE_MAX_SIZE = 500
+const SAS_CACHE_TTL = 50 * 60 * 1000 // 50 minutes (SAS expires in 60 min, regenerate before expiry)
+
+function getCachedSas(blobPath: string): string | null {
+  const entry = sasCache.get(blobPath)
+  if (!entry || Date.now() > entry.expiresAt) {
+    sasCache.delete(blobPath)
+    return null
+  }
+  return entry.sasUrl
+}
+
+function setCachedSas(blobPath: string, sasUrl: string): void {
+  if (sasCache.size >= SAS_CACHE_MAX_SIZE) {
+    const oldestKey = sasCache.keys().next().value
+    if (oldestKey !== undefined) {
+      sasCache.delete(oldestKey)
+    }
+  }
+  sasCache.set(blobPath, {
+    sasUrl,
+    expiresAt: Date.now() + SAS_CACHE_TTL,
+  })
+}
 
 async function refreshPhotoUrls(photos: string[]): Promise<string[]> {
   const refreshed: string[] = []
@@ -45,12 +77,21 @@ async function refreshPhotoUrls(photos: string[]): Promise<string[]> {
       }
       const blobPath = afterContainer.slice(1).join('/')
       const decodedName = decodeURIComponent(blobPath.split('?')[0])
+
+      // Check cache first
+      const cachedSas = getCachedSas(decodedName)
+      if (cachedSas) {
+        refreshed.push(cachedSas)
+        continue
+      }
+
       const blobClient = containerClient.getBlockBlobClient(decodedName)
       const sasUrl = await blobClient.generateSasUrl({
          startsOn: new Date(Date.now() - 2 * 60 * 1000),
          expiresOn: new Date(Date.now() + 60 * 60 * 1000),
          permissions: BlobSASPermissions.parse('r'),
        })
+      setCachedSas(decodedName, sasUrl)
       refreshed.push(sasUrl)
     } catch {
       if (isAnalysisBlob) {
@@ -85,6 +126,20 @@ export const createObservation = asyncHandler(async (req: AuthRequest, res: Resp
       cleanupAnalysisBlobs(cleanedUpUrls).catch(() => {})
     }
     markAnalysisSessionDone(dbUser.id)
+
+    // Post-copy validation: warn if any URLs still reference /analysis/ (copy fallback)
+    const remainingAnalysisUrls = finalPhotos.filter((url: string) => url.includes('/analysis/'))
+    if (remainingAnalysisUrls.length > 0) {
+      logger.warn(
+        {
+          userId: dbUser.id,
+          totalPhotos: finalPhotos.length,
+          remainingAnalysisCount: remainingAnalysisUrls.length,
+          uploadSessionId,
+        },
+        'createObservation: some photos still reference /analysis/ after copy — images may become inaccessible'
+      )
+    }
   }
 
   const prisma = getPrisma()
@@ -409,7 +464,8 @@ export const updateObservation = asyncHandler(async (req: AuthRequest, res: Resp
     throw new NotFoundError(__('observation.notFound', 'observation'))
   }
 
-  if (observation.userId !== dbUser.id) {
+  // ADMIN and RESEARCHER can edit any observation; users can only edit their own
+  if (observation.userId !== dbUser.id && dbUser.role !== 'ADMIN' && dbUser.role !== 'RESEARCHER') {
     throw new ForbiddenError(__('observation.unauthorized', 'observation'))
   }
 
@@ -461,7 +517,8 @@ export const deleteObservation = asyncHandler(async (req: AuthRequest, res: Resp
     throw new NotFoundError(__('observation.notFound', 'observation'))
   }
 
-  if (observation.userId !== dbUser.id) {
+  // ADMIN and RESEARCHER can delete any observation; users can only delete their own
+  if (observation.userId !== dbUser.id && dbUser.role !== 'ADMIN' && dbUser.role !== 'RESEARCHER') {
     throw new ForbiddenError(__('observation.unauthorized', 'observation'))
   }
 

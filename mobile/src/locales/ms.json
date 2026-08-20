@@ -1033,7 +1033,15 @@
       }
     },
     "backup": {
-      "create": "Cipta Sandaran"
+      "create": "Cipta Sandaran",
+      "exportCsv": "Eksport CSV",
+      "exporting": "Mengeksport...",
+      "selectTable": "Pilih jadual untuk dieksport",
+      "observations": "Observasi",
+      "species": "Spesies",
+      "users": "Pengguna",
+      "exportSuccess": "CSV berjaya dieksport",
+      "exportFailed": "Gagal mengeksport CSV"
     },
     "rules": {
       "add": "Tambah Peraturan",

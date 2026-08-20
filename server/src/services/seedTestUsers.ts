@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs'
 import prisma from '../config/database'
+import logger from '../utils/logger'
 
 const TEST_USERS = Array.from({ length: 20 }, (_, i) => ({
   name: `Test User ${i + 1}`,
@@ -25,7 +26,7 @@ async function seedTestUsers(): Promise<void> {
     })
 
     if (existing && !existing.deletedAt) {
-      console.log(`[SKIP] ${user.email} already exists`)
+      logger.info({ email: user.email }, '[SKIP] User already exists')
       skipped++
       continue
     }
@@ -49,11 +50,11 @@ async function seedTestUsers(): Promise<void> {
       },
     })
 
-    console.log(`[OK] Created ${user.email}`)
+    logger.info({ email: user.email }, '[OK] User created')
     created++
   }
 
-  console.log(`\nDone: ${created} created, ${skipped} skipped`)
+  logger.info({ created, skipped }, 'Done seeding test users')
 }
 
 if (process.argv[1] === __filename) {

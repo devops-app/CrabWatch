@@ -6,7 +6,7 @@ AI-guided crab observation capture with fully dynamic species detection. The AI 
 
 | Package | Version |
 |---------|---------|
-| React Native | 0.81.5 |
+| React Native | 0.81.6 |
 | Expo | SDK 54 |
 | React | 19 |
 | Next.js | 15 (App Router) |
@@ -18,6 +18,10 @@ AI-guided crab observation capture with fully dynamic species detection. The AI 
 ## Quick Start
 
 ```bash
+
+# Start Azurite
+npx --package=azurite azurite --location C:\Works\CrabWatch\azurite-data --skipApiVersionCheck
+
 # Install dependencies
 pnpm install
 
@@ -43,7 +47,9 @@ pnpm dev:mobile
 
 ### Observation Management
 - Full CRUD with photo management, measurements, and biological data
+- Role-based edit/delete permissions: ADMIN & RESEARCHER can edit/delete any observation; USER can only edit/delete their own
 - Researcher validation flow: approve/reject pending observations
+- Post-edit redirect to observation detail page
 - Soft-delete with 30-day retention, block/unblock users
 - Azure Blob Storage for photo storage with SAS URL refresh
 
@@ -69,10 +75,12 @@ pnpm dev:mobile
 ### Web App
 - Next.js 15 App Router with Server Components
 - Dashboard, capture, researcher validation, profile, observation detail, species browse
+- Observation editing: ADMIN & RESEARCHER can edit any observation; USER can only edit own. After successful edit, redirects to observation detail page.
 - Admin panel with species, users, backup, and engagement tabs
 - Gamification: leaderboard, missions, achievements, community
 - Application Insights auto-instrumentation, error boundary
 - React.memo optimizations, lazy-loaded analytics
+- API proxying via `BACKEND_URL` env var in `next.config.mjs` (required for local dev)
 
 ### Mobile App
 - Full capture flow with guided camera, quality gates, and AI analysis

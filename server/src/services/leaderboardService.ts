@@ -29,13 +29,14 @@ interface LeaderboardResult {
   myRank?: number
 }
 
-// Simple in-memory cache with TTL
+// Simple in-memory cache with TTL and max-size eviction
 interface CacheEntry {
   data: LeaderboardResult
   expiresAt: number
 }
 
 const cache = new Map<string, CacheEntry>()
+const MAX_CACHE_SIZE = 100
 
 const DEFAULT_TTL = 60 * 1000
 const ALL_TIME_TTL = 120 * 1000
@@ -54,6 +55,13 @@ function get(key: string): LeaderboardResult | null {
 }
 
 function set(key: string, data: LeaderboardResult, ttl: number = DEFAULT_TTL): void {
+  // Evict oldest entry if cache exceeds max size
+  if (cache.size >= MAX_CACHE_SIZE) {
+    const oldestKey = cache.keys().next().value
+    if (oldestKey !== undefined) {
+      cache.delete(oldestKey)
+    }
+  }
   cache.set(key, {
     data,
     expiresAt: Date.now() + ttl,
@@ -85,8 +93,8 @@ export async function getLeaderboard(
   const cached = get(cacheKey)
   if (cached) {
     // Re-compute myRank for the requesting user (not cached, depends on current user)
-    let result = { ...cached }
-    delete (result as any).myRankXP
+    const { myRankXP: _myRankXP, ...rest } = cached as LeaderboardResult & { myRankXP?: number }
+    let result = rest as LeaderboardResult
 
     if (params.currentUserId) {
       const myRank = await computeMyRank(params.currentUserId, params.scope, params.seasonId)

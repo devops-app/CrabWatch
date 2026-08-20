@@ -485,6 +485,22 @@ export const api = {
     return apiRequest('/admin/backups')
   },
 
+  async exportCsv(table: 'observations' | 'species' | 'users'): Promise<string> {
+    // Fetch CSV with auth header, return CSV text content
+    const token = await SecureStore.getItemAsync('authToken')
+    const baseUrl = Constants.expoConfig?.extra?.apiUrl ?? process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3001'
+    const url = `${baseUrl}/api/v1/admin/export/csv?table=${encodeURIComponent(table)}`
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    if (!response.ok) {
+      throw new Error(`CSV export failed: ${response.status}`)
+    }
+    return response.text()
+  },
+
   async createInvite(email: string, role: string, expiresInHours?: number): Promise<{ token: string; expiresAt: string }> {
     return apiRequest('/admin/invite', {
       method: 'POST',

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { Prisma, PrismaClient, AbuseSignalType } from '@prisma/client'
 import { getContainer } from './container'
 
 let _prisma: PrismaClient
@@ -17,7 +17,7 @@ export interface AbuseSignal {
   severity: 'low' | 'medium' | 'high'
   score: number
   details: string
-  evidence: Record<string, any>
+  evidence: Record<string, unknown>
   createdAt: Date
 }
 
@@ -248,22 +248,22 @@ export async function getAbuseScore(userId: string): Promise<{
 
   // Store signals
   for (const signal of signals) {
-    const typeMap: Record<string, string> = {
-      VELOCITY: 'VELOCITY',
-      DUPLICATE: 'DUPLICATE_CONTENT',
-      DEVICE_FARM: 'DEVICE_FARM',
-      COORDINATE_CLUSTER: 'SUSPICIOUS_PATTERN',
-      IMAGE_HASH: 'SUSPICIOUS_PATTERN',
+    const typeMap: Record<string, AbuseSignalType> = {
+      VELOCITY: AbuseSignalType.VELOCITY,
+      DUPLICATE: AbuseSignalType.DUPLICATE_CONTENT,
+      DEVICE_FARM: AbuseSignalType.DEVICE_FARM,
+      COORDINATE_CLUSTER: AbuseSignalType.SUSPICIOUS_PATTERN,
+      IMAGE_HASH: AbuseSignalType.SUSPICIOUS_PATTERN,
     }
     const severityToScore = (s: string) => s === 'high' ? 85 : s === 'medium' ? 55 : 25
     await getPrisma().abuseSignal.create({
       data: {
         userId,
-        type: (typeMap[signal.signalType] || 'SUSPICIOUS_PATTERN') as any,
+        type: typeMap[signal.signalType] || AbuseSignalType.SUSPICIOUS_PATTERN,
         riskScore: signal.score,
         source: 'auto-detection',
         summary: signal.details,
-        metadata: signal.evidence,
+        metadata: signal.evidence as Prisma.InputJsonValue,
       },
     }).catch(() => {}) // Non-blocking
   }

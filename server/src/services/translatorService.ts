@@ -1,4 +1,5 @@
 import { config } from '../config'
+import logger from '../utils/logger'
 
 interface KeyFeature {
   trait: string
@@ -17,6 +18,7 @@ interface SpeciesTranslation {
 }
 
 const translationCache = new Map<string, SpeciesTranslation>()
+const MAX_TRANSLATION_CACHE = 200
 
 function getCacheKey(speciesId: string, to: string): string {
   return `${speciesId}:${to}`
@@ -57,7 +59,7 @@ export async function translateSpecies({
 
   const { apiKey, endpoint, region } = config.azureTranslator
   if (!apiKey || !endpoint) {
-    console.warn('[Translate] Missing Azure Translator config — returning original text')
+    logger.warn({ speciesId }, 'Missing Azure Translator config — returning original text')
     return fallbackResponse({ commonName, description, keyFeatures, distributionZones })
   }
 
@@ -88,7 +90,7 @@ export async function translateSpecies({
 
     if (!response.ok) {
       const body = await response.text()
-      console.error(`[Translate] API error ${response.status}: ${body}`)
+      logger.error({ status: response.status, body, speciesId }, 'Azure Translator API error')
       return fallbackResponse({ commonName, description, keyFeatures, distributionZones })
     }
 
@@ -125,10 +127,17 @@ export async function translateSpecies({
       distributionZones: translatedDistributionZones,
     }
 
+    // Evict oldest entry if cache exceeds max size
+    if (translationCache.size >= MAX_TRANSLATION_CACHE) {
+      const oldestKey = translationCache.keys().next().value
+      if (oldestKey !== undefined) {
+        translationCache.delete(oldestKey)
+      }
+    }
     translationCache.set(cacheKey, result)
     return result
   } catch (err) {
-    console.error('[Translate] Exception:', err)
+    logger.error({ err, speciesId }, 'Azure Translator exception')
     return fallbackResponse({ commonName, description, keyFeatures, distributionZones })
   }
 }

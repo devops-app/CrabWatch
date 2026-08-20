@@ -1,5 +1,13 @@
-import { PrismaClient } from '@prisma/client'
+import { Prisma, PrismaClient, UserRole } from '@prisma/client'
 import { getContainer } from './container'
+
+/**
+ * Cast a value to Prisma's InputJsonValue for JSON column writes.
+ * Prisma 5.x strict JSON types reject plain Record<string, unknown> without explicit casting.
+ */
+function toJsonInput(value: unknown): Prisma.InputJsonValue {
+  return value as Prisma.InputJsonValue
+}
 
 let _prisma: PrismaClient
 function getPrisma(): PrismaClient {
@@ -11,12 +19,27 @@ function getPrisma(): PrismaClient {
 
 // ==================== CAMPAIGN SERVICE ====================
 
+export interface CampaignContentItem {
+  title: string
+  body: string
+  payload?: Record<string, unknown>
+}
+
+export type CampaignContent = CampaignContentItem | Record<string, CampaignContentItem>
+
+export interface CampaignAudienceFilter {
+  minLevel?: number
+  roles?: string[]
+  minStreak?: number
+  [key: string]: unknown
+}
+
 export interface CampaignCreateInput {
   code: string
   name: string
   channel: string
-  audienceFilter: any
-  content: { title: string; body: string; payload?: any } | Record<string, { title: string; body: string; payload?: any }>
+  audienceFilter: CampaignAudienceFilter
+  content: CampaignContent
   scheduleAt?: string
 }
 
@@ -26,24 +49,26 @@ export interface CampaignCreateInput {
  * ({ en: { title, body }, ms: { title, body } }).
  * Falls back to English if the requested locale is not available.
  */
-function resolveContentForLocale(content: any, locale: string): { title: string; body: string; payload?: any } {
-  if (content.en || content.ms) {
-    const localized = content[locale]
+function resolveContentForLocale(content: CampaignContent, locale: string): CampaignContentItem {
+  const hasLocaleKey = typeof content === 'object' && !Array.isArray(content) && ('en' in content || 'ms' in content)
+  if (hasLocaleKey) {
+    const localized = (content as Record<string, CampaignContentItem>)[locale]
     if (localized && localized.title) return localized
-    return content.en || { title: '', body: '' }
+    return (content as Record<string, CampaignContentItem>).en || { title: '', body: '' }
   }
-  return { title: content.title || '', body: content.body || '', payload: content.payload }
+  const item = content as CampaignContentItem
+  return { title: item.title || '', body: item.body || '', payload: item.payload }
 }
 
-export async function createCampaign(input: CampaignCreateInput, adminId: string): Promise<any> {
+export async function createCampaign(input: CampaignCreateInput, adminId: string): Promise<{ id: string; code: string; name: string }> {
   const campaign = await getPrisma().campaign.create({
     data: {
       code: input.code,
       name: input.name,
-      channel: input.channel as any,
+      channel: input.channel as 'PUSH' | 'EMAIL' | 'IN_APP',
       status: input.scheduleAt ? 'SCHEDULED' : 'DRAFT',
-      audienceFilter: input.audienceFilter,
-      content: input.content,
+      audienceFilter: toJsonInput(input.audienceFilter),
+      content: toJsonInput(input.content),
       scheduleAt: input.scheduleAt ? new Date(input.scheduleAt) : null,
       createdByAdminId: adminId,
     },
@@ -63,14 +88,31 @@ export async function createCampaign(input: CampaignCreateInput, adminId: string
   return campaign
 }
 
+export interface CampaignListItem {
+  id: string
+  code: string
+  name: string
+  channel: string
+  status: string
+  audienceFilter: CampaignAudienceFilter
+  content: CampaignContent
+  scheduleAt: Date | null
+  startedAt: Date | null
+  completedAt: Date | null
+  createdByAdminId: string | null
+  createdAt: Date
+  updatedAt: Date
+  _count: { deliveries: number }
+}
+
 export async function listCampaigns(
   filter?: { status?: string }
-): Promise<any[]> {
-  const where: any = {}
+): Promise<CampaignListItem[]> {
+  const where: { status?: string } = {}
   if (filter?.status) {
     where.status = filter.status
   }
-  return getPrisma().campaign.findMany({
+  const results = await getPrisma().campaign.findMany({
     where,
     orderBy: { createdAt: 'desc' },
     include: {
@@ -79,10 +121,32 @@ export async function listCampaigns(
       },
     },
   })
+  return results.map(r => ({
+    ...r,
+    audienceFilter: r.audienceFilter as unknown as CampaignAudienceFilter,
+    content: r.content as unknown as CampaignContent,
+  })) as CampaignListItem[]
 }
 
-export async function getCampaign(id: string): Promise<any | null> {
-  return getPrisma().campaign.findUnique({
+export interface CampaignDetail {
+  id: string
+  code: string
+  name: string
+  channel: string
+  status: string
+  audienceFilter: CampaignAudienceFilter
+  content: CampaignContent
+  scheduleAt: Date | null
+  startedAt: Date | null
+  completedAt: Date | null
+  createdByAdminId: string | null
+  createdAt: Date
+  updatedAt: Date
+  deliveries: Array<{ id: string; userId: string; status: string; sentAt: Date | null }>
+}
+
+export async function getCampaign(id: string): Promise<CampaignDetail | null> {
+  const result = await getPrisma().campaign.findUnique({
     where: { id },
     include: {
       deliveries: {
@@ -91,13 +155,19 @@ export async function getCampaign(id: string): Promise<any | null> {
       },
     },
   })
+  if (!result) return null
+  return {
+    ...result,
+    audienceFilter: result.audienceFilter as unknown as CampaignAudienceFilter,
+    content: result.content as unknown as CampaignContent,
+  } as CampaignDetail
 }
 
 export async function updateCampaignStatus(
   id: string,
   status: string,
   adminId: string
-): Promise<any> {
+): Promise<{ id: string; status: string }> {
   const campaign = await getPrisma().campaign.findUnique({ where: { id } })
   if (!campaign) throw new Error('Campaign not found')
 
@@ -129,16 +199,16 @@ export async function launchCampaign(id: string, adminId: string): Promise<{ sen
   const campaign = await getPrisma().campaign.findUnique({ where: { id } })
   if (!campaign) throw new Error('Campaign not found')
 
-  const audienceFilter = campaign.audienceFilter as any
-  const content = campaign.content as any
+  const audienceFilter = campaign.audienceFilter as unknown as CampaignAudienceFilter
+  const content = campaign.content as unknown as CampaignContent
 
   // Build audience query
-  const where: any = {}
+  const where: { level?: { gte: number }; role?: { in: UserRole[] }; currentStreak?: { gte: number } } = {}
   if (audienceFilter.minLevel) {
     where.level = { gte: audienceFilter.minLevel }
   }
   if (audienceFilter.roles && audienceFilter.roles.length > 0) {
-    where.role = { in: audienceFilter.roles }
+    where.role = { in: audienceFilter.roles as UserRole[] }
   }
   if (audienceFilter.minStreak) {
     where.currentStreak = { gte: audienceFilter.minStreak }
@@ -164,7 +234,7 @@ export async function launchCampaign(id: string, adminId: string): Promise<{ sen
           category: 'campaign',
           title: resolved.title,
           body: resolved.body,
-          payload: resolved.payload || null,
+          payload: resolved.payload ? toJsonInput(resolved.payload) : undefined,
           status: 'SENT',
           sentAt: new Date(),
         },
@@ -223,7 +293,7 @@ export async function sendTestCampaign(
   const campaign = await getPrisma().campaign.findUnique({ where: { id } })
   if (!campaign) throw new Error('Campaign not found')
 
-  const content = campaign.content as any
+  const content = campaign.content as unknown as CampaignContent
 
   const user = await getPrisma().user.findUnique({ where: { id: userId }, select: { id: true, preferredLocale: true } })
   if (!user) throw new Error('User not found')
@@ -237,7 +307,7 @@ export async function sendTestCampaign(
       category: 'campaign-test',
       title: resolved.title,
       body: resolved.body,
-      payload: resolved.payload || null,
+      payload: resolved.payload ? toJsonInput(resolved.payload) : undefined,
       status: 'SENT',
       sentAt: new Date(),
     },
@@ -267,18 +337,38 @@ export interface AuditLogFilter {
   offset?: number
 }
 
-export async function getAuditLogs(filter: AuditLogFilter): Promise<any[]> {
-  const where: any = {}
+export interface AuditLogEntry {
+  id: string
+  actorType: string
+  actorId: string | null
+  action: string
+  resourceType: string
+  resourceId: string | null
+  beforeState: Record<string, unknown> | null
+  afterState: Record<string, unknown> | null
+  reason: string | null
+  ipAddress: string | null
+  userAgent: string | null
+  createdAt: Date
+}
+
+export async function getAuditLogs(filter: AuditLogFilter): Promise<AuditLogEntry[]> {
+  const where: { action?: string; resourceType?: string; actorId?: string } = {}
   if (filter.action) where.action = filter.action
   if (filter.resourceType) where.resourceType = filter.resourceType
   if (filter.actorId) where.actorId = filter.actorId
 
-  return getPrisma().auditLog.findMany({
+  const results = await getPrisma().auditLog.findMany({
     where,
     orderBy: { createdAt: 'desc' },
     take: filter.limit || 50,
     skip: filter.offset || 0,
   })
+  return results.map(r => ({
+    ...r,
+    beforeState: r.beforeState as Record<string, unknown> | null,
+    afterState: r.afterState as Record<string, unknown> | null,
+  })) as AuditLogEntry[]
 }
 
 export async function getAuditLogStats(): Promise<{

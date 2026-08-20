@@ -4,11 +4,14 @@ import { localesEn as sharedEn, localesMs as sharedMs } from '../../../shared/sr
 const en = require('../locales/en.json')
 const ms = require('../locales/ms.json')
 
-function deepMerge(target: Record<string, any>, source: Record<string, any>): Record<string, any> {
+function deepMerge(
+  target: Record<string, unknown>,
+  source: Record<string, unknown>,
+): Record<string, unknown> {
   const result = { ...target }
   for (const [key, value] of Object.entries(source)) {
     if (value && typeof value === 'object' && !Array.isArray(value)) {
-      result[key] = deepMerge(target[key] || {}, value)
+      result[key] = deepMerge((target[key] as Record<string, unknown>) || {}, value as Record<string, unknown>)
     } else {
       result[key] = value
     }

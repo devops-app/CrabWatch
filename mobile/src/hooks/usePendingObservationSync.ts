@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { AppState } from 'react-native'
+import { AppState, Platform } from 'react-native'
 import * as Network from 'expo-network'
 import { api } from '../services/api'
 import { useObservationStore, type PendingObservation } from '../store/observationStore'
@@ -28,15 +28,36 @@ export function usePendingObservationSync() {
     }
     void checkConnectivity()
 
-    const subscription = Network.addNetworkStateListener((state) => {
-      isConnectedRef.current = state.isInternetReachable ?? state.isConnected ?? false
-      if (isConnectedRef.current && pendingObservations.length > 0) {
-        void syncPending()
+    // expo-network v5 removed addNetworkStateListener.
+    // Use AppState changes + periodic polling as fallback for connectivity monitoring.
+    const appSub = AppState.addEventListener('change', async (state) => {
+      if (state === 'active') {
+        const netState = await Network.getNetworkStateAsync()
+        isConnectedRef.current = netState.isInternetReachable ?? netState.isConnected ?? false
+        if (isConnectedRef.current && pendingObservations.length > 0) {
+          void syncPending()
+        }
       }
     })
 
+    // On iOS, NetworkInformation API isn't available via expo-network listeners,
+    // so poll periodically when app is in background with pending observations.
+    let pollInterval: ReturnType<typeof setInterval> | null = null
+    if (Platform.OS === 'ios' && pendingObservations.length > 0) {
+      pollInterval = setInterval(async () => {
+        const netState = await Network.getNetworkStateAsync()
+        isConnectedRef.current = netState.isInternetReachable ?? netState.isConnected ?? false
+        if (isConnectedRef.current && pendingObservations.length > 0) {
+          void syncPending()
+        }
+      }, SYNC_INTERVAL_MS)
+    }
+
     return () => {
-      subscription.remove()
+      appSub.remove()
+      if (pollInterval) {
+        clearInterval(pollInterval)
+      }
     }
   }, [pendingObservations.length])
 

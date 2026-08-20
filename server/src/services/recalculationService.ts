@@ -43,8 +43,19 @@ export interface RecalculationJobStatus {
   error?: string
 }
 
-// In-memory job tracking
+// In-memory job tracking with max-size eviction (LRU-style)
 const jobs = new Map<string, RecalculationJobStatus>()
+const MAX_JOBS = 50
+
+function setJob(jobId: string, status: RecalculationJobStatus): void {
+  if (jobs.size >= MAX_JOBS && !jobs.has(jobId)) {
+    const oldestKey = jobs.keys().next().value
+    if (oldestKey !== undefined) {
+      jobs.delete(oldestKey)
+    }
+  }
+  jobs.set(jobId, status)
+}
 
 /**
  * Recalculate user XP from XPTransaction ledger and compare against stored totalXP.
@@ -64,7 +75,7 @@ export async function recalculateXP(params: RecalculationParams, adminId?: strin
     discrepancies: 0,
     startedAt: startedAt.toISOString(),
   }
-  jobs.set(jobId, jobStatus)
+  setJob(jobId, jobStatus)
 
   try {
     const users = params.userId

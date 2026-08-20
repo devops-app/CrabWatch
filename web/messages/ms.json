@@ -880,6 +880,9 @@
     "approve": "Sahkan",
     "reject": "Tolak",
     "cancel": "Batal",
+    "approveSuccess": "Pemerhatian berjaya disahkan",
+    "rejectSuccess": "Pemerhatian ditolak",
+    "validationFailed": "Pengesahan gagal. Sila cuba lagi.",
     "fullScreen": "Pemerhatian skrin penuh",
     "viewPhoto": "Lihat gambar {index} skrin penuh",
     "photoAlt": "Gambar pemerhatian {index}",
@@ -1265,7 +1268,16 @@
       },
       "backupCreated": "Sandaran dicipta: {file} ({size})",
       "deletedFlash": "Dipadam: {file}",
-      "loadFailed": "Gagal memuat sandaran"
+      "loadFailed": "Gagal memuat sandaran",
+      "exportCsv": {
+        "title": "Eksport CSV",
+        "exporting": "Mengeksport...",
+        "observations": "Observasi",
+        "species": "Spesies",
+        "users": "Pengguna",
+        "exportSuccess": "CSV dieksport untuk {table}",
+        "exportFailed": "Gagal mengeksport CSV"
+      }
     },
     "engagement": {
       "title": "Pengurusan Kelibatan",

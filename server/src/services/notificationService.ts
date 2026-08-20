@@ -1,6 +1,7 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, NotificationChannel as PrismaNotificationChannel } from '@prisma/client'
 import { getContainer } from './container'
 import { getServerI18n } from '../config/i18n'
+import logger from '../utils/logger'
 
 let _prisma: PrismaClient
 function getPrisma(): PrismaClient {
@@ -47,7 +48,7 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
     const delivery = await getPrisma().notificationDelivery.create({
       data: {
         userId: payload.userId,
-        channel: payload.channel as any,
+        channel: payload.channel as PrismaNotificationChannel,
         category,
         title: payload.title,
         body: payload.body,
@@ -73,7 +74,7 @@ export async function sendNotification(payload: NotificationPayload): Promise<vo
         break
     }
   } catch (error) {
-    console.error('Failed to send notification:', error)
+    logger.error({ err: error }, 'Failed to send notification')
     // Non-blocking - don't throw
   }
 }
@@ -107,7 +108,7 @@ async function sendPushNotification(payload: NotificationPayload, deliveryId: st
           data: payload.data || {},
         })
       } catch (error) {
-        console.error(`Failed to send push to token ${token.token}:`, error)
+        logger.error({ err: error, token: token.token }, 'Failed to send push to token')
       }
     }
 
@@ -116,7 +117,7 @@ async function sendPushNotification(payload: NotificationPayload, deliveryId: st
       data: { status: 'SENT', sentAt: new Date() },
     })
   } catch (error) {
-    console.error('Push notification error:', error)
+    logger.error({ err: error }, 'Push notification error')
     await getPrisma().notificationDelivery.update({
       where: { id: deliveryId },
       data: { status: 'FAILED', failureReason: String(error) },
@@ -158,7 +159,7 @@ async function sendEmailNotification(payload: NotificationPayload, deliveryId: s
       })
     } catch { /* delivery record may not exist */ }
   } catch (error) {
-    console.error('Email notification error:', error)
+    logger.error({ err: error }, 'Email notification error')
     await getPrisma().notificationDelivery.update({
       where: { id: deliveryId },
       data: { status: 'FAILED', failureReason: String(error) },
@@ -168,7 +169,18 @@ async function sendEmailNotification(payload: NotificationPayload, deliveryId: s
 
 // ==================== SOCIAL FEATURES ====================
 
-export async function getTopContributors(limit = 10): Promise<any[]> {
+export interface TopContributor {
+  id: string
+  name: string
+  avatar: string | null
+  approvedCount: number
+  totalSubmissions: number
+  level: number
+  title: string
+  totalXP: number
+}
+
+export async function getTopContributors(limit = 10): Promise<TopContributor[]> {
   const users = await getPrisma().user.findMany({
     where: { approvedCount: { gt: 0 } },
     orderBy: { approvedCount: 'desc' },
@@ -188,7 +200,25 @@ export async function getTopContributors(limit = 10): Promise<any[]> {
   return users
 }
 
-export async function getUserStats(userId: string): Promise<any> {
+export interface UserStats {
+  id: string
+  name: string
+  avatar: string | null
+  approvedCount: number
+  totalSubmissions: number
+  level: number
+  title: string
+  totalXP: number
+  speciesCount: number
+  recentObservations: Array<{
+    id: string
+    photos: unknown
+    createdAt: Date
+    species: { commonName: string; scientificName: string }
+  }>
+}
+
+export async function getUserStats(userId: string): Promise<UserStats | null> {
   const user = await getPrisma().user.findUnique({
     where: { id: userId },
     select: {

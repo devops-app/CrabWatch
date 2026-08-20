@@ -1,4 +1,5 @@
 import prisma from '../config/database'
+import logger from '../utils/logger'
 
 const DEFAULT_RULES = [
   { actionType: 'OBSERVATION_SUBMIT', name: 'Default', description: 'XP awarded when user submits an observation', xpReward: 5 },
@@ -47,7 +48,7 @@ async function seedGamificationRules(): Promise<void> {
       },
     })
   }
-  console.log(`[SEED] GamificationRules: ${DEFAULT_RULES.length} rules upserted`)
+  logger.info({ count: DEFAULT_RULES.length }, '[SEED] GamificationRules upserted')
 }
 
 async function seedLevelConfigs(): Promise<void> {
@@ -62,7 +63,7 @@ async function seedLevelConfigs(): Promise<void> {
       },
     })
   }
-  console.log(`[SEED] LevelConfigs: ${DEFAULT_LEVELS.length} levels upserted`)
+  logger.info({ count: DEFAULT_LEVELS.length }, '[SEED] LevelConfigs upserted')
 }
 
 async function seedOnboardingFlow(): Promise<void> {
@@ -77,7 +78,7 @@ async function seedOnboardingFlow(): Promise<void> {
       steps: DEFAULT_ONBOARDING_STEPS,
     },
   })
-  console.log('[SEED] OnboardingFlow: default_v1 upserted')
+  logger.info('[SEED] OnboardingFlow: default_v1 upserted')
 }
 
 async function seedMissionDefinitions(): Promise<void> {
@@ -146,7 +147,7 @@ async function seedMissionDefinitions(): Promise<void> {
       },
     })
   }
-  console.log(`[SEED] MissionDefinitions: ${missions.length} missions upserted`)
+  logger.info({ count: missions.length }, '[SEED] MissionDefinitions upserted')
 }
 
 async function seedDefaultAchievements(): Promise<void> {
@@ -188,7 +189,7 @@ async function seedDefaultAchievements(): Promise<void> {
       },
     })
   }
-  console.log(`[SEED] Achievements: ${achievements.length} achievements upserted`)
+  logger.info({ count: achievements.length }, '[SEED] Achievements upserted')
 }
 
 async function isEngagementFoundationSeeded(): Promise<boolean> {
@@ -223,7 +224,7 @@ export async function seedEngagement(): Promise<void> {
   try {
     const alreadySeeded = await isEngagementFoundationSeeded()
     if (alreadySeeded) {
-      console.log('[SEED] Engagement foundation already present, skipping startup seed')
+      logger.info('[SEED] Engagement foundation already present, skipping startup seed')
       return
     }
 
@@ -232,9 +233,9 @@ export async function seedEngagement(): Promise<void> {
     await seedOnboardingFlow()
     await seedMissionDefinitions()
     await seedDefaultAchievements()
-    console.log('[SEED] Engagement foundation seeded successfully')
+    logger.info('[SEED] Engagement foundation seeded successfully')
   } catch (error) {
-    console.error('[SEED] Error seeding engagement data:', error)
+    logger.error({ err: error }, '[SEED] Error seeding engagement data')
   }
 }
 

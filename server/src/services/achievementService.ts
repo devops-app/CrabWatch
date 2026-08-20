@@ -43,11 +43,14 @@ export async function getAchievements(userId: string): Promise<AchievementProgre
 
   const unlockedMap = new Map(userAchievements.map((ua) => [ua.achievementId, ua.earnedAt]))
 
+  // Batch all user stats in a single pass to eliminate N+1 queries
+  const stats = await batchUserStats(userId)
+
   const results: AchievementProgress[] = []
 
   for (const achievement of achievements) {
     const unlocked = unlockedMap.has(achievement.id)
-    const progress = await calculateAchievementProgress(userId, achievement)
+    const progress = calculateProgressFromStats(stats, achievement)
 
     if (!achievement.isHidden || unlocked) {
       results.push({
@@ -69,6 +72,104 @@ export async function getAchievements(userId: string): Promise<AchievementProgre
   }
 
   return results
+}
+
+/**
+ * Batch-fetch all user stats needed for achievement progress in a single query pass.
+ * Eliminates N+1 queries when checking multiple achievements.
+ */
+interface UserStatsBatch {
+  totalSubmissions: number
+  speciesCount: number
+  longestStreak: number
+  approvedCount: number
+  level: number
+  nightObservations: number
+  weekendObservations: number
+}
+
+async function batchUserStats(userId: string): Promise<UserStatsBatch> {
+  // Run independent queries in parallel
+  const [totalSubmissions, speciesGroups, user, approvedCount, nightObs, allObs] = await Promise.all([
+    getPrisma().observation.count({ where: { userId } }),
+    getPrisma().observation.groupBy({
+      by: ['speciesId'],
+      where: { userId },
+      _count: { speciesId: true },
+    }),
+    getPrisma().user.findUnique({
+      where: { id: userId },
+      select: { longestStreak: true, level: true },
+    }),
+    getPrisma().observation.count({
+      where: { userId, status: 'APPROVED' },
+    }),
+    getPrisma().observation.count({
+      where: {
+        userId,
+        AND: [
+          { createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
+          { createdAt: { lt: new Date(new Date().setHours(1, 0, 0, 0)) } },
+        ],
+      },
+    }),
+    getPrisma().observation.findMany({
+      where: { userId },
+      select: { createdAt: true },
+    }),
+  ])
+
+  const weekendObservations = allObs.filter((o) => {
+    const day = new Date(o.createdAt).getDay()
+    return day === 0 || day === 6
+  }).length
+
+  return {
+    totalSubmissions,
+    speciesCount: speciesGroups.length,
+    longestStreak: user?.longestStreak || 0,
+    approvedCount,
+    level: user?.level || 1,
+    nightObservations: nightObs,
+    weekendObservations,
+  }
+}
+
+/**
+ * Synchronous progress calculation from pre-fetched stats.
+ * Zero DB calls — all data comes from the batched stats object.
+ */
+function calculateProgressFromStats(
+  stats: UserStatsBatch,
+  achievement: any
+): { current: number; target: number } {
+  const requirements = achievement.requirements as any[]
+  if (!requirements || requirements.length === 0) {
+    return { current: 0, target: 1 }
+  }
+
+  const req = requirements[0]
+  const field = req.field
+  const target = req.value
+
+  switch (field) {
+    case 'totalSubmissions':
+      return { current: stats.totalSubmissions, target }
+    case 'speciesCount':
+      return { current: stats.speciesCount, target }
+    case 'longestStreak':
+      return { current: stats.longestStreak, target }
+    case 'approvedCount':
+      return { current: stats.approvedCount, target }
+    case 'level':
+      return { current: stats.level, target }
+    case 'nightObservations':
+      return { current: stats.nightObservations, target }
+    case 'weekendObservations':
+      return { current: stats.weekendObservations, target }
+    default:
+      return { current: 0, target }
+  }
 }
 
 export async function getUnlockedAchievements(userId: string): Promise<AchievementProgress[]> {

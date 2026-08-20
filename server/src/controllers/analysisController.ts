@@ -31,6 +31,10 @@ function startCleanupTimer() {
     const now = Date.now()
     for (const [userId, session] of activeSessions.entries()) {
       if (now - session.lastActive > ANALYSIS_BLOB_TTL_MS) {
+        logger.info(
+          { userId, sessionId: session.sessionId, blobCount: session.blobUrls.length },
+          'Analysis blob cleanup timer: deleting expired analysis blobs'
+        )
         cleanupAnalysisBlobs(session.blobUrls).catch(() => {})
         activeSessions.delete(userId)
       }
@@ -110,7 +114,7 @@ async function ensureSpeciesExists(result: CrabAnalysisResult): Promise<void> {
   const commonName = sanitizeInput(commonMatch ? commonMatch[1] : result.speciesId.replace(/-/g, ' '), 100)
 
   if (!scientificName || !commonName) {
-    console.warn('ensureSpeciesExists: Invalid species name from AI, skipping upsert')
+    logger.warn({ scientificName, commonName }, 'ensureSpeciesExists: Invalid species name from AI, skipping upsert')
     return
   }
 

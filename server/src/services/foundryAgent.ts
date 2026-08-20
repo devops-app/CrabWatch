@@ -1,10 +1,11 @@
 import { randomUUID } from 'crypto'
 import { isSafeImageUrl } from '../utils/urlValidation'
-import { BlobSASPermissions } from '@azure/storage-blob'
+import { BlobSASPermissions, BlockBlobClient } from '@azure/storage-blob'
 import { getBlobService } from '../services/upload'
 import { buildAnalysisBlobPath } from '../utils/blobPath'
 import { CrabAnalysisRequest, CrabAnalysisResult } from '@crabwatch/shared'
 import { getContainer } from './container'
+import logger from '../utils/logger'
 
 const ALLOWED_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic']
 
@@ -261,7 +262,7 @@ export async function uploadAnalysisPhotos(
 
     const readSasUrl = await blobClient.generateSasUrl({
       startsOn: new Date(Date.now() - 2 * 60 * 1000),
-      expiresOn: new Date(Date.now() + 20 * 60 * 1000),
+      expiresOn: new Date(Date.now() + 60 * 60 * 1000),
       permissions: BlobSASPermissions.parse('r'),
     })
 
@@ -347,11 +348,11 @@ export async function analyzeCrabWithAgent(
       throw new Error(`Agent analysis failed: ${response.status} ${errorText}`)
     }
 
-    const body: any = await response.json()
+    const body = await response.json() as { output?: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }> }
     let content: string
 
-    const firstMessage = body.output?.find((item: any) => item?.type === 'message')
-    const firstTextPart = firstMessage?.content?.find((part: any) => part?.type === 'output_text')
+    const firstMessage = body.output?.find((item) => item?.type === 'message')
+    const firstTextPart = firstMessage?.content?.find((part) => part?.type === 'output_text')
     if (typeof firstTextPart?.text === 'string') {
       content = firstTextPart.text
     } else {
@@ -435,7 +436,7 @@ export async function detectView(
       }
     }
 
-    const body: any = await response.json()
+    const body = await response.json() as { output?: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }> }
     const content = await parseAgentResponse(body)
     const parsed = JSON.parse(extractJson(content))
 
@@ -499,6 +500,34 @@ export interface BlobCopyResult {
   cleanedUpUrls: string[]
 }
 
+async function downloadBlobWithRetry(
+  sourceBlobClient: BlockBlobClient,
+  maxRetries: number = 2
+): Promise<Buffer> {
+  let lastError: Error | null = null
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const download = await sourceBlobClient.download()
+      const chunks: Buffer[] = []
+      for await (const chunk of download.readableStreamBody!) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+      }
+      return Buffer.concat(chunks)
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err))
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt - 1) * 1000
+        logger.warn(
+          { attempt, maxRetries, delayMs: delay, error: lastError.message },
+          'copyAnalysisBlobsToObservation: download retry'
+        )
+        await new Promise((resolve) => setTimeout(resolve, delay))
+      }
+    }
+  }
+  throw lastError || new Error('Download failed after retries')
+}
+
 export async function copyAnalysisBlobsToObservation(
   blobUrls: string[],
   userId: string,
@@ -526,12 +555,7 @@ export async function copyAnalysisBlobsToObservation(
       const sourceBlobClient = containerClient.getBlockBlobClient(sourceBlobName)
       const destBlobClient = containerClient.getBlockBlobClient(destBlobName)
 
-      const download = await sourceBlobClient.download()
-      const chunks: Buffer[] = []
-      for await (const chunk of download.readableStreamBody!) {
-        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
-      }
-      const buffer = Buffer.concat(chunks)
+      const buffer = await downloadBlobWithRetry(sourceBlobClient)
 
       const extToType: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', heic: 'image/heic' }
       const contentType = extToType[ext.toLowerCase()] || 'image/jpeg'
@@ -548,7 +572,12 @@ export async function copyAnalysisBlobsToObservation(
 
       observationUrls.push(sasUrl)
       cleanedUpUrls.push(url)
-    } catch {
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      logger.warn(
+        { sourceUrl: url, userId, observationId, error: errorMessage },
+        'copyAnalysisBlobsToObservation: copy failed — falling back to original /analysis/ URL'
+      )
       observationUrls.push(url)
     }
   }

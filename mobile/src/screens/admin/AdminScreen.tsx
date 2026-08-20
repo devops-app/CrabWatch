@@ -188,7 +188,7 @@ export function AdminScreen() {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [flash])
+  }, [flash, usersPage, usersSearch, usersRoleFilter, deletedUsersPage])
 
   useEffect(() => {
     setLoading(true)
@@ -230,6 +230,40 @@ export function AdminScreen() {
         },
       ]
     )
+  }
+
+  const handleExportCsv = () => {
+    Alert.alert(
+      t('backup.exportCsv'),
+      t('backup.selectTable'),
+      [
+        { text: t('cancel', { ns: 'common' }), style: 'cancel' },
+        {
+          text: t('backup.observations'),
+          onPress: () => runExportCsv('observations'),
+        },
+        {
+          text: t('backup.species'),
+          onPress: () => runExportCsv('species'),
+        },
+        {
+          text: t('backup.users'),
+          onPress: () => runExportCsv('users'),
+        },
+      ]
+    )
+  }
+
+  const runExportCsv = async (table: 'observations' | 'species' | 'users') => {
+    setActionLoading(true)
+    try {
+      await api.exportCsv(table)
+      flash(t('backup.exportSuccess'), 'success')
+    } catch (err: unknown) {
+      flash(err instanceof Error ? err.message : t('backup.exportFailed'), 'error')
+    } finally {
+      setActionLoading(false)
+    }
   }
 
   const handleCleanup = () => {
@@ -804,19 +838,21 @@ export function AdminScreen() {
           <Text style={styles.actionBtnText}>{t('search') || 'Search'}</Text>
         </TouchableOpacity>
       </View>
-      <View style={[styles.toolbar, { marginBottom: 8 }]}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
         <Text style={{ fontSize: 14, color: COLORS.text, marginRight: 8 }}>{t('users.role') || 'Role'}:</Text>
-        {['', 'user', 'researcher', 'admin'].map((role) => (
-          <TouchableOpacity
-            key={role || 'all'}
-            style={[styles.roleOption, usersRoleFilter === role && styles.roleOptionActive]}
-            onPress={() => { setUsersRoleFilter(role); setUsersPage(1); loadTabData('users', 'active') }}
-          >
-            <Text style={[styles.roleOptionText, usersRoleFilter === role && styles.roleOptionTextActive]}>
-              {role ? (role === 'user' ? t('users.roles.user') : role === 'researcher' ? t('users.roles.researcher') : t('users.roles.admin')) : (t('users.roles.all') || 'All')}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        <View style={{ flexDirection: 'row', flex: 1, gap: 6 }}>
+          {['', 'user', 'researcher', 'admin'].map((role) => (
+            <TouchableOpacity
+              key={role || 'all'}
+              style={[styles.roleOption, usersRoleFilter === role && styles.roleOptionActive]}
+              onPress={() => { setUsersRoleFilter(role); setUsersPage(1); loadTabData('users', 'active') }}
+            >
+              <Text style={[styles.roleOptionText, usersRoleFilter === role && styles.roleOptionTextActive]}>
+                {role ? (role === 'user' ? t('users.roles.user') : role === 'researcher' ? t('users.roles.researcher') : t('users.roles.admin')) : (t('users.roles.all') || 'All')}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
       {(usersSearch || usersRoleFilter) && (
         <View style={{ marginBottom: 8, alignItems: 'center' }}>
@@ -1594,11 +1630,21 @@ variant="secondary" />
   const renderBackup = () => (
     <View style={styles.container}>
       <View style={styles.toolbar}>
-       <Button
-          title={t('backup.create')}
-          onPress={handleBackup}
-          loading={actionLoading}
-        />
+        <View style={{ flexDirection: 'row', gap: 8, flex: 1 }}>
+          <Button
+            title={t('backup.create')}
+            onPress={handleBackup}
+            loading={actionLoading}
+            style={{ flex: 1 }}
+          />
+          <Button
+            title={t('backup.exportCsv')}
+            onPress={handleExportCsv}
+            loading={actionLoading}
+            variant="secondary"
+            style={{ flex: 1 }}
+          />
+        </View>
       </View>
       <FlatList
         data={backups}

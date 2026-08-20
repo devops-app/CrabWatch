@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
+import { useRouter } from '@/i18n/navigation'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import type { CrabAnalysisResult, PhotoView, QualityIssueCode, SpeciesResponse } from '@crabwatch/shared'
@@ -233,6 +234,7 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
   const t = useTranslations('capture.client')
   const tCapture = useTranslations('capture')
   const pathname = usePathname()
+  const router = useRouter()
   const prevPathnameRef = useRef<string | null>(null)
   const [coinType, setCoinType] = useState('')
   const [coinSelected, setCoinSelected] = useState(false)
@@ -347,7 +349,7 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
       setFlash({ tone: 'error', text: t('editFailed') })
       setEditObservationId(null)
     })
-  }, [])
+  }, [pathname, t])
 
   const current = CAPTURE_STEPS[currentStep]
   const currentView = current.key
@@ -402,6 +404,7 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
     setShowFullscreen(false)
     setFullscreenPhoto(null)
     setWebcamWarning(null)
+    setEditObservationId(null)
     setMapViewport({
       latitude: MALAYSIA_BOUNDS.center.lat,
       longitude: MALAYSIA_BOUNDS.center.lng,
@@ -421,7 +424,7 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
   }, [])
 
   useEffect(() => {
-    if (prevPathnameRef.current && prevPathnameRef.current !== '/dashboard/capture' && pathname === '/dashboard/capture') {
+    if (prevPathnameRef.current && prevPathnameRef.current !== pathname && pathname.endsWith('/dashboard/capture')) {
       resetState()
     }
     prevPathnameRef.current = pathname
@@ -912,7 +915,7 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
         resetState()
         setEditObservationId(null)
         window.history.replaceState(null, '', window.location.pathname)
-        setFlash({ tone: 'success', text: t('editSuccess') })
+        router.push(`/dashboard/observation/${editObservationId}`)
       } else {
         setSubmitted(true)
       }
