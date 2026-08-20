@@ -593,11 +593,16 @@ describe('Swagger Endpoints', () => {
   })
 
   describe('Swagger path details', () => {
-    let swaggerSpec: Record<string, unknown>
+    // Swagger/OpenAPI operation objects are untyped JSON from the docs endpoint.
+    interface SwaggerSpec {
+      paths: Record<string, Record<string, any>>
+      [key: string]: unknown
+    }
+    let swaggerSpec: SwaggerSpec
 
     beforeAll(async () => {
       const res = await request(app).get('/api/v1/docs-json')
-      swaggerSpec = res.body
+      swaggerSpec = res.body as SwaggerSpec
     })
 
     it('should define login endpoint with POST', () => {

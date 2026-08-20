@@ -1,8 +1,14 @@
-import { PrismaClient } from '@prisma/client'
+import { Achievement, PrismaClient } from '@prisma/client'
 import { getContainer } from './container'
 import { awardXP } from './rewardEngine'
 import { sendNotification } from './notificationService'
 import { getServerI18n } from '../config/i18n'
+
+// Shape of a single achievement requirement stored in the JSON `requirements` field
+interface AchievementRequirement {
+  field: string
+  value: number
+}
 
 let _prisma: PrismaClient
 function getPrisma(): PrismaClient {
@@ -141,9 +147,9 @@ async function batchUserStats(userId: string): Promise<UserStatsBatch> {
  */
 function calculateProgressFromStats(
   stats: UserStatsBatch,
-  achievement: any
+  achievement: Achievement
 ): { current: number; target: number } {
-  const requirements = achievement.requirements as any[]
+  const requirements: AchievementRequirement[] = (achievement.requirements as unknown as AchievementRequirement[]) || []
   if (!requirements || requirements.length === 0) {
     return { current: 0, target: 1 }
   }
@@ -318,9 +324,9 @@ export async function awardAchievementManually(
 
 export async function calculateAchievementProgress(
   userId: string,
-  achievement: any
+  achievement: Achievement
 ): Promise<{ current: number; target: number }> {
-  const requirements = achievement.requirements as any[]
+  const requirements: AchievementRequirement[] = (achievement.requirements as unknown as AchievementRequirement[]) || []
   if (!requirements || requirements.length === 0) {
     return { current: 0, target: 1 }
   }

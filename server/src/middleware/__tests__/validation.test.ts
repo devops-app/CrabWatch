@@ -20,7 +20,7 @@ describe('Validation Middleware', () => {
     const mockSchema = {
       safeParse: jest.fn().mockReturnValue({ success: true }),
     }
-    const middleware = validate(mockSchema as ZodSchema<unknown>)
+    const middleware = validate(mockSchema as unknown as ZodSchema<unknown>)
     middleware(req as Request, res as Response, next)
 
     expect(mockSchema.safeParse).toHaveBeenCalledWith(req.body)
@@ -40,7 +40,7 @@ describe('Validation Middleware', () => {
         },
       }),
     }
-    const middleware = validate(mockSchema as ZodSchema<unknown>)
+    const middleware = validate(mockSchema as unknown as ZodSchema<unknown>)
     middleware(req as Request, res as Response, next)
 
     expect(res.status).toHaveBeenCalledWith(400)
@@ -62,7 +62,7 @@ describe('Validation Middleware', () => {
         error: { errors: [] },
       }),
     }
-    const middleware = validate(mockSchema as ZodSchema<unknown>)
+    const middleware = validate(mockSchema as unknown as ZodSchema<unknown>)
     middleware(req as Request, res as Response, next)
 
     expect(res.status).toHaveBeenCalledWith(400)

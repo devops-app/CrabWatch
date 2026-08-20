@@ -233,7 +233,7 @@ app.get('/api/v1/metrics/performance', docsAuthMiddleware, (_req, res) => {
 app.use(errorHandler)
 app.use(notFoundHandler)
 
-function scheduleJob(fn: () => Promise<any>, name: string, getNextRun: () => Date): void {
+function scheduleJob(fn: () => Promise<unknown>, name: string, getNextRun: () => Date): void {
   const nextRun = getNextRun()
   const delay = nextRun.getTime() - Date.now()
 

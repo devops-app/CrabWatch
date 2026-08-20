@@ -1332,7 +1332,7 @@
       "filter": {
         "all": "Semua",
         "unlocked": "\u2713 Dibuka",
-        "inProgress": "\u{1F504} Dalam Proses"
+        "inProgress": "🔔 Dalam Proses"
       },
       "category": {
         "OBSERVATION": "Pemerhatian",

@@ -560,6 +560,21 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Verified: `next build` passes cleanly for web.
 - Verified: `tsc --noEmit` passes cleanly for mobile.
 
+### Completed (Server Test Infrastructure + Type Safety)
+- Completed: Fixed mobile Jest test infrastructure — 34/34 suites, 354/354 tests passing
+- Completed: Fixed all 7 server controller test suites (asyncHandler 3-arg signature) — 66 tests green
+- Completed: Fixed 3 server middleware test suites (headers mocks) — 12 tests green
+- Completed: Fixed integration test `swaggerSpec` typing (compiles; runtime requires live PostgreSQL)
+- Completed: Fixed schemas test fixtures — 30 tests green
+- Completed: Fixed analytics service test DI container — 19 tests green
+- Completed: Removed stale `backup:db` script from root `package.json`
+- Completed: Eliminated all 65 `any` types across 20 server files (zero remaining in `server/src`)
+- Completed: `asyncHandler` signature tightened to `Promise<unknown>`; global express module declaration now types `req.dbUser`/`req.requestId` everywhere
+- Completed: Defined `UserStats` (rewardEngine) and `CommunityStats` (notificationService) interfaces; Zod `fieldErrors` → `ValidationError` array conversion in inviteController
+- Verified: `tsc --noEmit` passes cleanly across all 4 packages (shared, server, web, mobile)
+- Verified: Server unit tests — 12/12 suites, 154 tests passing (integration test requires live DB at localhost:5432)
+- Verified: Mobile tests — 34/34 suites, 354/354 tests passing
+
 ## Next Steps
 - Verify API deployment succeeds with fixed `shared/tsconfig.json`
 - Validate — Mobile staging build with `warn`/`soft_block`/`hard_block` quality gate configs

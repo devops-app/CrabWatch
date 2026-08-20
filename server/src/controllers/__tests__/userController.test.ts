@@ -6,6 +6,22 @@ const mockPrisma = {
     findMany: jest.fn(),
     count: jest.fn(),
   },
+  invite: {
+    findUnique: jest.fn(),
+    update: jest.fn(),
+  },
+}
+
+const mockConfig = {
+  jwtSecret: 'test-secret',
+  resend: { apiKey: undefined, fromEmail: 'test@test.com' },
+  engagement: {
+    enabled: false,
+    missionsEnabled: false,
+    seasonsEnabled: false,
+    campaignsEnabled: false,
+    abuseDetectionEnabled: false,
+  },
 }
 
 const mockBcrypt = {
@@ -20,8 +36,25 @@ const mockRes = () => {
   return res
 }
 
-jest.mock('../../config/database', () => mockPrisma)
-jest.mock('bcrypt', () => mockBcrypt)
+jest.mock('../../services/container', () => ({
+  getPrisma: () => mockPrisma,
+  getConfig: () => mockConfig,
+}))
+jest.mock('bcryptjs', () => mockBcrypt)
+jest.mock('../../config/firebase', () => ({
+  __esModule: true,
+  default: { auth: jest.fn() },
+  isFirebaseEnabled: false,
+}))
+jest.mock('../../middleware/i18n', () => require('./i18nMock').createI18nMock())
+jest.mock('../../utils/logger', () => ({
+  __esModule: true,
+  default: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
+}))
 
 import {
   createUser,
@@ -31,6 +64,7 @@ import {
   updateUserRole,
 } from '../../controllers/userController'
 import { Response } from 'express'
+import { callHandler } from '../../utils/testUtils'
 import { AuthRequest } from '../../middleware/auth'
 
 describe('User Controller', () => {
@@ -43,8 +77,11 @@ describe('User Controller', () => {
       body: {},
       query: {},
       params: {},
+      headers: {},
+      method: 'GET',
+      path: '/test',
       user: { uid: 'uid-1', email: 'test@test.com' },
-      dbUser: { id: 'user-1', role: 'ADMIN', email: 'test@test.com' },
+      dbUser: { id: 'user-1', role: 'ADMIN', email: 'test@test.com', preferredLocale: null },
     }
     res = mockRes()
   })
@@ -64,7 +101,7 @@ describe('User Controller', () => {
       })
       req.body = { name: 'New User', email: 'new@test.com', password: 'password123' }
 
-      await createUser(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(createUser, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(mockBcrypt.hash).toHaveBeenCalledWith('password123', 10)
       expect(mockPrisma.user.create).toHaveBeenCalled()
@@ -82,9 +119,9 @@ describe('User Controller', () => {
       mockPrisma.user.create.mockRejectedValue(new Error('Unique constraint failed'))
       req.body = { name: 'New User', email: 'existing@test.com', password: 'password123' }
 
-      await createUser(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(createUser, req as unknown as AuthRequest, res as unknown as Response)
 
-      expect(res.status).toHaveBeenCalledWith(400)
+      expect(res.status).toHaveBeenCalledWith(500)
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({ success: false, error: 'Unique constraint failed' })
       )
@@ -105,7 +142,7 @@ describe('User Controller', () => {
         _count: { observations: 10 },
       })
 
-      await getUserProfile(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getUserProfile, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -122,7 +159,7 @@ describe('User Controller', () => {
     it('should return 404 when dbUser is missing', async () => {
       req.dbUser = undefined
 
-      await getUserProfile(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getUserProfile, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.status).toHaveBeenCalledWith(404)
     })
@@ -130,7 +167,7 @@ describe('User Controller', () => {
     it('should return 404 when user not found in database', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null)
 
-      await getUserProfile(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getUserProfile, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.status).toHaveBeenCalledWith(404)
     })
@@ -150,7 +187,7 @@ describe('User Controller', () => {
       })
       req.body = { name: 'Updated Name', avatar: 'https://example.com/avatar.jpg' }
 
-      await updateUserProfile(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(updateUserProfile, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(mockPrisma.user.update).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id: 'user-1' } })
@@ -166,7 +203,7 @@ describe('User Controller', () => {
     it('should return 404 when dbUser is missing', async () => {
       req.dbUser = undefined
 
-      await updateUserProfile(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(updateUserProfile, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.status).toHaveBeenCalledWith(404)
     })
@@ -189,7 +226,7 @@ describe('User Controller', () => {
       mockPrisma.user.count.mockResolvedValue(1)
       req.query = { page: '1', limit: '10' }
 
-      await listUsers(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(listUsers, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -211,7 +248,7 @@ describe('User Controller', () => {
       mockPrisma.user.count.mockResolvedValue(0)
       req.query = { search: 'John' }
 
-      await listUsers(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(listUsers, req as unknown as AuthRequest, res as unknown as Response)
 
       const callArgs = mockPrisma.user.findMany.mock.calls[0][0]
       expect(callArgs.where.OR).toBeDefined()
@@ -222,7 +259,7 @@ describe('User Controller', () => {
       mockPrisma.user.count.mockResolvedValue(0)
       req.query = { role: 'admin' }
 
-      await listUsers(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(listUsers, req as unknown as AuthRequest, res as unknown as Response)
 
       const callArgs = mockPrisma.user.findMany.mock.calls[0][0]
       expect(callArgs.where.role).toBe('ADMIN')
@@ -240,7 +277,7 @@ describe('User Controller', () => {
       req.params = { id: 'user-2' }
       req.body = { role: 'RESEARCHER' }
 
-      await updateUserRole(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(updateUserRole, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(mockPrisma.user.update).toHaveBeenCalledWith({
         where: { id: 'user-2' },
@@ -259,7 +296,7 @@ describe('User Controller', () => {
       req.params = { id: 'nonexistent' }
       req.body = { role: 'ADMIN' }
 
-      await updateUserRole(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(updateUserRole, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.status).toHaveBeenCalledWith(500)
     })

@@ -3,6 +3,23 @@ import { AuthRequest } from '../middleware/auth'
 import { getPrisma, getConfig } from '../services/container'
 import { asyncHandler, UnauthorizedError, ValidationError, NotFoundError } from '../utils/errors'
 import { createTranslator } from '../middleware/i18n'
+import { OnboardingStepDto } from '@crabwatch/shared'
+
+// Local types for JSON fields
+interface OnboardingStepStatus {
+  step: string
+  title: string
+  description: string
+  actionType: string
+  xpReward: number
+  completed: boolean
+  completedAt: string | null
+}
+
+interface MissionCriterion {
+  value?: number
+  [key: string]: unknown
+}
 
 // ==================== ONBOARDING ====================
 
@@ -29,12 +46,12 @@ export const getOnboardingStatus = asyncHandler(async (req: AuthRequest, res: Re
     where: { userId },
   })
 
-  const steps: any[] = []
+  const steps: OnboardingStepStatus[] = []
   for (const flow of flows) {
-    const flowSteps = (flow.steps as any[]) || []
+    const flowSteps: OnboardingStepDto[] = (flow.steps as unknown as OnboardingStepDto[]) || []
     for (const step of flowSteps) {
       const userProgress = progress.find(
-        (p: any) => p.flowCode === flow.code && p.flowVersion === flow.version && p.stepKey === step.key
+        (p) => p.flowCode === flow.code && p.flowVersion === flow.version && p.stepKey === step.key
       )
       steps.push({
         step: step.key,
@@ -85,10 +102,10 @@ export const completeOnboardingStep = asyncHandler(async (req: AuthRequest, res:
     where: { active: true },
   })
 
-  let matchedFlow: any = null
+  let matchedFlow: (typeof flows)[number] | null = null
   for (const flow of flows) {
-    const flowSteps = (flow.steps as any[]) || []
-    const step = flowSteps.find((s: any) => s.key === stepKey)
+    const flowSteps: OnboardingStepDto[] = (flow.steps as unknown as OnboardingStepDto[]) || []
+    const step = flowSteps.find((s) => s.key === stepKey)
     if (step) {
       matchedFlow = flow
       break
@@ -148,7 +165,7 @@ export const getActiveMissions = asyncHandler(async (req: AuthRequest, res: Resp
     orderBy: { createdAt: 'asc' },
   })
 
-  const missionIds = missions.map((m: any) => m.id)
+  const missionIds = missions.map((m) => m.id)
   const userMissions = await db.userMission.findMany({
     where: {
       userId,
@@ -159,12 +176,12 @@ export const getActiveMissions = asyncHandler(async (req: AuthRequest, res: Resp
   const now = new Date()
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
-  const result = missions.map((mission: any) => {
-    const criteria = (mission.criteria as any[]) || []
+  const result = missions.map((mission) => {
+    const criteria: MissionCriterion[] = (mission.criteria as unknown as MissionCriterion[]) || []
     const targetCount = criteria.length > 0 ? (criteria[0].value || 1) : 1
 
     const userMission = userMissions.find(
-      (um: any) => um.missionId === mission.id && um.assignmentDate.toDateString() === todayStart.toDateString()
+      (um) => um.missionId === mission.id && um.assignmentDate.toDateString() === todayStart.toDateString()
     )
 
     return {
@@ -213,7 +230,7 @@ export const claimMission = asyncHandler(async (req: AuthRequest, res: Response)
   const now = new Date()
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
-  const criteria = (mission.criteria as any[]) || []
+  const criteria: MissionCriterion[] = (mission.criteria as unknown as MissionCriterion[]) || []
   const targetValue = criteria.length > 0 ? (criteria[0].value || 1) : 1
 
   const userMission = await db.userMission.upsert({
@@ -270,7 +287,7 @@ export const updateMissionProgress = asyncHandler(async (req: AuthRequest, res: 
     throw new NotFoundError(__('engagement.mission.notFound', 'engagement'))
   }
 
-  const criteria = (mission.criteria as any[]) || []
+  const criteria: MissionCriterion[] = (mission.criteria as unknown as MissionCriterion[]) || []
   const targetValue = criteria.length > 0 ? (criteria[0].value || 1) : 1
 
   let userMission = await db.userMission.findUnique({
@@ -315,7 +332,7 @@ export const updateMissionProgress = asyncHandler(async (req: AuthRequest, res: 
     await db.xPTransaction.create({
       data: {
         userId,
-        actionType: 'MISSION_COMPLETE' as any,
+        actionType: 'MISSION_COMPLETE' as const,
         deltaXP: mission.xpReward,
         sourceType: 'Mission',
         sourceId: mission.id,

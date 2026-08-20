@@ -107,8 +107,11 @@ describe('analysisController PR6.1', () => {
         views: ['dorsal'],
       },
       dbUser: {
+        id: 'test-user-id',
+        role: 'USER',
+        email: 'test@test.com',
         preferredLocale: 'en',
-      } as any,
+      },
     }
 
     res = createResponse()

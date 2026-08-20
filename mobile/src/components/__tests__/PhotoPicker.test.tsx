@@ -74,7 +74,7 @@ describe('PhotoPicker', () => {
     )
     const addBtn = container.querySelector('div[style*="dashed"]')
     fireEvent.click(addBtn!)
-    expect(alertSpy).toHaveBeenCalledWith('Add Photos', 'Choose a source', expect.any(Array))
+    expect(alertSpy).toHaveBeenCalledWith('Add photos', 'Choose a source', expect.any(Array))
   })
 
   it('calls onRemove when remove button is pressed', () => {

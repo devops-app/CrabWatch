@@ -22,7 +22,6 @@
         "test:e2e:setup": "pnpm --filter=server db:seed",
         "test:e2e:ci": "pnpm test:e2e:setup && concurrently -k -s first \"pnpm dev:server\" \"pnpm dev:web\" \"wait-on http://localhost:3001/health && pnpm test:e2e\"",
         "test:e2e:teardown": "pnpm --filter=server exec prisma db drop --force && docker compose down --remove-orphans",
-        "backup:db": "bash scripts/backup-db.sh",
         "clean": "pnpm -r exec rm -rf node_modules dist .next",
         "android": "expo run:android",
         "ios": "expo run:ios"

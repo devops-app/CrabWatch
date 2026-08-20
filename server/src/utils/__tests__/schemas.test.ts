@@ -2,68 +2,76 @@ import * as schemas from '../../utils/schemas'
 
 describe('Zod Schemas', () => {
   describe('registerSchema', () => {
+    const validRegistration = {
+      name: 'John Doe',
+      email: 'john@example.com',
+      phoneCode: '+60',
+      phoneNumber: '123456789',
+      addressLine1: '123 Street',
+      state: 'Kuala Lumpur',
+      postcode: '50000',
+      country: 'Malaysia',
+      password: 'password123',
+      consentAccepted: true,
+    }
+
     it('should validate valid registration data', () => {
-      const result = schemas.registerSchema.safeParse({
-        name: 'John Doe',
-        email: 'john@example.com',
-        password: 'password123',
-      })
+      const result = schemas.registerSchema.safeParse(validRegistration)
       expect(result.success).toBe(true)
     })
 
-    it('should validate with optional phone and address', () => {
+    it('should validate with optional addressLine2', () => {
       const result = schemas.registerSchema.safeParse({
-        name: 'John Doe',
-        email: 'john@example.com',
-        phone: '+60123456789',
-        address: '123 Street, Kuala Lumpur',
-        password: 'password123',
+        ...validRegistration,
+        addressLine2: 'Apt 4B',
       })
       expect(result.success).toBe(true)
     })
 
     it('should fail when name is empty', () => {
       const result = schemas.registerSchema.safeParse({
+        ...validRegistration,
         name: '',
-        email: 'john@example.com',
-        password: 'password123',
       })
       expect(result.success).toBe(false)
     })
 
     it('should fail when email is invalid', () => {
       const result = schemas.registerSchema.safeParse({
-        name: 'John Doe',
+        ...validRegistration,
         email: 'not-an-email',
-        password: 'password123',
       })
       expect(result.success).toBe(false)
     })
 
     it('should fail when password is too short', () => {
       const result = schemas.registerSchema.safeParse({
-        name: 'John Doe',
-        email: 'john@example.com',
+        ...validRegistration,
         password: '123',
       })
       expect(result.success).toBe(false)
     })
 
-    it('should fail when phone is too short', () => {
+    it('should fail when phoneNumber is too short', () => {
       const result = schemas.registerSchema.safeParse({
-        name: 'John Doe',
-        email: 'john@example.com',
-        phone: '12345',
-        password: 'password123',
+        ...validRegistration,
+        phoneNumber: '12345',
+      })
+      expect(result.success).toBe(false)
+    })
+
+    it('should fail when consentAccepted is not true', () => {
+      const result = schemas.registerSchema.safeParse({
+        ...validRegistration,
+        consentAccepted: false,
       })
       expect(result.success).toBe(false)
     })
 
     it('should not accept role field (prevents privilege escalation)', () => {
       const result = schemas.registerSchema.safeParse({
-        name: 'John Doe',
-        email: 'john@example.com',
-        password: 'password123',
+        ...validRegistration,
+        role: 'ADMIN',
       })
       expect(result.success).toBe(true)
       if (result.success) {

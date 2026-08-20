@@ -91,12 +91,12 @@ export async function recalculateXP(params: RecalculationParams, adminId?: strin
         select: { deltaXP: true },
       })
 
-      const correctXP = transactions.reduce((s: number, t: any) => s + t.deltaXP, 0)
-      const diff = correctXP - (user as any).totalXP
+      const correctXP = transactions.reduce((s: number, t) => s + t.deltaXP, 0)
+      const diff = correctXP - user.totalXP
 
       results.push({
         userId: user.id,
-        currentXP: (user as any).totalXP,
+        currentXP: user.totalXP,
         correctXP,
         diff,
       })
@@ -134,7 +134,7 @@ export async function recalculateXP(params: RecalculationParams, adminId?: strin
         actorId: adminId || null,
         action: 'RECALCULATE_XP',
         resourceType: 'System',
-        afterState: { mode: params.mode, totalUsers: users.length, discrepancies: results.filter(r => r.diff !== 0).length } as any,
+        afterState: { mode: params.mode, totalUsers: users.length, discrepancies: results.filter(r => r.diff !== 0).length },
         reason: params.reason || 'XP recalculation',
       },
     })
@@ -149,9 +149,9 @@ export async function recalculateXP(params: RecalculationParams, adminId?: strin
       totalUsers: users.length,
       results,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     jobStatus.status = 'failed'
-    jobStatus.error = error.message
+    jobStatus.error = error instanceof Error ? error.message : String(error)
     jobStatus.completedAt = new Date().toISOString()
     throw error
   }

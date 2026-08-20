@@ -265,7 +265,15 @@ export async function getUserStats(userId: string): Promise<UserStats | null> {
   }
 }
 
-export async function getCommunityStats(): Promise<any> {
+export interface CommunityStats {
+  totalUsers: number
+  totalObservations: number
+  totalSpecies: number
+  totalApproved: number
+  monthlyActivity: Array<{ month: string; count: number }>
+}
+
+export async function getCommunityStats(): Promise<CommunityStats> {
   const [totalUsers, totalObservations, totalSpecies, totalApproved] = await Promise.all([
     getPrisma().user.count(),
     getPrisma().observation.count(),

@@ -1,4 +1,5 @@
 import { Response } from 'express'
+import { Prisma, Translation } from '@prisma/client'
 import { AuthRequest } from '../middleware/auth'
 import { asyncHandler, AppError, NotFoundError, ValidationError, ConflictError } from '../utils/errors'
 import { getPrisma } from '../services/container'
@@ -6,7 +7,9 @@ import { createTranslator } from '../middleware/i18n'
 import { TRANSLATABLE_MODELS } from '../utils/i18n-prisma'
 
 // Audit log helper
-async function writeAuditLog(req: AuthRequest, action: string, resourceType: string, resourceId: string | null, beforeState: any, afterState: any, reason?: string): Promise<void> {
+type JsonState = Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput | undefined
+
+async function writeAuditLog(req: AuthRequest, action: string, resourceType: string, resourceId: string | null, beforeState: JsonState, afterState: JsonState, reason?: string): Promise<void> {
   const db = getPrisma()
   await db.auditLog.create({
     data: {
@@ -42,7 +45,7 @@ export const listTranslations = asyncHandler(async (req: AuthRequest, res: Respo
   const db = getPrisma()
   const { locale, resourceType, resourceId, field, page = '1', limit = '50' } = req.query
 
-  const where: any = {}
+  const where: Prisma.TranslationWhereInput = {}
   if (locale && typeof locale === 'string') where.locale = locale
   if (resourceType && typeof resourceType === 'string') where.resourceType = resourceType
   if (resourceId && typeof resourceId === 'string') where.resourceId = resourceId
@@ -114,14 +117,14 @@ export const createTranslation = asyncHandler(async (req: AuthRequest, res: Resp
       'TRANSLATION_CREATE',
       'Translation',
       translation.id,
-      null,
+      undefined,
       { locale, resourceType, resourceId, field },
       undefined
     )
 
     res.status(201).json({ success: true, data: translation })
-  } catch (error: any) {
-    if (error.code === 'P2002') {
+  } catch (error: unknown) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       throw new ConflictError(__('translation.duplicate', 'translation'))
     }
     throw error
@@ -183,7 +186,7 @@ export const deleteTranslation = asyncHandler(async (req: AuthRequest, res: Resp
     'Translation',
     id,
     { locale: existing.locale, resourceType: existing.resourceType, resourceId: existing.resourceId, field: existing.field, value: existing.value },
-    null,
+    undefined,
     undefined
   )
 
@@ -195,10 +198,14 @@ export const bulkCreateTranslations = asyncHandler(async (req: AuthRequest, res:
   const db = getPrisma()
   const { translations } = req.body
 
-  const results = {
-    created: [] as any[],
-    skipped: [] as any[],
-    errors: [] as any[],
+  const results: {
+    created: Translation[]
+    skipped: Array<Record<string, unknown>>
+    errors: Array<Record<string, unknown>>
+  } = {
+    created: [],
+    skipped: [],
+    errors: [],
   }
 
   for (const t of translations) {
@@ -216,8 +223,8 @@ export const bulkCreateTranslations = asyncHandler(async (req: AuthRequest, res:
         },
       })
       results.created.push(translation)
-    } catch (error: any) {
-      if (error.code === 'P2002') {
+    } catch (error: unknown) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         results.skipped.push({
           ...t,
           reason: 'duplicate',
@@ -225,7 +232,7 @@ export const bulkCreateTranslations = asyncHandler(async (req: AuthRequest, res:
       } else {
         results.errors.push({
           ...t,
-          reason: error.message,
+          reason: error instanceof Error ? error.message : String(error),
         })
       }
     }
@@ -237,7 +244,7 @@ export const bulkCreateTranslations = asyncHandler(async (req: AuthRequest, res:
       'TRANSLATION_BULK_CREATE',
       'Translation',
       null,
-      null,
+      undefined,
       { count: results.created.length, skipped: results.skipped.length, errors: results.errors.length },
       undefined
     )
@@ -284,7 +291,7 @@ export const upsertTranslation = asyncHandler(async (req: AuthRequest, res: Resp
     'TRANSLATION_UPSERT',
     'Translation',
     translation.id,
-    null,
+    undefined,
     { locale, resourceType, resourceId, field },
     undefined
   )

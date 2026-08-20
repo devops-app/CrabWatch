@@ -159,7 +159,7 @@ export const analyzeCrabHandler = asyncHandler(async (
     photoUrls,
     views: validViewList.length === photoUrls.length ? validViewList : Array(photoUrls.length).fill('dorsal'),
     coinType,
-    locale: detectLocale(req, (req as any).dbUser?.preferredLocale ?? null),
+    locale: detectLocale(req, req.dbUser?.preferredLocale ?? null),
   }
 
   const qualityResults = await Promise.all(analysisRequest.photoUrls.map((url) => assessServerImageQualityFromUrl(url)))

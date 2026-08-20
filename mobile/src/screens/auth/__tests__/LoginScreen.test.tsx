@@ -84,7 +84,7 @@ describe('LoginScreen', () => {
       target: { value: 'test@test.com' },
     })
     fireEvent.change(getByPlaceholderText('Enter your password'), {
-      target: { value: 'wrong' },
+      target: { value: 'wrongpass' },
     })
     fireEvent.click(getByText('Sign In'))
 

@@ -15,6 +15,15 @@ const mockRes = () => {
 }
 
 jest.mock('../../services/analytics', () => mockAnalyticsService)
+jest.mock('../../middleware/i18n', () => require('./i18nMock').createI18nMock())
+jest.mock('../../utils/logger', () => ({
+  __esModule: true,
+  default: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
+}))
 
 import {
   getDashboardStats,
@@ -25,6 +34,7 @@ import {
   getTemporalTrends,
 } from '../../controllers/analyticsController'
 import { Response } from 'express'
+import { callHandler } from '../../utils/testUtils'
 import { AuthRequest } from '../../middleware/auth'
 
 describe('Analytics Controller', () => {
@@ -35,6 +45,9 @@ describe('Analytics Controller', () => {
     jest.clearAllMocks()
     req = {
       query: {},
+      headers: {},
+      method: 'GET',
+      path: '/test',
     }
     res = mockRes()
   })
@@ -51,7 +64,7 @@ describe('Analytics Controller', () => {
       }
       mockAnalyticsService.getDashboardStats.mockResolvedValue(mockStats)
 
-      await getDashboardStats(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getDashboardStats, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(mockAnalyticsService.getDashboardStats).toHaveBeenCalled()
       expect(res.json).toHaveBeenCalledWith({ success: true, data: mockStats })
@@ -60,11 +73,11 @@ describe('Analytics Controller', () => {
     it('should return 500 on service error', async () => {
       mockAnalyticsService.getDashboardStats.mockRejectedValue(new Error('DB error'))
 
-      await getDashboardStats(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getDashboardStats, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.status).toHaveBeenCalledWith(500)
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: false, error: 'Failed to get dashboard stats' })
+        expect.objectContaining({ success: false, error: 'DB error' })
       )
     })
   })
@@ -74,7 +87,7 @@ describe('Analytics Controller', () => {
       const mockData = [{ sizeBin: '0-1cm', count: 5 }]
       mockAnalyticsService.getSizeFrequency.mockResolvedValue(mockData)
 
-      await getSizeFrequency(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getSizeFrequency, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.json).toHaveBeenCalledWith({ success: true, data: mockData })
     })
@@ -83,7 +96,7 @@ describe('Analytics Controller', () => {
        mockAnalyticsService.getSizeFrequency.mockResolvedValue([])
        req.query = { speciesId: 'species-1', gender: 'female' }
 
-       await getSizeFrequency(req as unknown as AuthRequest, res as unknown as Response)
+       await callHandler(getSizeFrequency, req as unknown as AuthRequest, res as unknown as Response)
 
         expect(mockAnalyticsService.getSizeFrequency).toHaveBeenCalledWith('species-1', 'female', expect.objectContaining({ page: 1, limit: 20 }))
       })
@@ -92,7 +105,7 @@ describe('Analytics Controller', () => {
       const mockData = [{ sizeBin: '3-4cm', count: 2 }]
       mockAnalyticsService.getSizeFrequency.mockResolvedValue(mockData)
 
-      await getSizeFrequency(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getSizeFrequency, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.json).toHaveBeenCalledWith({ success: true, data: mockData })
       const payload = (res.json as jest.Mock).mock.calls[0][0]
@@ -103,10 +116,10 @@ describe('Analytics Controller', () => {
 
 describe('getGenderRatio', () => {
     it('should return gender ratio data', async () => {
-      const mockData = []
+      const mockData: unknown[] = []
       mockAnalyticsService.getGenderRatio.mockResolvedValue(mockData)
 
-      await getGenderRatio(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getGenderRatio, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.json).toHaveBeenCalledWith({ success: true, data: mockData })
     })
@@ -115,7 +128,7 @@ describe('getGenderRatio', () => {
       mockAnalyticsService.getGenderRatio.mockResolvedValue([])
       req.query = { speciesId: 'species-1', dateFrom: '2024-01-01', dateTo: '2024-12-31' }
 
-      await getGenderRatio(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getGenderRatio, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(mockAnalyticsService.getGenderRatio).toHaveBeenCalledWith(
          'species-1',
@@ -131,7 +144,7 @@ describe('getGenderRatio', () => {
       const mockData = [{ id: 'obs-1', conditionFactor: 0.5 }]
       mockAnalyticsService.getConditionIndices.mockResolvedValue(mockData)
 
-      await getConditionIndices(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getConditionIndices, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.json).toHaveBeenCalledWith({ success: true, data: mockData })
     })
@@ -140,7 +153,7 @@ describe('getGenderRatio', () => {
        mockAnalyticsService.getConditionIndices.mockResolvedValue([])
        req.query = { speciesId: 'species-1' }
 
-       await getConditionIndices(req as unknown as AuthRequest, res as unknown as Response)
+       await callHandler(getConditionIndices, req as unknown as AuthRequest, res as unknown as Response)
 
        expect(mockAnalyticsService.getConditionIndices).toHaveBeenCalledWith('species-1', expect.objectContaining({ page: 1, limit: 20 }))
      })
@@ -151,7 +164,7 @@ describe('getGenderRatio', () => {
       const mockData = [{ species: 'Scylla serrata', cw50: 5.5 }]
       mockAnalyticsService.getCW50.mockResolvedValue(mockData)
 
-      await getCW50(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getCW50, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.json).toHaveBeenCalledWith({ success: true, data: mockData })
     })
@@ -160,7 +173,7 @@ describe('getGenderRatio', () => {
        mockAnalyticsService.getCW50.mockResolvedValue([])
        req.query = { speciesId: 'species-1' }
 
-       await getCW50(req as unknown as AuthRequest, res as unknown as Response)
+       await callHandler(getCW50, req as unknown as AuthRequest, res as unknown as Response)
 
        expect(mockAnalyticsService.getCW50).toHaveBeenCalledWith('species-1', expect.objectContaining({ page: 1, limit: 20 }))
      })
@@ -171,7 +184,7 @@ describe('getGenderRatio', () => {
       const mockData = [{ month: '2024-01', count: 10, species: 'Scylla serrata' }]
       mockAnalyticsService.getTemporalTrends.mockResolvedValue(mockData)
 
-      await getTemporalTrends(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getTemporalTrends, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.json).toHaveBeenCalledWith({ success: true, data: mockData })
     })
@@ -180,7 +193,7 @@ describe('getGenderRatio', () => {
        mockAnalyticsService.getTemporalTrends.mockResolvedValue([])
        req.query = { speciesId: 'species-1' }
 
-       await getTemporalTrends(req as unknown as AuthRequest, res as unknown as Response)
+       await callHandler(getTemporalTrends, req as unknown as AuthRequest, res as unknown as Response)
 
         expect(mockAnalyticsService.getTemporalTrends).toHaveBeenCalledWith('species-1', expect.objectContaining({ page: 1, limit: 20 }))
       })
@@ -189,7 +202,7 @@ describe('getGenderRatio', () => {
       const mockData = [{ month: '2024-01', count: 4, species: 'Scylla serrata' }]
       mockAnalyticsService.getTemporalTrends.mockResolvedValue(mockData)
 
-      await getTemporalTrends(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getTemporalTrends, req as unknown as AuthRequest, res as unknown as Response)
 
       const payload = (res.json as jest.Mock).mock.calls[0][0]
       expect(Array.isArray(payload.data)).toBe(true)

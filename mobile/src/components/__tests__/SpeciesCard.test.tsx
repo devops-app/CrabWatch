@@ -40,9 +40,9 @@ describe('SpeciesCard', () => {
     const { container } = render(
       <SpeciesCard species={mockSpecies} onPress={jest.fn()} />
     )
-    const images = container.querySelectorAll('div[data-testid], div[style]')
-    const imageDiv = Array.from(images).find(el => el.getAttribute('style')?.includes('72'))
-    expect(imageDiv).toBeTruthy()
+    const img = container.querySelector('img')
+    expect(img).toBeTruthy()
+    expect(img?.getAttribute('src')).toBe('https://example.com/crab1.jpg')
   })
 
   it('shows placeholder when no images', () => {

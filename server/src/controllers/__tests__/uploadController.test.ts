@@ -1,11 +1,15 @@
+const mockBlobClient = {
+  generateSasUrl: jest.fn(),
+  upload: jest.fn().mockResolvedValue(undefined),
+  url: 'https://example.com/blob',
+}
+
+const mockContainerClient = {
+  getBlockBlobClient: jest.fn().mockReturnValue(mockBlobClient),
+}
+
 const mockBlobService = {
-  getContainerClient: jest.fn().mockReturnValue({
-    getBlockBlobClient: jest.fn().mockReturnValue({
-      generateSasUrl: jest.fn(),
-      upload: jest.fn().mockResolvedValue(undefined),
-      url: 'https://example.com/blob',
-    }),
-  }),
+  getContainerClient: jest.fn().mockReturnValue(mockContainerClient),
 }
 
 const mockRes = () => {
@@ -18,10 +22,19 @@ const mockRes = () => {
 jest.mock('../../services/upload', () => ({
   getBlobService: jest.fn(() => mockBlobService),
 }))
+jest.mock('../../middleware/i18n', () => require('./i18nMock').createI18nMock())
+jest.mock('../../utils/logger', () => ({
+  __esModule: true,
+  default: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
+}))
 
 import { getUploadUrlHandler, uploadPhoto } from '../../controllers/uploadController'
 import { Response } from 'express'
-import type { File as MulterFile } from 'multer'
+import { callHandler } from '../../utils/testUtils'
 import { AuthRequest } from '../../middleware/auth'
 
 describe('Upload Controller', () => {
@@ -30,8 +43,15 @@ describe('Upload Controller', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockBlobService.getContainerClient.mockReturnValue(mockContainerClient)
+    mockContainerClient.getBlockBlobClient.mockReturnValue(mockBlobClient)
+    mockBlobClient.upload.mockResolvedValue(undefined)
+    mockBlobClient.generateSasUrl.mockResolvedValue('https://example.com/blob?sig=token')
     req = {
       body: {},
+      headers: {},
+      method: 'POST',
+      path: '/test',
       user: { uid: 'user-1', email: 'test@test.com' },
     }
     res = mockRes()
@@ -44,7 +64,7 @@ describe('Upload Controller', () => {
       )
       req.body = { fileName: 'photo.jpg', contentType: 'image/jpeg' }
 
-      await getUploadUrlHandler(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getUploadUrlHandler, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -61,7 +81,7 @@ describe('Upload Controller', () => {
     it('should return 400 when fileName is missing', async () => {
       req.body = { contentType: 'image/jpeg' }
 
-      await getUploadUrlHandler(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getUploadUrlHandler, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.status).toHaveBeenCalledWith(400)
       expect(res.json).toHaveBeenCalledWith(
@@ -75,7 +95,7 @@ describe('Upload Controller', () => {
     it('should return 400 when contentType is missing', async () => {
       req.body = { fileName: 'photo.jpg' }
 
-      await getUploadUrlHandler(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getUploadUrlHandler, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.status).toHaveBeenCalledWith(400)
     })
@@ -86,7 +106,7 @@ describe('Upload Controller', () => {
       )
       req.body = { fileName: 'my photo (1).jpg', contentType: 'image/jpeg' }
 
-      await getUploadUrlHandler(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getUploadUrlHandler, req as unknown as AuthRequest, res as unknown as Response)
 
       const fileName = (res.json as jest.Mock).mock.calls[0][0].data.fileName
       expect(fileName).not.toContain('my photo (1).jpg')
@@ -101,7 +121,7 @@ describe('Upload Controller', () => {
       )
       req.body = { fileName: 'photo.jpg', contentType: 'image/jpeg' }
 
-      await getUploadUrlHandler(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getUploadUrlHandler, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.status).toHaveBeenCalledWith(500)
     })
@@ -111,7 +131,7 @@ describe('Upload Controller', () => {
     it('should return error when file is missing', async () => {
       req.body = { fileName: 'photo.jpg', contentType: 'image/jpeg' }
 
-      await uploadPhoto(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(uploadPhoto, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -126,10 +146,10 @@ describe('Upload Controller', () => {
         buffer: Buffer.from('test-image-data'),
         mimetype: 'image/jpeg',
       }
-      req.file = mockFile as MulterFile
+      req.file = mockFile as unknown as AuthRequest['file']
       req.body = { fileName: 'photo.jpg', contentType: 'image/jpeg' }
 
-      await uploadPhoto(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(uploadPhoto, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(mockBlobService.getContainerClient().getBlockBlobClient().upload).toHaveBeenCalled()
       expect(res.json).toHaveBeenCalledWith(

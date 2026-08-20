@@ -34,7 +34,7 @@ describe('photoService', () => {
       expect(result).toBe('file://photo.jpg')
       expect(mockImagePicker.launchCameraAsync).toHaveBeenCalledWith(
         expect.objectContaining({
-          mediaTypes: 'images',
+          mediaTypes: ['images'],
           allowsEditing: true,
           quality: 0.8,
           aspect: [4, 3],

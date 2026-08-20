@@ -12,6 +12,10 @@ const mockImagePicker = {
     Videos: 'videos',
     ImagesAndVideos: 'imagesAndVideos',
   },
+  getCameraPermissionsAsync: jest.fn().mockResolvedValue({ granted: true, canAskAgain: true }),
+  getMediaLibraryPermissionsAsync: jest.fn().mockResolvedValue({ granted: true, canAskAgain: true }),
+  requestCameraPermissionsAsync: jest.fn().mockResolvedValue({ granted: true, canAskAgain: true }),
+  requestMediaLibraryPermissionsAsync: jest.fn().mockResolvedValue({ granted: true, canAskAgain: true }),
 }
 
 module.exports = mockImagePicker

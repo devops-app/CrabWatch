@@ -321,10 +321,21 @@ export async function updateStreak(userId: string, locale?: string): Promise<{ c
   }
 }
 
+export interface UserStats {
+  totalXP: number
+  level: number
+  title: string
+  currentStreak: number
+  longestStreak: number
+  approvedCount: number
+  totalSubmissions: number
+  xpToNextLevel: number
+}
+
 /**
  * Get computed user stats with XP-to-next-level.
  */
-export async function getUserStats(userId: string): Promise<any> {
+export async function getUserStats(userId: string): Promise<UserStats> {
   const user = await getPrisma().user.findUnique({ where: { id: userId } })
   if (!user) throw new Error('User not found')
 

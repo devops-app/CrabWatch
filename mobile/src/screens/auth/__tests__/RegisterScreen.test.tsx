@@ -66,19 +66,40 @@ describe('RegisterScreen', () => {
     fireEvent.change(getByPlaceholderText('your@email.com'), {
       target: { value: 'test@test.com' },
     })
+    fireEvent.change(getByPlaceholderText('123456789'), {
+      target: { value: '123456789' },
+    })
+    fireEvent.change(getByPlaceholderText('Street address'), {
+      target: { value: '123 Test St' },
+    })
+    fireEvent.change(getByPlaceholderText('State'), {
+      target: { value: 'Selangor' },
+    })
+    fireEvent.change(getByPlaceholderText('Postcode'), {
+      target: { value: '40000' },
+    })
     fireEvent.change(getByPlaceholderText('At least 8 characters'), {
       target: { value: 'password123' },
     })
     fireEvent.change(getByPlaceholderText('Re-enter your password'), {
       target: { value: 'password123' },
     })
+    fireEvent.click(getByText(/I agree to the/))
     fireEvent.click(getByText('Create Account'))
 
     await waitFor(() => {
       expect(authService.register).toHaveBeenCalledWith(
         'Test User',
         'test@test.com',
-        'password123'
+        'password123',
+        '+60',
+        '123456789',
+        '123 Test St',
+        undefined,
+        'Selangor',
+        '40000',
+        'MY',
+        true
       )
     })
   })
@@ -94,12 +115,25 @@ describe('RegisterScreen', () => {
     fireEvent.change(getByPlaceholderText('your@email.com'), {
       target: { value: 'test@test.com' },
     })
+    fireEvent.change(getByPlaceholderText('123456789'), {
+      target: { value: '123456789' },
+    })
+    fireEvent.change(getByPlaceholderText('Street address'), {
+      target: { value: '123 Test St' },
+    })
+    fireEvent.change(getByPlaceholderText('State'), {
+      target: { value: 'Selangor' },
+    })
+    fireEvent.change(getByPlaceholderText('Postcode'), {
+      target: { value: '40000' },
+    })
     fireEvent.change(getByPlaceholderText('At least 8 characters'), {
       target: { value: 'password123' },
     })
     fireEvent.change(getByPlaceholderText('Re-enter your password'), {
       target: { value: 'password123' },
     })
+    fireEvent.click(getByText(/I agree to the/))
     fireEvent.click(getByText('Create Account'))
 
     await waitFor(() => {

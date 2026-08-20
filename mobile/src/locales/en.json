@@ -1337,7 +1337,7 @@
       "filter": {
         "all": "All",
         "unlocked": "\u2713 Unlocked",
-        "inProgress": "\u{1F504} In Progress"
+        "inProgress": "🔔 In Progress"
       },
       "category": {
         "OBSERVATION": "Observation",
