@@ -18,6 +18,7 @@ jest.mock('@/hooks/useAuth', () => ({
 jest.mock('@/services/api', () => ({
   api: {
     getDashboardStats: jest.fn(),
+    getMyStats: jest.fn().mockResolvedValue({ stats: null }),
     listSpecies: jest.fn(),
     getSpecies: jest.fn(),
     createObservation: jest.fn(),

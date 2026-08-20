@@ -12,7 +12,7 @@ export const createInvite = asyncHandler(async (req: AuthRequest, res: Response)
   const __ = createTranslator(req)
   const parsed = createInviteSchema.safeParse(req.body)
   if (!parsed.success) {
-    throw new ValidationError(__('invite.create.invalidInput', 'invite'), parsed.error.flatten().fieldErrors as any)
+    throw new ValidationError(__('invite.create.invalidInput', 'invite'), Object.entries(parsed.error.flatten().fieldErrors).filter(([, m]) => m).map(([field, m]) => ({ field, message: m![0] })))
   }
 
   const { email, role, expiresInHours } = parsed.data
@@ -79,7 +79,7 @@ export const validateInvite = asyncHandler(async (req: AuthRequest, res: Respons
   const { body } = req
   const parsed = validateInviteSchema.safeParse(body)
   if (!parsed.success) {
-    throw new ValidationError(__('invite.create.invalidInput', 'invite'), parsed.error.flatten().fieldErrors as any)
+    throw new ValidationError(__('invite.create.invalidInput', 'invite'), Object.entries(parsed.error.flatten().fieldErrors).filter(([, m]) => m).map(([field, m]) => ({ field, message: m![0] })))
   }
 
   const { token } = parsed.data

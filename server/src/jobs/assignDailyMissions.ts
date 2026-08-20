@@ -76,7 +76,7 @@ export async function assignDailyMissions(): Promise<{ assigned: number; skipped
             missionId: mission.id,
             assignmentDate: today,
             progressValue: 0,
-            targetValue: (mission.criteria as any)?.target ?? 1,
+            targetValue: (mission.criteria as unknown as { target?: number })?.target ?? 1,
             status: 'ASSIGNED',
           },
         })
@@ -169,7 +169,7 @@ export async function assignWeeklyMissions(): Promise<{ assigned: number; skippe
             missionId: mission.id,
             assignmentDate: today,
             progressValue: 0,
-            targetValue: (mission.criteria as any)?.target ?? 1,
+            targetValue: (mission.criteria as unknown as { target?: number })?.target ?? 1,
             status: 'ASSIGNED',
           },
         })

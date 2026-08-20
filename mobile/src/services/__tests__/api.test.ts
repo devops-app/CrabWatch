@@ -36,7 +36,7 @@ describe('api', () => {
       const result = await api.register('Test', 'test@test.com', 'password123')
       expect(result).toEqual(user)
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/users/register',
+        'http://localhost:3001/api/v1/users/register',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ name: 'Test', email: 'test@test.com', password: 'password123' }),
@@ -52,7 +52,7 @@ describe('api', () => {
 
       const result = await api.getProfile()
       expect(result).toEqual(user)
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3001/api/users/me', expect.any(Object))
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3001/api/v1/users/me', expect.any(Object))
     })
   })
 
@@ -64,7 +64,7 @@ describe('api', () => {
       const result = await api.updateProfile({ name: 'Updated' })
       expect(result).toEqual(user)
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/users/me',
+        'http://localhost:3001/api/v1/users/me',
         expect.objectContaining({
           method: 'PATCH',
           body: JSON.stringify({ name: 'Updated' }),
@@ -83,7 +83,7 @@ describe('api', () => {
 
       const result = await api.listSpecies()
       expect(result).toEqual(species)
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3001/api/species', expect.any(Object))
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3001/api/v1/species', expect.any(Object))
     })
   })
 
@@ -94,13 +94,13 @@ describe('api', () => {
 
       const result = await api.getSpecies('1')
       expect(result).toEqual(species)
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3001/api/species/1', expect.any(Object))
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3001/api/v1/species/1', expect.any(Object))
     })
   })
 
   describe('createObservation', () => {
     it('creates an observation', async () => {
-      const obs = { id: '1', speciesId: '1', carapaceWidth: 10, status: 'pending' }
+      const obs = { id: '1', speciesId: '1', carapaceWidth: 10, status: 'pending', photos: [] }
       mockResponse(obs)
 
       const result = await api.createObservation({
@@ -116,7 +116,7 @@ gender: 'male',
       })
       expect(result).toEqual(obs)
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/observations',
+        'http://localhost:3001/api/v1/observations',
         expect.objectContaining({ method: 'POST' })
       )
     })
@@ -129,7 +129,7 @@ gender: 'male',
 
       await api.listObservations({ speciesId: '1', page: 2, limit: 10 })
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/observations?'),
+        expect.stringContaining('/api/v1/observations?'),
         expect.any(Object)
       )
     })
@@ -139,13 +139,13 @@ gender: 'male',
       mockResponse(result)
 
       await api.listObservations()
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3001/api/observations', expect.any(Object))
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3001/api/v1/observations', expect.any(Object))
     })
   })
 
   describe('getObservation', () => {
     it('gets an observation by ID', async () => {
-      const obs = { id: '1', speciesId: '1', carapaceWidth: 10 }
+      const obs = { id: '1', speciesId: '1', carapaceWidth: 10, photos: [] }
       mockResponse(obs)
 
       const result = await api.getObservation('1')
@@ -178,13 +178,13 @@ gender: 'male',
 
   describe('validateObservation', () => {
     it('validates an observation', async () => {
-      const obs = { id: '1', speciesId: '1', status: 'approved' }
+      const obs = { id: '1', speciesId: '1', status: 'approved', photos: [] }
       mockResponse(obs)
 
       const result = await api.validateObservation('1', { status: 'approved', rejectionReason: 'Valid' })
       expect(result).toEqual(obs)
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/observations/1/validate',
+        'http://localhost:3001/api/v1/observations/1/validate',
         expect.objectContaining({
           method: 'PATCH',
           body: JSON.stringify({ status: 'approved', rejectionReason: 'Valid' }),
@@ -204,10 +204,10 @@ gender: 'male',
       mockFetch.mockResolvedValue({
         ok: false,
         status: 500,
-        json: async () => ({ success: false }),
+        json: async () => ({ success: false, error: 'Internal server error' }),
       } as Response)
 
-      await expect(api.getProfile()).rejects.toThrow('API error: 500')
+      await expect(api.getProfile()).rejects.toThrow('Internal server error')
     })
   })
 
@@ -331,7 +331,7 @@ gender: 'male',
 
       expect(result.crabCoveragePct).toBe(18.75)
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/analyze/crab',
+        'http://localhost:3001/api/v1/analyze/crab',
         expect.objectContaining({ method: 'POST' })
       )
     })

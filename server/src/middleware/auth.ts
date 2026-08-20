@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import { UserRole } from '@prisma/client'
+import { Prisma, UserRole } from '@prisma/client'
 import jwt from 'jsonwebtoken'
 import admin, { isFirebaseEnabled } from '../config/firebase'
 import { getAuthCookie } from './cookieAuth'
@@ -22,6 +22,7 @@ declare module 'express' {
       email: string
       preferredLocale: string | null
     }
+    requestId?: string
   }
 }
 
@@ -171,7 +172,7 @@ export async function resolveUser(
   try {
     const uid = req.user.uid
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uid)
-    const where: any = {
+    const where: Prisma.UserWhereInput = {
       firebaseUid: uid,
     }
     if (isUuid) {
@@ -183,7 +184,7 @@ export async function resolveUser(
       select: { id: true, role: true, email: true, blockedAt: true, deletedAt: true, preferredLocale: true },
     })
   } catch (err) {
-    logger.error({ err, msg: 'resolveUser: UUID lookup failed', requestId: (req as any).requestId })
+    logger.error({ err, msg: 'resolveUser: UUID lookup failed', requestId: req.requestId })
   }
 
   if (!user && req.user.email) {
@@ -193,7 +194,7 @@ export async function resolveUser(
         select: { id: true, role: true, email: true, blockedAt: true, deletedAt: true, preferredLocale: true },
       })
     } catch (err) {
-      logger.error({ err, msg: 'resolveUser: email lookup failed', requestId: (req as any).requestId })
+      logger.error({ err, msg: 'resolveUser: email lookup failed', requestId: req.requestId })
     }
   }
 
@@ -210,7 +211,7 @@ export async function resolveUser(
     req.dbUser = { id: user.id, role: user.role, email: user.email, preferredLocale: user.preferredLocale }
   }
 
-  const locale = detectLocale(req, (req as any).dbUser?.preferredLocale ?? null)
+  const locale = detectLocale(req, req.dbUser?.preferredLocale ?? null)
   translationLocaleStorage.run(locale, () => {
     next()
   })

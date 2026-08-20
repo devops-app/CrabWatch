@@ -13,7 +13,11 @@ const mockPrisma = {
   },
 }
 
-jest.mock('../../config/database', () => mockPrisma)
+jest.mock('../../services/container', () => ({
+  getContainer: () => ({ prisma: mockPrisma }),
+  getPrisma: () => mockPrisma,
+  getConfig: () => ({}),
+}))
 
 import {
   getDashboardStats,

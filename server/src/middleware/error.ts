@@ -10,7 +10,7 @@ export function errorHandler(
   _next: NextFunction
 ): void {
   const __ = createTranslator(req)
-  const requestId = (req as any).requestId || 'unknown'
+  const requestId = req.requestId || 'unknown'
 
   if (err instanceof AppError) {
     logger.warn({
@@ -21,7 +21,7 @@ export function errorHandler(
       path: req.path,
     })
 
-    const body: any = {
+    const body: { success: boolean; error: string; code?: string; details?: unknown } = {
       success: false,
       error: err.message,
     }
@@ -111,7 +111,7 @@ export function notFoundHandler(
   res: Response
 ): void {
   const __ = createTranslator(req)
-  const requestId = (req as any).requestId || 'unknown'
+  const requestId = req.requestId || 'unknown'
   logger.info({
     requestId,
     method: req.method,

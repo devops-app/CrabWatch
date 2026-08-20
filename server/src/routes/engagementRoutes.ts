@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { NotificationChannel } from '@prisma/client'
 import { authMiddleware, requireAuth, resolveUser, AuthRequest } from '../middleware/auth'
 import { getConfig, getPrisma } from '../services/container'
 import { Response, NextFunction } from 'express'
@@ -203,7 +204,7 @@ router.patch('/notification-preferences', async (req: AuthRequest, res: Response
     }
     const db = getPrisma()
     const results = await Promise.all(
-      updates.map((u: any) =>
+      updates.map((u: { channel: NotificationChannel; category: string; enabled?: boolean }) =>
         db.notificationPreference.upsert({
           where: {
             userId_channel_category: { userId, channel: u.channel, category: u.category },

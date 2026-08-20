@@ -19,17 +19,23 @@ module.exports = {
   View: createMockComponent('View'),
   Text: createMockComponent('Text'),
   ScrollView: createMockComponent('ScrollView'),
-  FlatList: React.forwardRef(({ data, renderItem, ListEmptyComponent, children, ...rest }, ref) => {
+  FlatList: React.forwardRef(({ data, renderItem, ListEmptyComponent, ListHeaderComponent, ListFooterComponent, children, ...rest }, ref) => {
     const items = data && renderItem ? data.map((item, index) =>
       React.createElement('div', { key: index }, renderItem({ item, index, separators: { highlight: () => {}, unhighlight: () => {}, highlightEnded: () => {}, highlightStart: () => {} } }))
     ) : null
     const empty = (!data || data.length === 0) && ListEmptyComponent ? React.createElement(ListEmptyComponent) : null
+    const header = ListHeaderComponent ? (
+      typeof ListHeaderComponent === 'function' ? React.createElement(ListHeaderComponent) : ListHeaderComponent
+    ) : null
+    const footer = ListFooterComponent ? (
+      typeof ListFooterComponent === 'function' ? React.createElement(ListFooterComponent) : ListFooterComponent
+    ) : null
     return React.createElement('div', {
       ref,
       'data-testid': rest['testID'] || rest.testId,
       role: rest.accessibilityRole,
       style: rest.style,
-    }, items, children, empty)
+    }, header, items, children, footer, empty)
   }),
   SectionList: createMockComponent('SectionList'),
   Image: createMockComponent('Image'),
@@ -94,7 +100,7 @@ module.exports = {
   },
   InteractionManager: { runAfterInteractions: (cb) => cb() },
   I18nManager: { allowRTL: false, forceRTL: jest.fn() },
-  PixelRatio: { get: () => 2, roundToNearestPixel: (x) => x },
+  PixelRatio: { get: () => 2, getFontScale: () => 1, roundToNearestPixel: (x) => x, floor: (x) => Math.floor(x), ceil: (x) => Math.ceil(x) },
   AppState: { addEventListener: () => ({ remove: jest.fn() }), currentState: 'active' },
   NetInfo: { addEventListener: () => ({ remove: jest.fn() }), fetch: () => Promise.resolve({ isConnected: true }) },
 
@@ -107,6 +113,7 @@ module.exports = {
   useContext: React.useContext,
   useReducer: React.useReducer,
   useLayoutEffect: React.useLayoutEffect,
+  useColorScheme: () => 'light',
 
   // Layout
   LayoutAnimation: { configureNext: jest.fn(), presetSpring: {}, presets: {} },

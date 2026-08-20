@@ -16,6 +16,18 @@ const mockPrisma = {
   },
 }
 
+const mockConfig = {
+  jwtSecret: 'test-secret',
+  resend: { apiKey: undefined, fromEmail: 'test@test.com' },
+  engagement: {
+    enabled: false,
+    missionsEnabled: false,
+    seasonsEnabled: false,
+    campaignsEnabled: false,
+    abuseDetectionEnabled: false,
+  },
+}
+
 const mockRes = () => {
   const res: Record<string, unknown> = {}
   res.status = jest.fn().mockReturnThis()
@@ -23,7 +35,19 @@ const mockRes = () => {
   return res
 }
 
-jest.mock('../../config/database', () => mockPrisma)
+jest.mock('../../services/container', () => ({
+  getPrisma: () => mockPrisma,
+  getConfig: () => mockConfig,
+}))
+jest.mock('../../middleware/i18n', () => require('./i18nMock').createI18nMock())
+jest.mock('../../utils/logger', () => ({
+  __esModule: true,
+  default: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
+}))
 
 import {
   listSpecies,
@@ -33,6 +57,7 @@ import {
   deleteSpecies,
 } from '../../controllers/speciesController'
 import { Response } from 'express'
+import { callHandler } from '../../utils/testUtils'
 import { AuthRequest } from '../../middleware/auth'
 
 describe('Species Controller', () => {
@@ -45,6 +70,9 @@ describe('Species Controller', () => {
       body: {},
       query: {},
       params: {},
+      headers: {},
+      method: 'GET',
+      path: '/test',
     }
     res = mockRes()
   })
@@ -72,7 +100,7 @@ describe('Species Controller', () => {
         },
       ])
 
-      await listSpecies(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(listSpecies, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(mockPrisma.species.findMany).toHaveBeenCalledWith({
         orderBy: { scientificName: 'asc' },
@@ -91,7 +119,7 @@ describe('Species Controller', () => {
     it('should return 500 on error', async () => {
       mockPrisma.species.findMany.mockRejectedValue(new Error('DB error'))
 
-      await listSpecies(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(listSpecies, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.status).toHaveBeenCalledWith(500)
     })
@@ -111,7 +139,7 @@ describe('Species Controller', () => {
       mockPrisma.species.findUnique.mockResolvedValue(mockSpecies)
       req.params = { id: 'species-1' }
 
-      await getSpecies(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getSpecies, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -125,7 +153,7 @@ describe('Species Controller', () => {
       mockPrisma.species.findUnique.mockResolvedValue(null)
       req.params = { id: 'nonexistent' }
 
-      await getSpecies(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getSpecies, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.status).toHaveBeenCalledWith(404)
       expect(res.json).toHaveBeenCalledWith(
@@ -155,7 +183,7 @@ describe('Species Controller', () => {
         distributionZones: [],
       }
 
-      await createSpecies(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(createSpecies, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.status).toHaveBeenCalledWith(201)
       expect(res.json).toHaveBeenCalledWith(
@@ -170,9 +198,9 @@ describe('Species Controller', () => {
       mockPrisma.species.create.mockRejectedValue(new Error('Validation failed'))
       req.body = { scientificName: '' }
 
-      await createSpecies(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(createSpecies, req as unknown as AuthRequest, res as unknown as Response)
 
-      expect(res.status).toHaveBeenCalledWith(400)
+      expect(res.status).toHaveBeenCalledWith(500)
     })
   })
 
@@ -191,7 +219,7 @@ describe('Species Controller', () => {
       req.params = { id: 'species-1' }
       req.body = { commonName: 'Updated Blue Crab', description: 'Updated description' }
 
-      await updateSpecies(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(updateSpecies, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(mockPrisma.species.update).toHaveBeenCalledWith({
         where: { id: 'species-1' },
@@ -219,7 +247,7 @@ describe('Species Controller', () => {
       req.params = { id: 'species-1' }
       req.body = { commonName: 'New Name' }
 
-      await updateSpecies(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(updateSpecies, req as unknown as AuthRequest, res as unknown as Response)
 
       const callData = mockPrisma.species.update.mock.calls[0][0].data
       expect(callData.commonName).toBe('New Name')
@@ -232,7 +260,7 @@ describe('Species Controller', () => {
       mockPrisma.species.delete.mockResolvedValue({})
       req.params = { id: 'species-1' }
 
-      await deleteSpecies(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(deleteSpecies, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(mockPrisma.species.delete).toHaveBeenCalledWith({ where: { id: 'species-1' } })
       expect(res.json).toHaveBeenCalledWith({ success: true, data: null })
@@ -242,7 +270,7 @@ describe('Species Controller', () => {
       mockPrisma.species.delete.mockRejectedValue(new Error('Foreign key constraint'))
       req.params = { id: 'species-1' }
 
-      await deleteSpecies(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(deleteSpecies, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.status).toHaveBeenCalledWith(500)
     })

@@ -52,6 +52,19 @@ const MODEL_CONFIG = new Map(TRANSLATABLE_MODELS.map(m => [m.model, m]))
 
 export { MODEL_CONFIG }
 
+// Records that have an id field (all translatable models do)
+type WithId = { id: string }
+
+// Prisma middleware types (Prisma 5.x does not export Middleware from @prisma/client)
+interface PrismaMiddlewareParams {
+  model?: string
+  action?: string
+  args?: unknown
+  dataPath?: string[]
+  runInTransaction?: boolean
+}
+type PrismaMiddlewareNext = (args?: unknown) => Promise<unknown>
+
 async function mergeTranslationsImpl<T>(
   records: T | T[],
   locale: string,
@@ -65,12 +78,12 @@ async function mergeTranslationsImpl<T>(
 
   const single = !Array.isArray(records)
   const arr = single ? [records] : records
-  const ids = arr.map(r => (r as any)?.id).filter(Boolean)
+  const ids = arr.map(r => (r as WithId)?.id).filter(Boolean)
 
   if (ids.length === 0) return records
 
   const prisma = getContainer().prisma
-  const translations = await (prisma as any).translation.findMany({
+  const translations = await prisma.translation.findMany({
     where: {
       locale,
       resourceType: model,
@@ -89,20 +102,20 @@ async function mergeTranslationsImpl<T>(
   }
 
   const merged = arr.map(record => {
-    const id = (record as any).id
+    const id = (record as WithId).id
     const trans = byId.get(id)
     if (!trans || trans.size === 0) return record
 
-    const cloned = { ...record }
+    const cloned: Record<string, unknown> = { ...(record as Record<string, unknown>) }
     for (const [field, { value, json }] of trans) {
       if (json) {
         try {
-          ;(cloned as any)[field] = JSON.parse(value)
+          cloned[field] = JSON.parse(value)
         } catch {
-          ;(cloned as any)[field] = value
+          cloned[field] = value
         }
       } else {
-        ;(cloned as any)[field] = value
+        cloned[field] = value
       }
     }
     return cloned
@@ -124,7 +137,7 @@ export function mergeTranslations<T>(
 
   const single = !Array.isArray(records)
   const arr = single ? [records] : records
-  const ids = arr.map(r => (r as any)?.id).filter(Boolean)
+  const ids = arr.map(r => (r as WithId)?.id).filter(Boolean)
 
   if (ids.length === 0) return records
 
@@ -134,16 +147,17 @@ export function mergeTranslations<T>(
 }
 
 export function createI18nMiddleware() {
-  return (params: any, next: (args?: any) => Promise<any>) => {
+  return (params: PrismaMiddlewareParams, next: PrismaMiddlewareNext) => {
     try {
       const locale = translationLocaleStorage.getStore()
-      if (!locale || locale === 'en' || !params || !params.model) return next(params)
-      if (params.model !== 'Translation' && MODEL_CONFIG.has(params.model)) {
-        return next(params).then((result: any) => {
+      if (!locale || locale === 'en' || !params.model) return next(params)
+      const model = params.model
+      if (model !== 'Translation' && MODEL_CONFIG.has(model)) {
+        return next(params).then((result: unknown) => {
           if (!result) return result
           const record = Array.isArray(result) ? result[0] : result
-          if (!record?.id) return result
-          return mergeTranslationsImpl(result, locale, params.model)
+          if (!record || !(record as WithId)?.id) return result
+          return mergeTranslationsImpl(result, locale, model)
         })
       }
       return next(params)
@@ -158,5 +172,6 @@ export function withLocale<R>(locale: string, fn: () => Promise<R>): Promise<R> 
 }
 
 export function applyI18nMiddleware(prisma: PrismaClient): void {
-  prisma.$use(createI18nMiddleware())
+  // Prisma 5.x $use expects its internal Middleware type; cast to satisfy the signature
+  prisma.$use(createI18nMiddleware() as Parameters<PrismaClient['$use']>[0])
 }

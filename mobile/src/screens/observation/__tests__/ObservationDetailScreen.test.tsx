@@ -8,7 +8,7 @@ const mockObservation = {
   speciesId: 'sp-1',
   cw: 8.5,
   bw: 350,
-  sex: 'male' as const,
+  gender: 'male' as const,
   maturationStatus: 'pre-puber' as const,
   lat: 5.5,
   lng: 100.5,

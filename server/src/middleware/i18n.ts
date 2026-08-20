@@ -35,7 +35,7 @@ export function detectLocale(req: Request, userLocale?: string | null): string {
 
 export function createTranslator(req: Request): (key: string, ns?: string, options?: TOptions) => string {
   const i18n = getServerI18n()
-  const userLocale = (req as any).dbUser?.preferredLocale ?? null
+  const userLocale = req.dbUser?.preferredLocale ?? null
   const locale = detectLocale(req, userLocale)
 
   let nsMap = translatorCache.get(req)
@@ -60,7 +60,7 @@ export function localeMiddleware(
   _res: Response,
   next: NextFunction
 ): void {
-  const locale = detectLocale(req, (req as any).dbUser?.preferredLocale ?? null)
+  const locale = detectLocale(req, req.dbUser?.preferredLocale ?? null)
   translationLocaleStorage.run(locale, () => {
     next()
   })

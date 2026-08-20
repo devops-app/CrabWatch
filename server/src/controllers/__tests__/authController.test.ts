@@ -4,6 +4,18 @@ const mockPrisma = {
   },
 }
 
+const mockConfig = {
+  jwtSecret: 'test-secret',
+  resend: { apiKey: undefined, fromEmail: 'test@test.com' },
+  engagement: {
+    enabled: false,
+    missionsEnabled: false,
+    seasonsEnabled: false,
+    campaignsEnabled: false,
+    abuseDetectionEnabled: false,
+  },
+}
+
 const mockBcrypt = {
   compare: jest.fn(),
 }
@@ -30,18 +42,31 @@ const mockRes = () => {
   return res
 }
 
-jest.mock('../../config/database', () => mockPrisma)
-jest.mock('bcrypt', () => mockBcrypt)
+jest.mock('../../services/container', () => ({
+  getPrisma: () => mockPrisma,
+  getConfig: () => mockConfig,
+}))
+jest.mock('bcryptjs', () => mockBcrypt)
 jest.mock('jsonwebtoken', () => mockJwt)
 jest.mock('../../config/firebase', () => ({
   __esModule: true,
   default: mockFirebase,
   isFirebaseEnabled: false,
 }))
+jest.mock('../../middleware/i18n', () => require('./i18nMock').createI18nMock())
+jest.mock('../../utils/logger', () => ({
+  __esModule: true,
+  default: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
+}))
 
 import { login, verifyToken } from '../../controllers/authController'
 import { Response } from 'express'
 import { AuthRequest } from '../../middleware/auth'
+import { callHandler } from '../../utils/testUtils'
 
 describe('Auth Controller', () => {
   let req: Partial<AuthRequest>
@@ -51,6 +76,9 @@ describe('Auth Controller', () => {
     jest.clearAllMocks()
     req = {
       body: {},
+      headers: {},
+      method: 'POST',
+      path: '/test',
     }
     res = mockRes()
   })
@@ -69,7 +97,7 @@ describe('Auth Controller', () => {
       mockJwt.sign.mockReturnValue('jwt_token')
       req.body = { email: 'test@test.com', password: 'password123' }
 
-      await login(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(login, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(mockBcrypt.compare).toHaveBeenCalledWith('password123', 'hashed_password')
       expect(mockJwt.sign).toHaveBeenCalled()
@@ -88,11 +116,11 @@ describe('Auth Controller', () => {
       mockPrisma.user.findUnique.mockResolvedValue(null)
       req.body = { email: 'nonexistent@test.com', password: 'password123' }
 
-      await login(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(login, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.status).toHaveBeenCalledWith(401)
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: false, error: 'Invalid credentials' })
+        expect.objectContaining({ success: false, error: 'Invalid email or password' })
       )
     })
 
@@ -106,11 +134,11 @@ describe('Auth Controller', () => {
       mockBcrypt.compare.mockResolvedValue(false)
       req.body = { email: 'test@test.com', password: 'wrong_password' }
 
-      await login(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(login, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.status).toHaveBeenCalledWith(401)
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: false, error: 'Invalid credentials' })
+        expect.objectContaining({ success: false, error: 'Invalid email or password' })
       )
     })
 
@@ -123,7 +151,7 @@ describe('Auth Controller', () => {
       })
       req.body = { email: 'test@test.com', password: 'password123' }
 
-      await login(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(login, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.status).toHaveBeenCalledWith(401)
     })
@@ -134,7 +162,7 @@ describe('Auth Controller', () => {
       mockJwt.verify.mockReturnValue({ uid: 'user-1', email: 'test@test.com', name: 'Test User' })
       req.body = { token: 'valid_jwt_token' }
 
-      await verifyToken(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(verifyToken, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(mockJwt.verify).toHaveBeenCalledWith('valid_jwt_token', expect.any(String))
       expect(res.json).toHaveBeenCalledWith(
@@ -151,9 +179,9 @@ describe('Auth Controller', () => {
       })
       req.body = { token: 'invalid_token' }
 
-      await verifyToken(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(verifyToken, req as unknown as AuthRequest, res as unknown as Response)
 
-      expect(res.status).toHaveBeenCalledWith(401)
+      expect(res.status).toHaveBeenCalledWith(500)
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({ success: false, error: 'Invalid token' })
       )

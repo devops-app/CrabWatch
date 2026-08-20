@@ -22,7 +22,7 @@ describe('validators', () => {
       })
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.issues[0].message).toBe('Invalid email address')
+        expect(result.error.issues[0].message).toBe('Invalid email')
       }
     })
 
@@ -36,30 +36,36 @@ describe('validators', () => {
   })
 
   describe('registerSchema', () => {
+    const validRegistration = {
+      name: 'John Doe',
+      email: 'john@example.com',
+      phoneCode: '+60',
+      phoneNumber: '123456789',
+      addressLine1: '123 Jalan Test',
+      state: 'Selangor',
+      postcode: '40000',
+      country: 'Malaysia',
+      password: 'password123',
+      confirmPassword: 'password123',
+      consentAccepted: true,
+    }
+
     it('validates correct registration data', () => {
-      const result = registerSchema.safeParse({
-        name: 'John Doe',
-        email: 'john@example.com',
-        password: 'password123',
-        confirmPassword: 'password123',
-      })
+      const result = registerSchema.safeParse(validRegistration)
       expect(result.success).toBe(true)
     })
 
     it('rejects name that is too long', () => {
       const result = registerSchema.safeParse({
+        ...validRegistration,
         name: 'a'.repeat(101),
-        email: 'test@example.com',
-        password: 'password123',
-        confirmPassword: 'password123',
       })
       expect(result.success).toBe(false)
     })
 
     it('rejects password shorter than 8 characters', () => {
       const result = registerSchema.safeParse({
-        name: 'John',
-        email: 'john@example.com',
+        ...validRegistration,
         password: 'short',
         confirmPassword: 'short',
       })
@@ -68,15 +74,22 @@ describe('validators', () => {
 
     it('rejects mismatched passwords', () => {
       const result = registerSchema.safeParse({
-        name: 'John',
-        email: 'john@example.com',
+        ...validRegistration,
         password: 'password123',
         confirmPassword: 'different',
       })
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.issues[0].message).toBe('Passwords do not match')
+        expect(result.error.issues.some((issue) => issue.message === 'Passwords do not match')).toBe(true)
       }
+    })
+
+    it('rejects missing consent', () => {
+      const result = registerSchema.safeParse({
+        ...validRegistration,
+        consentAccepted: false,
+      })
+      expect(result.success).toBe(false)
     })
   })
 
@@ -85,7 +98,7 @@ describe('validators', () => {
       speciesId: 'species-1',
       cw: 10,
       bw: 500,
-      sex: 'male' as const,
+      gender: 'male' as const,
       maturationStatus: 'mature' as const,
       lat: 3.139,
       lng: 101.6869,
@@ -122,8 +135,8 @@ describe('validators', () => {
       expect(result.success).toBe(false)
     })
 
-    it('rejects invalid sex', () => {
-      const data = { ...validObservation, sex: 'other' as unknown as 'male' }
+    it('rejects invalid gender', () => {
+      const data = { ...validObservation, gender: 'other' as unknown as 'male' }
       const result = observationSchema.safeParse(data)
       expect(result.success).toBe(false)
     })

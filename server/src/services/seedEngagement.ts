@@ -1,7 +1,8 @@
 import prisma from '../config/database'
+import { Prisma, RewardActionType, MissionCadence } from '@prisma/client'
 import logger from '../utils/logger'
 
-const DEFAULT_RULES = [
+const DEFAULT_RULES: { actionType: RewardActionType; name: string; description: string; xpReward: number }[] = [
   { actionType: 'OBSERVATION_SUBMIT', name: 'Default', description: 'XP awarded when user submits an observation', xpReward: 5 },
   { actionType: 'OBSERVATION_APPROVED', name: 'Default', description: 'Additional XP when observation is approved by researcher', xpReward: 10 },
   { actionType: 'FIRST_OBSERVATION', name: 'Default', description: 'Bonus XP for a user\'s very first observation', xpReward: 20 },
@@ -38,10 +39,10 @@ const DEFAULT_ONBOARDING_STEPS = [
 async function seedGamificationRules(): Promise<void> {
   for (const rule of DEFAULT_RULES) {
     await prisma.gamificationRule.upsert({
-      where: { actionType_name: { actionType: rule.actionType as any, name: rule.name } },
+      where: { actionType_name: { actionType: rule.actionType, name: rule.name } },
       update: {},
       create: {
-        actionType: rule.actionType as any,
+        actionType: rule.actionType,
         name: rule.name,
         description: rule.description,
         xpReward: rule.xpReward,
@@ -82,7 +83,7 @@ async function seedOnboardingFlow(): Promise<void> {
 }
 
 async function seedMissionDefinitions(): Promise<void> {
-  const missions = [
+  const missions: { code: string; name: string; description: string; cadence: MissionCadence; criteria: Prisma.InputJsonValue[]; xpReward: number }[] = [
     {
       code: 'daily_submit_1',
       name: 'Daily Observer',
@@ -141,7 +142,7 @@ async function seedMissionDefinitions(): Promise<void> {
         code: mission.code,
         name: mission.name,
         description: mission.description,
-        cadence: mission.cadence as any,
+        cadence: mission.cadence,
         criteria: mission.criteria,
         xpReward: mission.xpReward,
       },

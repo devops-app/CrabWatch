@@ -63,7 +63,8 @@ export function ObservationDetailScreen() {
     return status
   }
 
-  const formatLocalizedGender = (gender: string) => {
+  const formatLocalizedGender = (gender?: string | null) => {
+    if (!gender) return ''
     const key = gender.toLowerCase()
     if (key === 'male' || key === 'female' || key === 'unknown') {
       return t(`genderValue.${key}`)
@@ -71,7 +72,8 @@ export function ObservationDetailScreen() {
     return gender
   }
 
-  const formatLocalizedMaturation = (status: string) => {
+  const formatLocalizedMaturation = (status?: string | null) => {
+    if (!status) return ''
     const key = status.toLowerCase()
     if (key === 'mature' || key === 'immature' || key === 'unknown') {
       return t(`maturationValue.${key}`)

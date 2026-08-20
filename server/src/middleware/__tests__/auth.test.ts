@@ -1,5 +1,8 @@
-import { requireAuth, requireRole, AuthRequest } from '../../middleware/auth'
 import { Response, NextFunction } from 'express'
+
+jest.mock('../../middleware/i18n', () => require('../../controllers/__tests__/i18nMock').createI18nMock())
+
+import { requireAuth, requireRole, AuthRequest } from '../../middleware/auth'
 
 describe('Auth Middleware', () => {
   let req: Partial<AuthRequest>
@@ -53,7 +56,7 @@ describe('Auth Middleware', () => {
 
     it('should return 403 when user does not have required role', () => {
       req.user = { uid: '123', email: 'test@test.com' }
-      req.dbUser = { id: '123', role: 'USER', email: 'test@test.com' }
+      req.dbUser = { id: '123', role: 'USER', email: 'test@test.com', preferredLocale: null }
       const middleware = requireRole('ADMIN')
       middleware(req as AuthRequest, res as Response, next)
 
@@ -67,7 +70,7 @@ describe('Auth Middleware', () => {
 
     it('should call next when user has required role', () => {
       req.user = { uid: '123', email: 'test@test.com' }
-      req.dbUser = { id: '123', role: 'ADMIN', email: 'test@test.com' }
+      req.dbUser = { id: '123', role: 'ADMIN', email: 'test@test.com', preferredLocale: null }
       const middleware = requireRole('ADMIN', 'RESEARCHER')
       middleware(req as AuthRequest, res as Response, next)
 

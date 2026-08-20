@@ -4,6 +4,12 @@ import type { UserResponse } from '@crabwatch/shared'
 
 jest.mock('expo-secure-store')
 
+jest.mock('../../services/api', () => ({
+  api: {
+    getProfile: jest.fn().mockResolvedValue({}),
+  },
+}))
+
 describe('authStore', () => {
   const baseMockUser: UserResponse = {
     id: 'user-1',

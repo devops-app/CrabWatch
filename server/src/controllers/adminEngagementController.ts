@@ -1,4 +1,5 @@
 import { Response } from 'express'
+import { Prisma, MissionCadence } from '@prisma/client'
 import { AuthRequest } from '../middleware/auth'
 import { asyncHandler, AppError, NotFoundError, ValidationError, ConflictError } from '../utils/errors'
 import { getPrisma, getConfig } from '../services/container'
@@ -7,8 +8,10 @@ import { getEngagementMetrics } from '../services/metricsService'
 import { invalidateLeaderboardCache } from '../services/leaderboardService'
 import { createTranslator } from '../middleware/i18n'
 
+type JsonState = Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput | undefined
+
 // Audit log helper
-async function writeAuditLog(req: AuthRequest, action: string, resourceType: string, resourceId: string | null, beforeState: any, afterState: any, reason?: string): Promise<void> {
+async function writeAuditLog(req: AuthRequest, action: string, resourceType: string, resourceId: string | null, beforeState: JsonState, afterState: JsonState, reason?: string): Promise<void> {
   if (!getConfig().engagement.enabled) return
   const db = getPrisma()
   await db.auditLog.create({
@@ -72,7 +75,7 @@ export const createGamificationRule = asyncHandler(async (req: AuthRequest, res:
       metadata,
     },
   })
-  await writeAuditLog(req, 'CREATE', 'GamificationRule', rule.id, null, rule, 'Admin created gamification rule')
+  await writeAuditLog(req, 'CREATE', 'GamificationRule', rule.id, undefined, rule, 'Admin created gamification rule')
   res.status(201).json({ success: true, data: rule })
 })
 
@@ -119,7 +122,7 @@ export const deleteGamificationRule = asyncHandler(async (req: AuthRequest, res:
     throw new NotFoundError(__('admin.rule.notFound', 'admin'))
   }
   await db.gamificationRule.delete({ where: { id } })
-  await writeAuditLog(req, 'DELETE', 'GamificationRule', id, before, null, 'Admin deleted gamification rule')
+  await writeAuditLog(req, 'DELETE', 'GamificationRule', id, before, undefined, 'Admin deleted gamification rule')
   res.status(204).end()
 })
 
@@ -147,7 +150,7 @@ export const createLevelConfig = asyncHandler(async (req: AuthRequest, res: Resp
       active: active ?? true,
     },
   })
-  await writeAuditLog(req, 'CREATE', 'LevelConfig', lvl.id, null, lvl, 'Admin created level config')
+  await writeAuditLog(req, 'CREATE', 'LevelConfig', lvl.id, undefined, lvl, 'Admin created level config')
   res.status(201).json({ success: true, data: lvl })
 })
 
@@ -186,7 +189,7 @@ export const deleteLevelConfig = asyncHandler(async (req: AuthRequest, res: Resp
     throw new NotFoundError(__('admin.level.notFound', 'admin'))
   }
   await db.levelConfig.delete({ where: { id } })
-  await writeAuditLog(req, 'DELETE', 'LevelConfig', id, before, null, 'Admin deleted level config')
+  await writeAuditLog(req, 'DELETE', 'LevelConfig', id, before, undefined, 'Admin deleted level config')
   res.status(204).end()
 })
 
@@ -289,7 +292,7 @@ export const createAchievement = asyncHandler(async (req: AuthRequest, res: Resp
       endsAt: endsAt ? new Date(endsAt) : null,
     },
   })
-  await writeAuditLog(req, 'CREATE', 'Achievement', achievement.id, null, achievement, 'Admin created achievement')
+  await writeAuditLog(req, 'CREATE', 'Achievement', achievement.id, undefined, achievement, 'Admin created achievement')
   res.status(201).json({ success: true, data: achievement })
 })
 
@@ -334,7 +337,7 @@ export const deleteAchievement = asyncHandler(async (req: AuthRequest, res: Resp
     throw new NotFoundError(__('admin.achievement.notFound', 'admin'))
   }
   await db.achievement.delete({ where: { id } })
-  await writeAuditLog(req, 'DELETE', 'Achievement', id, before, null, 'Admin deleted achievement')
+  await writeAuditLog(req, 'DELETE', 'Achievement', id, before, undefined, 'Admin deleted achievement')
   res.status(204).end()
 })
 
@@ -349,8 +352,8 @@ export const awardAchievement = asyncHandler(async (req: AuthRequest, res: Respo
   const { awardAchievementManually } = await import('../services/achievementService')
   try {
     await awardAchievementManually(userId, id, req.dbUser?.id || '', reason)
-  } catch (error: any) {
-    if (error?.message?.includes('already has this achievement')) {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message.includes('already has this achievement')) {
       throw new ConflictError(error.message)
     }
     throw error
@@ -383,7 +386,7 @@ export const createMission = asyncHandler(async (req: AuthRequest, res: Response
       code,
       name,
       description,
-      cadence: cadence as any,
+      cadence: cadence as MissionCadence,
       criteria,
       xpReward: xpReward ?? 0,
       maxClaimsPerUser: maxClaimsPerUser ?? 1,
@@ -392,7 +395,7 @@ export const createMission = asyncHandler(async (req: AuthRequest, res: Response
       endsAt: endsAt ? new Date(endsAt) : null,
     },
   })
-  await writeAuditLog(req, 'CREATE', 'MissionDefinition', mission.id, null, mission, 'Admin created mission')
+  await writeAuditLog(req, 'CREATE', 'MissionDefinition', mission.id, undefined, mission, 'Admin created mission')
   res.status(201).json({ success: true, data: mission })
 })
 
@@ -435,7 +438,7 @@ export const deleteMission = asyncHandler(async (req: AuthRequest, res: Response
     throw new NotFoundError(__('admin.mission.notFound', 'admin'))
   }
   await db.missionDefinition.delete({ where: { id } })
-  await writeAuditLog(req, 'DELETE', 'MissionDefinition', id, before, null, 'Admin deleted mission')
+  await writeAuditLog(req, 'DELETE', 'MissionDefinition', id, before, undefined, 'Admin deleted mission')
   res.status(204).end()
 })
 
@@ -473,7 +476,7 @@ export const createSeason = asyncHandler(async (req: AuthRequest, res: Response)
       isActive: false,
     },
   })
-  await writeAuditLog(req, 'CREATE', 'Season', season.id, null, season, 'Admin created season')
+  await writeAuditLog(req, 'CREATE', 'Season', season.id, undefined, season, 'Admin created season')
   res.status(201).json({ success: true, data: season })
 })
 
@@ -511,7 +514,7 @@ export const deleteSeason = asyncHandler(async (req: AuthRequest, res: Response)
     throw new NotFoundError(__('admin.season.notFound', 'admin'))
   }
   await db.season.delete({ where: { id } })
-  await writeAuditLog(req, 'DELETE', 'Season', id, before, null, 'Admin deleted season')
+  await writeAuditLog(req, 'DELETE', 'Season', id, before, undefined, 'Admin deleted season')
   res.status(204).end()
 })
 

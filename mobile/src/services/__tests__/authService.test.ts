@@ -63,7 +63,7 @@ describe('authService', () => {
 
       expect(result).toEqual(mockUser)
       expect(apiModule.api.login).toHaveBeenCalledWith({ email: 'test@test.com', password: 'password123' })
-      expect(mockStoreLogin).toHaveBeenCalledWith(mockUser, 'mock-id-token', 'mock-uid')
+      expect(mockStoreLogin).toHaveBeenCalledWith(mockUser, 'mock-token')
     })
 
     it('throws on login failure', async () => {
@@ -95,8 +95,20 @@ describe('authService', () => {
       const result = await authService.register('New User', 'new@test.com', 'password123')
 
       expect(result).toEqual(mockUser)
-      expect(apiModule.api.register).toHaveBeenCalledWith('New User', 'new@test.com', 'password123')
-      expect(mockStoreLogin).toHaveBeenCalledWith(mockUser, 'mock-id-token', 'mock-uid')
+      expect(apiModule.api.register).toHaveBeenCalledWith(
+        'New User',
+        'new@test.com',
+        'password123',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      )
+      expect(mockStoreLogin).toHaveBeenCalledWith(mockUser, 'mock-token')
     })
 
     it('throws on registration failure', async () => {
@@ -129,36 +141,28 @@ describe('authService', () => {
   })
 
   describe('refreshToken', () => {
-    it('refreshes token when user is logged in', async () => {
-      const mockSetToken = jest.fn()
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { auth } = require('../../lib/firebase')
-      auth.currentUser = { getIdToken: jest.fn().mockResolvedValue('new-token') }
-
+    it('returns the stored token when present', async () => {
       jest.spyOn(useAuthStore, 'getState').mockReturnValue({
         login: jest.fn(),
         logout: jest.fn(),
-        setToken: mockSetToken,
+        setToken: jest.fn(),
         user: null,
-        token: null,
+        token: 'stored-token',
         firebaseUid: null,
-        isAuthenticated: false,
+        isAuthenticated: true,
         updateUser: jest.fn(),
       } as unknown as ReturnType<typeof useAuthStore['getState']>)
 
       const token = await authService.refreshToken()
 
-      expect(token).toBe('new-token')
-      expect(mockSetToken).toHaveBeenCalledWith('new-token')
-      auth.currentUser = null
+      expect(token).toBe('stored-token')
     })
 
-    it('returns null when no current user', async () => {
-      const mockSetToken = jest.fn()
+    it('returns null when no token is stored', async () => {
       jest.spyOn(useAuthStore, 'getState').mockReturnValue({
         login: jest.fn(),
         logout: jest.fn(),
-        setToken: mockSetToken,
+        setToken: jest.fn(),
         user: null,
         token: null,
         firebaseUid: null,
@@ -169,7 +173,6 @@ describe('authService', () => {
       const token = await authService.refreshToken()
 
       expect(token).toBeNull()
-      expect(mockSetToken).not.toHaveBeenCalled()
     })
   })
 })

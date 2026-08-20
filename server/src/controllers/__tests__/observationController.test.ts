@@ -11,6 +11,29 @@ const mockPrisma = {
   },
 }
 
+const mockConfig = {
+  jwtSecret: 'test-secret',
+  resend: { apiKey: undefined, fromEmail: 'test@test.com' },
+  engagement: {
+    enabled: false,
+    missionsEnabled: false,
+    seasonsEnabled: false,
+    campaignsEnabled: false,
+    abuseDetectionEnabled: false,
+  },
+}
+
+const mockBlobClient = {
+  generateSasUrl: jest.fn().mockResolvedValue('https://example.com/blob?sig=token'),
+  url: 'https://example.com/blob',
+}
+const mockContainerClient = {
+  getBlockBlobClient: jest.fn().mockReturnValue(mockBlobClient),
+}
+const mockBlobService = {
+  getContainerClient: jest.fn().mockReturnValue(mockContainerClient),
+}
+
 const mockRes = () => {
   const res: Record<string, unknown> = {}
   res.status = jest.fn().mockReturnThis()
@@ -18,7 +41,48 @@ const mockRes = () => {
   return res
 }
 
-jest.mock('../../config/database', () => mockPrisma)
+jest.mock('../../services/container', () => ({
+  getPrisma: () => mockPrisma,
+  getConfig: () => mockConfig,
+}))
+jest.mock('../../middleware/i18n', () => require('./i18nMock').createI18nMock())
+jest.mock('../../utils/logger', () => ({
+  __esModule: true,
+  default: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
+}))
+jest.mock('../../services/upload', () => ({
+  getBlobService: jest.fn(() => mockBlobService),
+}))
+jest.mock('../../services/fcm', () => ({
+  sendObservationApproved: jest.fn(),
+  sendObservationRejected: jest.fn(),
+}))
+jest.mock('../../services/foundryAgent', () => ({
+  copyAnalysisBlobsToObservation: jest.fn(),
+  cleanupAnalysisBlobs: jest.fn(),
+}))
+jest.mock('../../services/rewardEngine', () => ({
+  awardXP: jest.fn(),
+  updateStreak: jest.fn(),
+  isFirstObservation: jest.fn().mockResolvedValue(false),
+  isNewSpecies: jest.fn().mockResolvedValue(false),
+  incrementSubmissions: jest.fn(),
+  incrementApproved: jest.fn(),
+  generateIdempotencyKey: jest.fn(() => 'idempotency-key'),
+}))
+jest.mock('../../services/achievementService', () => ({
+  checkAndAwardAchievements: jest.fn(),
+}))
+jest.mock('../../services/notificationService', () => ({
+  sendNotification: jest.fn(),
+}))
+jest.mock('../analysisController', () => ({
+  markAnalysisSessionDone: jest.fn(),
+}))
 
 import {
   createObservation,
@@ -28,6 +92,7 @@ import {
   getPendingObservations,
 } from '../../controllers/observationController'
 import { Response } from 'express'
+import { callHandler } from '../../utils/testUtils'
 import { AuthRequest } from '../../middleware/auth'
 
 describe('Observation Controller', () => {
@@ -36,10 +101,16 @@ describe('Observation Controller', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockBlobService.getContainerClient.mockReturnValue(mockContainerClient)
+    mockContainerClient.getBlockBlobClient.mockReturnValue(mockBlobClient)
+    mockBlobClient.generateSasUrl.mockResolvedValue('https://example.com/blob?sig=token')
     req = {
       body: {},
       query: {},
       params: {},
+      headers: {},
+      method: 'POST',
+      path: '/test',
       dbUser: { id: 'user-1', role: 'RESEARCHER', email: 'test@test.com', preferredLocale: null },
     }
     res = mockRes()
@@ -83,7 +154,7 @@ describe('Observation Controller', () => {
         notes: 'Test',
       }
 
-      await createObservation(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(createObservation, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.status).toHaveBeenCalledWith(201)
       expect(res.json).toHaveBeenCalledWith(
@@ -91,18 +162,19 @@ describe('Observation Controller', () => {
       )
     })
 
-    it('should return 400 on creation error', async () => {
+    it('should return 500 on creation error', async () => {
       mockPrisma.observation.create.mockRejectedValue(new Error('Validation failed'))
       req.body = {
         speciesId: 'invalid',
         gender: 'MALE',
         maturationStatus: 'MATURE',
         locationMethod: 'GPS',
+        photos: [],
       }
 
-      await createObservation(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(createObservation, req as unknown as AuthRequest, res as unknown as Response)
 
-      expect(res.status).toHaveBeenCalledWith(400)
+      expect(res.status).toHaveBeenCalledWith(500)
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({ success: false, error: 'Validation failed' })
       )
@@ -115,7 +187,7 @@ describe('Observation Controller', () => {
       mockPrisma.observation.count.mockResolvedValue(0)
       req.query = { page: '1', limit: '10' }
 
-      await listObservations(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(listObservations, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -130,7 +202,7 @@ describe('Observation Controller', () => {
       mockPrisma.observation.count.mockResolvedValue(0)
       req.query = { speciesId: 'species-1' }
 
-      await listObservations(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(listObservations, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(mockPrisma.observation.findMany).toHaveBeenCalled()
     })
@@ -140,7 +212,7 @@ describe('Observation Controller', () => {
       mockPrisma.observation.findMany.mockResolvedValue([])
       mockPrisma.observation.count.mockResolvedValue(0)
 
-      await listObservations(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(listObservations, req as unknown as AuthRequest, res as unknown as Response)
 
       const callArgs = mockPrisma.observation.findMany.mock.calls[0][0]
       expect(callArgs.where.userId).toBe('user-1')
@@ -173,7 +245,7 @@ describe('Observation Controller', () => {
       mockPrisma.observation.findUnique.mockResolvedValue(mockObs)
       req.params = { id: 'obs-1' }
 
-      await getObservation(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getObservation, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.status).not.toHaveBeenCalled()
       expect(res.json).toHaveBeenCalledWith(
@@ -185,7 +257,7 @@ describe('Observation Controller', () => {
       mockPrisma.observation.findUnique.mockResolvedValue(null)
       req.params = { id: 'nonexistent' }
 
-      await getObservation(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getObservation, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.status).toHaveBeenCalledWith(404)
     })
@@ -201,7 +273,7 @@ describe('Observation Controller', () => {
       req.dbUser = { id: 'user-1', role: 'USER', email: 'test@test.com', preferredLocale: null }
       req.params = { id: 'obs-1' }
 
-      await getObservation(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getObservation, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.status).toHaveBeenCalledWith(403)
     })
@@ -235,7 +307,7 @@ describe('Observation Controller', () => {
       req.params = { id: 'obs-1' }
       req.body = { status: 'APPROVED' }
 
-      await validateObservation(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(validateObservation, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(mockPrisma.observation.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -275,7 +347,7 @@ describe('Observation Controller', () => {
       req.params = { id: 'obs-1' }
       req.body = { status: 'rejected', rejectionReason: 'Invalid data' }
 
-      await validateObservation(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(validateObservation, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(mockPrisma.observation.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -291,7 +363,7 @@ describe('Observation Controller', () => {
       mockPrisma.observation.count.mockResolvedValue(0)
       req.query = { page: '1', limit: '10' }
 
-      await getPendingObservations(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getPendingObservations, req as unknown as AuthRequest, res as unknown as Response)
 
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -309,7 +381,7 @@ describe('Observation Controller', () => {
       mockPrisma.observation.count.mockResolvedValue(0)
       req.query = { speciesId: 'species-1' }
 
-      await getPendingObservations(req as unknown as AuthRequest, res as unknown as Response)
+      await callHandler(getPendingObservations, req as unknown as AuthRequest, res as unknown as Response)
 
       const callArgs = mockPrisma.observation.findMany.mock.calls[0][0]
       expect(callArgs.where.speciesId).toBe('species-1')

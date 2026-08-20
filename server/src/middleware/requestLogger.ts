@@ -9,7 +9,7 @@ export function requestLogger(req: Request, res: Response, next: NextFunction): 
     const level = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info'
 
     logger[level]({
-      requestId: (req as any).requestId,
+      requestId: req.requestId,
       method: req.method,
       path: req.path,
       statusCode: res.statusCode,
