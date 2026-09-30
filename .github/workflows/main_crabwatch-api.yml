@@ -108,7 +108,7 @@ jobs:
               WEBSITE_NODE_DEFAULT_VERSION=22
           # Clear stale Oryx cache and install-done marker via Kudu API
           CREDS=$(az webapp deployment list-publishing-credentials \
-            --resource-group VSES-CrabWatch-MY-RG \
+            --resource-group MSDN-CrabWatch-MY-RG \
             --name crabwatch-api \
             --query "{username: publishingUserName, password: publishingPassword}" \
             -o tsv)
