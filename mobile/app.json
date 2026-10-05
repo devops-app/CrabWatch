@@ -28,7 +28,7 @@
                                 "backgroundColor":  "#0284c7"
                             },
                  "ios":  {
-                             "bundleIdentifier":  "com.crabwatch.app",
+                             "bundleIdentifier":  "com.dsigncodehub.crabwatch",
                              "supportsTablet":  true,
                              "infoPlist":  {
                                                "ITSAppUsesNonExemptEncryption":  false
