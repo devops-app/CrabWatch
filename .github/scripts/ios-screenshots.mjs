@@ -13,7 +13,9 @@ import { spawn } from 'node:child_process'
 import { mkdirSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { remote } from 'appium'
+// appium is CommonJS — named imports fail under ESM, so use default import + destructure
+import appium from 'appium'
+const { remote } = appium
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const OUT_DIR = path.resolve(__dirname, '../../images/screenshots/store')
@@ -92,9 +94,10 @@ try {
   await sleep(1000)
 
   // --- Capture each tab ------------------------------------------------------
+  // Labels must match tabBarAccessibilityLabel in MainTabs.tsx (i18n en values)
   const tabs = [
     { name: 'Home', file: '01-home.png' },
-    { name: 'New', file: '02-new.png' },
+    { name: 'New Observation', file: '02-new.png' },
     { name: 'Analytics', file: '03-analytics.png' },
     { name: 'Profile', file: '04-profile.png' },
   ]
