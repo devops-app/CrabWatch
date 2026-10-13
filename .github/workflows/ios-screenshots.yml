@@ -88,8 +88,15 @@ jobs:
         working-directory: .github/scripts
         run: |
           npm install
-          # Pin driver to v10 — the last major compatible with Appium 2 (v11+ requires Appium 3)
-          npx appium driver install appium-xcuitest-driver@10
+          # Pin driver to v10 — the last major compatible with Appium 2 (v11+ requires Appium 3).
+          # `appium driver install` can't pin versions, so install the package directly
+          # into Appium's home dir, which it auto-discovers.
+          mkdir -p "$HOME/.appium"
+          cd "$HOME/.appium"
+          [ -f package.json ] || npm init -y
+          npm install appium-xcuitest-driver@10
+          cd -
+          npx appium driver list --installed
 
       - name: Capture screenshots
         working-directory: .github/scripts
