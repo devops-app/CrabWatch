@@ -21,7 +21,8 @@ env:
 
 jobs:
   screenshots:
-    runs-on: macos-14
+    # macos-15 ships Xcode 16.x — required by React Native 0.81.6 (macos-14 only has Xcode 15.4)
+    runs-on: macos-15
     timeout-minutes: 45
 
     steps:
