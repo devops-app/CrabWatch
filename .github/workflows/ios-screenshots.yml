@@ -88,7 +88,8 @@ jobs:
         working-directory: .github/scripts
         run: |
           npm install
-          npx appium driver install xcuitest
+          # Pin driver to v10 — the last major compatible with Appium 2 (v11+ requires Appium 3)
+          npx appium driver install appium-xcuitest-driver@10
 
       - name: Capture screenshots
         working-directory: .github/scripts
