@@ -29,7 +29,7 @@
                             },
                  "ios":  {
                              "bundleIdentifier":  "com.dsigncodehub.crabwatch",
-                             "supportsTablet":  true,
+                             "supportsTablet":  false,
                              "infoPlist":  {
                                                "ITSAppUsesNonExemptEncryption":  false
                                            }
