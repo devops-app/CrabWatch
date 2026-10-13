@@ -93,7 +93,9 @@ jobs:
           # into Appium's home dir, which it auto-discovers.
           mkdir -p "$HOME/.appium"
           cd "$HOME/.appium"
-          [ -f package.json ] || npm init -y
+          # npm init -y fails here (dir name ".appium" is an invalid package name),
+          # so write a minimal package.json with an explicit name instead.
+          [ -f package.json ] || printf '{\n  "name": "appium-drivers",\n  "version": "1.0.0",\n  "private": true\n}\n' > package.json
           npm install appium-xcuitest-driver@10
           cd -
           npx appium driver list --installed
