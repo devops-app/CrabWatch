@@ -90,3 +90,7 @@ server/backups/
 # Opencode tooling
 .opencode/node_modules/
 .opencode/package-lock.json
+
+# Generated report exports (too large for git)
+scripts/CrabWatch_Report_*.html
+scripts/CrabWatch_Report_*.pdf
