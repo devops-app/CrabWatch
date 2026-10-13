@@ -9,7 +9,7 @@ permissions:
 
 env:
   APP_NAME: crabwatch-web
-  RESOURCE_GROUP: VSES-CrabWatch-MY-RG
+  RESOURCE_GROUP: MSDN-CrabWatch-MY-RG
   NODE_VERSION: "20.x"
   PNPM_VERSION: "10.33.2"
 

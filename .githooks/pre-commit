@@ -1,0 +1,24 @@
+#!/bin/sh
+# Auto-increment the build version on every commit.
+# Delegates to scripts/version.ps1 (requires PowerShell).
+# If PowerShell is unavailable (e.g. non-Windows CI), the commit proceeds
+# without a version bump.
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+VERSION_SCRIPT="$REPO_ROOT/scripts/version.ps1"
+
+if [ ! -f "$VERSION_SCRIPT" ]; then
+  echo "[pre-commit] scripts/version.ps1 not found - skipping version bump"
+  exit 0
+fi
+
+if command -v pwsh >/dev/null 2>&1; then
+  PS_BIN="pwsh"
+elif command -v powershell.exe >/dev/null 2>&1; then
+  PS_BIN="powershell.exe"
+else
+  echo "[pre-commit] PowerShell (pwsh/powershell.exe) not found - skipping version bump"
+  exit 0
+fi
+
+"$PS_BIN" -NoProfile -ExecutionPolicy Bypass -File "$VERSION_SCRIPT"

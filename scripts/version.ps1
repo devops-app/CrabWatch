@@ -37,6 +37,7 @@ Write-Host "[version] Next:    $newVersion"
 # Target package.json files
 $targets = @(
     "package.json",
+    "shared\package.json",
     "server\package.json",
     "web\package.json",
     "mobile\package.json"

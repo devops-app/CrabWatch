@@ -302,7 +302,9 @@ export const listObservations = asyncHandler(async (req: AuthRequest, res: Respo
       where,
       skip,
       take: limit,
-      orderBy: { createdAt: 'desc' },
+      // Stable sort: createdAt is not unique, so add id as a tiebreaker to
+      // prevent duplicate/missing rows across skip/take pages.
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       include: OBSERVATION_INCLUDE,
     }),
     prisma.observation.count({ where }),
@@ -544,7 +546,9 @@ export const getPendingObservations = asyncHandler(async (req: AuthRequest, res:
       where,
       skip,
       take: limit,
-      orderBy: { createdAt: 'desc' },
+      // Stable sort: createdAt is not unique, so add id as a tiebreaker to
+      // prevent duplicate/missing rows across skip/take pages.
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       include: OBSERVATION_INCLUDE,
     }),
     prisma.observation.count({ where }),

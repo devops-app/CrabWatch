@@ -21,7 +21,11 @@ import {
 import logger from '../utils/logger'
 
 export const activeSessions = new Map<string, { sessionId: string; blobUrls: string[]; lastActive: number; exifNotes?: string }>()
-const ANALYSIS_BLOB_TTL_MS = Number(process.env.ANALYSIS_BLOB_TTL_MS) || 20 * 60 * 1000
+// Generous TTL: the user may review/edit AI results for a long time before
+// submitting. If the blobs are deleted before submit, the copy falls back to a
+// dead /analysis/ URL (permanent 404). 2h covers realistic field-review
+// sessions; active sessions are still cleaned up on submit or supersede.
+const ANALYSIS_BLOB_TTL_MS = Number(process.env.ANALYSIS_BLOB_TTL_MS) || 2 * 60 * 60 * 1000
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000
 let cleanupInterval: ReturnType<typeof setInterval> | null = null
 
@@ -143,6 +147,17 @@ export const analyzeCrabHandler = asyncHandler(async (
 ): Promise<void> => {
   const __ = createTranslator(req)
   const { photoUrls, views, coinType }: CrabAnalysisRequest = req.body
+
+  // Keep the analysis session alive while the user reviews/edits AI results.
+  // The TTL clock otherwise only advances on upload, so a user who uploads and
+  // then spends >TTL reviewing before submitting would have their /analysis/
+  // blobs deleted mid-review, causing the submit-time copy to fall back to a
+  // dead /analysis/ URL (permanent 404). Refreshing here extends the window.
+  const userId = req.dbUser?.id || 'anon'
+  const activeSession = activeSessions.get(userId)
+  if (activeSession) {
+    activeSession.lastActive = Date.now()
+  }
 
   if (!photoUrls || photoUrls.length === 0) {
     throw new ValidationError(__('analysis.photoUrls.required', 'analysis'))
