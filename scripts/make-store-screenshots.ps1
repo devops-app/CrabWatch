@@ -19,7 +19,7 @@ param(
 Add-Type -AssemblyName System.Drawing
 
 if (-not (Test-Path $SourceDir)) {
-    Write-Error "Source folder not found: $SourceDir — copy your iPhone 16 screenshots there first."
+    Write-Error "Source folder not found: $SourceDir - copy your iPhone 16 screenshots there first."
     exit 1
 }
 if (-not (Test-Path $OutDir)) { New-Item -ItemType Directory -Path $OutDir | Out-Null }
@@ -39,7 +39,7 @@ foreach ($file in $files) {
     $src = [System.Drawing.Image]::FromFile($file.FullName)
     try {
         if ($src.Width -ne 1179 -or $src.Height -ne 2556) {
-            Write-Warning "$($file.Name) is $($src.Width)x$($src.Height), expected 1179x2556 — continuing anyway."
+            Write-Warning "$($file.Name) is $($src.Width)x$($src.Height), expected 1179x2556 - continuing anyway."
         }
         foreach ($t in $targets) {
             $bmp = New-Object System.Drawing.Bitmap($t.W, $t.H)

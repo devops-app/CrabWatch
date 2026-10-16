@@ -36,7 +36,7 @@
                          },
                  "android":  {
                                  "icon":  "./assets/icons/app-icon-1024.png",
-                                 "package":  "com.crabwatch.app",
+                                 "package":  "com.dsigncodehub.crabwatch",
                                  "adaptiveIcon":  {
                                                       "foregroundImage":  "./assets/icons/android-adaptive-foreground.png",
                                                       "backgroundColor":  "#0284c7"
@@ -78,7 +78,16 @@
                                          "photosPermission":  "Allow CrabWatch to access your photo library for crab observations."
                                      }
                                  ],
-                                 "expo-notifications"
+                                 "expo-notifications",
+                                 [
+                                     "expo-build-properties",
+                                     {
+                                         "android":  {
+                                                         "compileSdkVersion":  36,
+                                                         "targetSdkVersion":  36
+                                                     }
+                                     }
+                                 ]
                              ],
                  "experiments":  {
                                      "tsconfigPaths":  true

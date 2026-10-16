@@ -189,7 +189,7 @@ function CameraModalContent({
             !quality.overallReady && styles.captureButtonDimmed,
           ]}
           onPress={handleCaptureFromCamera}
-          disabled={capturing || !quality.overallReady}
+          disabled={capturing}
           accessibilityLabel={t('takePhotoA11y')}
         >
           <View
@@ -299,7 +299,7 @@ export function GuidedCaptureScreen() {
   const [analyzingQuality, setAnalyzingQuality] = useState(false)
   const [sessionId] = useState(createUploadSessionId)
 
-  const { quality, sampleBrightnessFromUri, startSampling, stopSampling } = useCaptureAssistance()
+  const { quality, sampleBrightnessFromUri } = useCaptureAssistance()
 
   const CAPTURE_STEPS = useMemo(() => CAPTURE_STEP_KEYS.map((s) => ({
     ...s,
@@ -396,46 +396,15 @@ export function GuidedCaptureScreen() {
  
 
  
-  // Initial brightness + focus sample when camera opens
-  useEffect(() => {
-    if (!cameraVisible || capturing) return
-
-    ;(async () => {
-      try {
-        const frame = await safeCapture({
-          quality: 0.5,
-          skipProcessing: true,
-        })
-        if (frame?.uri) {
-          await sampleBrightnessFromUri(frame.uri)
-        }
-      } catch {
-        // Ignore initial brightness sampling errors
-      }
-    })()
-  }, [cameraVisible, capturing, sampleBrightnessFromUri, safeCapture])
-
-  // Delegate periodic brightness re-sampling to the hook.
-  // safeCapture provides the component-wide lock so the tick never overlaps
-  // with manual capture, focus tap, or the initial sample.
-  useEffect(() => {
-    if (!cameraVisible || capturing) {
-      stopSampling()
-      return
-    }
-
-    startSampling(async () => {
-      const frame = await safeCapture({
-        quality: 0.3,
-        skipProcessing: true,
-      })
-      if (frame?.uri) {
-        await sampleBrightnessFromUri(frame.uri)
-      }
-    })
-
-    return () => stopSampling()
-  }, [cameraVisible, capturing, sampleBrightnessFromUri, startSampling, stopSampling, safeCapture])
+  // NOTE: Automatic frame sampling (initial + periodic) was intentionally removed.
+  // On iOS every takePictureAsync call plays the camera shutter sound, so the
+  // 3-second periodic sampler made the app appear to "keep capturing" while the
+  // user was framing the shot, and the initial sampler re-fired after every real
+  // capture. Those sampled blur/brightness scores were also used to disable the
+  // capture button (overallReady), which left users stuck when the uncalibrated
+  // thresholds flagged a perfectly good frame. Photo quality is now enforced by
+  // the post-capture quality gate (QualityGateCard) instead. Tap-to-focus sampling
+  // (handleFocus) is kept because it is user-initiated.
 
   const currentView = CAPTURE_STEP_KEYS[currentStep]?.key || 'dorsal'
   const isLastStep = currentStep === CAPTURE_STEP_KEYS.length - 1

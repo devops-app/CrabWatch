@@ -1,1 +1,3 @@
 .expo/
+.env
+google-service-account.json

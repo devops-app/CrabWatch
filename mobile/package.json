@@ -1,6 +1,6 @@
 {
     "name":  "@crabwatch/mobile",
-    "version":  "1.0.2+0026",
+    "version":  "1.0.2+0027",
     "private":  true,
     "main":  "index.js",
     "scripts":  {
@@ -32,6 +32,7 @@
                          "@react-navigation/native-stack":  "^7.3.9",
                          "expo":  "~54.0.35",
                          "expo-application":  "~7.0.8",
+                         "expo-build-properties":  "~1.0.10",
                          "expo-camera":  "~17.0.10",
                          "expo-constants":  "~18.0.0",
                          "expo-dev-client":  "~6.0.21",
@@ -68,8 +69,6 @@
                      },
     "devDependencies":  {
                             "@babel/core":  "^7.24.0",
-                            "babel-jest":  "~29.7.0",
-                            "babel-preset-expo":  "~54.0.0",
                             "@testing-library/jest-native":  "^5.4.3",
                             "@testing-library/react":  "^16.3.2",
                             "@testing-library/react-native":  "^13.3.3",
@@ -78,6 +77,8 @@
                             "@types/node":  "^20.0.0",
                             "@types/react":  "~19.1.0",
                             "@types/react-dom":  "~19.1.0",
+                            "babel-jest":  "~29.7.0",
+                            "babel-preset-expo":  "~54.0.0",
                             "identity-obj-proxy":  "^3.0.0",
                             "jest":  "~29.7.0",
                             "jest-environment-jsdom":  "~29.7.0",
