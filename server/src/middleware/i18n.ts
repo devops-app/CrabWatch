@@ -51,7 +51,22 @@ export function createTranslator(req: Request): (key: string, ns?: string, optio
       fixedT = i18n.getFixedT(locale, namespace)
       nsMap.set(namespace, fixedT)
     }
-    return fixedT(key, options)
+    // The codebase uses two key conventions:
+    //   - `__('notFound', 'species')`            -> key relative to namespace
+    //   - `__('species.notFound', 'species')`    -> key already includes namespace
+    // i18next treats `.` as a path separator, so the second form looks up
+    // `species.species.notFound` (not found) and returns the raw key. Try the
+    // key as-is first; if i18next returns it unchanged (not found) and it
+    // starts with `<namespace>.`, retry with the prefix stripped. This keeps
+    // flat keys that legitimately start with the namespace name intact.
+    const full = fixedT(key, options)
+    if (full !== key) return full
+    if (key.startsWith(`${namespace}.`)) {
+      const strippedKey = key.slice(namespace.length + 1)
+      const stripped = fixedT(strippedKey, options)
+      if (stripped !== strippedKey) return stripped
+    }
+    return full
   }
 }
 

@@ -10,7 +10,13 @@ export function isSafeImageUrl(url: string): boolean {
   try {
     const { protocol, hostname } = new URL(url)
     if (protocol !== 'https:') return false
-    return ALLOWED_HOSTS.has(hostname)
+    // Azure Blob Storage URLs are shaped `<account>.blob.core.windows.net`,
+    // so the hostname includes the storage-account subdomain. Match the base
+    // domain either exactly or as a subdomain suffix (e.g.
+    // `crabwatch04052026.blob.core.windows.net` ends with `.blob.core.windows.net`).
+    return Array.from(ALLOWED_HOSTS).some(
+      (host) => hostname === host || hostname.endsWith(`.${host}`),
+    )
   } catch {
     return false
   }
