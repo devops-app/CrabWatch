@@ -1,26 +1,6 @@
 import * as ImageManipulator from 'expo-image-manipulator'
 import { decode as decodeJpeg } from 'jpeg-js'
-
-function base64ToUint8Array(base64: string): Uint8Array {
-  if (typeof atob === 'function') {
-    const binary = atob(base64)
-    const bytes = new Uint8Array(binary.length)
-    for (let i = 0; i < binary.length; i += 1) {
-      bytes[i] = binary.charCodeAt(i)
-    }
-    return bytes
-  }
-
-  const maybeBuffer = (globalThis as unknown as {
-    Buffer?: { from: (input: string, encoding: string) => Uint8Array }
-  }).Buffer
-
-  if (maybeBuffer?.from) {
-    return maybeBuffer.from(base64, 'base64')
-  }
-
-  throw new Error('Base64 decoding is not available on this device')
-}
+import { base64ToUint8Array } from './base64'
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value))

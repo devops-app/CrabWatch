@@ -144,12 +144,12 @@ export const completeOnboardingStepSchema = z.object({
 })
 
 export const claimMissionSchema = z.object({
-  missionId: z.string().uuid(),
+  missionCode: z.string().min(1),
 })
 
 export const updateMissionProgressSchema = z.object({
-  missionId: z.string().uuid(),
-  progress: z.number().min(0),
+  missionCode: z.string().min(1),
+  increment: z.number().min(0).optional(),
 })
 
 // Translation CRUD schemas

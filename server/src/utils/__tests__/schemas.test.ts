@@ -257,4 +257,48 @@ describe('Zod Schemas', () => {
       expect(result.success).toBe(false)
     })
   })
+
+  describe('claimMissionSchema', () => {
+    it('should validate a mission code', () => {
+      const result = schemas.claimMissionSchema.safeParse({ missionCode: 'daily_observer' })
+      expect(result.success).toBe(true)
+    })
+
+    it('should fail when missionCode is missing', () => {
+      const result = schemas.claimMissionSchema.safeParse({})
+      expect(result.success).toBe(false)
+    })
+
+    it('should fail when missionCode is empty', () => {
+      const result = schemas.claimMissionSchema.safeParse({ missionCode: '' })
+      expect(result.success).toBe(false)
+    })
+
+    it('should accept a UUID-like code (not restricted to uuid)', () => {
+      const result = schemas.claimMissionSchema.safeParse({ missionCode: 'a944b293-0000-4000-8000-000000000000' })
+      expect(result.success).toBe(true)
+    })
+  })
+
+  describe('updateMissionProgressSchema', () => {
+    it('should validate missionCode with increment', () => {
+      const result = schemas.updateMissionProgressSchema.safeParse({ missionCode: 'daily_observer', increment: 1 })
+      expect(result.success).toBe(true)
+    })
+
+    it('should validate missionCode without increment', () => {
+      const result = schemas.updateMissionProgressSchema.safeParse({ missionCode: 'daily_observer' })
+      expect(result.success).toBe(true)
+    })
+
+    it('should fail when missionCode is missing', () => {
+      const result = schemas.updateMissionProgressSchema.safeParse({ increment: 1 })
+      expect(result.success).toBe(false)
+    })
+
+    it('should fail when increment is negative', () => {
+      const result = schemas.updateMissionProgressSchema.safeParse({ missionCode: 'daily_observer', increment: -1 })
+      expect(result.success).toBe(false)
+    })
+  })
 })

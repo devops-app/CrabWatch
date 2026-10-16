@@ -8,6 +8,7 @@ import {
   DEFAULT_BLUR_THRESHOLDS,
   rgbaToLuminance,
 } from '@crabwatch/shared'
+import { base64ToUint8Array } from '../utils/base64'
 
 // EXIF orientation tag (0x0112) — maps to rotation degrees
 const EXIF_TAG_ORIENTATION = 0x0112
@@ -24,14 +25,9 @@ const EXIF_ORIENTATION_ROTATION: Record<number, number> = {
 async function getExifOrientation(uri: string): Promise<number | null> {
   try {
     const b64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' })
-    const bin = atob(b64)
-    if (bin.length < 8 || bin.charCodeAt(0) !== 0xff || bin.charCodeAt(1) !== 0xd8) {
+    const bytes = base64ToUint8Array(b64)
+    if (bytes.length < 8 || bytes[0] !== 0xff || bytes[1] !== 0xd8) {
       return null
-    }
-
-    const bytes = new Uint8Array(bin.length)
-    for (let i = 0; i < bin.length; i++) {
-      bytes[i] = bin.charCodeAt(i)
     }
 
     // Scan JPEG segments for APP1 (0xffe1) + "Exif" marker
@@ -118,27 +114,6 @@ async function ensureJpeg(uri: string): Promise<string> {
     return result.uri
   }
   return uri
-}
-
-function base64ToUint8Array(base64: string): Uint8Array {
-  if (typeof atob === 'function') {
-    const binary = atob(base64)
-    const bytes = new Uint8Array(binary.length)
-    for (let i = 0; i < binary.length; i += 1) {
-      bytes[i] = binary.charCodeAt(i)
-    }
-    return bytes
-  }
-
-  const maybeBuffer = (globalThis as unknown as {
-    Buffer?: { from: (input: string, encoding: string) => Uint8Array }
-  }).Buffer
-
-  if (maybeBuffer?.from) {
-    return maybeBuffer.from(base64, 'base64')
-  }
-
-  throw new Error('Base64 decoding is not available on this device')
 }
 
 export const photoService = {

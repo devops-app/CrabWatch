@@ -1,5 +1,5 @@
 param(
-  [string]$ResourceGroup = "VSES-CrabWatch-MY-RG",
+  [string]$ResourceGroup = "MSDN-CrabWatch-MY-RG",
   [string]$ApiAppName = "crabwatch-api",
   [string]$ZipPath = "",
   [switch]$SkipInstall,
@@ -234,20 +234,49 @@ try {
   Copy-Item -Path (Join-Path $serverDir "dist") -Destination (Join-Path $stagingServerDir "dist") -Recurse -Force
   Copy-Item -Path (Join-Path $serverDir "package.json") -Destination (Join-Path $stagingServerDir "package.json") -Force
   Copy-Item -Path (Join-Path $serverDir "prisma") -Destination (Join-Path $stagingServerDir "prisma") -Recurse -Force
-  Copy-Item -Path (Join-Path $repoRoot "shared/dist") -Destination (Join-Path $stagingSharedBundleDir "dist") -Recurse -Force
-  Copy-Item -Path (Join-Path $repoRoot "shared/package.json") -Destination $stagingSharedBundleDir -Force
+
+  # Remove the @crabwatch/shared workspace dependency (npm can't parse the
+  # pnpm-only `workspace:*` protocol — it fails with EUNSUPPORTEDPROTOCOL).
+  # The shared package is bundled manually into node_modules/@crabwatch/shared
+  # after npm install, mirroring the GitHub Actions workflow
+  # (main_crabwatch-api.yml).
+  $stagingPkgPath = Join-Path $stagingServerDir "package.json"
+  $pkgLines = Get-Content -LiteralPath $stagingPkgPath
+  $pkgLines = $pkgLines | Where-Object { $_ -notmatch '"@crabwatch/shared"' }
+  # Write UTF-8 WITHOUT BOM — PowerShell 5.1's `Set-Content -Encoding utf8`
+  # prepends a BOM (\uFEFF) which makes npm/prisma fail to parse the JSON.
+  [System.IO.File]::WriteAllLines($stagingPkgPath, $pkgLines, (New-Object System.Text.UTF8Encoding $false))
 
   # Install production dependencies in staging so they're bundled in the zip.
   # This eliminates the fragile post-deploy npm install and Oryx symlink race condition.
+  # npm writes deprecation warnings to stderr; under the script's
+  # $ErrorActionPreference='Stop' those become terminating ErrorRecords if
+  # streamed to the host. Capture into a variable with EAP lowered so the real
+  # exit code is what we check.
   Write-Host "Installing production dependencies in staging directory..."
   Push-Location $stagingServerDir
-  npm install --omit=dev --no-audit --no-fund --no-package-lock 2>&1 | Select-Object -Last 5
-  if ($LASTEXITCODE -ne 0) {
-    Pop-Location
-    throw "npm install in staging directory failed"
-  }
+  $prevEAP = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  $npmOutput = npm install --omit=dev --no-audit --no-fund --no-package-lock 2>&1
+  $npmExit = $LASTEXITCODE
+  $ErrorActionPreference = $prevEAP
   Pop-Location
+  if ($npmExit -ne 0) {
+    $npmOutput | Select-Object -Last 20 | ForEach-Object { Write-Host $_ }
+    throw "npm install in staging directory failed (exit code $npmExit)"
+  }
+  $npmOutput | Select-Object -Last 5 | ForEach-Object { Write-Host $_ }
   Write-Host "Production dependencies installed in staging"
+
+  # Bundle @crabwatch/shared (workspace package — npm install doesn't know about it).
+  # Must match shared/package.json "main": "dist/index.js" — wrap contents in dist/.
+  # Create the destination dir first: Copy-Item with a wildcard source fails
+  # ("Container cannot be copied onto existing leaf item") when the target
+  # doesn't already exist.
+  $stagingSharedDistDir = Join-Path $stagingSharedBundleDir "dist"
+  New-Item -ItemType Directory -Force -Path $stagingSharedDistDir | Out-Null
+  Copy-Item -Path (Join-Path $repoRoot "shared\dist\*") -Destination $stagingSharedDistDir -Recurse -Force
+  Copy-Item -Path (Join-Path $repoRoot "shared\package.json") -Destination $stagingSharedBundleDir -Force
 
   # Include startup wrapper in package so direct zip deploys always have start.sh.
   $startupWrapperPath = Join-Path $PSScriptRoot "startup-wrapper.sh"
@@ -337,6 +366,12 @@ try {
     }
 
     if (-not $deployed) {
+      Write-Warning "az webapp deploy failed. Stopping app, then Kudu upload + unzip."
+      # Stop the app first so native module file locks (sharp, @grpc, @opentelemetry,
+      # firebase-admin, etc.) are released. Otherwise `rm -rf /home/site/wwwroot/*`
+      # fails with "Directory not empty" on the bundled_modules subdirectories.
+      Invoke-Checked -FilePath $azPath -Arguments @('webapp', 'stop', '--resource-group', $ResourceGroup, '--name', $ApiAppName) -ErrorMessage "az webapp stop failed"
+
       $uploadHeaders = @{}
       foreach ($key in $kuduHeaders.Keys) {
         $uploadHeaders[$key] = $kuduHeaders[$key]
@@ -344,10 +379,20 @@ try {
       $uploadHeaders['If-Match'] = '*'
 
       Invoke-WebRequest -Uri "https://$ApiAppName.scm.azurewebsites.net/api/vfs/tmp/server-deploy.zip" -Method PUT -Headers $uploadHeaders -InFile $ZipPath -ContentType "application/zip" -UseBasicParsing | Out-Null
-      $unzipResult = Invoke-KuduCommandWithRetry -ApiName $ApiAppName -Headers $kuduHeaders -Command 'bash -lc "rm -rf /home/site/wwwroot/* && unzip -o /home/tmp/server-deploy.zip -d /home/site/wwwroot"'
+      # Atomic rename instead of `rm -rf /home/site/wwwroot/*`: on App Service Linux the
+      # Kudu deployment service holds handles on wwwroot, so `rm -rf` fails with
+      # "Directory not empty" even when the app is stopped. A rename (mv) is a single
+      # atomic syscall that works regardless of open handles. We move the old tree aside,
+      # unzip into a fresh wwwroot, then best-effort clean up the old tree. The exit code
+      # reflects unzip success so failures are still detected.
+      $unzipCmd = 'bash -lc "TS=$(date +%s); mv /home/site/wwwroot /home/site/wwwroot.old.$TS 2>/dev/null; mkdir -p /home/site/wwwroot; unzip -o /home/tmp/server-deploy.zip -d /home/site/wwwroot; RC=$?; rm -rf /home/site/wwwroot.old.$TS 2>/dev/null; exit $RC"'
+      $unzipResult = Invoke-KuduCommandWithRetry -ApiName $ApiAppName -Headers $kuduHeaders -Command $unzipCmd
       if ($unzipResult.ExitCode -ne 0) {
         throw "Kudu unzip failed: $($unzipResult.Error)"
       }
+      # Restart the app now that the new code is in place
+      Invoke-Checked -FilePath $azPath -Arguments @('webapp', 'start', '--resource-group', $ResourceGroup, '--name', $ApiAppName) -ErrorMessage "az webapp start failed"
+      $deployed = $true
     }
 
     # Upload startup wrapper AFTER deploy so it survives --clean true

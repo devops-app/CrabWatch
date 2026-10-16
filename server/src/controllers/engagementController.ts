@@ -185,7 +185,10 @@ export const getActiveMissions = asyncHandler(async (req: AuthRequest, res: Resp
     )
 
     return {
+      id: mission.id,
       code: mission.code,
+      key: mission.code,
+      name: mission.name,
       title: mission.name,
       description: mission.description,
       targetCount,

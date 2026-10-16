@@ -1,7 +1,7 @@
 ﻿# CrabWatch — Work Progress Tracker
 
-> **Last Updated**: 2026-06-27
-> **Current Focus**: Dynamic version display across all 3 platforms. `GET /health` exposes server version.
+> **Last Updated**: 2026-10-16
+> **Current Focus**: Production API now on `1.0.2+0028` (i18n key-resolution + Azure Blob URL fixes live). Deploy via GitHub Actions workflow `main_crabwatch-api.yml`.
 
 ## Goal
 Build an AI-guided crab observation capture flow with fully dynamic species detection. The AI identifies any crab species in photos, and unknown species are auto-created in the database.
@@ -575,8 +575,17 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Verified: Server unit tests — 12/12 suites, 154 tests passing (integration test requires live DB at localhost:5432)
 - Verified: Mobile tests — 34/34 suites, 354/354 tests passing
 
+### Completed (AI Analysis Flow Fix + Production Deploy)
+- Completed: Fixed `isSafeImageUrl` to allow account-prefixed Azure Blob hosts (`<account>.blob.core.windows.net`) via subdomain-suffix matching — was blocking the app's own uploads and causing `common.internalError` in the AI analysis flow
+- Completed: Fixed systemic i18n key-resolution bug — namespaced keys like `__('species.notFound', 'species')` resolved to `species.species.notFound` and returned the raw key; translator now handles flat dotted keys correctly
+- Completed: Committed + pushed both fixes (`f8910c4`)
+- Completed: Deployed to production via GitHub Actions workflow `main_crabwatch-api.yml` (workflow_dispatch) — run 38914769196, all steps green
+- Verified: `GET /health` returns `{"status":"ok","version":"1.0.2+0028"}` — production live
+- Completed: Hardened `scripts/deploy-server.ps1` Kudu fallback — stop app before wipe, atomic `mv` rename of `wwwroot` instead of `rm -rf` (unreliable on App Service Linux: "Directory not empty" even when app stopped), restart after
+- Note: first boot after a fresh GitHub Actions deploy can hit a transient `mv: cannot move 'bundled_modules' to 'node_modules': Permission denied` (Oryx settling); a full reboot (`az webapp restart`) resolves it
+
 ## Next Steps
-- Verify API deployment succeeds with fixed `shared/tsconfig.json`
+- Fix Android Play Console submit failure ("Precondition check failed" ×5 at "Updating track 'production'")
 - Validate — Mobile staging build with `warn`/`soft_block`/`hard_block` quality gate configs
 - Test researcher observation approval/rejection flow end-to-end on — Mobile
 - Test admin user management, backup, and invite flows on — Mobile
@@ -584,6 +593,7 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Run UAT test cases (270 cases across 20 modules) to verify all features
 
 ## Key Decisions
+- **Server deployment path**: Use the GitHub Actions workflow `main_crabwatch-api.yml` (workflow_dispatch) for production deploys — it handles the ~138 MB zip reliably. The local `deploy-server.ps1` `az webapp deploy` consistently 504s on the large zip, and `rm -rf /home/site/wwwroot/*` is unreliable on App Service Linux (Kudu holds handles → "Directory not empty" even with the app stopped). Workflow dispatch without `gh` CLI: extract the stored git credential in-process and POST to `repos/devops-app/CrabWatch/actions/workflows/main_crabwatch-api.yml/dispatches`.
 - **Dynamic species**: AI identifies any crab species; server auto-creates via `upsert` on `speciesName`
 - **Gender mapping**: `gender` in app layer, `sex` DB column preserved via Prisma `@map`
 - **Photo flow**: Guided multi-shot (dorsal → ventral → optional close-up) with quality gates
