@@ -56,6 +56,20 @@ function hasAtMostTwoDecimalPlaces(value: string): boolean {
   return /^\d+(\.\d{1,2})?$/.test(normalized)
 }
 
+/**
+ * Detect whether the current device is a mobile phone/tablet. On mobile, the
+ * "Open Camera" button opens the native camera app (via a file input with
+ * capture="environment") instead of an embedded getUserMedia webcam, which is
+ * unreliable and low-resolution on phones.
+ */
+function isMobileDevice(): boolean {
+  if (typeof navigator === 'undefined') return false
+  const uaData = (navigator as Navigator & { userAgentData?: { mobile?: boolean } }).userAgentData
+  if (uaData?.mobile) return true
+  const ua = navigator.userAgent || ''
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile/i.test(ua)
+}
+
 type CheckStatus = 'pass' | 'warn' | 'fail'
 
 interface PhotoQualityAssessment {
@@ -288,6 +302,8 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const fileInputSourceRef = useRef<QualityInputSource>('upload')
+  const isMobile = useMemo(() => isMobileDevice(), [])
   const [, startTransition] = useTransition()
 
   useEffect(() => {
@@ -520,6 +536,15 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
   }
 
   const startCamera = async () => {
+    // On mobile, open the native camera app (via the file input with
+    // capture="environment") instead of an embedded getUserMedia webcam, which
+    // is unreliable and low-resolution on phones. The captured photo flows back
+    // through onFileSelected with inputSource 'camera'.
+    if (isMobile) {
+      fileInputSourceRef.current = 'camera'
+      fileInputRef.current?.click()
+      return
+    }
     if (!window.isSecureContext) {
       setCameraError(t('cameraRequiresHttps'))
       return
@@ -668,15 +693,21 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
     validateCapturedPhoto(dataUrl, currentView, 'camera')
   }
 
+  const onUploadClick = () => {
+    fileInputSourceRef.current = 'upload'
+    fileInputRef.current?.click()
+  }
+
   const onFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
+    const inputSource = fileInputSourceRef.current
     const reader = new FileReader()
     reader.onload = () => {
       const result = reader.result
       if (typeof result === 'string') {
         setPhotos((prev) => ({ ...prev, [currentView]: result }))
-        validateCapturedPhoto(result, currentView, 'upload', file)
+        validateCapturedPhoto(result, currentView, inputSource, file)
       }
     }
     reader.readAsDataURL(file)
@@ -1171,6 +1202,7 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
             onCapture={capturePhoto}
             onStartCamera={startCamera}
             onStopCamera={stopCamera}
+            onUploadClick={onUploadClick}
             onFileSelected={onFileSelected}
             onRetake={handleRetakeCurrent}
             onNext={handleNext}

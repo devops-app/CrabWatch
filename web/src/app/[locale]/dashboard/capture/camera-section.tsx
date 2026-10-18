@@ -21,6 +21,7 @@ interface CameraSectionProps {
   onCapture: () => void
   onStartCamera: () => void
   onStopCamera: () => void
+  onUploadClick: () => void
   onFileSelected: (event: React.ChangeEvent<HTMLInputElement>) => void
   onRetake: () => void
   onNext: () => void
@@ -43,6 +44,7 @@ export function CameraSection({
   onCapture,
   onStartCamera,
   onStopCamera,
+  onUploadClick,
   onFileSelected,
   onRetake,
   onNext,
@@ -108,7 +110,7 @@ export function CameraSection({
           ) : (
             <div className="flex flex-wrap gap-2">
               <button type="button" className="btn-primary" onClick={onStartCamera} aria-label={t('client.openCamera')}>{t('camera.openCamera')}</button>
-               <button type="button" className="btn-secondary" onClick={() => fileInputRef.current?.click()} aria-label={t('client.uploadFromFile')}>{t('camera.uploadPhoto')}</button>
+               <button type="button" className="btn-secondary" onClick={onUploadClick} aria-label={t('client.uploadFromFile')}>{t('camera.uploadPhoto')}</button>
             </div>
           )}
           {cameraError && <p className="text-sm text-red-600">{cameraError}</p>}
