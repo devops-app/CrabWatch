@@ -12,6 +12,56 @@ export const DEFAULT_BLUR_THRESHOLDS: BlurThresholds = {
 
 export type BlurStatus = 'fail' | 'warn' | 'pass'
 
+export interface BrightnessThresholds {
+  /** Below this (0-1) the image is too dark to analyze reliably. */
+  dark: number
+  /** Below this the image is underexposed (warn). */
+  low: number
+  /** Above this the image is overexposed (warn). */
+  bright: number
+}
+
+export const DEFAULT_BRIGHTNESS_THRESHOLDS: BrightnessThresholds = {
+  dark: 0.15,
+  low: 0.4,
+  bright: 0.8,
+}
+
+/**
+ * Single source of truth for mapping a normalized brightness value (0-1) to a
+ * quality-gate status. Used by both web and mobile so the two platforms agree
+ * on how dark/low/bright images are classified.
+ *
+ * - `brightness < dark`   -> 'fail' (too dark)
+ * - `brightness < low`    -> 'warn' (underexposed)
+ * - `brightness > bright` -> 'warn' (overexposed)
+ * - otherwise             -> 'pass'
+ */
+export function classifyBrightness(
+  brightness: number,
+  thresholds: BrightnessThresholds = DEFAULT_BRIGHTNESS_THRESHOLDS,
+): BlurStatus {
+  if (!Number.isFinite(brightness)) return 'fail'
+  if (brightness < thresholds.dark) return 'fail'
+  if (brightness < thresholds.low) return 'warn'
+  if (brightness > thresholds.bright) return 'warn'
+  return 'pass'
+}
+
+/**
+ * Detect whether a file is an HEIC/HEIF image (the default iPhone camera
+ * format). Browsers cannot reliably decode or convert HEIC, so web capture
+ * should reject these with a clear message instead of producing a blank or
+ * mis-scored quality assessment. Mobile handles HEIC natively via `ensureJpeg`.
+ */
+export function isHeicFile(file: { name?: string; type?: string } | null | undefined): boolean {
+  if (!file) return false
+  const name = (file.name || '').toLowerCase()
+  if (name.endsWith('.heic') || name.endsWith('.heif')) return true
+  const type = (file.type || '').toLowerCase()
+  return type === 'image/heic' || type === 'image/heif'
+}
+
 function clampByte(value: number): number {
   if (!Number.isFinite(value)) return 0
   if (value < 0) return 0

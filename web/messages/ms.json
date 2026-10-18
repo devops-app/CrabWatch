@@ -550,7 +550,8 @@
         "overrideSaved": "Override disimpan untuk foto ini.",
         "blockingStep": "Langkah ini mempunyai kegagalan kualiti kritikal. Ambil semula atau beri sebab override.",
         "blockingAnalyze": "Sekurang-kurangnya satu foto wajib gagal semakan kualiti. Ambil semula atau tambah sebab override.",
-        "webcamLowRes": "Resolusi webcam rendah ({width}x{height}). Untuk ketepatan lebih baik, muat naik foto dari telefon."
+        "webcamLowRes": "Resolusi webcam rendah ({width}x{height}). Untuk ketepatan lebih baik, muat naik foto dari telefon.",
+        "heicUnsupported": "Foto HEIC/HEIF (format lalai iPhone) tidak boleh diproses dalam pelayar. Sila tukar kepada JPEG dahulu, atau gunakan aplikasi mudah alih."
       }
     }
   },

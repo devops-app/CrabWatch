@@ -1,5 +1,5 @@
 import { api } from './api'
-import { CrabAnalysisRequest, CrabAnalysisResult, PhotoView, AnalysisStatus, ViewDetectionResult, isGateBlocking } from '@crabwatch/shared'
+import { CrabAnalysisRequest, CrabAnalysisResult, PhotoView, AnalysisStatus, ViewDetectionResult, classifyBrightness, isGateBlocking } from '@crabwatch/shared'
 import { photoService } from './photoService'
 import { QUALITY_GATE_MODES } from '../utils/constants'
 
@@ -45,10 +45,9 @@ export const analysisService = {
         const override = qualityOverrides?.[view]
         const canOverride = Boolean(override?.approved && (override.reason || '').trim().length >= 5)
         const blurBlocking = isGateBlocking(quality.blurStatus, QUALITY_GATE_MODES.blur)
-        const brightnessStatus: 'pass' | 'warn' | 'fail' =
-          quality.brightnessLevel === 'dark' ? 'fail'
-            : quality.brightnessLevel === 'low' ? 'warn'
-              : 'pass'
+        // Use the shared brightness classifier so this pre-upload gate matches
+        // the capture screen (bright > 0.8 -> warn) instead of silently passing.
+        const brightnessStatus: 'pass' | 'fail' | 'warn' = classifyBrightness(quality.brightness)
         const brightnessBlocking = isGateBlocking(brightnessStatus, QUALITY_GATE_MODES.brightness)
         const hasBlockingFailure = blurBlocking || brightnessBlocking
         return {

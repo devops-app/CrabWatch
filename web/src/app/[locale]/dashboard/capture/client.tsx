@@ -8,7 +8,7 @@ import Image from 'next/image'
 import type { CrabAnalysisResult, PhotoView, QualityIssueCode, SpeciesResponse } from '@crabwatch/shared'
 import { api } from '@/lib/api'
 import { assessWebBlur } from '@/utils/imageQuality'
-import { MALAYSIA_BOUNDS, applyGateModeToStatus, isGateBlocking, isGateOverridable, normalizeGateMode } from '@crabwatch/shared'
+import { MALAYSIA_BOUNDS, applyGateModeToStatus, classifyBrightness, isGateBlocking, isGateOverridable, isHeicFile, normalizeGateMode } from '@crabwatch/shared'
 import type { QualityGateModes } from '@crabwatch/shared'
 import {
   CAPTURE_STEPS,
@@ -167,7 +167,7 @@ function evaluatePhotoQuality(imageData: ImageData, aspectRatio: number): PhotoQ
   }
 
   const brightness = luminance.length > 0 ? luminanceSum / luminance.length / 255 : 0
-  const rawBrightnessStatus: CheckStatus = brightness < 0.15 ? 'fail' : (brightness < 0.4 || brightness > 0.8 ? 'warn' : 'pass')
+  const rawBrightnessStatus: CheckStatus = classifyBrightness(brightness)
   const brightnessStatus = applyGateModeToStatus(rawBrightnessStatus, QUALITY_GATE_MODES.brightness)
 
   const coveragePct = estimateCoveragePct(luminance, imageData.width, imageData.height)
@@ -701,6 +701,11 @@ export function CaptureClient({ initialSpecies }: CaptureClientProps): React.JSX
   const onFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
+    if (isHeicFile(file)) {
+      setFlash({ tone: 'error', text: t('quality.heicUnsupported') })
+      event.target.value = ''
+      return
+    }
     const inputSource = fileInputSourceRef.current
     const reader = new FileReader()
     reader.onload = () => {

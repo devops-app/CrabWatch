@@ -550,7 +550,8 @@
         "overrideSaved": "Override saved for this photo.",
         "blockingStep": "This step has blocking quality failures. Retake or provide override reason.",
         "blockingAnalyze": "At least one required photo failed quality checks. Retake or add override reason.",
-        "webcamLowRes": "Webcam resolution is low ({width}x{height}). For better accuracy, upload a phone photo."
+        "webcamLowRes": "Webcam resolution is low ({width}x{height}). For better accuracy, upload a phone photo.",
+        "heicUnsupported": "HEIC/HEIF photos (default iPhone format) can't be processed in the browser. Please convert to JPEG first, or use the mobile app."
       }
     }
   },

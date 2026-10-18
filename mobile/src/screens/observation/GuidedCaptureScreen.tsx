@@ -28,7 +28,7 @@ import { Button } from '../../components/common/Button'
 import { CaptureFrameOverlay } from '../../components/observation/CaptureFrameOverlay'
 import { useCaptureAssistance } from '../../hooks/useCaptureAssistance'
 import { analyzeView } from '../../utils/viewAnalysis'
-import { PhotoView, applyGateModeToStatus, isGateBlocking, isGateOverridable } from '@crabwatch/shared'
+import { PhotoView, applyGateModeToStatus, classifyBrightness, isGateBlocking, isGateOverridable } from '@crabwatch/shared'
 import { PhotoTipsModal } from '../../components/observation/PhotoTipsModal'
 import {
   MobileQualityAssessment,
@@ -423,12 +423,9 @@ export function GuidedCaptureScreen() {
     try {
       const quality = await photoService.assessImageQuality(uri)
       let blurStatus = quality.blurStatus
-      let brightnessStatus: 'fail' | 'warn' | 'pass' =
-        quality.brightnessLevel === 'dark'
-          ? 'fail'
-          : quality.brightnessLevel === 'low' || quality.brightnessLevel === 'bright'
-            ? 'warn'
-            : 'pass'
+      // Use the shared brightness classifier so web and mobile agree on
+      // dark/low/bright handling (bright > 0.8 -> warn).
+      let brightnessStatus: 'fail' | 'warn' | 'pass' = classifyBrightness(quality.brightness)
 
       blurStatus = applyGateModeToStatus(blurStatus, QUALITY_GATE_MODES.blur)
       brightnessStatus = applyGateModeToStatus(brightnessStatus, QUALITY_GATE_MODES.brightness)
