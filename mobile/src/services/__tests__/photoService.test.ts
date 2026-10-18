@@ -151,6 +151,46 @@ describe('photoService', () => {
     })
   })
 
+  describe('assessImageQuality', () => {
+    it('falls back to reading the resized file when base64 is missing', async () => {
+      // Simulate the iOS case where the manipulator returns no base64 payload.
+      mockImageManipulator.manipulateAsync.mockResolvedValue({
+        uri: 'file://resized.jpg',
+        width: 256,
+        height: 192,
+      })
+      // Return some non-empty base64 so the fallback read yields data.
+      mockFileSystem.readAsStringAsync.mockResolvedValue(Buffer.from('jpeg-bytes').toString('base64'))
+
+      const result = await photoService.assessImageQuality('file://photo.jpg')
+
+      // The core of the fix: when the manipulator gives no base64, we read the
+      // resized file directly instead of bailing out with 0/0%.
+      expect(mockFileSystem.readAsStringAsync).toHaveBeenCalledWith(
+        'file://resized.jpg',
+        expect.objectContaining({ encoding: 'base64' })
+      )
+      // We got past the empty-data guard (whatever jpeg-js does with the bytes
+      // after, the fallback path was taken).
+      expect(result.debugError).not.toBe('no base64 from manipulator or file read')
+    })
+
+    it('reports debugError when neither base64 nor file read yields data', async () => {
+      mockImageManipulator.manipulateAsync.mockResolvedValue({
+        uri: 'file://resized.jpg',
+        width: 256,
+        height: 192,
+      })
+      mockFileSystem.readAsStringAsync.mockResolvedValue('')
+
+      const result = await photoService.assessImageQuality('file://photo.jpg')
+
+      expect(result.debugError).toBe('no base64 from manipulator or file read')
+      expect(result.sharpnessScore).toBe(0)
+      expect(result.brightness).toBe(0)
+    })
+  })
+
   describe('compressPhoto', () => {
     it('compresses photo and returns new URI', async () => {
       mockImageManipulator.manipulateAsync.mockResolvedValue({

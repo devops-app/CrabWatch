@@ -251,7 +251,16 @@ export const photoService = {
         { compress: 1, format: ImageManipulator.SaveFormat.JPEG, base64: true }
       )
 
-      if (!resized.base64) {
+      // The `base64` save option is unreliable on some iOS devices (it returns
+      // undefined), which produced 0/0% quality scores. Fall back to reading the
+      // resized file directly — the same stable FileSystem API already used by
+      // getExifOrientation, which works on-device.
+      let imageBase64 = resized.base64
+      if (!imageBase64) {
+        imageBase64 = await FileSystem.readAsStringAsync(resized.uri, { encoding: 'base64' })
+      }
+
+      if (!imageBase64) {
         return {
           isBlurry: true,
           meetsMinimum: false,
@@ -260,11 +269,11 @@ export const photoService = {
           blurStatus: 'fail',
           brightness: 0,
           brightnessLevel: 'dark',
-          debugError: 'manipulator returned no base64',
+          debugError: 'no base64 from manipulator or file read',
         }
       }
 
-      const jpegBytes = base64ToUint8Array(resized.base64)
+      const jpegBytes = base64ToUint8Array(imageBase64)
       const decoded = decodeJpeg(jpegBytes, { useTArray: true })
       const luminance = rgbaToLuminance(decoded.data)
       const sharpnessScore = calculateLaplacianVariance(luminance, decoded.width, decoded.height)

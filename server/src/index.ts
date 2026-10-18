@@ -200,6 +200,7 @@ app.post('/api/v1/telemetry/error', (req, res) => {
         overrideUsed: typeof quality.overrideUsed === 'boolean' ? quality.overrideUsed : undefined,
         overrideReason: typeof quality.overrideReason === 'string' ? quality.overrideReason : undefined,
         detail: quality.detail,
+        debugError: typeof quality.debugError === 'string' ? quality.debugError : undefined,
         timestamp: typeof quality.timestamp === 'string' ? quality.timestamp : body.timestamp,
         url: typeof body.url === 'string' ? body.url : undefined,
       },
