@@ -11,6 +11,11 @@ import logger from '../utils/logger'
 
 const SOFT_DELETE_RETENTION_DAYS = 30
 
+// A real Firebase Auth UID is 28-char alphanumeric, never a UUID. A UUID-valued
+// uid is the user's own id (JWT is signed with `firebaseUid || id`) and must not
+// be persisted as firebaseUid — doing so creates cross-account collisions.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export const createUser = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { name, email, phoneCode, phoneNumber, addressLine1, addressLine2, state, postcode, country, password, inviteToken, consentAccepted } = req.body
   const __ = createTranslator(req)
@@ -63,7 +68,9 @@ export const createUser = asyncHandler(async (req: AuthRequest, res: Response) =
     consentAccepted: consentAccepted === true,
   }
 
-  if (isFirebaseEnabled && req.user?.uid) {
+  // Only persist a real Firebase UID. A UUID uid is the user's own id and must
+  // not be stored as firebaseUid (it causes cross-account resolution collisions).
+  if (isFirebaseEnabled && req.user?.uid && !UUID_RE.test(req.user.uid)) {
     userData.firebaseUid = req.user.uid
   }
 

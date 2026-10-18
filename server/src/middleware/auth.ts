@@ -172,19 +172,27 @@ export async function resolveUser(
   try {
     const uid = req.user.uid
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uid)
-    const where: Prisma.UserWhereInput = {
-      firebaseUid: uid,
-    }
-    if (isUuid) {
-      where.OR = [{ firebaseUid: uid }, { id: uid }]
-    }
 
-    user = await prisma.user.findFirst({
-      where,
-      select: { id: true, role: true, email: true, blockedAt: true, deletedAt: true, preferredLocale: true },
-    })
+    if (isUuid) {
+      // A UUID uid is the user's own id (JWT is signed with `firebaseUid || id`).
+      // Resolve by id. The email cross-check guards against the legacy data
+      // collision where another account's firebaseUid was set to this user's id.
+      const byId = await prisma.user.findUnique({
+        where: { id: uid },
+        select: { id: true, role: true, email: true, blockedAt: true, deletedAt: true, preferredLocale: true },
+      })
+      if (byId && (!req.user.email || byId.email.toLowerCase() === req.user.email.toLowerCase())) {
+        user = byId
+      }
+    } else {
+      // A non-UUID uid is a real Firebase UID.
+      user = await prisma.user.findFirst({
+        where: { firebaseUid: uid },
+        select: { id: true, role: true, email: true, blockedAt: true, deletedAt: true, preferredLocale: true },
+      })
+    }
   } catch (err) {
-    logger.error({ err, msg: 'resolveUser: UUID lookup failed', requestId: req.requestId })
+    logger.error({ err, msg: 'resolveUser: user lookup failed', requestId: req.requestId })
   }
 
   if (!user && req.user.email) {
