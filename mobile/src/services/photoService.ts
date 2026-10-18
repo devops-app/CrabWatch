@@ -219,6 +219,7 @@ export const photoService = {
     blurStatus: 'fail' | 'warn' | 'pass'
     brightness: number
     brightnessLevel: 'dark' | 'low' | 'good' | 'bright'
+    debugError?: string
   }> {
     try {
       const fileInfo = await FileSystem.getInfoAsync(uri)
@@ -234,8 +235,15 @@ export const photoService = {
         }
       }
 
-      // EXIF-1: Apply orientation correction before quality checks
-      const orientedUri = await applyExifOrientation(uri)
+      // EXIF-1: Apply orientation correction before quality checks.
+      // Wrapped in try/catch: on iOS a rotate failure (e.g. orientation tag 6/8)
+      // must not kill the whole assessment — fall back to the original URI.
+      let orientedUri = uri
+      try {
+        orientedUri = await applyExifOrientation(uri)
+      } catch {
+        orientedUri = uri
+      }
 
       const resized = await ImageManipulator.manipulateAsync(
         orientedUri,
@@ -252,6 +260,7 @@ export const photoService = {
           blurStatus: 'fail',
           brightness: 0,
           brightnessLevel: 'dark',
+          debugError: 'manipulator returned no base64',
         }
       }
 
@@ -281,7 +290,9 @@ export const photoService = {
         brightness,
         brightnessLevel,
       }
-    } catch {
+    } catch (error) {
+      const debugError = error instanceof Error ? error.message : String(error)
+      console.error('[photoService] assessImageQuality failed:', debugError)
       return {
         isBlurry: true,
         meetsMinimum: false,
@@ -290,6 +301,7 @@ export const photoService = {
         blurStatus: 'fail',
         brightness: 0,
         brightnessLevel: 'dark',
+        debugError,
       }
     }
   },

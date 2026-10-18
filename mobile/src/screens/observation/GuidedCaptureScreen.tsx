@@ -470,6 +470,7 @@ export function GuidedCaptureScreen() {
           issueCodes: issues,
           blurScore: quality.sharpnessScore,
           brightness: quality.brightness,
+          debugError: quality.debugError,
           timestamp: new Date().toISOString(),
         },
       })

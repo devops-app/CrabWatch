@@ -245,7 +245,8 @@
       "cw50": "CW50",
       "condition": "Kondisi",
       "species": "Spesies",
-      "trends": "Trend"
+      "trends": "Trend",
+      "map": "Peta"
     },
     "observations": " pemerhatian",
     "contributorsCount": " penyumbang",

@@ -245,7 +245,8 @@
       "cw50": "CW50",
       "condition": "Condition",
       "species": "Species",
-      "trends": "Trends"
+      "trends": "Trends",
+      "map": "Map"
     },
     "observations": " observations",
     "contributorsCount": " contributors",

@@ -32,7 +32,12 @@
                              "supportsTablet":  false,
                              "infoPlist":  {
                                                "ITSAppUsesNonExemptEncryption":  false
-                                           }
+                                           },
+                             "config":  {
+                                            "googleMaps":  {
+                                                               "apiKey":  "AIzaSyByTGbC7NQ-X1wwS3cHcPby8InFYx26F58"
+                                                           }
+                                        }
                          },
                  "android":  {
                                  "icon":  "./assets/icons/app-icon-1024.png",
@@ -47,7 +52,12 @@
                                                      "android.permission.CAMERA",
                                                      "android.permission.RECORD_AUDIO",
                                                      "android.permission.POST_NOTIFICATIONS"
-                                                 ]
+                                                 ],
+                                 "config":  {
+                                                "googleMaps":  {
+                                                                   "apiKey":  "AIzaSyByTGbC7NQ-X1wwS3cHcPby8InFYx26F58"
+                                                               }
+                                            }
                              },
                  "web":  {
                              "bundler":  "metro"

@@ -102,17 +102,17 @@ export function AnalyticsScreen() {
       const MAX_OBS = 5000
       const allObs: ObservationResponse[] = []
       let page = 1
-      let hasMore = true
+      let totalPages = 1
 
-      while (hasMore && allObs.length < MAX_OBS) {
+      while (page <= totalPages && allObs.length < MAX_OBS) {
         const result = await api.listObservations({
           status: 'approved',
           page,
           limit: PAGE_LIMIT,
         })
-        const obsArray = Array.isArray(result) ? result : []
+        const obsArray = Array.isArray(result.observations) ? result.observations : []
         allObs.push(...obsArray)
-        hasMore = obsArray.length >= PAGE_LIMIT
+        totalPages = result.totalPages ?? 1
         page++
       }
 

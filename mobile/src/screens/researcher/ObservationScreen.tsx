@@ -483,14 +483,14 @@ export function ObservationScreen() {
                   style={styles.rejectBtn}
                 />
               </View>
-            ) : (
-              <TouchableOpacity
-                onPress={() => setSelectedObs(null)}
-                style={styles.closeBtn}
-              >
-                <Text style={styles.closeBtnText}>{t('close')}</Text>
-              </TouchableOpacity>
-            )}
+            ) : null}
+
+            <TouchableOpacity
+              onPress={() => setSelectedObs(null)}
+              style={styles.closeBtn}
+            >
+              <Text style={styles.closeBtnText}>{t('close')}</Text>
+            </TouchableOpacity>
               </ScrollView>
             )}
           </View>
