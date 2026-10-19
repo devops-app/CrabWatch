@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, Animated } from 'react-native'
+import { View, Text, StyleSheet, Animated, Image } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 type IoniconName = keyof typeof Ionicons.glyphMap
 import { useTranslation } from 'react-i18next'
@@ -7,8 +7,40 @@ import * as ScreenOrientation from 'expo-screen-orientation'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 import type { CaptureMessageKey } from '../../hooks/useCaptureAssistance'
+import type { LiveFrameQuality, LiveGateStatus } from '../../utils/liveFrameQuality'
 
+const CRAB_OUTLINE = require('../../assets/images/crab-outline.png')
 
+/** National-ID style status palette. */
+const STATUS_COLORS = {
+  pass: '#22c55e',
+  warn: '#f59e0b',
+  fail: '#ef4444',
+} as const
+
+/**
+ * A single advisory live-quality chip (blur / brightness / framing).
+ * Tinted green / amber / red by its status. Purely informational — it never
+ * blocks capture.
+ */
+function LiveChip({
+  icon,
+  label,
+  status,
+}: {
+  icon: IoniconName
+  label: string
+  status: LiveGateStatus
+}) {
+  const color = STATUS_COLORS[status]
+  return (
+    <View style={styles.liveChip}>
+      <View style={[styles.liveChipDot, { backgroundColor: color }]} />
+      <Ionicons name={icon} size={13} color={color} />
+      <Text style={[styles.liveChipText, { color }]}>{label}</Text>
+    </View>
+  )
+}
 
 interface CaptureFrameOverlayProps {
   viewType: 'dorsal' | 'ventral' | 'carapace-closeup'
@@ -16,6 +48,7 @@ interface CaptureFrameOverlayProps {
   shakeLevel: 'none' | 'slight' | 'heavy'
   isFocused: boolean
   messages: CaptureMessageKey[]
+  liveQuality: LiveFrameQuality | null
   dimensions: { width: number; height: number }
   orientation: ScreenOrientation.Orientation
 }
@@ -26,6 +59,7 @@ export function CaptureFrameOverlay({
   shakeLevel,
   isFocused,
   messages,
+  liveQuality,
   dimensions,
   orientation,
 }: CaptureFrameOverlayProps) {
@@ -67,8 +101,20 @@ export function CaptureFrameOverlay({
     }
   }, [shakeLevel])
 
-  const cornerColor = isReady ? COLORS.success : shakeLevel === 'heavy' ? '#ef4444' : COLORS.primaryLight
-  const borderColor = isReady ? COLORS.success : shakeLevel === 'heavy' ? 'rgba(239,68,68,0.4)' : 'rgba(125,211,252,0.35)'
+  // National-ID style: the frame glow + corner brackets are driven by the
+  // live frame quality (advisory). A hard shake overrides to red. When no live
+  // sample is available yet (camera warming up), fall back to the neutral
+  // "align" state.
+  const liveStatus: LiveGateStatus | null = liveQuality?.overallStatus ?? null
+  const effectiveStatus: LiveGateStatus =
+    shakeLevel === 'heavy' ? 'fail' : liveStatus ?? 'warn'
+  const cornerColor = STATUS_COLORS[effectiveStatus]
+  const borderColor =
+    effectiveStatus === 'pass'
+      ? 'rgba(34,197,94,0.55)'
+      : effectiveStatus === 'warn'
+      ? 'rgba(245,158,11,0.5)'
+      : 'rgba(239,68,68,0.5)'
 
   const getInstructions = () => {
     switch (viewType) {
@@ -130,63 +176,80 @@ export function CaptureFrameOverlay({
         <View style={[styles.leftDim, { left: -frameLeft, width: frameLeft }]} />
         <View style={[styles.rightDim, { right: -frameLeft, width: frameLeft }]} />
 
-        {/* Crab silhouette outline */}
-        <Animated.View
+        {/* National-ID style frame border + corner brackets, tinted by status */}
+        <View style={[styles.frameBorder, { borderColor }]} />
+        <View style={[styles.corner, styles.cornerTL, { borderColor: cornerColor }]} />
+        <View style={[styles.corner, styles.cornerTR, { borderColor: cornerColor }]} />
+        <View style={[styles.corner, styles.cornerBL, { borderColor: cornerColor }]} />
+        <View style={[styles.corner, styles.cornerBR, { borderColor: cornerColor }]} />
+
+        {/* Crab silhouette — user-provided outline, tinted by live status */}
+        <Animated.Image
+          source={CRAB_OUTLINE}
+          resizeMode="contain"
           style={[
             styles.crabOutline,
             {
               transform: [{ scale: isLandscape ? 1.08 : 1 }],
               opacity: cornerAnim.interpolate({
                 inputRange: [0, 1],
-                outputRange: [0.5, 1],
+                outputRange: [0.45, 0.95],
               }),
             },
           ]}
-        >
-          {/* Carapace (body) */}
-          <View style={[styles.carapace, { borderColor }]}>
-            <Animated.View style={[styles.carapaceGlow, { borderColor: cornerColor }]} />
+        />
+
+        {/* Center crosshair */}
+        <View style={styles.crosshairH} />
+        <View style={styles.crosshairV} />
+
+        {/* Focus indicator */}
+        {isFocused && (
+          <View style={styles.focusRing}>
+            <Ionicons name="checkmark" size={16} color={COLORS.success} />
           </View>
+        )}
 
-          {/* Left claw */}
-          <View style={[styles.clawLeft, { borderColor }]}>
-            <Animated.View style={[styles.clawTipLeft, { borderColor: cornerColor }]} />
+        {/* Coin zone indicator */}
+        {viewType !== 'carapace-closeup' && (
+          <View style={styles.coinZone}>
+            <Ionicons name="pricetag-outline" size={18} color="rgba(255,255,255,0.7)" />
           </View>
-
-          {/* Right claw */}
-          <View style={[styles.clawRight, { borderColor }]}>
-            <Animated.View style={[styles.clawTipRight, { borderColor: cornerColor }]} />
-          </View>
-
-          {/* Left legs */}
-          <View style={[styles.leg, styles.legL1, { borderColor }]} />
-          <View style={[styles.leg, styles.legL2, { borderColor }]} />
-          <View style={[styles.leg, styles.legL3, { borderColor }]} />
-
-          {/* Right legs */}
-          <View style={[styles.leg, styles.legR1, { borderColor }]} />
-          <View style={[styles.leg, styles.legR2, { borderColor }]} />
-          <View style={[styles.leg, styles.legR3, { borderColor }]} />
-
-          {/* Center crosshair */}
-          <View style={styles.crosshairH} />
-          <View style={styles.crosshairV} />
-
-          {/* Focus indicator */}
-          {isFocused && (
-            <View style={styles.focusRing}>
-              <Ionicons name="checkmark" size={16} color={COLORS.success} />
-            </View>
-          )}
-
-          {/* Coin zone indicator */}
-          {viewType !== 'carapace-closeup' && (
-            <View style={styles.coinZone}>
-              <Ionicons name="pricetag-outline" size={18} color="rgba(255,255,255,0.7)" />
-            </View>
-          )}
-        </Animated.View>
+        )}
       </View>
+
+      {/* Live quality chips (advisory) — blur / brightness / framing */}
+      {liveQuality && (
+        <View
+          style={[
+            styles.liveChips,
+            { top: frameTop + frameHeight + 12 },
+            isLandscape && styles.liveChipsLandscape,
+          ]}
+        >
+          <LiveChip
+            icon="scan-outline"
+            label={t('live.blur')}
+            status={liveQuality.blurStatus}
+          />
+          <LiveChip
+            icon={
+              liveQuality.brightness < 0.4
+                ? 'moon-outline'
+                : liveQuality.brightness > 0.8
+                ? 'sunny-outline'
+                : 'partly-sunny-outline'
+            }
+            label={t('live.brightness')}
+            status={liveQuality.brightnessStatus}
+          />
+          <LiveChip
+            icon="crop-outline"
+            label={t('live.framing')}
+            status={liveQuality.framingStatus}
+          />
+        </View>
+      )}
 
      {/* Bottom quality warnings */}
        {messages.length > 0 && (
@@ -305,88 +368,79 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: 'rgba(0, 0, 0, 0.45)',
   },
-  /* Crab silhouette outline */
+  /* Crab silhouette — user-provided outline image, centered in the frame */
   crabOutline: {
     ...StyleSheet.absoluteFillObject,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
   },
-  carapace: {
-    position: 'absolute',
-    left: '12%',
-    right: '12%',
-    top: '18%',
-    bottom: '18%',
-    borderWidth: 2.5,
-    borderRadius: 100,
+  /* National-ID style frame border */
+  frameBorder: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 1.5,
+    borderRadius: 18,
   },
-  carapaceGlow: {
+  corner: {
     position: 'absolute',
-    left: 3,
-    right: 3,
-    top: 3,
-    bottom: 3,
-    borderWidth: 1,
-    borderRadius: 100,
-    opacity: 0.3,
+    width: 34,
+    height: 34,
+    borderWidth: 3,
   },
-  clawLeft: {
-    position: 'absolute',
-    left: 0,
-    top: '28%',
-    width: '14%',
-    height: '22%',
-    borderTopWidth: 2.5,
-    borderLeftWidth: 2.5,
-    borderRadius: 12,
-    transform: [{ rotate: '-20deg' }],
-  },
-  clawTipLeft: {
-    position: 'absolute',
-    right: -8,
-    top: -4,
-    width: 16,
-    height: '100%',
-    borderWidth: 2.5,
+  cornerTL: {
+    top: -2,
+    left: -2,
+    borderTopLeftRadius: 18,
     borderRightWidth: 0,
-    borderRadius: 8,
-    opacity: 0.6,
+    borderBottomWidth: 0,
   },
-  clawRight: {
-    position: 'absolute',
-    right: 0,
-    top: '28%',
-    width: '14%',
-    height: '22%',
-    borderTopWidth: 2.5,
-    borderRightWidth: 2.5,
-    borderRadius: 12,
-    transform: [{ rotate: '20deg' }],
-  },
-  clawTipRight: {
-    position: 'absolute',
-    left: -8,
-    top: -4,
-    width: 16,
-    height: '100%',
-    borderWidth: 2.5,
+  cornerTR: {
+    top: -2,
+    right: -2,
+    borderTopRightRadius: 18,
     borderLeftWidth: 0,
-    borderRadius: 8,
-    opacity: 0.6,
+    borderBottomWidth: 0,
   },
-  leg: {
+  cornerBL: {
+    bottom: -2,
+    left: -2,
+    borderBottomLeftRadius: 18,
+    borderRightWidth: 0,
+    borderTopWidth: 0,
+  },
+  cornerBR: {
+    bottom: -2,
+    right: -2,
+    borderBottomRightRadius: 18,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+  },
+  /* Live quality chips row */
+  liveChips: {
     position: 'absolute',
-    width: '10%',
-    height: 2,
-    borderBottomWidth: 2.5,
-    borderRadius: 2,
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
   },
-  legL1: { left: 0, top: '38%', transform: [{ rotate: '30deg' }] },
-  legL2: { left: 0, top: '50%', transform: [{ rotate: '15deg' }] },
-  legL3: { left: 0, top: '62%', transform: [{ rotate: '0deg' }] },
-  legR1: { right: 0, top: '38%', transform: [{ rotate: '-30deg' }] },
-  legR2: { right: 0, top: '50%', transform: [{ rotate: '-15deg' }] },
-  legR3: { right: 0, top: '62%', transform: [{ rotate: '0deg' }] },
+  liveChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    gap: 5,
+  },
+  liveChipDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  liveChipText: {
+    fontSize: FONT.xs,
+    fontWeight: '600',
+  },
   crosshairH: {
     position: 'absolute',
     top: '50%',
@@ -482,6 +536,10 @@ const styles = StyleSheet.create({
   },
   topBarTitleLandscape: {
     fontSize: FONT.lg,
+  },
+  liveChipsLandscape: {
+    left: 20,
+    right: 20,
   },
   warningsContainerLandscape: {
     bottom: 80,

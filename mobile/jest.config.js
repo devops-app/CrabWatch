@@ -18,6 +18,7 @@ module.exports = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   moduleNameMapper: {
     '\\.css': 'identity-obj-proxy',
+    '\\.(png|jpe?g|gif|svg|webp)$': '<rootDir>/src/__tests__/__mocks__/file-mock.js',
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@crabwatch/shared$': '<rootDir>/../shared/src/index.ts',
     '^expo-secure-store$': '<rootDir>/src/__tests__/__mocks__/expo-secure-store.js',
@@ -25,6 +26,8 @@ module.exports = {
     '^expo-location$': '<rootDir>/src/__tests__/__mocks__/expo-location.js',
     '^expo-image-picker$': '<rootDir>/src/__tests__/__mocks__/expo-image-picker.js',
     '^expo-camera$': '<rootDir>/src/__tests__/__mocks__/expo-camera.js',
+    '^react-native-vision-camera$': '<rootDir>/src/__tests__/__mocks__/react-native-vision-camera.js',
+    '^react-native-worklets$': '<rootDir>/src/__tests__/__mocks__/react-native-worklets.js',
     '^expo-notifications$': '<rootDir>/src/__tests__/__mocks__/expo-notifications.js',
     '^expo-image-manipulator$': '<rootDir>/src/__tests__/__mocks__/expo-image-manipulator.js',
     '^expo-image$': '<rootDir>/src/__tests__/__mocks__/expo-image.js',
@@ -43,7 +46,7 @@ module.exports = {
     '^@expo/vector-icons$': '<rootDir>/src/__tests__/__mocks__/@expo/vector-icons.js',
   },
   transformIgnorePatterns: [
-    '/node_modules/(?!(react-native|@react-native|react-native-safe-area-context|react-native-reanimated|@expo)/)',
+    '/node_modules/(?!(react-native|@react-native|react-native-safe-area-context|react-native-reanimated|react-native-worklets|react-native-vision-camera|react-native-vision-camera-worklets|@expo)/)',
   ],
   testTimeout: 10000,
   testPathIgnorePatterns: [

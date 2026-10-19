@@ -340,6 +340,11 @@
       "holdStill": "Hold Still",
       "align": "Align"
     },
+    "live": {
+      "blur": "Focus",
+      "brightness": "Light",
+      "framing": "Frame"
+    },
     "assistMessages": {
       "focusLocked": "Focus locked",
       "lightingTooDark": "Lighting too dark - move to brighter area",

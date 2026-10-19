@@ -17,16 +17,24 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, useIsFocused } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { useTranslation } from 'react-i18next'
-import { CameraView, useCameraPermissions } from 'expo-camera'
+import {
+  Camera,
+  useCameraDevice,
+  usePhotoOutput,
+  useCameraPermission,
+} from 'react-native-vision-camera'
+import type { CameraRef } from 'react-native-vision-camera'
 import * as ScreenOrientation from 'expo-screen-orientation'
 import { photoService } from '../../services/photoService'
 import { analysisService } from '../../services/analysisService'
 import { api } from '../../services/api'
-import { COLORS, FOCUS_SAMPLE_COOLDOWN_MS, QUALITY_GATE_MODES } from '../../utils/constants'
+import { COLORS, QUALITY_GATE_MODES } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 import { Button } from '../../components/common/Button'
 import { CaptureFrameOverlay } from '../../components/observation/CaptureFrameOverlay'
 import { useCaptureAssistance } from '../../hooks/useCaptureAssistance'
+import { useLiveFrameQuality } from '../../hooks/useLiveFrameQuality'
+import type { LiveFrameQuality } from '../../utils/liveFrameQuality'
 import { analyzeView } from '../../utils/viewAnalysis'
 import { PhotoView, applyGateModeToStatus, classifyBrightness, isGateBlocking, isGateOverridable } from '@crabwatch/shared'
 import { PhotoTipsModal } from '../../components/observation/PhotoTipsModal'
@@ -39,11 +47,13 @@ import {
 function CameraOverlay({
   capturingView,
   quality,
+  liveQuality,
   dimensions,
   orientation,
 }: {
   capturingView: PhotoView
   quality: ReturnType<typeof useCaptureAssistance>['quality']
+  liveQuality: LiveFrameQuality | null
   dimensions: { width: number; height: number }
   orientation: ScreenOrientation.Orientation
 }) {
@@ -56,6 +66,7 @@ function CameraOverlay({
       shakeLevel={quality.shakeLevel}
       isFocused={quality.isFocused}
       messages={quality.messages}
+      liveQuality={liveQuality}
       dimensions={dimensions}
       orientation={orientation}
     />
@@ -65,8 +76,13 @@ function CameraOverlay({
 function CameraModalContent({
   capturingView,
   quality,
+  liveQuality,
   capturing,
   cameraRef,
+  device,
+  photoOutput,
+  frameOutput,
+  cameraActive,
   panHandlers,
   CAPTURE_STEPS,
   currentStepLabel,
@@ -76,8 +92,13 @@ function CameraModalContent({
 }: {
   capturingView: PhotoView
   quality: ReturnType<typeof useCaptureAssistance>['quality']
+  liveQuality: LiveFrameQuality | null
   capturing: boolean
-  cameraRef: React.RefObject<CameraView | null>
+  cameraRef: React.RefObject<CameraRef | null>
+  device: ReturnType<typeof useCameraDevice>
+  photoOutput: ReturnType<typeof usePhotoOutput>
+  frameOutput: ReturnType<typeof useLiveFrameQuality>['frameOutput']
+  cameraActive: boolean
   panHandlers: ReturnType<typeof PanResponder.create>['panHandlers']
   CAPTURE_STEPS: { key: PhotoView; icon: string; label: string }[]
   currentStepLabel: string
@@ -166,10 +187,23 @@ function CameraModalContent({
         style={styles.cameraBody}
         {...panHandlers}
       >
-        <CameraView ref={cameraRef} style={styles.cameraPreview} facing="back" />
+        {device ? (
+          <Camera
+            ref={cameraRef}
+            style={styles.cameraPreview}
+            device={device}
+            outputs={[frameOutput, photoOutput]}
+            isActive={cameraActive}
+            orientationSource="interface"
+            mirrorMode="off"
+          />
+        ) : (
+          <View style={styles.cameraPreview} />
+        )}
         <CameraOverlay
           capturingView={capturingView}
           quality={quality}
+          liveQuality={liveQuality}
           dimensions={dims}
           orientation={orientation}
         />
@@ -248,36 +282,53 @@ function createDefaultOverrides(): Record<PhotoView, QualityOverrideState> {
 export function GuidedCaptureScreen() {
   const { t } = useTranslation('capture')
   const navigation = useNavigation<any>()
-  const cameraRef = useRef<CameraView | null>(null)
+  const cameraRef = useRef<CameraRef | null>(null)
   const cameraVisibleRef = useRef(false)
-  const focusSamplingInFlightRef = useRef(false)
-  const lastFocusSampleAtRef = useRef(0)
+  const [cameraVisible, setCameraVisible] = useState(false)
 
-  // Central lock — prevents concurrent takePictureAsync calls across all 4 callers
-  // (capture, focus tap, initial sample, periodic tick). Without this, overlapping
-  // calls crash Expo Camera with "Camera is not running".
+  // VisionCamera: back camera device, photo output (JPEG, full quality), and the
+  // live frame-output worklet that drives the real-time quality overlay.
+  const device = useCameraDevice('back')
+  const photoOutput = usePhotoOutput({
+    targetResolution: { width: 4032, height: 3024 },
+    containerFormat: 'jpeg',
+    quality: 1,
+    qualityPrioritization: 'quality',
+  })
+  const { frameOutput, quality: liveQuality } = useLiveFrameQuality(cameraVisible)
+
+  // Central lock — prevents concurrent photo captures. Without this, overlapping
+  // capturePhotoToFile calls can race the VisionCamera pipeline.
   const cameraBusyRef = useRef(false)
-  const safeCapture = useCallback(
-    async (opts: Parameters<NonNullable<CameraView['takePictureAsync']>>[0]) => {
-      if (cameraBusyRef.current || !cameraRef.current) return null
-      cameraBusyRef.current = true
-      try {
-        return await cameraRef.current.takePictureAsync(opts)
-      } finally {
-        cameraBusyRef.current = false
-      }
-    },
-    [],
-  )
+  const safeCapture = useCallback(async (): Promise<string | null> => {
+    if (cameraBusyRef.current) return null
+    cameraBusyRef.current = true
+    try {
+      const photoFile = await photoOutput.capturePhotoToFile(
+        { enableShutterSound: false },
+        {},
+      )
+      // VisionCamera returns a raw filesystem path (not a file:// URL). Convert
+      // it so the rest of the pipeline (expo-file-system, ImageManipulator,
+      // expo-image) can read it.
+      return `file://${photoFile.filePath}`
+    } finally {
+      cameraBusyRef.current = false
+    }
+  }, [photoOutput])
 
   // Keep a ref to handleFocus so the PanResponder closure stays current.
-  const handleFocusRef = useRef<() => void>(() => {})
-  const [cameraPermission, requestCameraPermission] = useCameraPermissions()
+  const handleFocusRef = useRef<(x: number, y: number) => void>(() => {})
+  const { hasPermission: cameraPermissionGranted, requestPermission: requestCameraPermission } = useCameraPermission()
+
+  // Only keep the camera pipeline (preview + frame output) running when the
+  // modal is open and we have both permission and a resolved device.
+  const cameraActive = cameraVisible && cameraPermissionGranted && !!device
+
   const [coinType, setCoinType] = useState<string>('')
   const [coinSelected, setCoinSelected] = useState(false)
   const [expandedSeries, setExpandedSeries] = useState<string | null>(null)
   const [currentStep, setCurrentStep] = useState(0)
-  const [cameraVisible, setCameraVisible] = useState(false)
   const [capturingView, setCapturingView] = useState<PhotoView>('dorsal')
   const [capturing, setCapturing] = useState(false)
   const [photos, setPhotos] = useState<Record<PhotoView, string | null>>({
@@ -299,7 +350,25 @@ export function GuidedCaptureScreen() {
   const [analyzingQuality, setAnalyzingQuality] = useState(false)
   const [sessionId] = useState(createUploadSessionId)
 
-  const { quality, sampleBrightnessFromUri } = useCaptureAssistance()
+  // Gyro shake detection stays in useCaptureAssistance. Brightness and focus
+  // (blur) are now driven in real time by the live frame-quality worklet below,
+  // replacing the old tap-to-sample approach.
+  const { quality, setBrightness, setFocused } = useCaptureAssistance()
+
+  // Feed the live frame metrics into the capture-assistance state so the
+  // overlay's derived `isReady` / `messages` reflect real-time blur + brightness
+  // (shake still comes from the gyroscope). Thresholds mirror photoService so
+  // the live view and the post-capture gate agree on dark/low/good/bright.
+  useEffect(() => {
+    if (!liveQuality) return
+    const b = liveQuality.brightness
+    const level: 'dark' | 'low' | 'good' | 'bright' =
+      b < 0.15 ? 'dark' : b < 0.4 ? 'low' : b > 0.8 ? 'bright' : 'good'
+    setBrightness(level)
+    // A 'warn' blur still counts as focused — a slightly soft but optically
+    // focused frame reads as focused. Only a hard 'fail' clears the focus lock.
+    setFocused(liveQuality.blurStatus !== 'fail')
+  }, [liveQuality, setBrightness, setFocused])
 
   const CAPTURE_STEPS = useMemo(() => CAPTURE_STEP_KEYS.map((s) => ({
     ...s,
@@ -352,31 +421,20 @@ export function GuidedCaptureScreen() {
     setAnalyzingQuality(false)
   }, [isFocused])
 
-  const handleFocus = useCallback(async () => {
+  // Tap-to-focus: drive VisionCamera's autofocus to the tapped point. Blur and
+  // brightness feedback now come from the live frame worklet, so no frame
+  // sampling is needed here.
+  const handleFocus = useCallback(async (x: number, y: number) => {
     if (capturing) return
-
-    const now = Date.now()
-    if (focusSamplingInFlightRef.current) return
-    if (now - lastFocusSampleAtRef.current < FOCUS_SAMPLE_COOLDOWN_MS) return
-
-    focusSamplingInFlightRef.current = true
-    lastFocusSampleAtRef.current = now
+    const camera = cameraRef.current
+    if (!camera) return
 
     try {
-      // Higher quality frame (0.5) for more accurate blur-based focus proxy
-      const frame = await safeCapture({
-        quality: 0.5,
-        skipProcessing: true,
-      })
-      if (frame?.uri) {
-        await sampleBrightnessFromUri(frame.uri)
-      }
+      await camera.focusTo({ x, y })
     } catch {
-      // Ignore focus tap sampling errors to keep capture flow responsive
-    } finally {
-      focusSamplingInFlightRef.current = false
+      // Ignore focus errors to keep the capture flow responsive
     }
-  }, [safeCapture, sampleBrightnessFromUri, capturing])
+  }, [capturing])
 
   // Keep PanResponder closure current via refs — cameraVisible changes every render,
   // but the PanResponder instance is created once inside useRef.
@@ -387,8 +445,10 @@ export function GuidedCaptureScreen() {
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => cameraVisibleRef.current,
-      onPanResponderRelease: () => {
-        if (cameraVisibleRef.current) handleFocusRef.current()
+      onPanResponderRelease: (evt) => {
+        if (!cameraVisibleRef.current) return
+        const { locationX, locationY } = evt.nativeEvent
+        handleFocusRef.current(locationX, locationY)
       },
     })
   ).current
@@ -513,10 +573,9 @@ export function GuidedCaptureScreen() {
           await runQualityAssessment(normalizedUri, view)
         }
       } else {
-        let granted = cameraPermission?.granted ?? false
+        let granted = cameraPermissionGranted
         if (!granted) {
-          const requested = await requestCameraPermission()
-          granted = requested.granted
+          granted = await requestCameraPermission()
         }
 
         if (!granted) {
@@ -543,9 +602,9 @@ export function GuidedCaptureScreen() {
 
     setCapturing(true)
     try {
-      const captured = await safeCapture({ quality: 1 })
-      if (captured?.uri) {
-        const normalizedUri = await photoService.normalizeForAnalysis(captured.uri)
+      const captured = await safeCapture()
+      if (captured) {
+        const normalizedUri = await photoService.normalizeForAnalysis(captured)
 
         setPhotos((prev) => ({ ...prev, [capturingView]: normalizedUri }))
         try {
@@ -1032,8 +1091,13 @@ export function GuidedCaptureScreen() {
         <CameraModalContent
           capturingView={capturingView}
           quality={quality}
+          liveQuality={liveQuality}
           capturing={capturing}
           cameraRef={cameraRef}
+          device={device}
+          photoOutput={photoOutput}
+          frameOutput={frameOutput}
+          cameraActive={cameraActive}
           panHandlers={panResponder.panHandlers}
           CAPTURE_STEPS={CAPTURE_STEPS}
           currentStepLabel={currentStepLabel}

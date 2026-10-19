@@ -339,6 +339,11 @@
       "holdStill": "Pegang Stabil",
       "align": "Selaraskan"
     },
+    "live": {
+      "blur": "Fokus",
+      "brightness": "Cahaya",
+      "framing": "Bingkai"
+    },
     "assistMessages": {
       "focusLocked": "Fokus terkunci",
       "lightingTooDark": "Pencahayaan terlalu gelap - pergi ke kawasan lebih terang",
