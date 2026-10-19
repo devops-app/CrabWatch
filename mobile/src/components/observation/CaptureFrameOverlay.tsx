@@ -143,20 +143,20 @@ export function CaptureFrameOverlay({
 
   return (
     <View style={styles.overlay} pointerEvents="none">
-     {/* Top instruction bar */}
-      <View
-        style={[
-          styles.topBar,
-          { top: topBarTop },
-          isLandscape && styles.topBarLandscape,
-        ]}
-      >
-        <View style={styles.topBarRow}>
-          <Ionicons name={instructions.icon as IoniconName} size={22} color={COLORS.primaryLight} />
-          <Text style={[styles.topBarTitle, isLandscape && styles.topBarTitleLandscape]}>{instructions.title}</Text>
+{/* Top instruction bar — icon + hint only (the step title is shown in the camera header) */}
+      {!isLandscape && (
+        <View
+          style={[
+            styles.topBar,
+            { top: topBarTop },
+          ]}
+        >
+          <View style={styles.topBarRow}>
+            <Ionicons name={instructions.icon as IoniconName} size={22} color={COLORS.primaryLight} />
+            <Text style={styles.topBarHint}>{instructions.hint}</Text>
+          </View>
         </View>
-        {!isLandscape && <Text style={styles.topBarHint}>{instructions.hint}</Text>}
-      </View>
+      )}
 
       {/* Frame area with crab silhouette */}
       <View style={[styles.frameContainer, { top: frameTop, left: frameLeft, width: frameWidth, height: frameHeight }]}>
@@ -190,10 +190,10 @@ export function CaptureFrameOverlay({
           style={[
             styles.crabOutline,
             {
-              transform: [{ scale: isLandscape ? 1.08 : 1 }],
+              transform: [{ scale: isLandscape ? 0.9 : 0.8 }],
               opacity: cornerAnim.interpolate({
                 inputRange: [0, 1],
-                outputRange: [0.15, 0.35],
+                outputRange: [0.1, 0.22],
               }),
             },
           ]}

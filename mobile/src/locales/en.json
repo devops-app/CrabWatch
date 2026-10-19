@@ -398,14 +398,14 @@
       },
       "closeup": {
         "title": "Close-up (optional)",
-        "label": "Shell Close-up",
+        "label": "Shell Close-up (optional)",
         "hint": "Focus on distinctive features",
         "placeholder": "Zoom in on the shell pattern",
         "orientation": "portrait"
       },
       "carapace-closeup": {
         "title": "Close-up (optional)",
-        "label": "Shell Close-up",
+        "label": "Shell Close-up (optional)",
         "hint": "Focus on distinctive features",
         "placeholder": "Zoom in on the shell pattern",
         "orientation": "portrait"

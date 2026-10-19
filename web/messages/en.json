@@ -339,7 +339,7 @@
     "stepLabels": {
       "dorsal": "Dorsal View",
       "ventral": "Ventral View",
-      "carapace-closeup": "Shell Close-up"
+      "carapace-closeup": "Shell Close-up (optional)"
     },
     "stepHints": {
       "dorsal": "Capture top shell with coin beside crab.",
