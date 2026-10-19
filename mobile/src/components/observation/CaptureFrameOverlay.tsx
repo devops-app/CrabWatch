@@ -78,7 +78,7 @@ export function CaptureFrameOverlay({
     ? Math.min(screenWidth * 0.78, screenHeight * 1.02)
     : Math.min(screenWidth * 0.9, screenHeight * 1.0)
   const frameHeight = frameWidth * 0.75
-  const frameTop = Math.max((screenHeight - frameHeight) / 2 - 20, 60)
+  const frameTop = Math.max((screenHeight - frameHeight) / 2, 60)
   const frameLeft = Math.max((screenWidth - frameWidth) / 2, 0)
   const bottomDimHeight = Math.max(screenHeight - frameTop - frameHeight, 0)
   const topBarTop = Math.max(frameTop - 72, 12)
@@ -193,7 +193,7 @@ export function CaptureFrameOverlay({
               transform: [{ scale: isLandscape ? 1.08 : 1 }],
               opacity: cornerAnim.interpolate({
                 inputRange: [0, 1],
-                outputRange: [0.45, 0.95],
+                outputRange: [0.15, 0.35],
               }),
             },
           ]}

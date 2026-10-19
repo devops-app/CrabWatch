@@ -1068,11 +1068,11 @@ export function GuidedCaptureScreen() {
             />
         ) : (
          <Button
-              title={photos[currentView] ? t('next') : t('continue')}
+              title={t('next')}
               onPress={handleNext}
               style={styles.navButton}
-              disabled={currentView !== 'carapace-closeup' && hasBlockingFailure(currentView)}
-              accessibilityLabel={photos[currentView] ? t('nextA11y') : t('continueA11y')}
+              disabled={currentView !== 'carapace-closeup' && (!photos[currentView] || hasBlockingFailure(currentView))}
+              accessibilityLabel={t('nextA11y')}
             />
         )}
       </View>
