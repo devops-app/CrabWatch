@@ -9,11 +9,16 @@ dist/
 out/
 build/
 *.build.log
+web/build-output*.txt
+
+# Logs
+*.log
 
 # Expo & EAS
 .expo/
 .expo-shared/
 expo-*
+/eas.json
 
 # Environment files
 *.env
@@ -86,6 +91,7 @@ ios/
 
 # Server
 server/backups/
+server/exports/
 
 # Opencode tooling
 .opencode/node_modules/
