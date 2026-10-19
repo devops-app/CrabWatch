@@ -9,7 +9,7 @@ import { FONT } from '../../utils/fonts'
 import type { CaptureMessageKey } from '../../hooks/useCaptureAssistance'
 import type { LiveFrameQuality, LiveGateStatus } from '../../utils/liveFrameQuality'
 
-const CRAB_OUTLINE = require('../../assets/images/crab-outline.png')
+const CRAB_OUTLINE = require('../../../assets/images/crab-outline.png')
 
 /** National-ID style status palette. */
 const STATUS_COLORS = {

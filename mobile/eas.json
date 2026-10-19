@@ -33,6 +33,12 @@
       "ios": {
         "ascAppId": "6819166470"
       }
+    },
+    "closed": {
+      "android": {
+        "track": "closed",
+        "releaseStatus": "completed"
+      }
     }
   }
 }
