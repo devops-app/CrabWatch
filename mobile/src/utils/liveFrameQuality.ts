@@ -20,6 +20,8 @@
  * authoritative enforcement point.
  */
 
+import { DEFAULT_BRIGHTNESS_THRESHOLDS, type BrightnessThresholds } from '@crabwatch/shared'
+
 /** Edge length (in pixels) of the square luminance grid we downsample to. */
 export const LIVE_GRID_SIZE = 128
 
@@ -43,6 +45,8 @@ export interface LiveFrameQuality {
   framingScore: number
   blurStatus: LiveGateStatus
   brightnessStatus: LiveGateStatus
+  /** Semantic brightness bucket for the live chip icon. */
+  brightnessCondition: BrightnessCondition
   framingStatus: LiveGateStatus
   /** Worst of the three statuses. */
   overallStatus: LiveGateStatus
@@ -68,6 +72,29 @@ export const LIVE_BLUR_THRESHOLDS = {
 export const LIVE_FRAMING_WARN_BELOW = 0.42
 
 /**
+ * Semantic brightness bucket used to pick the live chip icon.
+ *
+ * Derived from the SAME shared thresholds as `classifyBrightness`, so the
+ * icon (dark / normal / bright) can never disagree with the gate status.
+ */
+export type BrightnessCondition = 'dark' | 'normal' | 'bright'
+
+/**
+ * Map a normalized brightness value (0-1) to a semantic condition using the
+ * shared brightness thresholds. `dark` covers both the too-dark (fail) and
+ * underexposed (warn) ranges; `bright` covers the overexposed (warn) range.
+ */
+export function classifyBrightnessCondition(
+  brightness: number,
+  thresholds: BrightnessThresholds = DEFAULT_BRIGHTNESS_THRESHOLDS,
+): BrightnessCondition {
+  if (!Number.isFinite(brightness)) return 'dark'
+  if (brightness < thresholds.low) return 'dark'
+  if (brightness > thresholds.bright) return 'bright'
+  return 'normal'
+}
+
+/**
  * Downsample a BGRA pixel buffer (VisionCamera `pixelFormat: 'rgb'` yields
  * interleaved [B, G, R, A]) into a square grayscale luminance grid.
  *
@@ -77,6 +104,7 @@ export const LIVE_FRAMING_WARN_BELOW = 0.42
  * @returns a `Uint8Array` of length `gridSize * gridSize`, or `null` if the
  *   input dimensions are invalid.
  */
+
 export function downsampleBgraToLuminance(
   buffer: ArrayBuffer,
   width: number,
@@ -251,6 +279,7 @@ export function classifyLiveFrameMetrics(
 ): LiveFrameQuality {
   const blurStatus = classifyLiveBlur(metrics.blurScore)
   const brightnessStatus = classifyBrightness(metrics.brightness)
+  const brightnessCondition = classifyBrightnessCondition(metrics.brightness)
   const framingStatus = classifyLiveFraming(metrics.framingScore)
 
   const overallStatus = worstStatus(worstStatus(blurStatus, brightnessStatus), framingStatus)
@@ -261,6 +290,7 @@ export function classifyLiveFrameMetrics(
     framingScore: metrics.framingScore,
     blurStatus,
     brightnessStatus,
+    brightnessCondition,
     framingStatus,
     overallStatus,
     ready: overallStatus !== 'fail',
