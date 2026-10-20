@@ -13,6 +13,7 @@
     },
     "production": {
       "autoIncrement": true,
+      "pnpm": "10.33.2",
       "ios": {
         "image": "macos-tahoe-26.5-xcode-26.6"
       }
