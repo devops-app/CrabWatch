@@ -141,6 +141,12 @@ function CameraModalContent({
   const currentCaptureLabel = currentCaptureStep?.label || currentStepLabel
   const currentCaptureIcon = (currentCaptureStep?.icon ?? 'camera') as keyof typeof Ionicons.glyphMap
 
+  // Memoize the outputs array so its identity is stable across the ~3 Hz
+  // live-quality re-renders. A fresh array literal on every render defeats
+  // <Camera>'s React.memo and re-triggers VisionCamera's orientation effect,
+  // which re-applies outputOrientation to the preview and causes flicker.
+  const cameraOutputs = useMemo(() => [frameOutput, photoOutput], [frameOutput, photoOutput])
+
   return (
     <SafeAreaView style={styles.cameraScreen}>
       {!isLandscape ? (
@@ -192,7 +198,7 @@ function CameraModalContent({
             ref={cameraRef}
             style={styles.cameraPreview}
             device={device}
-            outputs={[frameOutput, photoOutput]}
+            outputs={cameraOutputs}
             isActive={cameraActive}
             orientationSource="interface"
             mirrorMode="off"
