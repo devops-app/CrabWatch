@@ -9,6 +9,7 @@
 3. **PostgreSQL** running (Docker or local)
 4. **Azurite** (local Azure Blob emulator) — required for photo upload during local dev
 5. **Development build** (`expo-dev-client`) — Expo Go is incompatible with React 19; use a development build instead
+6. **Hoisted `node_modules`** (Windows) — the root `.npmrc` sets `node-linker=hoisted` so native CMake/Ninja build paths stay under Windows' 260-char limit. Don't switch back to pnpm's default isolated `.pnpm` layout or Android native builds break.
 
 ### Step 0: Start Azurite (Local Blob Storage)
 
@@ -97,8 +98,30 @@ pnpm dev:ios
 
 **Android Emulator:**
 ```powershell
+# One command: builds (Gradle), installs, starts Metro, and launches
 pnpm dev:android
 ```
+
+**Android local-dev troubleshooting:**
+
+- **`No matching variant... No variants exist`** (for libs like `react-native-maps`, `react-native-screens`, etc.): a stale RN autolinking cache is pointing at old `node_modules` paths. Delete it and rebuild:
+  ```powershell
+  Remove-Item mobile\android\build\generated\autolinking -Recurse -Force
+  pnpm dev:android
+  ```
+  The cache only invalidates on `mobile/package.json` changes (not `pnpm-lock.yaml`), so a root-level reinstall won't refresh it.
+- **`INSTALL_FAILED_VERSION_DOWNGRADE`**: the emulator has a newer EAS build installed. Uninstall it first, then reinstall:
+  ```powershell
+  adb -s emulator-5554 uninstall com.dsigncodehub.crabwatch
+  ```
+- **Manual install + launch** (if the `expo run:android` install step fails):
+  ```powershell
+  # Terminal 1 — Metro
+  cd mobile; npx expo start --port 8081
+  # Terminal 2 — install + launch
+  adb -s emulator-5554 install -r mobile\android\app\build\outputs\apk\debug\app-debug.apk
+  adb -s emulator-5554 shell monkey -p com.dsigncodehub.crabwatch -c android.intent.category.LAUNCHER 1
+  ```
 
 ### Step 5: Test the App
 

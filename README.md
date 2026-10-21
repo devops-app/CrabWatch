@@ -35,6 +35,8 @@ pnpm dev:web
 pnpm dev:mobile
 ```
 
+> **Windows:** Dependencies install with a flat, hoisted `node_modules` layout (root `.npmrc` → `node-linker=hoisted`) to keep native build paths under Windows' 260-char limit. See `MOBILE_DEPLOYMENT.md` for Android local-dev troubleshooting.
+
 ## Features
 
 ### AI-Guided Capture
