@@ -5,7 +5,7 @@
  * Usage: npx tsx scripts/runQAMatrix.ts <test-images-dir> [output.json]
  *
  * Test images should be named with group prefix: a1-dark.jpg, b1-blur.jpg, etc.
- * The runner matches filenames to the QA matrix scenarios in qa-matrix.md.
+ * The runner matches filenames to the QA matrix scenarios in Docs/qa-matrix.md.
  */
 
 import fs from 'fs'
@@ -144,7 +144,7 @@ async function main() {
     console.error('Test images should be named with group prefix:')
     console.error('  a1-dark.jpg, b1-blur.jpg, c1-small.jpg, etc.')
     console.error('')
-    console.error('See qa-matrix.md for full scenario list.')
+    console.error('See Docs/qa-matrix.md for full scenario list.')
     process.exit(1)
   }
 

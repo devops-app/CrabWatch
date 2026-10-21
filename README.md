@@ -35,7 +35,7 @@ pnpm dev:web
 pnpm dev:mobile
 ```
 
-> **Windows:** Dependencies install with a flat, hoisted `node_modules` layout (root `.npmrc` → `node-linker=hoisted`) to keep native build paths under Windows' 260-char limit. See `MOBILE_DEPLOYMENT.md` for Android local-dev troubleshooting.
+> **Windows:** Dependencies install with a flat, hoisted `node_modules` layout (root `.npmrc` → `node-linker=hoisted`) to keep native build paths under Windows' 260-char limit. See `Docs/MOBILE_DEPLOYMENT.md` for Android local-dev troubleshooting.
 
 ## Features
 
@@ -101,7 +101,7 @@ pnpm dev:mobile
 - App Service (API + Web, shared B1 plan)
 - Application Insights (telemetry)
 - Scripts: `scripts/deploy-server.ps1`, `scripts/deploy-web.ps1`
-- Quality telemetry KQL helper: `APP_INSIGHTS_QUALITY_GATE_QUERIES.md`
+- Quality telemetry KQL helper: `Docs/APP_INSIGHTS_QUALITY_GATE_QUERIES.md`
 
 ### Mobile
 - EAS Build for Android/iOS
@@ -112,7 +112,7 @@ See `Azure-Deployment-Plan.md` for detailed deployment steps.
 
 ## Testing
 
-See `UAT.md` for comprehensive end-to-end test cases (270 test cases across 20 modules).
+See `Docs/UAT.md` for comprehensive end-to-end test cases (270 test cases across 20 modules).
 
 Seed accounts (password: `Pa55w.rd`):
 - `admin@crabwatch.my` (ADMIN)
