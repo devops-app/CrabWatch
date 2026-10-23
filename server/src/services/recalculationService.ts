@@ -1,14 +1,5 @@
 import crypto from 'crypto'
-import { PrismaClient } from '@prisma/client'
-import { getContainer } from './container'
-
-let _prisma: PrismaClient
-function getPrisma(): PrismaClient {
-  if (!_prisma) {
-    _prisma = getContainer().prisma
-  }
-  return _prisma
-}
+import { getPrisma } from './container'
 
 export interface RecalculationResult {
   userId: string
@@ -83,44 +74,44 @@ export async function recalculateXP(params: RecalculationParams, adminId?: strin
       : await getPrisma().user.findMany({ where: { deletedAt: null } })
 
     jobStatus.totalUsers = users.length
+
+    // Single grouped query instead of one findMany per user (fixes N+1).
+    // Users absent from the result have no ledger transactions -> total 0.
+    const ledgerTotals = await getPrisma().xPTransaction.groupBy({
+      by: ['userId'],
+      where: params.userId ? { userId: params.userId } : undefined,
+      _sum: { deltaXP: true },
+    })
+    const ledgerMap = new Map(ledgerTotals.map((t) => [t.userId, t._sum.deltaXP ?? 0]))
+
     const results: RecalculationResult[] = []
+    const discrepancies: RecalculationResult[] = []
 
     for (const user of users) {
-      const transactions = await getPrisma().xPTransaction.findMany({
-        where: { userId: user.id },
-        select: { deltaXP: true },
-      })
-
-      const correctXP = transactions.reduce((s: number, t) => s + t.deltaXP, 0)
+      const correctXP = ledgerMap.get(user.id) ?? 0
       const diff = correctXP - user.totalXP
 
-      results.push({
+      const result: RecalculationResult = {
         userId: user.id,
         currentXP: user.totalXP,
         correctXP,
         diff,
-      })
+      }
+      results.push(result)
 
       if (diff !== 0) {
         jobStatus.discrepancies++
+        discrepancies.push(result)
       }
 
+      // The ledger is authoritative: set totalXP to the ledger sum.
+      // Do NOT insert an adjustment transaction — that would add `diff` on
+      // top of the ledger and corrupt it (the very inconsistency this repair
+      // is meant to resolve).
       if (params.mode === 'execute' && diff !== 0) {
         await getPrisma().user.update({
           where: { id: user.id },
           data: { totalXP: correctXP },
-        })
-
-        // Create adjustment transaction to keep ledger consistent
-        await getPrisma().xPTransaction.create({
-          data: {
-            userId: user.id,
-            actionType: diff > 0 ? 'ADMIN_ADJUSTMENT' : 'ADMIN_REVERSAL',
-            deltaXP: diff,
-            sourceType: 'Recalculation',
-            reason: params.reason || 'XP recalculation correction',
-            idempotencyKey: `recalc:${user.id}:${Date.now()}`,
-          },
         })
       }
 
@@ -134,7 +125,12 @@ export async function recalculateXP(params: RecalculationParams, adminId?: strin
         actorId: adminId || null,
         action: 'RECALCULATE_XP',
         resourceType: 'System',
-        afterState: { mode: params.mode, totalUsers: users.length, discrepancies: results.filter(r => r.diff !== 0).length },
+        afterState: {
+          mode: params.mode,
+          totalUsers: users.length,
+          discrepancies: discrepancies.length,
+          repairedUsers: params.mode === 'execute' ? discrepancies.map((d) => d.userId) : undefined,
+        },
         reason: params.reason || 'XP recalculation',
       },
     })

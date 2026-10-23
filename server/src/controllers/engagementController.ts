@@ -1,8 +1,9 @@
 import { Response } from 'express'
+import { NotificationChannel } from '@prisma/client'
 import { AuthRequest } from '../middleware/auth'
 import { getPrisma, getConfig } from '../services/container'
 import { asyncHandler, UnauthorizedError, ValidationError, NotFoundError } from '../utils/errors'
-import { createTranslator } from '../middleware/i18n'
+import { createTranslator, detectLocale } from '../middleware/i18n'
 import { OnboardingStepDto } from '@crabwatch/shared'
 
 // Local types for JSON fields
@@ -260,95 +261,129 @@ export const claimMission = asyncHandler(async (req: AuthRequest, res: Response)
   res.json({ success: true, data: userMission })
 })
 
-export const updateMissionProgress = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const __ = createTranslator(req)
-  const cfg = getConfig()
-  if (!cfg.engagement.missionsEnabled) {
-    res.status(501).json({ success: false, error: __('engagement.missionsNotEnabled', 'engagement') })
-    return
-  }
+// ==================== ACHIEVEMENTS / INSIGHTS / SOCIAL / NOTIFICATIONS (K2) ====================
+// Extracted from inline handlers in engagementRoutes.ts. Each handler guards the
+// engagement feature flag (501), resolves the authenticated user (401), and
+// delegates to the relevant service via asyncHandler.
 
+const DEFAULT_CATEGORIES = ['mission_reminders', 'streak_warnings', 'milestone_alerts', 'community_updates'] as const
+const DEFAULT_CHANNELS = ['PUSH', 'EMAIL', 'IN_APP'] as const
+
+function engagementEnabled(res: Response): boolean {
+  if (!getConfig().engagement.enabled) {
+    res.status(501).json({ success: false, error: 'Engagement features not enabled' })
+    return false
+  }
+  return true
+}
+
+export const getAchievements = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!engagementEnabled(res)) return
   const userId = req.dbUser?.id
-  if (!userId) {
-    throw new UnauthorizedError(__('common.auth.required', 'common'))
-  }
+  if (!userId) throw new UnauthorizedError('Authentication required')
+  const { getAchievements: svcGetAchievements } = await import('../services/achievementService')
+  const achievements = await svcGetAchievements(userId)
+  res.json({ success: true, data: achievements })
+})
 
-  const { missionCode, increment } = req.body
-  if (!missionCode) {
-    throw new ValidationError(__('engagement.mission.codeRequired', 'engagement'))
-  }
+export const getUnlockedAchievements = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!engagementEnabled(res)) return
+  const userId = req.dbUser?.id
+  if (!userId) throw new UnauthorizedError('Authentication required')
+  const { getUnlockedAchievements: svcGetUnlocked } = await import('../services/achievementService')
+  const achievements = await svcGetUnlocked(userId)
+  res.json({ success: true, data: achievements })
+})
 
-  const now = new Date()
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+export const checkAchievements = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!engagementEnabled(res)) return
+  const userId = req.dbUser?.id
+  if (!userId) throw new UnauthorizedError('Authentication required')
+  const { checkAndAwardAchievements } = await import('../services/achievementService')
+  const newlyUnlocked = await checkAndAwardAchievements(userId, detectLocale(req))
+  res.json({ success: true, data: { newlyUnlocked } })
+})
 
+export const getAchievementProgress = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!engagementEnabled(res)) return
+  const userId = req.dbUser?.id
+  if (!userId) throw new UnauthorizedError('Authentication required')
+  const { getAchievementProgress: svcGetProgress } = await import('../services/achievementService')
+  const progress = await svcGetProgress(userId, req.params.id)
+  if (!progress) throw new NotFoundError('Achievement not found')
+  res.json({ success: true, data: progress })
+})
+
+export const getInsights = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!engagementEnabled(res)) return
+  const userId = req.dbUser?.id
+  if (!userId) throw new UnauthorizedError('Authentication required')
+  const { generateInsights } = await import('../services/aiInsightsService')
+  const insights = await generateInsights(userId, detectLocale(req, req.dbUser?.preferredLocale ?? null))
+  res.json({ success: true, data: insights })
+})
+
+export const actOnInsight = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!engagementEnabled(res)) return
+  res.json({ success: true, data: { acted: true } })
+})
+
+export const getSocialContributors = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!engagementEnabled(res)) return
+  const { getTopContributors } = await import('../services/notificationService')
+  const contributors = await getTopContributors()
+  res.json({ success: true, data: contributors })
+})
+
+export const getSocialStats = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!engagementEnabled(res)) return
+  const { getCommunityStats } = await import('../services/notificationService')
+  const stats = await getCommunityStats()
+  res.json({ success: true, data: stats })
+})
+
+export const getNotificationPreferences = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!engagementEnabled(res)) return
+  const userId = req.dbUser?.id
+  if (!userId) throw new UnauthorizedError('Authentication required')
   const db = getPrisma()
-  const mission = await db.missionDefinition.findUnique({
-    where: { code: missionCode, active: true },
-  })
-
-  if (!mission) {
-    throw new NotFoundError(__('engagement.mission.notFound', 'engagement'))
-  }
-
-  const criteria: MissionCriterion[] = (mission.criteria as unknown as MissionCriterion[]) || []
-  const targetValue = criteria.length > 0 ? (criteria[0].value || 1) : 1
-
-  let userMission = await db.userMission.findUnique({
-    where: {
-      userId_missionId_assignmentDate: {
+  let prefs = await db.notificationPreference.findMany({ where: { userId } })
+  if (prefs.length === 0) {
+    const createData = DEFAULT_CHANNELS.flatMap((channel) =>
+      DEFAULT_CATEGORIES.map((category) => ({
         userId,
-        missionId: mission.id,
-        assignmentDate: todayStart,
-      },
-    },
-  })
-
-  if (!userMission) {
-    userMission = await db.userMission.create({
-      data: {
-        userId,
-        missionId: mission.id,
-        assignmentDate: todayStart,
-        progressValue: increment || 1,
-        targetValue,
-      },
-    })
-  } else {
-    userMission = await db.userMission.update({
-      where: { id: userMission.id },
-      data: {
-        progressValue: { increment: increment || 1 },
-      },
-    })
+        channel,
+        category,
+        enabled: category !== 'community_updates',
+      }))
+    )
+    prefs = await db.notificationPreference.createManyAndReturn({ data: createData })
   }
+  res.json({ success: true, data: prefs })
+})
 
-  const isComplete = (userMission.progressValue || 0) >= targetValue
-  if (isComplete && !userMission.completedAt) {
-    userMission = await db.userMission.update({
-      where: { id: userMission.id },
-      data: {
-        completedAt: new Date(),
-        status: 'COMPLETED',
-      },
-    })
-
-    await db.xPTransaction.create({
-      data: {
-        userId,
-        actionType: 'MISSION_COMPLETE' as const,
-        deltaXP: mission.xpReward,
-        sourceType: 'Mission',
-        sourceId: mission.id,
-        reason: `Completed mission: ${mission.name}`,
-        idempotencyKey: `mission:${userId}:${mission.id}:${todayStart.toISOString()}`,
-      },
-    })
-
-    await db.user.update({
-      where: { id: userId },
-      data: { totalXP: { increment: mission.xpReward } },
-    })
-  }
-
-  res.json({ success: true, data: userMission })
+export const updateNotificationPreferences = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!engagementEnabled(res)) return
+  const userId = req.dbUser?.id
+  if (!userId) throw new UnauthorizedError('Authentication required')
+  const { updates } = req.body
+  if (!Array.isArray(updates)) throw new ValidationError('updates array required')
+  const db = getPrisma()
+  const results = await Promise.all(
+    updates.map((u: { channel: NotificationChannel; category: string; enabled?: boolean }) =>
+      db.notificationPreference.upsert({
+        where: {
+          userId_channel_category: { userId, channel: u.channel, category: u.category },
+        },
+        update: { enabled: u.enabled },
+        create: {
+          userId,
+          channel: u.channel,
+          category: u.category,
+          enabled: u.enabled ?? true,
+        },
+      })
+    )
+  )
+  res.json({ success: true, data: results })
 })

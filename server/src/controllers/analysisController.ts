@@ -111,9 +111,23 @@ async function ensureSpeciesExists(result: CrabAnalysisResult): Promise<void> {
     return
   }
 
-  const nameMatch = result.speciesName.match(/^([A-Z][a-z]+\s+[a-z]+)/i)
-  const scientificName = sanitizeInput(nameMatch ? nameMatch[1] : result.speciesId, 100)
-    .replace(/[^a-zA-Z\s]/g, '').trim()
+  // D1: The AI returns "Scientific name (Common Name)". Extract the scientific
+  // name (the part before the parenthetical common name) and validate it is a
+  // strict binomial: Capitalized Genus + lowercase species epithet. The previous
+  // regex was case-insensitive and matched any two words, so malformed AI output
+  // (e.g. "scylla serrata", "Scylla Serrata") could pollute the species table.
+  // Anything that is not a strict binomial is quarantined (logged + skipped).
+  const scientificPart = result.speciesName.split('(')[0].trim()
+  const binomialMatch = scientificPart.match(/^([A-Z][a-z]+ [a-z]+)/)
+  if (!binomialMatch) {
+    logger.warn(
+      { speciesName: result.speciesName, speciesId: result.speciesId },
+      'ensureSpeciesExists: AI species name is not a strict "Genus species" binomial, quarantining (skipping upsert)'
+    )
+    return
+  }
+
+  const scientificName = sanitizeInput(binomialMatch[1], 100).trim()
   const commonMatch = result.speciesName.match(/\(([^)]+)\)/)
   const commonName = sanitizeInput(commonMatch ? commonMatch[1] : result.speciesId.replace(/-/g, ' '), 100)
 

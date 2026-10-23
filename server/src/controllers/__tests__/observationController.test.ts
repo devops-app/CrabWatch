@@ -302,6 +302,7 @@ describe('Observation Controller', () => {
         user: { id: 'user-2', name: 'Other', email: 'other@test.com' },
         species: { id: 'species-1', scientificName: 'Scylla serrata', commonName: 'Blue Mud Crab' },
       }
+      mockPrisma.observation.findUnique.mockResolvedValue({ id: 'obs-1', userId: 'user-2', status: 'PENDING', deletedAt: null })
       mockPrisma.observation.update.mockResolvedValue(mockObs)
       mockPrisma.fcmToken.findUnique.mockResolvedValue(null)
       req.params = { id: 'obs-1' }
@@ -342,6 +343,7 @@ describe('Observation Controller', () => {
         user: { id: 'user-2', name: 'Other', email: 'other@test.com' },
         species: { id: 'species-1', scientificName: 'Scylla serrata', commonName: 'Blue Mud Crab' },
       }
+      mockPrisma.observation.findUnique.mockResolvedValue({ id: 'obs-1', userId: 'user-2', status: 'PENDING', deletedAt: null })
       mockPrisma.observation.update.mockResolvedValue(mockObs)
       mockPrisma.fcmToken.findUnique.mockResolvedValue(null)
       req.params = { id: 'obs-1' }

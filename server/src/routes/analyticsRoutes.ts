@@ -22,7 +22,7 @@ router.use(resolveUser)
  *   get:
  *     tags: [Analytics]
  *     summary: Get dashboard statistics
- *     description: Returns aggregated statistics for the dashboard (Researcher/Admin only)
+ *     description: Returns aggregated statistics for the dashboard (any authenticated user)
  *     responses:
  *       200:
  *         description: Dashboard statistics
@@ -39,8 +39,8 @@ router.use(resolveUser)
  *                     totalSpecies: { type: integer }
  *                     pendingObservations: { type: integer }
  *                     recentObservations: { type: integer }
- *       403:
- *         description: Researcher/Admin only
+ *       401:
+ *         description: Authentication required
  */
 router.get('/stats', getDashboardStats)
 
@@ -67,8 +67,8 @@ router.get('/stats', getDashboardStats)
  *               properties:
  *                 success: { type: boolean }
  *                 data: { type: array, items: { type: object } }
- *       403:
- *         description: Researcher/Admin only
+ *       401:
+ *         description: Authentication required
  */
 router.get('/size-frequency', getSizeFrequency)
 
@@ -98,8 +98,8 @@ router.get('/size-frequency', getSizeFrequency)
  *               properties:
  *                 success: { type: boolean }
  *                 data: { type: object }
- *       403:
- *         description: Researcher/Admin only
+ *       401:
+ *         description: Authentication required
  */
 router.get('/gender-ratio', getGenderRatio)
 
@@ -123,8 +123,8 @@ router.get('/gender-ratio', getGenderRatio)
  *               properties:
  *                 success: { type: boolean }
  *                 data: { type: array, items: { type: object } }
- *       403:
- *         description: Researcher/Admin only
+ *       401:
+ *         description: Authentication required
  */
 router.get('/condition-indices', getConditionIndices)
 
@@ -148,8 +148,8 @@ router.get('/condition-indices', getConditionIndices)
  *               properties:
  *                 success: { type: boolean }
  *                 data: { type: object }
- *       403:
- *         description: Researcher/Admin only
+ *       401:
+ *         description: Authentication required
  */
 router.get('/cw50', getCW50)
 
@@ -173,8 +173,8 @@ router.get('/cw50', getCW50)
  *               properties:
  *                 success: { type: boolean }
  *                 data: { type: array, items: { type: object } }
- *       403:
- *         description: Researcher/Admin only
+ *       401:
+ *         description: Authentication required
  */
 router.get('/temporal-trends', getTemporalTrends)
 

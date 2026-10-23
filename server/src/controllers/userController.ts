@@ -1,12 +1,12 @@
 import { Response } from 'express'
 import { Prisma, UserRole as PrismaUserRole } from '@prisma/client'
-import bcrypt from 'bcryptjs'
 import { isFirebaseEnabled } from '../config/firebase'
 import { AuthRequest } from '../middleware/auth'
 import { getPrisma } from '../services/container'
 import { UserResponse, UserListResponse, UserRole } from '@crabwatch/shared'
-import { asyncHandler, AppError, ConflictError, NotFoundError, ValidationError } from '../utils/errors'
+import { asyncHandler, AppError, ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../utils/errors'
 import { createTranslator, detectLocale } from '../middleware/i18n'
+import { hashPassword, verifyPassword } from '../utils/password'
 import logger from '../utils/logger'
 
 const SOFT_DELETE_RETENTION_DAYS = 30
@@ -50,7 +50,7 @@ export const createUser = asyncHandler(async (req: AuthRequest, res: Response) =
     })
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10)
+  const hashedPassword = await hashPassword(password)
 
   const userData: Prisma.UserCreateInput = {
     name,
@@ -99,9 +99,20 @@ export const createUser = asyncHandler(async (req: AuthRequest, res: Response) =
     }
   }
 
-  const user = await db.user.create({
-    data: userData,
-  })
+  let user
+  try {
+    user = await db.user.create({
+      data: userData,
+    })
+  } catch (error) {
+    // R1: The check-then-create above is not atomic. A concurrent registration
+    // with the same email (or firebaseUid) can slip past the findUnique guard
+    // and hit the unique constraint. Map that race to a 409 instead of a 500.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      throw new ConflictError(__('register.emailTaken', 'auth'))
+    }
+    throw error
+  }
 
   const response: UserResponse = {
     id: user.id,
@@ -264,17 +275,17 @@ export const changeUserPassword = asyncHandler(async (req: AuthRequest, res: Res
     throw new ValidationError(__('user.password.notConfigured', 'user'))
   }
 
-  const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password)
+  const isCurrentPasswordValid = await verifyPassword(currentPassword, user.password)
   if (!isCurrentPasswordValid) {
     throw new ValidationError(__('user.password.currentIncorrect', 'user'))
   }
 
-  const isSameAsCurrent = await bcrypt.compare(newPassword, user.password)
+  const isSameAsCurrent = await verifyPassword(newPassword, user.password)
   if (isSameAsCurrent) {
     throw new ValidationError(__('user.password.sameAsCurrent', 'user'))
   }
 
-  const hashedPassword = await bcrypt.hash(newPassword, 12)
+  const hashedPassword = await hashPassword(newPassword)
 
   await db.user.update({
     where: { id: dbUser.id },
@@ -369,13 +380,43 @@ export const listUsers = asyncHandler(async (req: AuthRequest, res: Response) =>
 })
 
 export const updateUserRole = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const __ = createTranslator(req)
   const { id } = req.params
   const { role } = req.body
+  const dbUser = req.dbUser
+
+  // Defensive role validation (the route also enforces this via Zod).
+  const normalizedRole = String(role).toUpperCase()
+  if (!['USER', 'RESEARCHER', 'ADMIN'].includes(normalizedRole)) {
+    throw new ValidationError(__('user.role.invalid', 'user'))
+  }
+
+  // An admin cannot change their own role (prevents accidental lockout and
+  // self-privilege changes).
+  if (dbUser && id === dbUser.id) {
+    throw new ForbiddenError(__('user.role.self', 'user'))
+  }
 
   const db = getPrisma()
+  const target = await db.user.findUnique({ where: { id } })
+  if (!target) {
+    throw new NotFoundError(__('user.notFound', 'user'))
+  }
+
+  // Last-admin guard: never allow demoting the only active admin, which would
+  // leave the system with no one able to manage users.
+  if (target.role === 'ADMIN' && normalizedRole !== 'ADMIN') {
+    const activeAdmins = await db.user.count({
+      where: { role: 'ADMIN', deletedAt: null, blockedAt: null },
+    })
+    if (activeAdmins <= 1) {
+      throw new ConflictError(__('user.role.lastAdmin', 'user'))
+    }
+  }
+
   const user = await db.user.update({
     where: { id },
-    data: { role: role.toUpperCase() },
+    data: { role: normalizedRole as PrismaUserRole },
   })
 
   res.json({
@@ -399,6 +440,11 @@ export const softDeleteUser = asyncHandler(async (req: AuthRequest, res: Respons
   }
 
   const db = getPrisma()
+  const target = await db.user.findUnique({ where: { id } })
+  if (!target) {
+    throw new NotFoundError(__('user.notFound', 'user'))
+  }
+
   const user = await db.user.update({
     where: { id },
     data: {

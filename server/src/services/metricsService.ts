@@ -1,13 +1,4 @@
-import { PrismaClient } from '@prisma/client'
-import { getContainer } from './container'
-
-let _prisma: PrismaClient
-function getPrisma(): PrismaClient {
-  if (!_prisma) {
-    _prisma = getContainer().prisma
-  }
-  return _prisma
-}
+import { getPrisma } from './container'
 
 export interface EngagementMetrics {
   // User engagement

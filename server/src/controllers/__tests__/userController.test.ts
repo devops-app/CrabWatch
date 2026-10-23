@@ -103,7 +103,7 @@ describe('User Controller', () => {
 
       await callHandler(createUser, req as unknown as AuthRequest, res as unknown as Response)
 
-      expect(mockBcrypt.hash).toHaveBeenCalledWith('password123', 10)
+      expect(mockBcrypt.hash).toHaveBeenCalledWith('password123', 12)
       expect(mockPrisma.user.create).toHaveBeenCalled()
       expect(res.status).toHaveBeenCalledWith(201)
       expect(res.json).toHaveBeenCalledWith(
@@ -268,6 +268,7 @@ describe('User Controller', () => {
 
   describe('updateUserRole', () => {
     it('should update user role', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-2', role: 'USER' })
       mockPrisma.user.update.mockResolvedValue({
         id: 'user-2',
         name: 'Other User',
@@ -292,6 +293,7 @@ describe('User Controller', () => {
     })
 
     it('should return 500 on update error', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ id: 'nonexistent', role: 'ADMIN' })
       mockPrisma.user.update.mockRejectedValue(new Error('Record not found'))
       req.params = { id: 'nonexistent' }
       req.body = { role: 'ADMIN' }

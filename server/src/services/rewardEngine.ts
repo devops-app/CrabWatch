@@ -1,17 +1,9 @@
 import crypto from 'crypto'
-import { PrismaClient, RewardActionType } from '@prisma/client'
-import { getContainer } from './container'
+import { Prisma, PrismaClient, RewardActionType } from '@prisma/client'
+import { getPrisma } from './container'
 import { invalidateLeaderboardCache } from './leaderboardService'
 import { sendNotification } from './notificationService'
 import { getServerI18n } from '../config/i18n'
-
-let _prisma: PrismaClient
-function getPrisma(): PrismaClient {
-  if (!_prisma) {
-    _prisma = getContainer().prisma
-  }
-  return _prisma
-}
 
 interface AwardXPParams {
   userId: string
@@ -91,7 +83,7 @@ export async function awardXP(params: AwardXPParams): Promise<XPResult> {
   const deltaXP = rule.xpReward
 
   // Perform everything in a transaction
-  const result = await getPrisma().$transaction(async (tx) => {
+  const runTransaction = () => getPrisma().$transaction(async (tx) => {
     // Create XP transaction record
     await tx.xPTransaction.create({
       data: {
@@ -150,6 +142,30 @@ export async function awardXP(params: AwardXPParams): Promise<XPResult> {
       xpToNextLevel: xpToNext,
     }
   })
+
+  let result: XPResult
+  try {
+    result = await runTransaction()
+  } catch (error) {
+    // R3: The idempotency pre-check above is not atomic. A concurrent award
+    // with the same idempotencyKey can slip past the findUnique guard and hit
+    // the unique constraint. Treat that race as a no-op (the first writer won)
+    // instead of surfacing a 500 or double-awarding.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      const user = await getPrisma().user.findUnique({ where: { id: userId } })
+      result = {
+        awarded: false,
+        deltaXP: 0,
+        newTotalXP: user?.totalXP ?? 0,
+        newLevel: user?.level ?? 1,
+        newTitle: user?.title ?? 'Crab Scout',
+        leveledUp: false,
+        xpToNextLevel: 0,
+      }
+    } else {
+      throw error
+    }
+  }
 
   if (result.awarded) {
     invalidateLeaderboardCache()

@@ -18,6 +18,7 @@ const mockConfig = {
 
 const mockBcrypt = {
   compare: jest.fn(),
+  getRounds: jest.fn().mockReturnValue(12),
 }
 
 const mockJwt = {

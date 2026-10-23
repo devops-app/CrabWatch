@@ -1,14 +1,5 @@
-import { PrismaClient } from '@prisma/client'
-import { getContainer } from './container'
+import { getPrisma } from './container'
 import { getServerI18n } from '../config/i18n'
-
-let _prisma: PrismaClient
-function getPrisma(): PrismaClient {
-  if (!_prisma) {
-    _prisma = getContainer().prisma
-  }
-  return _prisma
-}
 
 // ==================== AI INSIGHTS SERVICE ====================
 

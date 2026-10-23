@@ -113,6 +113,18 @@ const authLimiter = rateLimit({
 app.use('/api/v1/auth/login', authLimiter)
 app.use('/api/v1/users/register', authLimiter)
 
+// C2: /auth/verify is unauthenticated and accepts an arbitrary token, making it
+// a brute-force / enumeration target. Rate-limit it per IP.
+const verifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: config.nodeEnv === 'production' ? 30 : 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => stripPort(req.ip),
+  message: { success: false, error: 'Too many verification attempts. Please try again later.' },
+})
+app.use('/api/v1/auth/verify', verifyLimiter)
+
 const analyticsLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: config.nodeEnv === 'production' ? 100 : 300,

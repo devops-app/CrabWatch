@@ -279,26 +279,4 @@ describe('Zod Schemas', () => {
       expect(result.success).toBe(true)
     })
   })
-
-  describe('updateMissionProgressSchema', () => {
-    it('should validate missionCode with increment', () => {
-      const result = schemas.updateMissionProgressSchema.safeParse({ missionCode: 'daily_observer', increment: 1 })
-      expect(result.success).toBe(true)
-    })
-
-    it('should validate missionCode without increment', () => {
-      const result = schemas.updateMissionProgressSchema.safeParse({ missionCode: 'daily_observer' })
-      expect(result.success).toBe(true)
-    })
-
-    it('should fail when missionCode is missing', () => {
-      const result = schemas.updateMissionProgressSchema.safeParse({ increment: 1 })
-      expect(result.success).toBe(false)
-    })
-
-    it('should fail when increment is negative', () => {
-      const result = schemas.updateMissionProgressSchema.safeParse({ missionCode: 'daily_observer', increment: -1 })
-      expect(result.success).toBe(false)
-    })
-  })
 })

@@ -94,7 +94,11 @@ export interface BlockUserInput {
 
 export interface BackupResult {
   fileName: string
-  filePath: string
+  /**
+   * Absolute server-side path. Intentionally NOT returned by the API (would
+   * leak the server filesystem layout); kept optional for local tooling.
+   */
+  filePath?: string
   size: number
   timestamp: string
 }
@@ -111,7 +115,12 @@ export interface Invite {
   id: string
   email: string
   role: UserRole
-  token: string
+  /**
+   * Present only in the create/resend response (needed to build the invite
+   * link). Omitted from the admin list endpoint so the bearer credential is
+   * never exposed to the client.
+   */
+  token?: string
   expiresAt: string
   used: boolean
   createdAt: string

@@ -63,7 +63,10 @@
     "restore.notFound": "Pengguna yang dipadam tidak dijumpai",
     "restore.notDeleted": "Pengguna belum dipadam",
     "restore.expired": "Pengguna telah melebihi tempoh penahanan dan tidak boleh dipulihkan",
-    "role.updateSuccess": "Peranan pengguna dikemas kini berjaya"
+    "role.updateSuccess": "Peranan pengguna dikemas kini berjaya",
+    "role.self": "Anda tidak boleh mengubah peranan anda sendiri",
+    "role.lastAdmin": "Tidak boleh menurunkan peranan admin aktif terakhir",
+    "role.invalid": "Peranan tidak sah"
   },
   "observation": {
     "notFound": "Pengamatan tidak dijumpai",

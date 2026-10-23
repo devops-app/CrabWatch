@@ -122,7 +122,9 @@ export const listInvites = asyncHandler(async (_req: AuthRequest, res: Response)
       id: i.id,
       email: i.email,
       role: i.role.toLowerCase(),
-      token: i.token,
+      // NOTE: `token` is intentionally omitted. The invite token is a bearer
+      // credential — exposing it in the admin list would let any admin (or a
+      // compromised admin session) redeem any pending invite.
       expiresAt: i.expiresAt.toISOString(),
       used: i.used,
       createdAt: i.createdAt.toISOString(),

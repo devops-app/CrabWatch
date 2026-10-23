@@ -1,5 +1,5 @@
-import { Achievement, PrismaClient } from '@prisma/client'
-import { getContainer } from './container'
+import { Achievement } from '@prisma/client'
+import { getPrisma } from './container'
 import { awardXP } from './rewardEngine'
 import { sendNotification } from './notificationService'
 import { getServerI18n } from '../config/i18n'
@@ -8,14 +8,6 @@ import { getServerI18n } from '../config/i18n'
 interface AchievementRequirement {
   field: string
   value: number
-}
-
-let _prisma: PrismaClient
-function getPrisma(): PrismaClient {
-  if (!_prisma) {
-    _prisma = getContainer().prisma
-  }
-  return _prisma
 }
 
 // ==================== ACHIEVEMENT SERVICE ====================

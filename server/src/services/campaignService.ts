@@ -1,5 +1,5 @@
-import { Prisma, PrismaClient, UserRole } from '@prisma/client'
-import { getContainer } from './container'
+import { Prisma, UserRole } from '@prisma/client'
+import { getPrisma } from './container'
 
 /**
  * Cast a value to Prisma's InputJsonValue for JSON column writes.
@@ -7,14 +7,6 @@ import { getContainer } from './container'
  */
 function toJsonInput(value: unknown): Prisma.InputJsonValue {
   return value as Prisma.InputJsonValue
-}
-
-let _prisma: PrismaClient
-function getPrisma(): PrismaClient {
-  if (!_prisma) {
-    _prisma = getContainer().prisma
-  }
-  return _prisma
 }
 
 // ==================== CAMPAIGN SERVICE ====================

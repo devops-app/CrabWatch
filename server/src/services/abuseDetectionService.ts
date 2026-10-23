@@ -1,13 +1,5 @@
-import { Prisma, PrismaClient, AbuseSignalType } from '@prisma/client'
-import { getContainer } from './container'
-
-let _prisma: PrismaClient
-function getPrisma(): PrismaClient {
-  if (!_prisma) {
-    _prisma = getContainer().prisma
-  }
-  return _prisma
-}
+import { Prisma, AbuseSignalType } from '@prisma/client'
+import { getPrisma } from './container'
 
 // ==================== ABUSE DETECTION SERVICE ====================
 

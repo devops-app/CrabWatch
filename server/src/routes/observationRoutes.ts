@@ -197,7 +197,7 @@ router.patch('/:id/validate', requireAuth, resolveUser, requireRole('RESEARCHER'
  * /api/observations/{id}:
  *   patch:
  *     tags: [Observations]
- *     summary: Update an observation (owner only, pending/rejected status)
+ *     summary: Update an observation (owner, or RESEARCHER/ADMIN for any record; pending/rejected status)
  *     parameters:
  *       - in: path
  *         name: id
@@ -243,7 +243,7 @@ router.patch('/:id', requireAuth, resolveUser, validate(updateObservationSchema)
  * /api/observations/{id}:
  *   delete:
  *     tags: [Observations]
- *     summary: Soft-delete an observation (owner only)
+ *     summary: Soft-delete an observation (owner, or RESEARCHER/ADMIN for any record)
  *     parameters:
  *       - in: path
  *         name: id

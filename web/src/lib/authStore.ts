@@ -38,6 +38,11 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'crabwatch-auth',
+      // Only persist the user profile — never the JWT. The token is kept in
+      // memory for the active session (sent as a Bearer header) and the
+      // httpOnly `auth_token` cookie is the durable auth mechanism across
+      // reloads. Persisting the JWT to localStorage would let any XSS read it.
+      partialize: (state) => ({ user: state.user }),
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.isHydrated = true

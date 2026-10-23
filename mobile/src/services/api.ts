@@ -475,7 +475,7 @@ export const api = {
     })
   },
 
-  async backupDatabase(): Promise<{ fileName: string; filePath: string; size: number; timestamp: string }> {
+  async backupDatabase(): Promise<{ fileName: string; size: number; timestamp: string }> {
     return apiRequest('/admin/backup', {
       method: 'POST',
     })
@@ -813,13 +813,6 @@ export const api = {
     return apiRequest('/engagement/missions/claim', {
       method: 'POST',
       body: JSON.stringify({ missionCode: body.missionKey }),
-    })
-  },
-
-  async updateMissionProgress(body: { missionKey: string; increment?: number }): Promise<{ progress: number }> {
-    return apiRequest('/engagement/missions/progress', {
-      method: 'POST',
-      body: JSON.stringify({ missionCode: body.missionKey, increment: body.increment }),
     })
   },
 

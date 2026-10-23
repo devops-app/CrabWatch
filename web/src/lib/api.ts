@@ -590,9 +590,6 @@ export const api = {
   claimMission: (body: { missionKey: string }) =>
     request('/api/v1/engagement/missions/claim', { method: 'POST', body: JSON.stringify({ missionCode: body.missionKey }) }),
 
-  updateMissionProgress: (body: { missionKey: string; increment?: number }) =>
-    request('/api/v1/engagement/missions/progress', { method: 'POST', body: JSON.stringify({ missionCode: body.missionKey, increment: body.increment }) }),
-
   getOnboardingStatus: () => request<OnboardingStatusDto>('/api/v1/engagement/onboarding/me'),
 
   completeOnboardingStep: (body: { step: string }) =>

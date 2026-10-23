@@ -147,11 +147,6 @@ export const claimMissionSchema = z.object({
   missionCode: z.string().min(1),
 })
 
-export const updateMissionProgressSchema = z.object({
-  missionCode: z.string().min(1),
-  increment: z.number().min(0).optional(),
-})
-
 // Translation CRUD schemas
 export const createTranslationSchema = z.object({
   locale: z.enum(['en', 'ms']),

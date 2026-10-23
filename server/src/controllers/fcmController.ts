@@ -121,16 +121,30 @@ export const notifyNewSpecies = asyncHandler(async (req: AuthRequest, res: Respo
     throw new AppError('speciesName and zone are required', 400)
   }
 
-  const tokens = await getPrisma().fcmToken.findMany({
-    select: { token: true },
-  })
+  // Page tokens with a stable cursor so a large device base is never loaded
+  // into memory in a single query.
+  const PAGE = 1000
+  const allTokens: string[] = []
+  let cursor: string | undefined
+  for (;;) {
+    const page = await getPrisma().fcmToken.findMany({
+      select: { id: true, token: true },
+      orderBy: { id: 'asc' },
+      take: PAGE,
+      cursor: cursor ? { id: cursor } : undefined,
+    })
+    if (page.length === 0) break
+    for (const row of page) allTokens.push(row.token)
+    if (page.length < PAGE) break
+    cursor = page[page.length - 1].id
+  }
 
-  if (tokens.length === 0) {
+  if (allTokens.length === 0) {
     res.json({ success: true, data: { sent: false, reason: 'No FCM tokens registered' } })
     return
   }
 
-  await sendNewSpeciesAlert(tokens.map((t: { token: string }) => t.token), speciesName, zone)
+  const summary = await sendNewSpeciesAlert(allTokens, speciesName, zone)
 
-  res.json({ success: true, data: { sent: true } })
+  res.json({ success: true, data: { sent: true, ...summary } })
 })

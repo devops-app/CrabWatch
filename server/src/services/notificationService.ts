@@ -1,15 +1,8 @@
-import { PrismaClient, NotificationChannel as PrismaNotificationChannel } from '@prisma/client'
-import { getContainer } from './container'
+import { NotificationChannel as PrismaNotificationChannel } from '@prisma/client'
+import { getContainer, getPrisma } from './container'
 import { getServerI18n } from '../config/i18n'
+import { sendToTokens } from './fcm'
 import logger from '../utils/logger'
-
-let _prisma: PrismaClient
-function getPrisma(): PrismaClient {
-  if (!_prisma) {
-    _prisma = getContainer().prisma
-  }
-  return _prisma
-}
 
 function getConfig() {
   return getContainer().config
@@ -95,21 +88,23 @@ async function sendPushNotification(payload: NotificationPayload, deliveryId: st
       return
     }
 
-    // Send to all tokens
-    const admin = await import('firebase-admin')
-    for (const token of fcmTokens) {
-      try {
-        await admin.messaging().send({
-          token: token.token,
-          notification: {
-            title: payload.title,
-            body: payload.body,
-          },
-          data: payload.data || {},
-        })
-      } catch (error) {
-        logger.error({ err: error, token: token.token }, 'Failed to send push to token')
+    // K1: Send via the shared FCM module (container firebase instance) instead of
+    // importing firebase-admin directly. This gives us UNREGISTERED-token detection
+    // so stale tokens can be cleaned up.
+    const sendResult = await sendToTokens(
+      fcmTokens.map((t) => t.token),
+      {
+        title: payload.title,
+        body: payload.body,
+        data: payload.data || {},
       }
+    )
+
+    // Clean up tokens FCM reported as unregistered/invalid.
+    if (sendResult.invalidTokens.length > 0) {
+      await getPrisma().fcmToken.deleteMany({
+        where: { token: { in: sendResult.invalidTokens } },
+      })
     }
 
     await getPrisma().notificationDelivery.update({

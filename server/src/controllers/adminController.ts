@@ -1,7 +1,9 @@
 import { Request, Response } from 'express'
 import path from 'path'
 import fs from 'fs'
+import fsp from 'fs/promises'
 import zlib from 'zlib'
+import { Transform } from 'stream'
 import { sanitizeFilename } from '../utils/sanitize'
 import { AuthRequest } from '../middleware/auth'
 import { getPrisma } from '../services/container'
@@ -12,98 +14,298 @@ import logger from '../utils/logger'
 
 const BACKUP_DIR = path.resolve(process.env.BACKUP_DIR || './backups')
 const SOFT_DELETE_RETENTION_DAYS = 30
+/** Cursor page size for streaming backup/CSV reads (bounds memory). */
+const BACKUP_PAGE = 1000
+/** Only generated backup files may be listed/downloaded/deleted. */
+const BACKUP_FILE_RE = /^crabwatch_backup_\d{8}_\d{6}\.json\.gz$/
+
+/**
+ * Resolve a backup filename to a canonical path and verify it is contained
+ * within BACKUP_DIR (defends against path traversal and symlink escapes).
+ */
+async function resolveBackupPath(fileName: string): Promise<string> {
+  const resolvedDir = await fsp.realpath(BACKUP_DIR)
+  const target = path.resolve(resolvedDir, fileName)
+  if (path.dirname(target) !== resolvedDir) {
+    throw new NotFoundError('Backup not found')
+  }
+  return target
+}
+
+/**
+ * Neutralize spreadsheet formula injection: prefix cells that begin with a
+ * formula marker (=, +, -, @, tab, CR) with a single quote so spreadsheet
+ * applications treat them as literal text.
+ */
+function neutralizeFormula(value: string): string {
+  return /^[=+\-@\t\r]/.test(value) ? `'${value}` : value
+}
+
+/** Escape a value for CSV output (quote when it contains delimiters). */
+function escapeCsv(value: string | number | boolean | null | undefined): string {
+  const str = value == null ? '' : String(value)
+  if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+    return `"${str.replace(/"/g, '""')}"`
+  }
+  return str
+}
 
 export const listBackups = asyncHandler(async (_req: AuthRequest, res: Response) => {
-  if (!fs.existsSync(BACKUP_DIR)) {
-    fs.mkdirSync(BACKUP_DIR, { recursive: true })
+  await fsp.mkdir(BACKUP_DIR, { recursive: true })
+
+  const entries = await fsp.readdir(BACKUP_DIR)
+  const files: { fileName: string; size: number; createdAt: string }[] = []
+
+  for (const f of entries) {
+    if (!BACKUP_FILE_RE.test(f)) continue
+    const stats = await fsp.stat(path.join(BACKUP_DIR, f))
+    files.push({
+      fileName: f,
+      size: stats.size,
+      createdAt: stats.birthtime.toISOString(),
+    })
   }
 
-  const files = fs.readdirSync(BACKUP_DIR)
-    .filter((f) => f.endsWith('.json.gz'))
-    .map((f) => {
-      const filePath = path.join(BACKUP_DIR, f)
-      const stats = fs.statSync(filePath)
-      return {
-        fileName: f,
-        size: stats.size,
-        createdAt: stats.birthtime.toISOString(),
-      }
-    })
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-
+  files.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   res.json({ success: true, data: files })
 })
 
 export const deleteBackup = asyncHandler(async (req: AuthRequest, res: Response) => {
   const __ = createTranslator(req)
   const fileName = sanitizeFilename(req.params.fileName)
-  const filePath = path.join(BACKUP_DIR, fileName)
-  if (!filePath.startsWith(BACKUP_DIR + path.sep)) {
+  if (!BACKUP_FILE_RE.test(fileName)) {
     throw new NotFoundError(__('admin.backup.notFound', 'admin'))
   }
 
-  if (!fs.existsSync(filePath)) {
-    throw new NotFoundError(__('admin.backup.notFound', 'admin'))
+  const filePath = await resolveBackupPath(fileName)
+  try {
+    await fsp.unlink(filePath)
+  } catch (err: unknown) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      throw new NotFoundError(__('admin.backup.notFound', 'admin'))
+    }
+    throw err
   }
 
-  fs.unlinkSync(filePath)
   res.json({ success: true })
 })
 
 export const downloadBackup = asyncHandler(async (req: Request, res: Response) => {
   const __ = createTranslator(req)
   const fileName = sanitizeFilename(req.params.fileName)
-  const filePath = path.join(BACKUP_DIR, fileName)
-  if (!filePath.startsWith(BACKUP_DIR + path.sep)) {
+  if (!BACKUP_FILE_RE.test(fileName)) {
     throw new NotFoundError(__('admin.backup.notFound', 'admin'))
   }
 
-  if (!fs.existsSync(filePath)) {
+  const filePath = await resolveBackupPath(fileName)
+  try {
+    await fsp.access(filePath)
+  } catch {
     throw new NotFoundError(__('admin.backup.notFound', 'admin'))
   }
 
   res.download(filePath, fileName)
 })
 
-export const backupDatabase = asyncHandler(async (_req: AuthRequest, res: Response) => {
-  if (!fs.existsSync(BACKUP_DIR)) {
-    fs.mkdirSync(BACKUP_DIR, { recursive: true })
+/**
+ * Push a chunk to a stream, awaiting 'drain' when the internal buffer is full
+ * so we respect backpressure instead of buffering unboundedly.
+ */
+function pushChunk(stream: Transform, chunk: string): Promise<void> {
+  const ok = stream.push(chunk)
+  if (ok) return Promise.resolve()
+  return new Promise((resolve) => stream.once('drain', resolve))
+}
+
+/** Resolve when a writable stream has flushed and closed (or errored). */
+function streamFinished(stream: NodeJS.WritableStream): Promise<void> {
+  return new Promise((resolve, reject) => {
+    stream.on('finish', () => resolve())
+    stream.on('error', reject)
+  })
+}
+
+/**
+ * Stream a table to `stream` as a JSON array, reading cursor pages so the
+ * whole table is never held in memory. Emits a comma between rows.
+ */
+async function streamTable(
+  stream: Transform,
+  fetchPage: (cursor: string | undefined, take: number) => Promise<Array<Record<string, unknown>>>,
+  pageSize: number,
+): Promise<void> {
+  let cursor: string | undefined
+  let first = true
+  for (;;) {
+    const page = await fetchPage(cursor, pageSize)
+    for (const row of page) {
+      if (!first) await pushChunk(stream, ',')
+      await pushChunk(stream, JSON.stringify(row))
+      first = false
+    }
+    if (page.length < pageSize) break
+    cursor = (page[page.length - 1] as { id: string }).id
   }
+}
+
+/**
+ * Stream a CSV export directly to the HTTP response, reading cursor pages so
+ * the full table is never materialized in memory. Applies formula-injection
+ * neutralization and CSV escaping to every cell. Returns the row count.
+ */
+async function streamCsv<T>(
+  res: Response,
+  headers: string[],
+  fileName: string,
+  fetchPage: (cursor: string | undefined, take: number) => Promise<T[]>,
+  formatRow: (row: T) => string[],
+): Promise<number> {
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+  res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`)
+
+  const writeLine = async (line: string): Promise<void> => {
+    const ok = res.write(`${line}\r\n`)
+    if (!ok) await new Promise<void>((resolve) => res.once('drain', resolve))
+  }
+
+  await writeLine(headers.map((h) => escapeCsv(neutralizeFormula(h))).join(','))
+
+  let cursor: string | undefined
+  let rowCount = 0
+  for (;;) {
+    const page = await fetchPage(cursor, BACKUP_PAGE)
+    for (const row of page) {
+      await writeLine(formatRow(row).map((cell) => escapeCsv(neutralizeFormula(cell))).join(','))
+      rowCount++
+    }
+    if (page.length < BACKUP_PAGE) break
+    cursor = (page[page.length - 1] as { id: string }).id
+  }
+
+  res.end()
+  return rowCount
+}
+
+export const backupDatabase = asyncHandler(async (_req: AuthRequest, res: Response) => {
+  await fsp.mkdir(BACKUP_DIR, { recursive: true })
 
   const timestamp = new Date()
-  const fileName = `crabwatch_backup_${timestamp.getFullYear()}${String(timestamp.getMonth() + 1).padStart(2, '0')}${String(timestamp.getDate()).padStart(2, '0')}_${String(timestamp.getHours()).padStart(2, '0')}${String(timestamp.getMinutes()).padStart(2, '0')}${String(timestamp.getSeconds()).padStart(2, '0')}.json.gz`
+  const fileName = `crabwatch_backup_${timestamp.getUTCFullYear()}${String(timestamp.getUTCMonth() + 1).padStart(2, '0')}${String(timestamp.getUTCDate()).padStart(2, '0')}_${String(timestamp.getUTCHours()).padStart(2, '0')}${String(timestamp.getUTCMinutes()).padStart(2, '0')}${String(timestamp.getUTCSeconds()).padStart(2, '0')}.json.gz`
   const filePath = path.join(BACKUP_DIR, fileName)
+  const tmpPath = `${filePath}.tmp`
 
   const db = getPrisma()
-  const [observations, species, users, fcmTokens] = await Promise.all([
-    db.observation.findMany({ orderBy: { createdAt: 'desc' } }),
-    db.species.findMany({ orderBy: { id: 'asc' } }),
-    db.user.findMany({ orderBy: { createdAt: 'desc' } }),
-    db.fcmToken.findMany({ orderBy: { createdAt: 'desc' } }),
-  ])
 
-  const backupData = {
-    version: '1.0',
-    exportedAt: timestamp.toISOString(),
-    observations,
-    species,
-    users,
-    fcmTokens,
+  // Pipeline: incremental JSON -> gzip -> temp file -> atomic rename.
+  const jsonStream = new Transform({
+    transform(chunk, _enc, cb) {
+      this.push(chunk)
+      cb()
+    },
+    flush(cb) {
+      cb()
+    },
+  })
+  const gzip = zlib.createGzip()
+  const out = fs.createWriteStream(tmpPath)
+  jsonStream.pipe(gzip).pipe(out)
+
+  try {
+    await pushChunk(jsonStream, `{"version":"1.0","exportedAt":${JSON.stringify(timestamp.toISOString())},`)
+
+    await pushChunk(jsonStream, '"observations":[')
+    await streamTable(jsonStream, (cursor, take) =>
+      db.observation.findMany({
+        orderBy: { id: 'asc' },
+        take,
+        cursor: cursor ? { id: cursor } : undefined,
+      }),
+      BACKUP_PAGE,
+    )
+    await pushChunk(jsonStream, '],')
+
+    await pushChunk(jsonStream, '"species":[')
+    await streamTable(jsonStream, (cursor, take) =>
+      db.species.findMany({
+        orderBy: { id: 'asc' },
+        take,
+        cursor: cursor ? { id: cursor } : undefined,
+      }),
+      BACKUP_PAGE,
+    )
+    await pushChunk(jsonStream, '],')
+
+    // Explicit field selection: keep recovery-relevant fields, drop nothing
+    // critical, but never dump the whole row shape implicitly.
+    await pushChunk(jsonStream, '"users":[')
+    await streamTable(jsonStream, (cursor, take) =>
+      db.user.findMany({
+        orderBy: { id: 'asc' },
+        take,
+        cursor: cursor ? { id: cursor } : undefined,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phoneCode: true,
+          phoneNumber: true,
+          addressLine1: true,
+          addressLine2: true,
+          state: true,
+          postcode: true,
+          country: true,
+          role: true,
+          avatar: true,
+          password: true,
+          firebaseUid: true,
+          deletedAt: true,
+          blockedAt: true,
+          blockReason: true,
+          createdAt: true,
+          approvedCount: true,
+          currentStreak: true,
+          lastActiveDate: true,
+          level: true,
+          longestStreak: true,
+          title: true,
+          totalSubmissions: true,
+          totalXP: true,
+          preferredLocale: true,
+          consentAccepted: true,
+        },
+      }),
+      BACKUP_PAGE,
+    )
+    await pushChunk(jsonStream, '],')
+
+    await pushChunk(jsonStream, '"fcmTokens":[')
+    await streamTable(jsonStream, (cursor, take) =>
+      db.fcmToken.findMany({
+        orderBy: { id: 'asc' },
+        take,
+        cursor: cursor ? { id: cursor } : undefined,
+      }),
+      BACKUP_PAGE,
+    )
+    await pushChunk(jsonStream, ']}')
+
+    jsonStream.end()
+    await streamFinished(out)
+    await fsp.rename(tmpPath, filePath)
+  } catch (err) {
+    await fsp.unlink(tmpPath).catch(() => undefined)
+    throw err
   }
 
-  const json = JSON.stringify(backupData, null, 2)
-  const compressed = zlib.gzipSync(json)
-  fs.writeFileSync(filePath, compressed)
-
-  const stats = fs.statSync(filePath)
+  const stats = await fsp.stat(filePath)
 
   const result: BackupResult = {
     fileName,
-    filePath,
     size: stats.size,
     timestamp: timestamp.toISOString(),
   }
 
+  logger.info({ fileName, size: stats.size }, 'Database backup completed')
   res.json({ success: true, data: result })
 })
 
@@ -116,62 +318,80 @@ export const exportCsv = asyncHandler(async (req: AuthRequest, res: Response) =>
   }
 
   const db = getPrisma()
-  let headers: string[] = []
-  let rows: string[][] = []
-  let fileName: string
-
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
 
   if (table === 'observations') {
-    const observations = await db.observation.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: { species: true, user: { select: { email: true, name: true } } },
-    })
-
-    headers = [
+    const headers = [
       'id', 'userId', 'userName', 'userEmail', 'speciesId', 'speciesName',
       'cw', 'bw', 'gender', 'maturationStatus', 'lat', 'lng', 'locationMethod',
       'status', 'validatedBy', 'validatedAt', 'rejectionReason',
       'detectedCoin', 'notes', 'photoCount', 'uploadSessionId', 'createdAt',
     ]
+    const fileName = `crabwatch_observations_${timestamp}.csv`
 
-    rows = observations.map((obs) => [
-      obs.id,
-      obs.userId,
-      obs.user?.name ?? '',
-      obs.user?.email ?? '',
-      obs.speciesId,
-      obs.species?.scientificName ?? '',
-      String(obs.cw),
-      obs.bw != null ? String(obs.bw) : '',
-      obs.gender,
-      obs.maturationStatus,
-      String(obs.lat),
-      String(obs.lng),
-      obs.locationMethod,
-      obs.status,
-      obs.validatedBy ?? '',
-      obs.validatedAt?.toISOString() ?? '',
-      obs.rejectionReason ?? '',
-      obs.detectedCoin ?? '',
-      obs.notes ?? '',
-      String(Array.isArray(obs.photos) ? obs.photos.length : 0),
-      obs.uploadSessionId ?? '',
-      obs.createdAt.toISOString(),
-    ])
+    const rowCount = await streamCsv(
+      res,
+      headers,
+      fileName,
+      (cursor, take) =>
+        db.observation.findMany({
+          orderBy: { id: 'asc' },
+          take,
+          cursor: cursor ? { id: cursor } : undefined,
+          include: {
+            species: { select: { scientificName: true } },
+            user: { select: { email: true, name: true } },
+          },
+        }),
+      (obs) => [
+        obs.id,
+        obs.userId,
+        obs.user?.name ?? '',
+        obs.user?.email ?? '',
+        obs.speciesId,
+        obs.species?.scientificName ?? '',
+        String(obs.cw),
+        obs.bw != null ? String(obs.bw) : '',
+        obs.gender,
+        obs.maturationStatus,
+        String(obs.lat),
+        String(obs.lng),
+        obs.locationMethod,
+        obs.status,
+        obs.validatedBy ?? '',
+        obs.validatedAt?.toISOString() ?? '',
+        obs.rejectionReason ?? '',
+        obs.detectedCoin ?? '',
+        obs.notes ?? '',
+        String(Array.isArray(obs.photos) ? obs.photos.length : 0),
+        obs.uploadSessionId ?? '',
+        obs.createdAt.toISOString(),
+      ],
+    )
 
-    fileName = `crabwatch_observations_${timestamp}.csv`
-  } else if (table === 'species') {
-    const species = await db.species.findMany({ orderBy: { scientificName: 'asc' } })
+    logger.info({ table, rowCount, fileName }, 'CSV export generated')
+    return
+  }
 
-    headers = [
+  if (table === 'species') {
+    const headers = [
       'id', 'scientificName', 'commonName', 'description',
       'keyFeatures', 'images', 'distributionZones', 'observationCount',
     ]
+    const fileName = `crabwatch_species_${timestamp}.csv`
 
-    rows = species.map((sp) => {
-      const obsCount = 0
-      return [
+    const rowCount = await streamCsv(
+      res,
+      headers,
+      fileName,
+      (cursor, take) =>
+        db.species.findMany({
+          orderBy: { id: 'asc' },
+          take,
+          cursor: cursor ? { id: cursor } : undefined,
+          include: { _count: { select: { observations: true } } },
+        }),
+      (sp) => [
         sp.id,
         sp.scientificName,
         sp.commonName,
@@ -179,28 +399,37 @@ export const exportCsv = asyncHandler(async (req: AuthRequest, res: Response) =>
         JSON.stringify(sp.keyFeatures),
         JSON.stringify(sp.images),
         JSON.stringify(sp.distributionZones),
-        String(obsCount),
-      ]
-    })
+        String(sp._count.observations),
+      ],
+    )
 
-    fileName = `crabwatch_species_${timestamp}.csv`
-  } else {
-    // users
-    const users = await db.user.findMany({
-      orderBy: { createdAt: 'desc' },
-      where: { deletedAt: null },
-    })
+    logger.info({ table, rowCount, fileName }, 'CSV export generated')
+    return
+  }
 
-    headers = [
-      'id', 'name', 'email', 'phoneCode', 'phoneNumber', 'role',
-      'country', 'state', 'postcode',
-      'level', 'title', 'totalXP', 'currentStreak', 'longestStreak',
-      'totalSubmissions', 'approvedCount',
-      'preferredLocale', 'consentAccepted',
-      'blockedAt', 'blockReason', 'deletedAt', 'createdAt',
-    ]
+  // users
+  const headers = [
+    'id', 'name', 'email', 'phoneCode', 'phoneNumber', 'role',
+    'country', 'state', 'postcode',
+    'level', 'title', 'totalXP', 'currentStreak', 'longestStreak',
+    'totalSubmissions', 'approvedCount',
+    'preferredLocale', 'consentAccepted',
+    'blockedAt', 'blockReason', 'deletedAt', 'createdAt',
+  ]
+  const fileName = `crabwatch_users_${timestamp}.csv`
 
-    rows = users.map((u) => [
+  const rowCount = await streamCsv(
+    res,
+    headers,
+    fileName,
+    (cursor, take) =>
+      db.user.findMany({
+        orderBy: { id: 'asc' },
+        take,
+        cursor: cursor ? { id: cursor } : undefined,
+        where: { deletedAt: null },
+      }),
+    (u) => [
       u.id,
       u.name,
       u.email,
@@ -223,31 +452,10 @@ export const exportCsv = asyncHandler(async (req: AuthRequest, res: Response) =>
       u.blockReason ?? '',
       u.deletedAt?.toISOString() ?? '',
       u.createdAt.toISOString(),
-    ])
+    ],
+  )
 
-    fileName = `crabwatch_users_${timestamp}.csv`
-  }
-
-  // Build CSV content
-  const escapeCsv = (value: string | number | boolean): string => {
-    const str = String(value)
-    if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
-      return `"${str.replace(/"/g, '""')}"`
-    }
-    return str
-  }
-
-  const csvLines = [headers.map(escapeCsv).join(',')]
-  for (const row of rows) {
-    csvLines.push(row.map((cell) => escapeCsv(cell ?? '')).join(','))
-  }
-  const csvContent = csvLines.join('\r\n')
-
-  logger.info({ table, rowCount: rows.length, fileName }, 'CSV export generated')
-
-  res.setHeader('Content-Type', 'text/csv; charset=utf-8')
-  res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`)
-  res.send(csvContent)
+  logger.info({ table, rowCount, fileName }, 'CSV export generated')
 })
 
 export const cleanupDeletedUsers = asyncHandler(async (_req: AuthRequest, res: Response) => {
@@ -307,9 +515,6 @@ export const listDeletedUsers = asyncHandler(async (req: AuthRequest, res: Respo
   const limit = parseInt(req.query.limit as string) || 20
   const skip = (page - 1) * limit
 
-  const threshold = new Date()
-  threshold.setDate(threshold.getDate() - SOFT_DELETE_RETENTION_DAYS)
-
   const db = getPrisma()
   const [users, total] = await Promise.all([
     db.user.findMany({
@@ -344,9 +549,6 @@ export const listDeletedUsers = asyncHandler(async (req: AuthRequest, res: Respo
       },
     }),
   ])
-
-  const expirationDate = new Date()
-  expirationDate.setDate(expirationDate.getDate() + SOFT_DELETE_RETENTION_DAYS)
 
   res.json({
     success: true,

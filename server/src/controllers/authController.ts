@@ -1,5 +1,4 @@
 import { Response } from 'express'
-import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import { Resend } from 'resend'
@@ -8,8 +7,9 @@ import { getPrisma, getConfig } from '../services/container'
 import { AuthRequest } from '../middleware/auth'
 import { setAuthCookie } from '../middleware/cookieAuth'
 import { requestPasswordResetSchema, resetPasswordSchema } from '../utils/schemas'
-import { asyncHandler, UnauthorizedError, ValidationError } from '../utils/errors'
+import { asyncHandler, UnauthorizedError, ForbiddenError, ValidationError } from '../utils/errors'
 import { createTranslator } from '../middleware/i18n'
+import { hashPassword, verifyPassword, needsRehash } from '../utils/password'
 import logger from '../utils/logger'
 
 let _resend: Resend | null | undefined
@@ -36,12 +36,31 @@ export const login = asyncHandler(async (req: AuthRequest, res: Response) => {
   const __ = createTranslator(req)
 
   const db = getPrisma()
-  const user = await db.user.findUnique({
+  let user = await db.user.findUnique({
     where: { email },
   })
 
-  if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
+  // Always run a bcrypt comparison (dummy hash for unknown users) so response
+  // time is identical whether or not the account exists — prevents enumeration.
+  const valid = await verifyPassword(password, user?.password)
+  if (!user || !valid) {
     throw new UnauthorizedError(__('login.invalidCredentials', 'auth'))
+  }
+
+  // A soft-deleted or blocked account must not be able to mint a fresh token.
+  if (user.deletedAt) {
+    throw new UnauthorizedError(__('login.invalidCredentials', 'auth'))
+  }
+  if (user.blockedAt) {
+    throw new ForbiddenError(__('login.userBlocked.noReason', 'auth'))
+  }
+
+  // Transparently upgrade legacy low-cost hashes now that we have the plaintext.
+  if (needsRehash(user.password!)) {
+    user = await db.user.update({
+      where: { id: user.id },
+      data: { password: await hashPassword(password) },
+    })
   }
 
   let token: string
@@ -56,7 +75,7 @@ export const login = asyncHandler(async (req: AuthRequest, res: Response) => {
           displayName: user.name,
         })
         firebaseUid = newUser.uid
-        await db.user.update({
+        user = await db.user.update({
           where: { id: user.id },
           data: { firebaseUid },
         })
@@ -198,7 +217,7 @@ export const resetPassword = asyncHandler(async (req: AuthRequest, res: Response
     throw new ValidationError(__('passwordReset.tokenInvalid', 'auth'))
   }
 
-  const hashedPassword = await bcrypt.hash(password, 12)
+  const hashedPassword = await hashPassword(password)
 
   await db.$transaction([
     db.user.update({

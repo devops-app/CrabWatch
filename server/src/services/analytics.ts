@@ -7,15 +7,47 @@ import {
   SpeciesDistributionData,
   DashboardStats,
 } from '@crabwatch/shared'
-import { Prisma, Gender as PrismaGender, PrismaClient } from '@prisma/client'
-import { getContainer } from './container'
+import { Prisma, Gender as PrismaGender } from '@prisma/client'
+import { getPrisma } from './container'
+import { ValidationError } from '../utils/errors'
 
-let _prisma: PrismaClient
-function getPrisma(): PrismaClient {
-  if (!_prisma) {
-    _prisma = getContainer().prisma
+const GENDER_VALUES: readonly string[] = ['MALE', 'FEMALE', 'UNKNOWN']
+
+/**
+ * Validate a gender filter against the enum before it is used in a query.
+ * Replaces the previous unsafe `as PrismaGender` cast.
+ */
+function toGenderFilter(gender?: string): PrismaGender | undefined {
+  if (!gender) return undefined
+  const upper = gender.toUpperCase()
+  if (!GENDER_VALUES.includes(upper)) {
+    throw new ValidationError(`Invalid gender filter: ${gender}`)
   }
-  return _prisma
+  return upper as PrismaGender
+}
+
+/**
+ * Build a half-open `createdAt` range from date-only strings.
+ *
+ * `dateFrom` is inclusive (UTC midnight of the start day) and `dateTo` is
+ * inclusive of the *entire* end day, expressed as `lt` the UTC midnight of the
+ * following day. The previous `lte: new Date(dateTo)` pinned the bound to UTC
+ * midnight of the end day and silently dropped every observation created on
+ * that day (Finding 3).
+ */
+function toCreatedAtRange(
+  dateFrom?: string,
+  dateTo?: string
+): Prisma.ObservationWhereInput['createdAt'] {
+  if (!dateFrom && !dateTo) return undefined
+  const range: { gte?: Date; lt?: Date } = {}
+  if (dateFrom) range.gte = new Date(dateFrom)
+  if (dateTo) {
+    const end = new Date(dateTo)
+    end.setUTCDate(end.getUTCDate() + 1)
+    range.lt = end
+  }
+  return range
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
@@ -27,9 +59,16 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     getPrisma().user.count(),
   ])
 
+  // NOTE: State coverage is derived from lat/lng bounding rectangles because
+  // Observation has no persisted `stateCode` column. The read is capped and
+  // ordered by id so the subset is deterministic (previously the 50k window
+  // was unordered and could vary with the query plan). A full fix — persist a
+  // normalized `stateCode` at write time and `groupBy` it in SQL — is tracked
+  // as a schema change (see CODE_REVIEW.md, P1).
   const approvedObsWithLocation = await getPrisma().observation.findMany({
     where: { status: 'APPROVED' },
     select: { lat: true, lng: true },
+    orderBy: { id: 'asc' },
     take: 50000,
   })
 
@@ -54,32 +93,42 @@ export async function getSizeFrequency(
   gender?: string,
   _pagination?: unknown
 ): Promise<SizeFrequencyData[]> {
-  const where: Prisma.ObservationWhereInput = { status: 'APPROVED' }
-  if (speciesId) where.speciesId = speciesId
-  if (gender) where.gender = gender.toUpperCase() as PrismaGender
+  // Bin in SQL (FLOOR(cw)) so we never load every approved row into memory.
+  // All filters are interpolated as bound parameters via Prisma.sql — never
+  // string concatenation.
+  // NOTE: raw SQL uses the physical column names from the migration —
+  // table "observations", gender stored in "sex" (Prisma maps it to `gender`).
+  const whereClauses: Prisma.Sql[] = [
+    Prisma.sql`"status" = 'APPROVED'`,
+    Prisma.sql`"cw" >= 0`,
+  ]
+  if (speciesId) {
+    whereClauses.push(Prisma.sql`"speciesId" = ${speciesId}`)
+  }
+  const genderFilter = toGenderFilter(gender)
+  if (genderFilter) {
+    whereClauses.push(Prisma.sql`"sex" = ${genderFilter}`)
+  }
 
-  const observations = await getPrisma().observation.findMany({
-    where,
-    select: { cw: true },
-  })
+  const rows = await getPrisma().$queryRaw<
+    Array<{ size_bin: number; count: number }>
+  >`
+    SELECT
+      (CASE WHEN "cw" >= 20 THEN 20 ELSE FLOOR("cw") END)::int AS size_bin,
+      COUNT(*)::int AS count
+    FROM "observations"
+    WHERE ${Prisma.join(whereClauses, ' AND ')}
+    GROUP BY size_bin
+    ORDER BY size_bin
+  `
+
+  const countsByBin = new Map<number, number>(rows.map((r) => [r.size_bin, r.count]))
 
   const bins: Record<string, number> = {}
   for (let i = 0; i < 20; i += 1) {
-    const low = i
-    const high = i + 1
-    bins[`${low}-${high}cm`] = 0
+    bins[`${i}-${i + 1}cm`] = countsByBin.get(i) ?? 0
   }
-  bins['20cm+'] = 0
-
-  for (const obs of observations) {
-    const binIndex = Math.floor(obs.cw)
-    const key = `${binIndex}-${binIndex + 1}cm`
-    if (bins[key] !== undefined) {
-      bins[key]++
-    } else if (binIndex >= 20) {
-      bins['20cm+']++
-    }
-  }
+  bins['20cm+'] = countsByBin.get(20) ?? 0
 
   return Object.entries(bins).map(([sizeBin, count]) => ({
     sizeBin,
@@ -95,11 +144,8 @@ export async function getGenderRatio(
 ): Promise<GenderRatioData[]> {
   const where: Prisma.ObservationWhereInput = { status: 'APPROVED' }
   if (speciesId) where.speciesId = speciesId
-  if (dateFrom || dateTo) {
-    where.createdAt = {}
-    if (dateFrom) where.createdAt.gte = new Date(dateFrom)
-    if (dateTo) where.createdAt.lte = new Date(dateTo)
-  }
+  const createdAt = toCreatedAtRange(dateFrom, dateTo)
+  if (createdAt) where.createdAt = createdAt
 
   const observations = await getPrisma().observation.groupBy({
     by: ['speciesId', 'gender'],
@@ -139,54 +185,58 @@ export async function getConditionIndices(
   speciesId?: string,
   _pagination?: unknown
 ): Promise<ConditionIndexAggregatedData[]> {
-  const where: Prisma.ObservationWhereInput = { status: 'APPROVED' }
-  if (speciesId) where.speciesId = speciesId
-
-  const observations = await getPrisma().observation.findMany({
-    where,
-    select: {
-      cw: true,
-      bw: true,
-      species: { select: { scientificName: true } },
-    },
-  })
-
-  const grouped: Record<string, { cw: number; bw: number; conditionFactor: number }[]> = {}
-
-  for (const obs of observations) {
-    if (obs.bw == null) continue
-    const species = obs.species.scientificName
-    const conditionFactor = calculateConditionFactor(obs.cw, obs.bw!)
-    if (!grouped[species]) grouped[species] = []
-    grouped[species].push({ cw: obs.cw, bw: obs.bw!, conditionFactor })
+  // Aggregate in SQL so we never load every approved row into memory.
+  // Guards: bw IS NOT NULL and cw > 0 (prevents Infinity / division by zero).
+  // STDDEV_POP matches the previous population-variance calculation.
+  const whereClauses: Prisma.Sql[] = [
+    Prisma.sql`o."status" = 'APPROVED'`,
+    Prisma.sql`o."bw" IS NOT NULL`,
+    Prisma.sql`o."cw" > 0`,
+  ]
+  if (speciesId) {
+    whereClauses.push(Prisma.sql`o."speciesId" = ${speciesId}`)
   }
 
-  return Object.entries(grouped).map(([species, data]) => {
-    const conditionFactors = data.map(d => d.conditionFactor).sort((a, b) => a - b)
-    const cwValues = data.map(d => d.cw)
-    const bwValues = data.map(d => d.bw)
-    const count = data.length
-    const meanCF = conditionFactors.reduce((sum, v) => sum + v, 0) / count
-    const meanCW = cwValues.reduce((sum, v) => sum + v, 0) / count
-    const meanBW = bwValues.reduce((sum, v) => sum + v, 0) / count
-    const medianCF = percentile(conditionFactors, 50)
-    const minCF = conditionFactors[0]
-    const maxCF = conditionFactors[count - 1]
-    const variance = conditionFactors.reduce((sum, v) => sum + Math.pow(v - meanCF, 2), 0) / count
-    const stdDev = Math.sqrt(variance)
+  const rows = await getPrisma().$queryRaw<
+    Array<{
+      species: string
+      count: number
+      mean_cf: number | null
+      median_cf: number | null
+      min_cf: number | null
+      max_cf: number | null
+      std_cf: number | null
+      mean_cw: number | null
+      mean_bw: number | null
+    }>
+  >`
+    SELECT
+      s."scientificName" AS species,
+      COUNT(*)::int AS count,
+      AVG((o."bw" / POWER(o."cw", 3)) * 100) AS mean_cf,
+      PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY (o."bw" / POWER(o."cw", 3)) * 100) AS median_cf,
+      MIN((o."bw" / POWER(o."cw", 3)) * 100) AS min_cf,
+      MAX((o."bw" / POWER(o."cw", 3)) * 100) AS max_cf,
+      STDDEV_POP((o."bw" / POWER(o."cw", 3)) * 100) AS std_cf,
+      AVG(o."cw") AS mean_cw,
+      AVG(o."bw") AS mean_bw
+    FROM "observations" o
+    JOIN "species" s ON s."id" = o."speciesId"
+    WHERE ${Prisma.join(whereClauses, ' AND ')}
+    GROUP BY s."scientificName"
+  `
 
-    return {
-      species,
-      count,
-      meanConditionFactor: Number(meanCF.toFixed(3)),
-      medianConditionFactor: Number(medianCF.toFixed(3)),
-      minConditionFactor: Number(minCF.toFixed(3)),
-      maxConditionFactor: Number(maxCF.toFixed(3)),
-      stdDevConditionFactor: Number(stdDev.toFixed(3)),
-      meanCW: Number(meanCW.toFixed(2)),
-      meanBW: Number(meanBW.toFixed(2)),
-    }
-  })
+  return rows.map((r) => ({
+    species: r.species,
+    count: r.count,
+    meanConditionFactor: Number((r.mean_cf ?? 0).toFixed(3)),
+    medianConditionFactor: Number((r.median_cf ?? 0).toFixed(3)),
+    minConditionFactor: Number((r.min_cf ?? 0).toFixed(3)),
+    maxConditionFactor: Number((r.max_cf ?? 0).toFixed(3)),
+    stdDevConditionFactor: Number((r.std_cf ?? 0).toFixed(3)),
+    meanCW: Number((r.mean_cw ?? 0).toFixed(2)),
+    meanBW: Number((r.mean_bw ?? 0).toFixed(2)),
+  }))
 }
 
 export async function getCW50(
@@ -221,14 +271,12 @@ export async function getCW50(
   }
 
   return Object.entries(grouped).map(([species, data]) => {
-    const sorted = data.sort((a, b) => a.cw - b.cw)
-    const cw50 = estimateCW50(sorted)
-    const ciLow = Number((cw50 - 1).toFixed(1))
-    const ciHigh = Number((cw50 + 1).toFixed(1))
+    const sorted = [...data].sort((a, b) => a.cw - b.cw)
+    const { cw50, ciLow, ciHigh } = estimateCW50(sorted)
     return {
       species,
       cw50: Number(cw50.toFixed(1)),
-      confidenceInterval: [ciLow, ciHigh] as [number, number],
+      confidenceInterval: [Number(ciLow.toFixed(1)), Number(ciHigh.toFixed(1))] as [number, number],
       sampleSize: sorted.length,
     }
   })
@@ -239,11 +287,8 @@ export async function getSpeciesDistribution(
   dateTo?: string
 ): Promise<SpeciesDistributionData[]> {
   const where: Prisma.ObservationWhereInput = { status: 'APPROVED' }
-  if (dateFrom || dateTo) {
-    where.createdAt = {}
-    if (dateFrom) where.createdAt.gte = new Date(dateFrom)
-    if (dateTo) where.createdAt.lte = new Date(dateTo)
-  }
+  const createdAt = toCreatedAtRange(dateFrom, dateTo)
+  if (createdAt) where.createdAt = createdAt
 
   const observations = await getPrisma().observation.groupBy({
     by: ['speciesId'],
@@ -281,84 +326,80 @@ export async function getTemporalTrends(
   speciesId?: string,
   _pagination?: unknown
 ): Promise<TemporalTrendData[]> {
-  const where: Prisma.ObservationWhereInput = { status: 'APPROVED' }
-  if (speciesId) where.speciesId = speciesId
-
-  const observations = await getPrisma().observation.findMany({
-    where,
-    select: {
-      createdAt: true,
-      species: { select: { scientificName: true } },
-    },
-  })
-
-  const grouped: Record<string, Record<string, number>> = {}
-
-  for (const obs of observations) {
-    const species = obs.species.scientificName
-    const month = obs.createdAt.toISOString().slice(0, 7)
-
-    if (!grouped[species]) grouped[species] = {}
-    if (!grouped[species][month]) grouped[species][month] = 0
-    grouped[species][month]++
+  // Group by month + species in SQL (DATE_TRUNC) so we never load every
+  // approved row into memory. Output is already ordered by month, then species.
+  const whereClauses: Prisma.Sql[] = [Prisma.sql`o."status" = 'APPROVED'`]
+  if (speciesId) {
+    whereClauses.push(Prisma.sql`o."speciesId" = ${speciesId}`)
   }
 
-  const items: TemporalTrendData[] = []
-  for (const [species, months] of Object.entries(grouped)) {
-    for (const [month, count] of Object.entries(months)) {
-      items.push({ month, count, species })
-    }
-  }
+  const rows = await getPrisma().$queryRaw<
+    Array<{ month: string; species: string; count: number }>
+  >`
+    SELECT
+      TO_CHAR(DATE_TRUNC('month', o."createdAt"), 'YYYY-MM') AS month,
+      s."scientificName" AS species,
+      COUNT(*)::int AS count
+    FROM "observations" o
+    JOIN "species" s ON s."id" = o."speciesId"
+    WHERE ${Prisma.join(whereClauses, ' AND ')}
+    GROUP BY month, s."scientificName"
+    ORDER BY month, s."scientificName"
+  `
 
-  return items.sort((a, b) => {
-    const monthCompare = a.month.localeCompare(b.month)
-    return monthCompare !== 0 ? monthCompare : a.species.localeCompare(b.species)
-  })
+  return rows.map((r) => ({
+    month: r.month,
+    count: r.count,
+    species: r.species,
+  }))
 }
 
 // Helper functions
 
-function calculateConditionFactor(cw: number, bw: number): number {
-  const K = (bw / Math.pow(cw, 3)) * 100
-  return Number(K.toFixed(3))
-}
+/**
+ * Estimate the width at which 50% of the sample is mature, plus an honest
+ * bracketing interval. The interval is the range of the two adjacent
+ * observations that straddle the 50% maturity crossing — a real, data-derived
+ * uncertainty band (NOT the previous fabricated `cw50 ± 1`).
+ *
+ * NOTE: the cumulative-share estimator is a simple descriptive statistic, not
+ * a fitted maturity model. A defensible redesign (logistic regression of
+ * maturity vs. width, or a bootstrap CI) is tracked separately in
+ * CODE_REVIEW.md (P1) and is out of scope for the performance fix.
+ */
+function estimateCW50(
+  sorted: { cw: number; isMature: boolean }[],
+): { cw50: number; ciLow: number; ciHigh: number } {
+  const total = sorted.length
+  if (total === 0) return { cw50: 0, ciLow: 0, ciHigh: 0 }
 
-function percentile(sorted: number[], p: number): number {
-  if (sorted.length === 0) return 0
-  if (sorted.length === 1) return sorted[0]
-  const index = (p / 100) * (sorted.length - 1)
-  const lower = Math.floor(index)
-  const upper = Math.ceil(index)
-  if (lower === upper) return sorted[lower]
-  return sorted[lower] + (sorted[upper] - sorted[lower]) * (index - lower)
-}
-
-function estimateCW50(sorted: { cw: number; isMature: boolean }[]): number {
   const cumulative: { cw: number; proportion: number }[] = []
   let matureCount = 0
-  const total = sorted.length
-
   for (const obs of sorted) {
     if (obs.isMature) matureCount++
-    cumulative.push({
-      cw: obs.cw,
-      proportion: matureCount / total,
-    })
+    cumulative.push({ cw: obs.cw, proportion: matureCount / total })
   }
 
   for (let i = 0; i < cumulative.length - 1; i++) {
-    if (
-      cumulative[i].proportion <= 0.5 &&
-      cumulative[i + 1].proportion >= 0.5
-    ) {
-      const slope =
-        (cumulative[i + 1].proportion - cumulative[i].proportion) /
-        (cumulative[i + 1].cw - cumulative[i].cw)
-      return cumulative[i].cw + (0.5 - cumulative[i].proportion) / slope
+    const a = cumulative[i]
+    const b = cumulative[i + 1]
+    if (a.proportion <= 0.5 && b.proportion >= 0.5) {
+      const ciLow = Math.min(a.cw, b.cw)
+      const ciHigh = Math.max(a.cw, b.cw)
+      const dProp = b.proportion - a.proportion
+      const dCw = b.cw - a.cw
+      // Guard against a zero slope (equal widths / flat proportion) to avoid
+      // division by zero producing an invalid CW50.
+      if (dCw === 0 || dProp === 0) {
+        return { cw50: a.cw, ciLow, ciHigh }
+      }
+      const cw50 = a.cw + (0.5 - a.proportion) / (dProp / dCw)
+      return { cw50, ciLow, ciHigh }
     }
   }
 
-  return sorted[Math.floor(sorted.length / 2)]?.cw ?? 0
+  const mid = sorted[Math.floor(sorted.length / 2)]?.cw ?? 0
+  return { cw50: mid, ciLow: mid, ciHigh: mid }
 }
 
 function getStateFromCoords(_lat: number, _lng: number): string | null {

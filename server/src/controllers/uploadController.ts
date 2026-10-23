@@ -49,8 +49,11 @@ export const getUploadUrlHandler = asyncHandler(async (req: AuthRequest, res: Re
     permissions: 'w' as unknown as BlobSASPermissions,
   })
 
+  // Short-lived read SAS (1h). Observation photo URLs are regenerated on every
+  // fetch by `refreshPhotoUrls`, so a long-lived (365-day) read token is not
+  // needed and would widen the window for a leaked URL to be abused.
   const readSasUrl = await blobClient.generateSasUrl({
-    expiresOn: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+    expiresOn: new Date(Date.now() + 60 * 60 * 1000),
     permissions: 'r' as unknown as BlobSASPermissions,
   })
 
@@ -101,8 +104,9 @@ export const uploadPhoto = asyncHandler(async (req: AuthRequest & { file?: Multe
     blobHTTPHeaders: { blobContentType: safeContentType },
   })
 
+  // Short-lived read SAS (1h) — see note in getUploadUrlHandler.
   const readSasUrl = await blobClient.generateSasUrl({
-    expiresOn: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+    expiresOn: new Date(Date.now() + 60 * 60 * 1000),
     permissions: 'r' as unknown as BlobSASPermissions,
   })
 

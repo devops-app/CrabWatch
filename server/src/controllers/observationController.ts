@@ -14,7 +14,7 @@ import { awardXP, updateStreak, isFirstObservation, isNewSpecies, incrementSubmi
 import { checkAndAwardAchievements } from '../services/achievementService'
 import { sendNotification } from '../services/notificationService'
 import { getPrisma, getConfig } from '../services/container'
-import { asyncHandler, NotFoundError, ForbiddenError, ValidationError } from '../utils/errors'
+import { asyncHandler, NotFoundError, ForbiddenError, ValidationError, ConflictError } from '../utils/errors'
 import { createTranslator, detectLocale } from '../middleware/i18n'
 import logger from '../utils/logger'
 
@@ -355,6 +355,18 @@ export const validateObservation = asyncHandler(async (req: AuthRequest, res: Re
   const existing = await prisma.observation.findUnique({ where: { id } })
   if (!existing || existing.deletedAt) {
     throw new NotFoundError(__('observation.notFound', 'observation'))
+  }
+
+  // Only pending observations can be validated — re-validating an already
+  // approved/rejected observation would re-award XP and re-trigger missions.
+  if (existing.status !== 'PENDING') {
+    throw new ConflictError(__('observation.alreadyProcessed', 'observation'))
+  }
+
+  // A researcher cannot validate their own observation (prevents self-approval
+  // and the associated XP/achievement farming).
+  if (existing.userId === dbUser.id) {
+    throw new ForbiddenError(__('observation.unauthorized', 'observation'))
   }
 
   const observation = await prisma.observation.update({

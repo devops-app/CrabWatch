@@ -63,7 +63,10 @@
     "restore.notFound": "Deleted user not found",
     "restore.notDeleted": "User has not been deleted",
     "restore.expired": "User has exceeded retention period and cannot be restored",
-    "role.updateSuccess": "User role updated successfully"
+    "role.updateSuccess": "User role updated successfully",
+    "role.self": "You cannot change your own role",
+    "role.lastAdmin": "Cannot demote the last active admin",
+    "role.invalid": "Invalid role"
   },
   "observation": {
     "notFound": "Observation not found",
