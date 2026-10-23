@@ -1,5 +1,6 @@
 import { config } from '../config'
 import logger from '../utils/logger'
+import { getFromCache, setCache } from '../utils/cache'
 
 interface KeyFeature {
   trait: string
@@ -17,11 +18,12 @@ interface SpeciesTranslation {
   distributionZones: DistributionZone[]
 }
 
-const translationCache = new Map<string, SpeciesTranslation>()
-const MAX_TRANSLATION_CACHE = 200
+// Translations are stable, so cache them for a long time (24h) on the shared
+// LRUCache (see utils/cache.ts) rather than re-calling the Azure Translator API.
+const TRANSLATION_CACHE_TTL = 24 * 60 * 60 * 1000
 
 function getCacheKey(speciesId: string, to: string): string {
-  return `${speciesId}:${to}`
+  return `translation:${speciesId}:${to}`
 }
 
 function fallbackResponse(params: {
@@ -54,7 +56,7 @@ export async function translateSpecies({
   to: string
 }): Promise<SpeciesTranslation> {
   const cacheKey = getCacheKey(speciesId, to)
-  const cached = translationCache.get(cacheKey)
+  const cached = getFromCache<SpeciesTranslation>(cacheKey)
   if (cached) return cached
 
   const { apiKey, endpoint, region } = config.azureTranslator
@@ -127,14 +129,7 @@ export async function translateSpecies({
       distributionZones: translatedDistributionZones,
     }
 
-    // Evict oldest entry if cache exceeds max size
-    if (translationCache.size >= MAX_TRANSLATION_CACHE) {
-      const oldestKey = translationCache.keys().next().value
-      if (oldestKey !== undefined) {
-        translationCache.delete(oldestKey)
-      }
-    }
-    translationCache.set(cacheKey, result)
+    setCache(cacheKey, result, TRANSLATION_CACHE_TTL)
     return result
   } catch (err) {
     logger.error({ err, speciesId }, 'Azure Translator exception')

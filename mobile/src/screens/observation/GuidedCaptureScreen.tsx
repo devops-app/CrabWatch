@@ -36,7 +36,7 @@ import { useCaptureAssistance } from '../../hooks/useCaptureAssistance'
 import { useLiveFrameQuality } from '../../hooks/useLiveFrameQuality'
 import type { LiveFrameQuality } from '../../utils/liveFrameQuality'
 import { analyzeView } from '../../utils/viewAnalysis'
-import { PhotoView, applyGateModeToStatus, classifyBrightness, isGateBlocking, isGateOverridable } from '@crabwatch/shared'
+import { PhotoView, applyGateModeToStatus, classifyBrightness, createUploadSessionId, isGateBlocking, isGateOverridable } from '@crabwatch/shared'
 import { PhotoTipsModal } from '../../components/observation/PhotoTipsModal'
 import {
   MobileQualityAssessment,
@@ -264,18 +264,6 @@ const CAPTURE_STEP_KEYS: { key: PhotoView; icon: keyof typeof Ionicons.glyphMap 
   { key: 'ventral', icon: 'swap-horizontal' },
   { key: 'carapace-closeup', icon: 'expand' },
 ]
-
-function createUploadSessionId(): string {
-  const randomUuid = globalThis.crypto?.randomUUID?.()
-  if (randomUuid) return randomUuid
-
-  const bytes = new Uint8Array(16)
-  globalThis.crypto?.getRandomValues?.(bytes)
-  bytes[6] = (bytes[6] & 0x0f) | 0x40
-  bytes[8] = (bytes[8] & 0x3f) | 0x80
-  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
-}
 
 function createDefaultOverrides(): Record<PhotoView, QualityOverrideState> {
   return {

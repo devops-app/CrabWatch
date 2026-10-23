@@ -14,41 +14,24 @@ import { awardXP, updateStreak, isFirstObservation, isNewSpecies, incrementSubmi
 import { checkAndAwardAchievements } from '../services/achievementService'
 import { sendNotification } from '../services/notificationService'
 import { getPrisma, getConfig } from '../services/container'
+import { getFromCache, setCache } from '../utils/cache'
 import { asyncHandler, NotFoundError, ForbiddenError, ValidationError, ConflictError } from '../utils/errors'
 import { createTranslator, detectLocale } from '../middleware/i18n'
 import logger from '../utils/logger'
 
 type DbUser = { id: string; role: string; email: string }
 
-// TTL cache for SAS URL regeneration — avoids redundant Azure API calls for the same blob
-interface SasCacheEntry {
-  sasUrl: string
-  expiresAt: number
-}
-const sasCache = new Map<string, SasCacheEntry>()
-const SAS_CACHE_MAX_SIZE = 500
-const SAS_CACHE_TTL = 50 * 60 * 1000 // 50 minutes (SAS expires in 60 min, regenerate before expiry)
+// SAS URL regeneration cache — avoids redundant Azure API calls for the same blob.
+// Backed by the shared LRUCache (see utils/cache.ts). SAS tokens expire in 60 min,
+// so we cache for 50 min and regenerate before expiry.
+const SAS_CACHE_TTL = 50 * 60 * 1000
 
 function getCachedSas(blobPath: string): string | null {
-  const entry = sasCache.get(blobPath)
-  if (!entry || Date.now() > entry.expiresAt) {
-    sasCache.delete(blobPath)
-    return null
-  }
-  return entry.sasUrl
+  return getFromCache<string>(`sas:${blobPath}`)
 }
 
 function setCachedSas(blobPath: string, sasUrl: string): void {
-  if (sasCache.size >= SAS_CACHE_MAX_SIZE) {
-    const oldestKey = sasCache.keys().next().value
-    if (oldestKey !== undefined) {
-      sasCache.delete(oldestKey)
-    }
-  }
-  sasCache.set(blobPath, {
-    sasUrl,
-    expiresAt: Date.now() + SAS_CACHE_TTL,
-  })
+  setCache(`sas:${blobPath}`, sasUrl, SAS_CACHE_TTL)
 }
 
 async function refreshPhotoUrls(photos: string[]): Promise<string[]> {

@@ -1,4 +1,5 @@
 import { getPrisma } from './container'
+import { getFromCache, setCache, clearCache } from '../utils/cache'
 
 interface LeaderboardEntry {
   rank: number
@@ -20,15 +21,7 @@ interface LeaderboardResult {
   myRank?: number
 }
 
-// Simple in-memory cache with TTL and max-size eviction
-interface CacheEntry {
-  data: LeaderboardResult
-  expiresAt: number
-}
-
-const cache = new Map<string, CacheEntry>()
-const MAX_CACHE_SIZE = 100
-
+// Leaderboard cache — backed by the shared LRUCache (see utils/cache.ts).
 const DEFAULT_TTL = 60 * 1000
 const ALL_TIME_TTL = 120 * 1000
 
@@ -36,39 +29,8 @@ function getCacheKey(scope: string, seasonId?: string, page?: number, limit?: nu
   return `leaderboard:${scope}:${seasonId || 'none'}:${page || 1}:${limit || 50}`
 }
 
-function get(key: string): LeaderboardResult | null {
-  const entry = cache.get(key)
-  if (!entry || Date.now() > entry.expiresAt) {
-    cache.delete(key)
-    return null
-  }
-  return entry.data
-}
-
-function set(key: string, data: LeaderboardResult, ttl: number = DEFAULT_TTL): void {
-  // Evict oldest entry if cache exceeds max size
-  if (cache.size >= MAX_CACHE_SIZE) {
-    const oldestKey = cache.keys().next().value
-    if (oldestKey !== undefined) {
-      cache.delete(oldestKey)
-    }
-  }
-  cache.set(key, {
-    data,
-    expiresAt: Date.now() + ttl,
-  })
-}
-
-function invalidate(prefix: string): void {
-  for (const key of cache.keys()) {
-    if (key.startsWith(prefix)) {
-      cache.delete(key)
-    }
-  }
-}
-
 export function invalidateLeaderboardCache(): void {
-  invalidate('leaderboard:')
+  clearCache('leaderboard:')
 }
 
 export async function getLeaderboard(
@@ -81,7 +43,7 @@ export async function getLeaderboard(
   const cacheKey = getCacheKey(params.scope || 'ALL_TIME', params.seasonId, page, limit)
 
   // Try cache first
-  const cached = get(cacheKey)
+  const cached = getFromCache<LeaderboardResult>(cacheKey)
   if (cached) {
     // Re-compute myRank for the requesting user (not cached, depends on current user)
     const { myRankXP: _myRankXP, ...rest } = cached as LeaderboardResult & { myRankXP?: number }
@@ -186,7 +148,7 @@ export async function getLeaderboard(
 
   // Cache the result (without myRank which is user-specific)
   const ttl = params.scope === 'SEASONAL' ? DEFAULT_TTL : ALL_TIME_TTL
-  set(cacheKey, result, ttl)
+  setCache(cacheKey, result, ttl)
 
   return result
 }
