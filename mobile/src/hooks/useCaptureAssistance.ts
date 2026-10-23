@@ -13,7 +13,7 @@ export type CaptureMessageKey =
   | 'holdStill'
   | 'holdSteadier'
 
-interface CaptureQuality {
+export interface CaptureQuality {
   isSteady: boolean
   isWellLit: boolean
   isFocused: boolean

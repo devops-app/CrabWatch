@@ -22,166 +22,43 @@ import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 import type { CaptureMessageKey } from '../../hooks/useCaptureAssistance'
 import type {
-  BrightnessCondition,
   LiveFrameQuality,
   LiveGateStatus,
 } from '../../utils/liveFrameQuality'
 
-type IoniconName = keyof typeof Ionicons.glyphMap
-
-type ViewType =
-  | 'dorsal'
-  | 'ventral'
-  | 'carapace-closeup'
-
-export type ShakeLevel =
-  | 'none'
-  | 'slight'
-  | 'heavy'
+import {
+  areCameraControlsOnLeft,
+  computeLayout,
+  EDGE,
+  FRAME_RADIUS,
+  HINT_BAR_SPACE,
+  isLandscapeOrientation,
+  PILL_BOTTOM,
+} from './overlayLayout'
+import {
+  BRIGHTNESS_ICONS,
+  DEFAULT_MESSAGE_STYLE,
+  DIM_COLOR,
+  getEffectiveStatus,
+  MESSAGE_STYLE,
+  NEUTRAL_COLOR,
+  NEUTRAL_COLOR_SOFT,
+  PILL_COLORS,
+  STATUS_COLORS,
+  STATUS_COLORS_SOFT,
+  VIEW_CONFIG,
+  type ShakeLevel,
+  type ViewType,
+} from './overlayStatus'
+import {
+  CornerMask,
+  LiveChip,
+} from './overlaySubcomponents'
 
 const CRAB_OUTLINE = require('../../../assets/images/crab-outline.png')
 
-/* ------------------------------------------------------------------ */
-/* Palette                                                             */
-/* ------------------------------------------------------------------ */
-
-/** National-ID style status palette. */
-const STATUS_COLORS = {
-  pass: '#22c55e',
-  warn: '#f59e0b',
-  fail: '#ef4444',
-} as const
-
-/** Softer translucent variants used for the frame border. */
-const STATUS_COLORS_SOFT = {
-  pass: 'rgba(34,197,94,0.55)',
-  warn: 'rgba(245,158,11,0.5)',
-  fail: 'rgba(239,68,68,0.5)',
-} as const
-
-/** Neutral grey used before the first live sample is available. */
-const NEUTRAL_COLOR = '#9ca3af'
-const NEUTRAL_COLOR_SOFT = 'rgba(156,163,175,0.5)'
-
-/** Readiness pill backgrounds using the same status model as the frame. */
-const PILL_COLORS = {
-  pass: 'rgba(34, 197, 94, 0.85)',
-  warn: 'rgba(245, 158, 11, 0.85)',
-  fail: 'rgba(239, 68, 68, 0.85)',
-  neutral: 'rgba(107, 114, 128, 0.85)',
-} as const
-
-const LIGHTING_COLOR = '#f97316'
-const DIM_COLOR = 'rgba(0, 0, 0, 0.45)'
-
-/* ------------------------------------------------------------------ */
-/* Layout constants                                                    */
-/* ------------------------------------------------------------------ */
-
-const FRAME_ASPECT = 0.75
-const FRAME_RADIUS = 18
-
-/** Reserved space for the camera screen's header or step title. */
-const HEADER_RESERVE = 60
-
-/** Portrait hint-bar height plus the gap above the frame. */
-const HINT_BAR_SPACE = 72
-
-/** Portrait readiness-pill distance from the bottom. */
-const PILL_BOTTOM = 30
-
-/** Reserved portrait space for quality chips, warnings, and status pill. */
-const STACK_MIN_HEIGHT = 120
-
-/** Width of the landscape hint and status column. */
-const SIDE_PANEL_WIDTH = 220
-
-/** Full-height strip reserved for landscape camera controls. */
-const SIDE_CONTROL_RESERVE = 108
-
-const EDGE = 16
-
 const MAX_VISIBLE_WARNINGS = 2
 const READY_ANNOUNCEMENT_DELAY_MS = 500
-
-/* ------------------------------------------------------------------ */
-/* Typed configuration maps                                            */
-/* ------------------------------------------------------------------ */
-
-const VIEW_CONFIG = {
-  dorsal: {
-    icon: 'eye-outline',
-    hintKey: 'overlayHints.dorsal',
-  },
-  ventral: {
-    icon: 'swap-horizontal-outline',
-    hintKey: 'overlayHints.ventral',
-  },
-  'carapace-closeup': {
-    icon: 'expand-outline',
-    hintKey: 'overlayHints.closeup',
-  },
-} as const satisfies Record<
-  ViewType,
-  {
-    icon: IoniconName
-    hintKey: string
-  }
->
-
-type MessageStyle = {
-  icon: IoniconName
-  color: string
-}
-
-/**
- * Icon and colour for each capture-assistance message.
- *
- * Unknown keys intentionally use a neutral information icon instead of
- * displaying a potentially misleading success indicator.
- */
-const MESSAGE_STYLE: Partial<
-  Record<CaptureMessageKey, MessageStyle>
-> = {
-  holdStill: {
-    icon: 'warning',
-    color: STATUS_COLORS.warn,
-  },
-  holdSteadier: {
-    icon: 'warning',
-    color: STATUS_COLORS.warn,
-  },
-  lightingTooDark: {
-    icon: 'moon',
-    color: LIGHTING_COLOR,
-  },
-  lightingLow: {
-    icon: 'partly-sunny',
-    color: LIGHTING_COLOR,
-  },
-  lightingTooBright: {
-    icon: 'sunny',
-    color: LIGHTING_COLOR,
-  },
-}
-
-const DEFAULT_MESSAGE_STYLE: MessageStyle = {
-  icon: 'information-circle',
-  color: '#ffffff',
-}
-
-/**
- * Brightness thresholds remain owned by liveFrameQuality.
- * The overlay maps only the semantic brightness condition to an icon.
- */
-const BRIGHTNESS_ICONS = {
-  dark: 'moon-outline',
-  normal: 'partly-sunny-outline',
-  bright: 'sunny-outline',
-} as const satisfies Record<
-  BrightnessCondition,
-  IoniconName
->
 
 /* ------------------------------------------------------------------ */
 /* Component types                                                     */
@@ -202,331 +79,6 @@ interface CaptureFrameOverlayProps {
   }
 
   orientation: ScreenOrientation.Orientation
-}
-
-/* ------------------------------------------------------------------ */
-/* Layout                                                              */
-/* ------------------------------------------------------------------ */
-
-type OverlayLayout = {
-  isLandscape: boolean
-  frameWidth: number
-  frameHeight: number
-  frameLeft: number
-  frameTop: number
-  panel: {
-    left: number
-    width: number
-    top: number
-    bottom: number
-  } | null
-}
-
-/**
- * Portrait:
- * - Hint above the frame.
- * - Quality chips, warnings, and readiness pill below the frame.
- * - Frame is sized so the reserved status stack fits.
- *
- * Landscape:
- * - One edge is reserved for full-height camera controls.
- * - The status panel occupies the opposite edge.
- * - The frame is centred in the remaining gap.
- */
-function computeLayout(
-  width: number,
-  height: number,
-  controlsOnLeft: boolean,
-): OverlayLayout {
-  if (width > height) {
-    const panelWidth = Math.min(
-      SIDE_PANEL_WIDTH,
-      width * 0.3,
-    )
-
-    const regionTop = HEADER_RESERVE
-
-    const controlLeft = controlsOnLeft
-      ? 0
-      : width - SIDE_CONTROL_RESERVE
-
-    const controlRight =
-      controlLeft + SIDE_CONTROL_RESERVE
-
-    const panelLeft = controlsOnLeft
-      ? width - EDGE - panelWidth
-      : EDGE
-
-    const panelRight =
-      panelLeft + panelWidth
-
-    const gapLeft = controlsOnLeft
-      ? controlRight
-      : panelRight
-
-    const gapRight = controlsOnLeft
-      ? panelLeft
-      : controlLeft
-
-    const availableWidth = Math.max(
-      gapRight - gapLeft - EDGE * 2,
-      0,
-    )
-
-    const availableHeight = Math.max(
-      height - EDGE - regionTop,
-      0,
-    )
-
-    const frameWidth = Math.min(
-      availableWidth,
-      availableHeight / FRAME_ASPECT,
-    )
-
-    const frameHeight =
-      frameWidth * FRAME_ASPECT
-
-    return {
-      isLandscape: true,
-      frameWidth,
-      frameHeight,
-      frameLeft:
-        gapLeft +
-        EDGE +
-        (availableWidth - frameWidth) / 2,
-      frameTop:
-        regionTop +
-        (availableHeight - frameHeight) / 2,
-      panel: {
-        left: panelLeft,
-        width: panelWidth,
-        top: regionTop,
-        bottom: EDGE,
-      },
-    }
-  }
-
-  const regionTop =
-    HEADER_RESERVE + HINT_BAR_SPACE
-
-  const regionBottom =
-    height -
-    PILL_BOTTOM -
-    STACK_MIN_HEIGHT
-
-  const availableHeight = Math.max(
-    regionBottom - regionTop,
-    0,
-  )
-
-  const frameWidth = Math.min(
-    width * 0.9,
-    availableHeight / FRAME_ASPECT,
-  )
-
-  const frameHeight =
-    frameWidth * FRAME_ASPECT
-
-  return {
-    isLandscape: false,
-    frameWidth,
-    frameHeight,
-    frameLeft:
-      (width - frameWidth) / 2,
-    frameTop:
-      regionTop +
-      (availableHeight - frameHeight) / 2,
-    panel: null,
-  }
-}
-
-/* ------------------------------------------------------------------ */
-/* Status and orientation helpers                                      */
-/* ------------------------------------------------------------------ */
-
-/**
- * Resolves the display status for the frame and readiness pill.
- *
- * Live frame quality is advisory. When the capture gate reports ready,
- * the frame remains green even if an individual live-quality chip still
- * displays a warning or failure.
- */
-export function getEffectiveStatus(
-  isReady: boolean,
-  shakeLevel: ShakeLevel,
-  liveStatus: LiveGateStatus | null,
-): LiveGateStatus | null {
-  if (shakeLevel === 'heavy') {
-    return 'fail'
-  }
-
-  if (isReady) {
-    return 'pass'
-  }
-
-  if (liveStatus === 'pass') {
-    return 'warn'
-  }
-
-  return liveStatus
-}
-
-function isLandscapeOrientation(
-  orientation: ScreenOrientation.Orientation,
-): boolean {
-  return (
-    orientation ===
-      ScreenOrientation.Orientation.LANDSCAPE_LEFT ||
-    orientation ===
-      ScreenOrientation.Orientation.LANDSCAPE_RIGHT
-  )
-}
-
-/**
- * Converts Expo's orientation value into this camera screen's physical
- * control position.
- *
- * If the camera-screen control placement changes, update this helper or
- * replace the orientation prop with `controlsSide: 'left' | 'right'`.
- */
-function areCameraControlsOnLeft(
-  orientation: ScreenOrientation.Orientation,
-): boolean {
-  return (
-    orientation ===
-    ScreenOrientation.Orientation.LANDSCAPE_RIGHT
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* Subcomponents                                                       */
-/* ------------------------------------------------------------------ */
-
-/**
- * A single advisory live-quality chip.
- *
- * The chip is informational and does not independently block capture.
- */
-const LiveChip = memo(function LiveChip({
-  icon,
-  label,
-  status,
-}: {
-  icon: IoniconName
-  label: string
-  status: LiveGateStatus
-}) {
-  const color = STATUS_COLORS[status]
-
-  return (
-    <View style={styles.liveChip}>
-      <View
-        style={[
-          styles.liveChipDot,
-          {
-            backgroundColor: color,
-          },
-        ]}
-      />
-
-      <Ionicons
-        name={icon}
-        size={13}
-        color={color}
-      />
-
-      <Text
-        style={[
-          styles.liveChipText,
-          {
-            color,
-          },
-        ]}
-        maxFontSizeMultiplier={1.5}
-      >
-        {label}
-      </Text>
-    </View>
-  )
-})
-
-type Corner =
-  | 'tl'
-  | 'tr'
-  | 'bl'
-  | 'br'
-
-const R = FRAME_RADIUS
-
-const CORNER_POS = {
-  tl: {
-    mask: {
-      top: 0,
-      left: 0,
-    },
-    ring: {
-      top: -R,
-      left: -R,
-    },
-  },
-  tr: {
-    mask: {
-      top: 0,
-      right: 0,
-    },
-    ring: {
-      top: -R,
-      right: -R,
-    },
-  },
-  bl: {
-    mask: {
-      bottom: 0,
-      left: 0,
-    },
-    ring: {
-      bottom: -R,
-      left: -R,
-    },
-  },
-  br: {
-    mask: {
-      bottom: 0,
-      right: 0,
-    },
-    ring: {
-      bottom: -R,
-      right: -R,
-    },
-  },
-} as const
-
-/**
- * Fills the undimmed sliver between the square dim cutout and the
- * frame's rounded corner.
- */
-function CornerMask({
-  corner,
-}: {
-  corner: Corner
-}) {
-  const position = CORNER_POS[corner]
-
-  return (
-    <View
-      style={[
-        styles.cornerMask,
-        position.mask,
-      ]}
-    >
-      <View
-        style={[
-          styles.cornerMaskRing,
-          position.ring,
-        ]}
-      />
-    </View>
-  )
 }
 
 /* ------------------------------------------------------------------ */
@@ -774,7 +326,7 @@ export const CaptureFrameOverlay = memo(
         effectiveStatus ?? 'neutral'
       ]
 
-    const pillIcon: IoniconName =
+    const pillIcon =
       isReady
         ? 'checkmark-circle'
         : shakeLevel === 'heavy'
@@ -824,13 +376,12 @@ export const CaptureFrameOverlay = memo(
       </View>
     )
 
-    const brightnessIcon:
-      | IoniconName
-      | null = liveQuality
-      ? BRIGHTNESS_ICONS[
-          liveQuality.brightnessCondition
-        ]
-      : null
+    const brightnessIcon =
+      liveQuality
+        ? BRIGHTNESS_ICONS[
+            liveQuality.brightnessCondition
+          ]
+        : null
 
     const liveChips =
       liveQuality && brightnessIcon ? (
@@ -1233,22 +784,6 @@ const styles = StyleSheet.create({
     borderRadius: FRAME_RADIUS,
   },
 
-  cornerMask: {
-    position: 'absolute',
-    width: FRAME_RADIUS,
-    height: FRAME_RADIUS,
-    overflow: 'hidden',
-  },
-
-  cornerMaskRing: {
-    position: 'absolute',
-    width: FRAME_RADIUS * 4,
-    height: FRAME_RADIUS * 4,
-    borderRadius: FRAME_RADIUS * 2,
-    borderWidth: FRAME_RADIUS,
-    borderColor: DIM_COLOR,
-  },
-
   crabOutline: {
     position: 'absolute',
     top: 12,
@@ -1385,28 +920,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'center',
     gap: 8,
-  },
-
-  liveChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor:
-      'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 14,
-    gap: 5,
-  },
-
-  liveChipDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-
-  liveChipText: {
-    fontSize: FONT.xs,
-    fontWeight: '600',
   },
 
   /* Assistance warnings */
