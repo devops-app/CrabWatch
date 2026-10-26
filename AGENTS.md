@@ -1,7 +1,7 @@
 ﻿# CrabWatch — Work Progress Tracker
 
-> **Last Updated**: 2026-10-16
-> **Current Focus**: Production API now on `1.0.2+0028` (i18n key-resolution + Azure Blob URL fixes live). Deploy via GitHub Actions workflow `main_crabwatch-api.yml`.
+> **Last Updated**: 2026-10-26
+> **Current Focus**: Production web + API both live on `1.0.3+0021`. Web deploy workflow fixed (Oryx node_modules compression bypass + startup path) and pushed as `f91d272` (v`1.0.3+0022`). Deploy via GitHub Actions workflows `main_crabwatch-api.yml` / `main_crabwatch-web.yml`.
 
 ## Goal
 Build an AI-guided crab observation capture flow with fully dynamic species detection. The AI identifies any crab species in photos, and unknown species are auto-created in the database.
@@ -583,6 +583,15 @@ Build an AI-guided crab observation capture flow with fully dynamic species dete
 - Verified: `GET /health` returns `{"status":"ok","version":"1.0.2+0028"}` — production live
 - Completed: Hardened `scripts/deploy-server.ps1` Kudu fallback — stop app before wipe, atomic `mv` rename of `wwwroot` instead of `rm -rf` (unreliable on App Service Linux: "Directory not empty" even when app stopped), restart after
 - Note: first boot after a fresh GitHub Actions deploy can hit a transient `mv: cannot move 'bundled_modules' to 'node_modules': Permission denied` (Oryx settling); a full reboot (`az webapp restart`) resolves it
+
+### Completed (Production Web 500 Incident — Oryx node_modules + Startup Path)
+- Incident: after first-ever run of `main_crabwatch-web.yml`, production web returned 500. Two root causes:
+  1. Wrong startup path — workflow set `WEBSITE_STARTUP_COMMAND="node deploy/web/server.js"` but the zip contains `deploy/` *contents*, so `server.js` lands at `wwwroot/web/server.js`.
+  2. Oryx compressed the zip's top-level `node_modules` into `node_modules.tar.zst` and symlinked `wwwroot/node_modules -> /node_modules`, but `/node_modules` was never extracted (empty) → `Cannot find module 'styled-jsx/package.json'`. A stale `wwwroot/web/node_modules` (only `next`+`react`) shadowed resolution.
+- Live recovery (via Kudu command API, single commands only — pipes/`&&`/`;`/`cd` are mangled because the API execs without a shell): `zstd -d node_modules.tar.zst -o /tmp/nm.tar`, `tar -xf` to temp, `mv` into `wwwroot/node_modules`, removed Oryx symlink + stale `web/node_modules`, `az webapp restart`. Verified web 200 + API health `1.0.3+0021`.
+- Workflow fix (committed `f91d272`, v`1.0.3+0022`): `main_crabwatch-web.yml` now renames `node_modules` → `bundled_modules` in the zip, adds `scripts/startup-wrapper-web.sh` (restores `bundled_modules` → `node_modules`, removes stale `web/node_modules`, runs `node web/server.js`), sets startup via `--startup-file "bash /home/site/wwwroot/start.sh"`, and clears stale Oryx cache via Kudu after deploy — mirroring the proven API workflow pattern.
+- Note: Kudu VFS `PUT` returned 201 but did not persist the file to `wwwroot` — use single Kudu commands or a real deployment for multi-step ops.
+- Note: the crabwatch-web publishing password was printed to terminal output once during diagnosis — consider rotating it.
 
 ## Next Steps
 - Fix Android Play Console submit failure ("Precondition check failed" ×5 at "Updating track 'production'")
