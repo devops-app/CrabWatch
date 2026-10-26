@@ -1,7 +1,7 @@
 {
     "name":  "crabwatch",
     "private":  true,
-    "version":  "1.0.3+0024",
+    "version":  "1.0.3+0025",
     "description":  "Citizen science platform for mud crab conservation in Malaysia",
     "scripts":  {
                     "dev":  "pnpm -r --parallel dev",
@@ -67,7 +67,7 @@
                                    "follow-redirects":  "\u003e=1.16.1",
                                    "form-data":  "\u003e=4.0.6",
                                    "handlebars":  "\u003e=4.7.10",
-                                   "image-size":  "\u003e=2.0.3",
+                                   "image-size":  "^1.0.2",
                                    "joi":  "\u003e=18.2.9",
                                    "js-yaml":  "\u003e=5.4.1",
                                    "moment":  "\u003e=2.31.0",
