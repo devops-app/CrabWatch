@@ -16,6 +16,7 @@ import {
 } from 'react-native-vision-camera'
 import type { CameraRef } from 'react-native-vision-camera'
 import * as ScreenOrientation from 'expo-screen-orientation'
+import type { TOptions } from 'i18next'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 import { CaptureFrameOverlay } from '../../components/observation/CaptureFrameOverlay'
@@ -90,7 +91,7 @@ export function CameraModalContent({
   panHandlers: ReturnType<typeof PanResponder.create>['panHandlers']
   CAPTURE_STEPS: { key: PhotoView; icon: string; label: string }[]
   currentStepLabel: string
-  t: (key: string) => string
+  t: (key: string, options?: TOptions) => string
   handleCaptureFromCamera: () => void
   onClose: () => void
 }) {

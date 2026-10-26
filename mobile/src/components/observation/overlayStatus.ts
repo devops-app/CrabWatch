@@ -84,8 +84,10 @@ type MessageStyle = {
 /**
  * Icon and colour for each capture-assistance message.
  *
- * Unknown keys intentionally use a neutral information icon instead of
- * displaying a potentially misleading success indicator.
+ * Typed as `Partial<Record<CaptureMessageKey, MessageStyle>>` so a typo in a
+ * key is a compile error (excess-property check) while keys intentionally
+ * omitted (e.g. `focusLocked`) fall back to `DEFAULT_MESSAGE_STYLE` — a
+ * neutral information icon rather than a misleading success indicator.
  */
 export const MESSAGE_STYLE: Partial<
   Record<CaptureMessageKey, MessageStyle>

@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store'
 import Constants from 'expo-constants'
-import { createRetryFetch } from '@crabwatch/shared'
+import { createRetryFetch, API_ROUTES } from '@crabwatch/shared'
 import type {
   ApiResponse,
   CreateObservationInput,
@@ -148,80 +148,80 @@ async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promi
 
 export const api = {
   async login(credentials: { email: string; password: string }): Promise<{ token: string; user: UserResponse }> {
-    return apiRequest('/auth/login', {
+    return apiRequest(API_ROUTES.auth.login, {
       method: 'POST',
       body: JSON.stringify(credentials),
     })
   },
 
  async register(name: string, email: string, password: string, phoneCode?: string, phoneNumber?: string, addressLine1?: string, addressLine2?: string, state?: string, postcode?: string, country?: string, consentAccepted?: boolean): Promise<UserResponse> {
-    return apiRequest('/users/register', {
+    return apiRequest(API_ROUTES.users.register, {
       method: 'POST',
       body: JSON.stringify({ name, email, phoneCode, phoneNumber, addressLine1, addressLine2, state, postcode, country, password, consentAccepted }),
     })
   },
 
   async requestPasswordReset(email: string): Promise<{ message: string }> {
-    return apiRequest('/auth/password-reset/request', {
+    return apiRequest(API_ROUTES.auth.passwordResetRequest, {
       method: 'POST',
       body: JSON.stringify({ email }),
     })
   },
 
   async resetPassword(token: string, password: string): Promise<{ message: string }> {
-    return apiRequest('/auth/password-reset/reset', {
+    return apiRequest(API_ROUTES.auth.passwordResetReset, {
       method: 'POST',
       body: JSON.stringify({ token, password }),
     })
   },
 
   async getProfile(): Promise<UserResponse> {
-    return apiRequest('/users/me')
+    return apiRequest(API_ROUTES.users.me)
   },
 
   async updateProfile(data: { name?: string; phoneCode?: string | null; phoneNumber?: string | null; addressLine1?: string | null; addressLine2?: string | null; state?: string | null; postcode?: string | null; country?: string | null; avatar?: string | null; preferredLocale?: 'en' | 'ms' | null }): Promise<UserResponse> {
-    return apiRequest('/users/me', {
+    return apiRequest(API_ROUTES.users.me, {
       method: 'PATCH',
       body: JSON.stringify(data),
     })
   },
 
   async changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
-    return apiRequest('/users/me/password', {
+    return apiRequest(API_ROUTES.users.mePassword, {
       method: 'PATCH',
       body: JSON.stringify({ currentPassword, newPassword }),
     })
   },
 
   async deleteMyAccount(): Promise<{ success: boolean; data: { id: string; name: string; email: string; deletedAt: string | null; expiresAt: string; retentionDays: number } }> {
-    return apiRequest('/users/me', {
+    return apiRequest(API_ROUTES.users.me, {
       method: 'DELETE',
     })
   },
 
   async registerFcmToken(fcmToken: string): Promise<{ registered: boolean }> {
-    return apiRequest('/fcm/register', {
+    return apiRequest(API_ROUTES.fcm.register, {
       method: 'POST',
       body: JSON.stringify({ fcmToken }),
     })
   },
 
   async unregisterFcmToken(): Promise<{ unregistered: boolean }> {
-    return apiRequest('/fcm/register', {
+    return apiRequest(API_ROUTES.fcm.register, {
       method: 'DELETE',
     })
   },
 
   async listSpecies(): Promise<SpeciesResponse[]> {
-    return apiRequest('/species')
+    return apiRequest(API_ROUTES.species.list)
   },
 
   async getSpecies(id: string): Promise<SpeciesResponse> {
-    return apiRequest(`/species/${id}`)
+    return apiRequest(API_ROUTES.species.byId(id))
   },
 
   async translateSpecies(id: string, to: string): Promise<SpeciesTranslation> {
-    return apiRequest(`/species/${id}/translate?to=${to}`)
+    return apiRequest(`${API_ROUTES.species.translate(id)}?to=${to}`)
   },
 
   async createObservation(input: CreateObservationInput): Promise<ObservationResponse> {
@@ -247,7 +247,7 @@ export const api = {
       return uploaded
     })
 
-    const created = await apiRequest<ObservationResponse>('/observations', {
+    const created = await apiRequest<ObservationResponse>(API_ROUTES.observations.list, {
       method: 'POST',
       body: JSON.stringify({
         ...input,
@@ -269,19 +269,19 @@ export const api = {
     if (filters?.limit) params.set('limit', String(filters.limit))
 
     const query = params.toString()
-    const data = await apiRequest<ObservationListResponse>(`/observations${query ? `?${query}` : ''}`)
+    const data = await apiRequest<ObservationListResponse>(`${API_ROUTES.observations.list}${query ? `?${query}` : ''}`)
     return normalizeObservationListPhotos(data)
   },
 
   async getObservation(id: string): Promise<ObservationResponse> {
-    const data = await apiRequest<ObservationResponse>(`/observations/${id}`)
+    const data = await apiRequest<ObservationResponse>(API_ROUTES.observations.byId(id))
     return normalizeObservationPhotos(data)
   },
 
   async getPendingObservations(page?: number): Promise<ObservationListResponse> {
     const params = new URLSearchParams({ status: 'pending' })
     if (page) params.set('page', String(page))
-    const data = await apiRequest<ObservationListResponse>(`/observations?${params}`)
+    const data = await apiRequest<ObservationListResponse>(`${API_ROUTES.observations.list}?${params}`)
     return normalizeObservationListPhotos(data)
   },
 
@@ -289,7 +289,7 @@ export const api = {
     id: string,
     input: ValidateObservationInput
   ): Promise<ObservationResponse> {
-    const data = await apiRequest<ObservationResponse>(`/observations/${id}/validate`, {
+    const data = await apiRequest<ObservationResponse>(API_ROUTES.observations.validate(id), {
       method: 'PATCH',
       body: JSON.stringify(input),
     })
@@ -301,7 +301,7 @@ export const api = {
     id: string,
     input: UpdateObservationInput
   ): Promise<ObservationResponse> {
-    const data = await apiRequest<ObservationResponse>(`/observations/${id}`, {
+    const data = await apiRequest<ObservationResponse>(API_ROUTES.observations.byId(id), {
       method: 'PATCH',
       body: JSON.stringify(input),
     })
@@ -310,13 +310,13 @@ export const api = {
   },
 
   async deleteObservation(id: string): Promise<ApiResponse> {
-    return apiRequest<ApiResponse>(`/observations/${id}`, {
+    return apiRequest<ApiResponse>(API_ROUTES.observations.byId(id), {
       method: 'DELETE',
     })
   },
 
   async getDashboardStats(): Promise<DashboardStats> {
-    return apiRequest('/analytics/stats')
+    return apiRequest(API_ROUTES.analytics.stats)
   },
 
   async getSizeFrequency(params?: {
@@ -329,7 +329,7 @@ export const api = {
     if (params?.dateFrom) p.set('dateFrom', params.dateFrom)
     if (params?.dateTo) p.set('dateTo', params.dateTo)
     const query = p.toString()
-    return apiRequest(`/analytics/size-frequency${query ? `?${query}` : ''}`)
+    return apiRequest(`${API_ROUTES.analytics.sizeFrequency}${query ? `?${query}` : ''}`)
   },
 
   async getGenderRatio(params?: {
@@ -342,14 +342,14 @@ export const api = {
     if (params?.dateFrom) p.set('dateFrom', params.dateFrom)
     if (params?.dateTo) p.set('dateTo', params.dateTo)
     const query = p.toString()
-    return apiRequest(`/analytics/gender-ratio${query ? `?${query}` : ''}`)
+    return apiRequest(`${API_ROUTES.analytics.genderRatio}${query ? `?${query}` : ''}`)
   },
 
   async getCW50(speciesId?: string): Promise<CW50Data[]> {
     const p = new URLSearchParams()
     if (speciesId) p.set('speciesId', speciesId)
     const query = p.toString()
-    return apiRequest(`/analytics/cw50${query ? `?${query}` : ''}`)
+    return apiRequest(`${API_ROUTES.analytics.cw50}${query ? `?${query}` : ''}`)
   },
 
   async getTemporalTrends(params?: {
@@ -360,14 +360,14 @@ export const api = {
     if (params?.speciesId) p.set('speciesId', params.speciesId)
     if (params?.year) p.set('year', params.year)
     const query = p.toString()
-    return apiRequest(`/analytics/temporal-trends${query ? `?${query}` : ''}`)
+    return apiRequest(`${API_ROUTES.analytics.temporalTrends}${query ? `?${query}` : ''}`)
   },
 
   async getConditionIndices(speciesId?: string): Promise<ConditionIndexAggregatedData[]> {
     const p = new URLSearchParams()
     if (speciesId) p.set('speciesId', speciesId)
     const query = p.toString()
-    return apiRequest(`/analytics/condition-indices${query ? `?${query}` : ''}`)
+    return apiRequest(`${API_ROUTES.analytics.conditionIndices}${query ? `?${query}` : ''}`)
   },
 
   async getSpeciesDistribution(params?: {
@@ -378,11 +378,11 @@ export const api = {
     if (params?.dateFrom) p.set('dateFrom', params.dateFrom)
     if (params?.dateTo) p.set('dateTo', params.dateTo)
     const query = p.toString()
-    return apiRequest(`/analytics/species-distribution${query ? `?${query}` : ''}`)
+    return apiRequest(`${API_ROUTES.analytics.speciesDistribution}${query ? `?${query}` : ''}`)
   },
 
   async getUploadUrl(fileName: string, contentType: string, sessionId?: string, photoIndex?: number): Promise<UploadResponse> {
-    return apiRequest('/upload/url', {
+    return apiRequest(API_ROUTES.upload.url, {
       method: 'POST',
       body: JSON.stringify({ fileName, contentType, sessionId, photoIndex }),
     })
@@ -404,7 +404,7 @@ export const api = {
       headers['Authorization'] = `Bearer ${token}`
     }
 
-    const response = await fetch(`${API_URL}/upload`, {
+    const response = await fetch(`${API_URL}${API_ROUTES.upload.single}`, {
       method: 'POST',
       headers,
       body: formData,
@@ -426,37 +426,37 @@ export const api = {
     if (search) p.set('search', search)
     if (role) p.set('role', role)
     const query = p.toString()
-    return apiRequest(`/users${query ? `?${query}` : ''}`)
+    return apiRequest(`${API_ROUTES.users.list}${query ? `?${query}` : ''}`)
   },
 
   async updateUserRole(userId: string, role: string): Promise<UserResponse> {
-    return apiRequest(`/users/${userId}/role`, {
+    return apiRequest(API_ROUTES.users.role(userId), {
       method: 'PATCH',
       body: JSON.stringify({ role }),
     })
   },
 
   async softDeleteUser(userId: string): Promise<{ message: string }> {
-    return apiRequest(`/users/${userId}`, {
+    return apiRequest(API_ROUTES.users.byId(userId), {
       method: 'DELETE',
     })
   },
 
   async restoreUser(userId: string): Promise<{ message: string }> {
-    return apiRequest(`/users/${userId}/restore`, {
+    return apiRequest(API_ROUTES.users.restore(userId), {
       method: 'POST',
     })
   },
 
   async blockUser(userId: string, reason?: string): Promise<{ message: string }> {
-    return apiRequest(`/users/${userId}/block`, {
+    return apiRequest(API_ROUTES.users.block(userId), {
       method: 'POST',
       body: JSON.stringify({ reason }),
     })
   },
 
   async unblockUser(userId: string): Promise<{ message: string }> {
-    return apiRequest(`/users/${userId}/unblock`, {
+    return apiRequest(API_ROUTES.users.unblock(userId), {
       method: 'POST',
     })
   },
@@ -466,30 +466,30 @@ export const api = {
     if (page) p.set('page', String(page))
     if (limit) p.set('limit', String(limit))
     const query = p.toString()
-    return apiRequest(`/admin/deleted-users${query ? `?${query}` : ''}`)
+    return apiRequest(`${API_ROUTES.admin.deletedUsers}${query ? `?${query}` : ''}`)
   },
 
   async cleanupDeletedUsers(): Promise<{ deletedCount: number; users: UserResponse[]; retentionDays: number }> {
-    return apiRequest('/admin/cleanup-users', {
+    return apiRequest(API_ROUTES.admin.cleanupUsers, {
       method: 'POST',
     })
   },
 
   async backupDatabase(): Promise<{ fileName: string; size: number; timestamp: string }> {
-    return apiRequest('/admin/backup', {
+    return apiRequest(API_ROUTES.admin.backup, {
       method: 'POST',
     })
   },
 
   async listBackups(): Promise<{ fileName: string; size: number; timestamp: string }[]> {
-    return apiRequest('/admin/backups')
+    return apiRequest(API_ROUTES.admin.backups)
   },
 
   async exportCsv(table: 'observations' | 'species' | 'users'): Promise<string> {
     // Fetch CSV with auth header, return CSV text content
     const token = await SecureStore.getItemAsync('authToken')
     const baseUrl = Constants.expoConfig?.extra?.apiUrl ?? process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3001'
-    const url = `${baseUrl}/api/v1/admin/export/csv?table=${encodeURIComponent(table)}`
+    const url = `${baseUrl}/api/v1${API_ROUTES.admin.exportCsv}?table=${encodeURIComponent(table)}`
     const response = await fetch(url, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -502,133 +502,133 @@ export const api = {
   },
 
   async createInvite(email: string, role: string, expiresInHours?: number): Promise<{ token: string; expiresAt: string }> {
-    return apiRequest('/admin/invite', {
+    return apiRequest(API_ROUTES.admin.invite, {
       method: 'POST',
       body: JSON.stringify({ email, role, expiresInHours }),
     })
   },
 
   async listInvites(): Promise<Invite[]> {
-    return apiRequest('/admin/invites')
+    return apiRequest(API_ROUTES.admin.invites)
   },
 
   async createSpecies(data: CreateSpeciesInput): Promise<SpeciesResponse> {
-    return apiRequest('/species', {
+    return apiRequest(API_ROUTES.species.list, {
       method: 'POST',
       body: JSON.stringify(data),
     })
   },
 
   async updateSpecies(id: string, data: UpdateSpeciesInput): Promise<SpeciesResponse> {
-    return apiRequest(`/species/${id}`, {
+    return apiRequest(API_ROUTES.species.byId(id), {
       method: 'PATCH',
       body: JSON.stringify(data),
     })
   },
 
   async deleteSpecies(id: string): Promise<{ message: string }> {
-    return apiRequest(`/species/${id}`, {
+    return apiRequest(API_ROUTES.species.byId(id), {
       method: 'DELETE',
     })
   },
 
   // Admin Engagement - XP Rules
   async listGamificationRules(): Promise<GamificationRuleDto[]> {
-    return apiRequest('/admin/gamification/rules')
+    return apiRequest(API_ROUTES.admin.gamificationRules)
   },
 
   async createGamificationRule(payload: CreateGamificationRuleInput): Promise<GamificationRuleDto> {
-    return apiRequest('/admin/gamification/rules', {
+    return apiRequest(API_ROUTES.admin.gamificationRules, {
       method: 'POST',
       body: JSON.stringify(payload),
     })
   },
 
   async updateGamificationRule(id: string, payload: Partial<Omit<GamificationRuleDto, 'description'>> & { description?: string | null }): Promise<GamificationRuleDto> {
-    return apiRequest(`/admin/gamification/rules/${id}`, {
+    return apiRequest(API_ROUTES.admin.gamificationRuleById(id), {
       method: 'PATCH',
       body: JSON.stringify(payload),
     })
   },
 
   async deleteGamificationRule(id: string): Promise<void> {
-    await apiRequest(`/admin/gamification/rules/${id}`, {
+    await apiRequest(API_ROUTES.admin.gamificationRuleById(id), {
       method: 'DELETE',
     })
   },
 
   // Admin Engagement - Level Configs
   async listLevelConfigs(): Promise<LevelConfigDto[]> {
-    return apiRequest('/admin/gamification/levels')
+    return apiRequest(API_ROUTES.admin.gamificationLevels)
   },
 
   async createLevelConfig(payload: Omit<LevelConfigDto, 'id' | 'createdAt' | 'updatedAt'>): Promise<LevelConfigDto> {
-    return apiRequest('/admin/gamification/levels', {
+    return apiRequest(API_ROUTES.admin.gamificationLevels, {
       method: 'POST',
       body: JSON.stringify(payload),
     })
   },
 
   async updateLevelConfig(id: string, payload: Partial<LevelConfigDto>): Promise<LevelConfigDto> {
-    return apiRequest(`/admin/gamification/levels/${id}`, {
+    return apiRequest(API_ROUTES.admin.gamificationLevelById(id), {
       method: 'PATCH',
       body: JSON.stringify(payload),
     })
   },
 
   async deleteLevelConfig(id: string): Promise<void> {
-    await apiRequest(`/admin/gamification/levels/${id}`, {
+    await apiRequest(API_ROUTES.admin.gamificationLevelById(id), {
       method: 'DELETE',
     })
   },
 
   async adjustXP(payload: { userId: string; deltaXP: number; reason: string }): Promise<UserStatsDto> {
-    return apiRequest('/admin/gamification/adjust-xp', {
+    return apiRequest(API_ROUTES.admin.gamificationAdjustXp, {
       method: 'POST',
       body: JSON.stringify(payload),
     })
   },
 
   async recalculateXP(payload: { mode: 'dry-run' | 'execute'; userId?: string; reason?: string }): Promise<RecalculationJobDto> {
-    return apiRequest('/admin/gamification/recalculate', {
+    return apiRequest(API_ROUTES.admin.gamificationRecalculate, {
       method: 'POST',
       body: JSON.stringify(payload),
     })
   },
 
   async getRecalculationJobStatus(jobId: string): Promise<RecalculationJobDto> {
-    return apiRequest(`/admin/gamification/recalculate/${jobId}`)
+    return apiRequest(API_ROUTES.admin.gamificationRecalcJob(jobId))
   },
 
   async listCampaigns(status?: string): Promise<CampaignDto[]> {
     const p = new URLSearchParams()
     if (status) p.set('status', status)
     const query = p.toString()
-    return apiRequest(`/admin/campaigns${query ? `?${query}` : ''}`)
+    return apiRequest(`${API_ROUTES.admin.campaigns}${query ? `?${query}` : ''}`)
   },
 
   async createCampaign(payload: CampaignCreateInput): Promise<CampaignDto> {
-    return apiRequest('/admin/campaigns', {
+    return apiRequest(API_ROUTES.admin.campaigns, {
       method: 'POST',
       body: JSON.stringify(payload),
     })
   },
 
   async launchCampaign(id: string): Promise<CampaignDto> {
-    return apiRequest(`/admin/campaigns/${id}/launch`, {
+    return apiRequest(API_ROUTES.admin.campaignLaunch(id), {
       method: 'POST',
     })
   },
 
   async sendTestCampaign(id: string, userId: string): Promise<{ sent: boolean }> {
-    return apiRequest(`/admin/campaigns/${id}/send-test`, {
+    return apiRequest(API_ROUTES.admin.campaignSendTest(id), {
       method: 'POST',
       body: JSON.stringify({ userId }),
     })
   },
 
   async deleteCampaign(id: string): Promise<void> {
-    await apiRequest(`/admin/campaigns/${id}`, {
+    await apiRequest(API_ROUTES.admin.campaignById(id), {
       method: 'DELETE',
     })
   },
@@ -639,30 +639,30 @@ export const api = {
     if (params?.resourceType) p.set('resourceType', params.resourceType)
     if (params?.limit) p.set('limit', String(params.limit))
     const query = p.toString()
-    return apiRequest(`/admin/audit-logs${query ? `?${query}` : ''}`)
+    return apiRequest(`${API_ROUTES.admin.auditLogs}${query ? `?${query}` : ''}`)
   },
 
   async getAuditLogStats(): Promise<{ total: number; byAction: Record<string, number>; byResourceType: Record<string, number> }> {
-    return apiRequest('/admin/audit-logs/stats')
+    return apiRequest(API_ROUTES.admin.auditLogStats)
   },
 
   async getAbuseSignals(): Promise<AbuseSignalDto[]> {
-    return apiRequest('/admin/abuse-signals')
+    return apiRequest(API_ROUTES.admin.abuseSignals)
   },
 
   async resolveAbuseSignal(id: string, note?: string): Promise<AbuseSignalDto> {
-    return apiRequest(`/admin/abuse-signals/${id}/resolve`, {
+    return apiRequest(API_ROUTES.admin.abuseSignalResolve(id), {
       method: 'PATCH',
       body: JSON.stringify({ note }),
     })
   },
 
   async getEngagementMetrics(): Promise<EngagementMetricsDto> {
-    return apiRequest('/admin/metrics')
+    return apiRequest(API_ROUTES.admin.metrics)
   },
 
   async analyzeCrab(request: CrabAnalysisRequest): Promise<CrabAnalysisResult> {
-    return apiRequest('/analyze/crab', {
+    return apiRequest(API_ROUTES.analyze.crab, {
       method: 'POST',
       body: JSON.stringify(request),
     })
@@ -698,7 +698,7 @@ export const api = {
 
     let response: Response
     try {
-      response = await fetch(`${API_URL}/analyze/upload`, {
+      response = await fetch(`${API_URL}${API_ROUTES.analyze.upload}`, {
         method: 'POST',
         headers,
         body: formData,
@@ -750,7 +750,7 @@ export const api = {
 
     let response: Response
     try {
-      response = await fetch(`${API_URL}/analyze/detect-view`, {
+      response = await fetch(`${API_URL}${API_ROUTES.analyze.detectView}`, {
         method: 'POST',
         headers,
         body: formData,
@@ -778,7 +778,7 @@ export const api = {
 
   // Gamification
   async getMyStats(): Promise<{ stats: { totalXP: number; level: number; title: string; currentStreak: number; longestStreak: number; approvedCount: number; totalSubmissions: number; xpToNextLevel: number } }> {
-    return apiRequest('/gamification/stats/me')
+    return apiRequest(API_ROUTES.gamification.myStats)
   },
 
   async getXPHistory(params?: { page?: number; limit?: number }): Promise<XPHistoryResponseDto> {
@@ -786,7 +786,7 @@ export const api = {
     if (params?.page) p.set('page', String(params.page))
     if (params?.limit) p.set('limit', String(params.limit))
     const query = p.toString()
-    return apiRequest(`/gamification/xp-history${query ? `?${query}` : ''}`)
+    return apiRequest(`${API_ROUTES.gamification.xpHistory}${query ? `?${query}` : ''}`)
   },
 
   async getLeaderboard(params?: { scope?: string; seasonId?: string; page?: number; limit?: number }): Promise<LeaderboardResponseDto> {
@@ -796,7 +796,7 @@ export const api = {
     if (params?.page) p.set('page', String(params.page))
     if (params?.limit) p.set('limit', String(params.limit))
     const query = p.toString()
-    const raw = await apiRequest<{ items: LeaderboardEntryDto[]; page: number; limit: number; total: number; myRank?: number }>(`/gamification/leaderboard${query ? `?${query}` : ''}`)
+    const raw = await apiRequest<{ items: LeaderboardEntryDto[]; page: number; limit: number; total: number; myRank?: number }>(`${API_ROUTES.gamification.leaderboard}${query ? `?${query}` : ''}`)
     return {
       entries: raw.items,
       totalPages: Math.ceil(raw.total / raw.limit),
@@ -806,11 +806,11 @@ export const api = {
 
   // Engagement - Missions
   async getActiveMissions(): Promise<ActiveMissionDto[]> {
-    return apiRequest('/engagement/missions/today')
+    return apiRequest(API_ROUTES.engagement.missionsToday)
   },
 
   async claimMission(body: { missionKey: string }): Promise<{ claimed: boolean; xpAwarded: number }> {
-    return apiRequest('/engagement/missions/claim', {
+    return apiRequest(API_ROUTES.engagement.missionsClaim, {
       method: 'POST',
       body: JSON.stringify({ missionCode: body.missionKey }),
     })
@@ -818,11 +818,11 @@ export const api = {
 
   // Engagement - Onboarding
   async getOnboardingStatus(): Promise<OnboardingStatusDto> {
-    return apiRequest('/engagement/onboarding/me')
+    return apiRequest(API_ROUTES.engagement.onboardingMe)
   },
 
   async completeOnboardingStep(body: { step: string }): Promise<{ completed: boolean }> {
-    return apiRequest('/engagement/onboarding/steps/complete', {
+    return apiRequest(API_ROUTES.engagement.onboardingStepComplete, {
       method: 'POST',
       body: JSON.stringify(body),
     })
@@ -830,41 +830,41 @@ export const api = {
 
   // Engagement - Achievements
   async getAchievements(): Promise<UserAchievementListDto[]> {
-    return apiRequest('/engagement/achievements')
+    return apiRequest(API_ROUTES.engagement.achievements)
   },
 
   async getUnlockedAchievements(): Promise<UserAchievementListDto> {
-    return apiRequest('/engagement/achievements/unlocked')
+    return apiRequest(API_ROUTES.engagement.achievementsUnlocked)
   },
 
   async checkAchievements(): Promise<CheckAchievementsResponseDto> {
-    return apiRequest('/engagement/achievements/check')
+    return apiRequest(API_ROUTES.engagement.achievementsCheck)
   },
 
   async getAchievementProgress(id: string): Promise<AchievementProgressDto> {
-    return apiRequest(`/engagement/achievements/${id}/progress`)
+    return apiRequest(API_ROUTES.engagement.achievementProgress(id))
   },
 
   // Engagement - Social
   async getInsights(): Promise<InsightDto[]> {
-    return apiRequest('/engagement/insights/me')
+    return apiRequest(API_ROUTES.engagement.insightsMe)
   },
 
   async getTopContributors(): Promise<ContributorDto[]> {
-    return apiRequest('/engagement/social/contributors')
+    return apiRequest(API_ROUTES.engagement.socialContributors)
   },
 
   async getCommunityStats(): Promise<CommunityStatsDto> {
-    return apiRequest('/engagement/social/stats')
+    return apiRequest(API_ROUTES.engagement.socialStats)
   },
 
   // Engagement - Notifications
   async getNotificationPreferences(): Promise<NotificationPreferenceDto> {
-    return apiRequest('/engagement/notification-preferences')
+    return apiRequest(API_ROUTES.engagement.notificationPreferences)
   },
 
   async updateNotificationPreferences(body: NotificationPreferenceUpdateRequest): Promise<NotificationPreferenceDto> {
-    return apiRequest('/engagement/notification-preferences', {
+    return apiRequest(API_ROUTES.engagement.notificationPreferences, {
       method: 'PATCH',
       body: JSON.stringify(body),
     })
@@ -879,7 +879,7 @@ export const api = {
     timestamp?: string
     url?: string
   }) =>
-    fetch(`${API_URL}/api/v1/telemetry/error`, {
+    fetch(`${API_URL}${API_ROUTES.telemetry.error}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
