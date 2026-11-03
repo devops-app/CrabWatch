@@ -22,10 +22,11 @@ import logger from '../utils/logger'
 
 export const activeSessions = new Map<string, { sessionId: string; blobUrls: string[]; lastActive: number; exifNotes?: string }>()
 // Generous TTL: the user may review/edit AI results for a long time before
-// submitting. If the blobs are deleted before submit, the copy falls back to a
-// dead /analysis/ URL (permanent 404). 2h covers realistic field-review
-// sessions; active sessions are still cleaned up on submit or supersede.
-const ANALYSIS_BLOB_TTL_MS = Number(process.env.ANALYSIS_BLOB_TTL_MS) || 2 * 60 * 60 * 1000
+// submitting. If the blobs are deleted before submit, the copy fails and the
+// submission is rejected with a 500 (no dead /analysis/ URL is persisted —
+// see the 2026-07-04 incident). 24h covers realistic field-review sessions;
+// active sessions are still cleaned up on submit or supersede.
+const ANALYSIS_BLOB_TTL_MS = Number(process.env.ANALYSIS_BLOB_TTL_MS) || 24 * 60 * 60 * 1000
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000
 let cleanupInterval: ReturnType<typeof setInterval> | null = null
 

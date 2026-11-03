@@ -11,8 +11,8 @@ import { SYSTEM_INSTRUCTIONS, VIEW_DETECTION_INSTRUCTIONS, buildLocaleInstructio
 import { extractJson, parseAgentResponse, validateResult } from './foundry/parse'
 import { toDataUrl } from './foundry/blob'
 
-export { uploadAnalysisPhotos, cleanupAnalysisBlobs, copyAnalysisBlobsToObservation } from './foundry/blob'
-export type { BlobCopyResult, MulterFile } from './foundry/blob'
+export { uploadAnalysisPhotos, cleanupAnalysisBlobs, copyAnalysisBlobsToObservation, cleanupCopiedObservationBlobs } from './foundry/blob'
+export type { BlobCopyResult, BlobCopyFailure, MulterFile } from './foundry/blob'
 
 export async function analyzeCrabWithAgent(
   request: CrabAnalysisRequest

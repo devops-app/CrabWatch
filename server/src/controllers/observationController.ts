@@ -1,10 +1,11 @@
+import { randomUUID } from 'crypto'
 import { Response } from 'express'
 import { Prisma, ObservationStatus as PrismaObservationStatus, Gender as PrismaObservationGender } from '@prisma/client'
 import { BlobSASPermissions } from '@azure/storage-blob'
 import { AuthRequest } from '../middleware/auth'
 import { ObservationResponse, ObservationListResponse } from '@crabwatch/shared'
 import { sendObservationApproved, sendObservationRejected } from '../services/fcm'
-import { copyAnalysisBlobsToObservation, cleanupAnalysisBlobs } from '../services/foundryAgent'
+import { copyAnalysisBlobsToObservation, cleanupAnalysisBlobs, cleanupCopiedObservationBlobs } from '../services/foundryAgent'
 import type { BlobCopyResult } from '../services/foundryAgent'
 import { markAnalysisSessionDone } from './analysisController'
 import { OBSERVATION_INCLUDE, parsePagination, ObservationWithRelations } from '../utils/query'
@@ -15,7 +16,7 @@ import { checkAndAwardAchievements } from '../services/achievementService'
 import { sendNotification } from '../services/notificationService'
 import { getPrisma, getConfig } from '../services/container'
 import { getFromCache, setCache } from '../utils/cache'
-import { asyncHandler, NotFoundError, ForbiddenError, ValidationError, ConflictError } from '../utils/errors'
+import { asyncHandler, AppError, NotFoundError, ForbiddenError, ValidationError, ConflictError } from '../utils/errors'
 import { createTranslator, detectLocale } from '../middleware/i18n'
 import logger from '../utils/logger'
 
@@ -101,33 +102,39 @@ export const createObservation = asyncHandler(async (req: AuthRequest, res: Resp
   const hasAnalysisBlobs = photoUrls.some((url: string) => url.includes('/analysis/'))
   let finalPhotos = photoUrls
 
+  // Generate the observation ID up front so the blob copy can use the real ID
+  // in the destination path (observations/{userId}/{date}/{observationId}-N.ext)
+  // instead of a temp_ placeholder. The row is only created after the copy
+  // succeeds, so there is no window where a persisted row points at /analysis/.
+  const observationId = randomUUID()
+
   if (hasAnalysisBlobs) {
-    const tempObservationId = `temp_${Date.now()}`
-    const { observationUrls, cleanedUpUrls }: BlobCopyResult = await copyAnalysisBlobsToObservation(photoUrls, dbUser.id, tempObservationId)
+    const { observationUrls, cleanedUpUrls, failures, copiedDestBlobs }: BlobCopyResult = await copyAnalysisBlobsToObservation(photoUrls, dbUser.id, observationId)
+
+    // If any copy failed, refuse to persist the observation. The old fallback
+    // of keeping the /analysis/ URL produced permanently broken photos once the
+    // TTL cleanup deleted the source blobs (2026-07-04 incident). The user can
+    // retry — the /analysis/ blobs are still there (session not marked done).
+    if (failures.length > 0) {
+      await cleanupCopiedObservationBlobs(copiedDestBlobs)
+      logger.error(
+        { userId: dbUser.id, observationId, failures, uploadSessionId },
+        'createObservation: photo copy failed — rolled back partial copies, not persisting observation'
+      )
+      throw new AppError('Photo storage failed — please retry your submission', 500)
+    }
+
     finalPhotos = observationUrls
     if (cleanedUpUrls.length > 0) {
       cleanupAnalysisBlobs(cleanedUpUrls).catch(() => {})
     }
     markAnalysisSessionDone(dbUser.id)
-
-    // Post-copy validation: warn if any URLs still reference /analysis/ (copy fallback)
-    const remainingAnalysisUrls = finalPhotos.filter((url: string) => url.includes('/analysis/'))
-    if (remainingAnalysisUrls.length > 0) {
-      logger.warn(
-        {
-          userId: dbUser.id,
-          totalPhotos: finalPhotos.length,
-          remainingAnalysisCount: remainingAnalysisUrls.length,
-          uploadSessionId,
-        },
-        'createObservation: some photos still reference /analysis/ after copy — images may become inaccessible'
-      )
-    }
   }
 
   const prisma = getPrisma()
   const observation = await prisma.observation.create({
     data: {
+      id: observationId,
       userId: dbUser.id,
       speciesId,
       cw,

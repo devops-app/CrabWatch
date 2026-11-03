@@ -97,6 +97,25 @@ export async function uploadAnalysisPhotos(
   return blobUrls
 }
 
+/**
+ * Best-effort deletion of /observations/ blobs that were created during a
+ * failed copy (rollback). Takes destination blob names (not URLs).
+ */
+export async function cleanupCopiedObservationBlobs(blobNames: string[]): Promise<void> {
+  if (blobNames.length === 0) return
+  const service = getBlobService()
+  const containerName = process.env.AZURE_STORAGE_CONTAINER || 'crabwatch-uploads'
+  const containerClient = service.getContainerClient(containerName)
+
+  for (const blobName of blobNames) {
+    try {
+      await containerClient.getBlockBlobClient(blobName).delete()
+    } catch {
+      // Best effort rollback - don't fail if a blob is already gone
+    }
+  }
+}
+
 export async function cleanupAnalysisBlobs(blobUrls: string[]): Promise<void> {
   const service = getBlobService()
   const containerName = process.env.AZURE_STORAGE_CONTAINER || 'crabwatch-uploads'
@@ -115,11 +134,20 @@ export async function cleanupAnalysisBlobs(blobUrls: string[]): Promise<void> {
   }
 }
 
+export interface BlobCopyFailure {
+  sourceUrl: string
+  error: string
+}
+
 export interface BlobCopyResult {
-  /** New SAS URLs for the observation (may include original URLs for failed copies) */
+  /** New SAS URLs for the observation (only successfully copied blobs) */
   observationUrls: string[]
   /** Original analysis blob URLs that were successfully copied and can be safely cleaned up */
   cleanedUpUrls: string[]
+  /** Source URLs that could not be copied (no fallback — caller must handle) */
+  failures: BlobCopyFailure[]
+  /** Destination blob names created (for rollback on partial failure) */
+  copiedDestBlobs: string[]
 }
 
 async function downloadBlobWithRetry(
@@ -161,18 +189,25 @@ export async function copyAnalysisBlobsToObservation(
 
   const observationUrls: string[] = []
   const cleanedUpUrls: string[] = []
+  const failures: BlobCopyFailure[] = []
+  const copiedDestBlobs: string[] = []
 
-  for (const url of blobUrls) {
+  for (let i = 0; i < blobUrls.length; i++) {
+    const url = blobUrls[i]
     try {
       const sourceBlobName = extractBlobName(url, containerName)
       if (!sourceBlobName) {
+        // Not a blob URL we can copy (e.g. already a permanent /observations/
+        // URL or an external URL). Keep it as-is.
         observationUrls.push(url)
         continue
       }
 
       const dateStr = new Date().toISOString().slice(0, 10)
       const ext = sourceBlobName.split('.').pop() || 'jpg'
-      const destBlobName = `observations/${userId}/${dateStr}/${observationId}-${observationUrls.length}.${ext}`
+      // Use the source index (not observationUrls.length) so a failed copy
+      // doesn't cause the next photo to overwrite an earlier destination blob.
+      const destBlobName = `observations/${userId}/${dateStr}/${observationId}-${i}.${ext}`
 
       const sourceBlobClient = containerClient.getBlockBlobClient(sourceBlobName)
       const destBlobClient = containerClient.getBlockBlobClient(destBlobName)
@@ -185,6 +220,7 @@ export async function copyAnalysisBlobsToObservation(
       await destBlobClient.upload(buffer, buffer.length, {
         blobHTTPHeaders: { blobContentType: contentType },
       })
+      copiedDestBlobs.push(destBlobName)
 
       const sasUrl = await destBlobClient.generateSasUrl({
         startsOn: new Date(Date.now() - 2 * 60 * 1000),
@@ -198,13 +234,13 @@ export async function copyAnalysisBlobsToObservation(
       const errorMessage = err instanceof Error ? err.message : String(err)
       logger.warn(
         { sourceUrl: url, userId, observationId, error: errorMessage },
-        'copyAnalysisBlobsToObservation: copy failed — falling back to original /analysis/ URL'
+        'copyAnalysisBlobsToObservation: copy failed — recording failure (no fallback to /analysis/ URL)'
       )
-      observationUrls.push(url)
+      failures.push({ sourceUrl: url, error: errorMessage })
     }
   }
 
-  return { observationUrls, cleanedUpUrls }
+  return { observationUrls, cleanedUpUrls, failures, copiedDestBlobs }
 }
 
 function extractBlobName(url: string, containerName: string): string | null {
