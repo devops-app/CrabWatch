@@ -32,6 +32,7 @@ module.exports = {
     '^expo-image-manipulator$': '<rootDir>/src/__tests__/__mocks__/expo-image-manipulator.js',
     '^expo-image$': '<rootDir>/src/__tests__/__mocks__/expo-image.js',
     '^expo-file-system$': '<rootDir>/src/__tests__/__mocks__/expo-file-system.js',
+    '^expo-file-system/legacy$': '<rootDir>/src/__tests__/__mocks__/expo-file-system.js',
     '^expo-haptics$': '<rootDir>/src/__tests__/__mocks__/expo-haptics.js',
     '^expo-print$': '<rootDir>/src/__tests__/__mocks__/expo-print.js',
     '^expo-localization$': '<rootDir>/src/__tests__/__mocks__/expo-localization.js',

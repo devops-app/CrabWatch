@@ -1,11 +1,11 @@
 import { photoService } from '../photoService'
 import * as ImagePicker from 'expo-image-picker'
 import * as ImageManipulator from 'expo-image-manipulator'
-import * as FileSystem from 'expo-file-system'
+import * as FileSystem from 'expo-file-system/legacy'
 
 jest.mock('expo-image-picker')
 jest.mock('expo-image-manipulator')
-jest.mock('expo-file-system')
+jest.mock('expo-file-system/legacy')
 
 const mockImagePicker = ImagePicker as jest.Mocked<typeof ImagePicker>
 const mockImageManipulator = ImageManipulator as jest.Mocked<typeof ImageManipulator>

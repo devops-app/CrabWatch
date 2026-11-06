@@ -9,7 +9,8 @@ import { getConfig } from '../services/container'
  *    length cap so a malicious or oversized `data:` payload (e.g.
  *    `data:text/html` or a 200 MB base64 blob) can't be smuggled through.
  *  - Remote URLs must match the **exact** blob origin derived from the
- *    configured `BlobEndpoint` (no domain-suffix match, so
+ *    configured `BlobEndpoint` or standard account/endpoint fields (no suffix
+ *    match, so
  *    `evil.blob.core.windows.net` is rejected) and must live inside the
  *    configured upload container.
  *
@@ -39,15 +40,21 @@ function getBlobBase(): BlobBase | null {
     return null
   }
 
-  const match = cs.match(/BlobEndpoint=([^;]+)/i)
-  if (!match) {
-    cachedBlobBase = null
-    return null
-  }
-
   let endpoint: URL
   try {
-    endpoint = new URL(match[1])
+    const blobEndpoint = cs.match(/(?:^|;)\s*BlobEndpoint=([^;]+)/i)?.[1]
+    if (blobEndpoint) {
+      endpoint = new URL(blobEndpoint)
+    } else {
+      const accountName = cs.match(/(?:^|;)\s*AccountName=([^;]+)/i)?.[1]
+      const endpointSuffix = cs.match(/(?:^|;)\s*EndpointSuffix=([^;]+)/i)?.[1]
+      const protocol = cs.match(/(?:^|;)\s*DefaultEndpointsProtocol=([^;]+)/i)?.[1] || 'https'
+      if (!accountName || !endpointSuffix || !['http', 'https'].includes(protocol.toLowerCase())) {
+        cachedBlobBase = null
+        return null
+      }
+      endpoint = new URL(`${protocol}://${accountName}.blob.${endpointSuffix}`)
+    }
   } catch {
     cachedBlobBase = null
     return null
