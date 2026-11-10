@@ -38,7 +38,7 @@ export default async function PrivacyPage({
     notFound()
   }
 
-  const filePath = path.join(process.cwd(), 'public', 'legal', locale, 'consent.md')
+  const filePath = path.join(process.cwd(), 'public', 'legal', locale, 'privacy.md')
 
   if (!fs.existsSync(filePath)) {
     notFound()
