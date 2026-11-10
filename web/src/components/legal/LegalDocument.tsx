@@ -1,60 +1,5 @@
 import React from 'react';
-
-type Block =
-  | { type: 'h1'; text: string }
-  | { type: 'h2'; text: string }
-  | { type: 'h3'; text: string }
-  | { type: 'hr' }
-  | { type: 'p'; text: string }
-  | { type: 'ul'; items: string[] };
-
-function parseMarkdown(md: string): Block[] {
-  const lines = md.split(/\r?\n/);
-  const blocks: Block[] = [];
-  let listBuffer: string[] = [];
-
-  const flushList = () => {
-    if (listBuffer.length > 0) {
-      blocks.push({ type: 'ul', items: listBuffer });
-      listBuffer = [];
-    }
-  };
-
-  for (const rawLine of lines) {
-    const line = rawLine.trimEnd();
-    const trimmed = line.trim();
-
-    if (trimmed === '') {
-      flushList();
-      continue;
-    }
-
-    if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
-      flushList();
-      blocks.push({ type: 'hr' });
-      continue;
-    }
-
-    const listMatch = trimmed.match(/^[-*]\s+(.*)$/);
-    if (listMatch) {
-      listBuffer.push(listMatch[1]);
-      continue;
-    }
-    flushList();
-
-    if (trimmed.startsWith('### ')) {
-      blocks.push({ type: 'h3', text: trimmed.slice(4) });
-    } else if (trimmed.startsWith('## ')) {
-      blocks.push({ type: 'h2', text: trimmed.slice(3) });
-    } else if (trimmed.startsWith('# ')) {
-      blocks.push({ type: 'h1', text: trimmed.slice(2) });
-    } else {
-      blocks.push({ type: 'p', text: trimmed });
-    }
-  }
-  flushList();
-  return blocks;
-}
+import { parseMarkdown, type Block } from '@crabwatch/shared';
 
 function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
@@ -163,9 +108,12 @@ export default function LegalDocument({ markdown }: { markdown: string }) {
               return (
                 <ul key={key} className="space-y-2 pl-1">
                   {block.items.map((item, i) => (
-                    <li key={`${key}-li-${i}`} className="flex gap-3 text-sm leading-relaxed text-slate-600">
+                    <li
+                      key={`${key}-li-${i}`}
+                      className={`flex gap-3 text-sm leading-relaxed text-slate-600 ${item.depth === 1 ? 'ml-4' : ''}`}
+                    >
                       <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-ocean-400" />
-                      <span>{renderInline(item, `${key}-li-${i}`)}</span>
+                      <span>{renderInline(item.text, `${key}-li-${i}`)}</span>
                     </li>
                   ))}
                 </ul>
