@@ -20,6 +20,10 @@ import type { TOptions } from 'i18next'
 import { COLORS } from '../../utils/constants'
 import { FONT } from '../../utils/fonts'
 import { CaptureFrameOverlay } from '../../components/observation/CaptureFrameOverlay'
+import {
+  CAPTURE_BUTTON_BOTTOM_PADDING,
+  CAPTURE_BUTTON_SIZE,
+} from '../../components/observation/overlayLayout'
 import type { CaptureQuality } from '../../hooks/useCaptureAssistance'
 import { useLiveFrameQuality } from '../../hooks/useLiveFrameQuality'
 import type { LiveFrameQuality } from '../../utils/liveFrameQuality'
@@ -326,9 +330,11 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    zIndex: 20,
+    elevation: 20,
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingBottom: 40,
+    paddingBottom: CAPTURE_BUTTON_BOTTOM_PADDING,
     paddingTop: 10,
     gap: 12,
   },
@@ -351,9 +357,9 @@ const styles = StyleSheet.create({
     right: undefined,
   },
   captureButton: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
+    width: CAPTURE_BUTTON_SIZE,
+    height: CAPTURE_BUTTON_SIZE,
+    borderRadius: CAPTURE_BUTTON_SIZE / 2,
     borderWidth: 4,
     borderColor: '#ffffff',
     alignItems: 'center',

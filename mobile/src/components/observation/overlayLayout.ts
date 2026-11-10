@@ -6,6 +6,9 @@ import * as ScreenOrientation from 'expo-screen-orientation'
 
 export const FRAME_ASPECT = 0.75
 export const FRAME_RADIUS = 18
+export const CAPTURE_BUTTON_SIZE = 76
+export const CAPTURE_BUTTON_BOTTOM_PADDING = 40
+export const CAPTURE_STATUS_GAP = 16
 
 /** Reserved space for the camera screen's header or step title. */
 export const HEADER_RESERVE = 60
@@ -13,8 +16,11 @@ export const HEADER_RESERVE = 60
 /** Portrait hint-bar height plus the gap above the frame. */
 export const HINT_BAR_SPACE = 72
 
-/** Portrait readiness-pill distance from the bottom. */
-export const PILL_BOTTOM = 30
+/** Keep portrait status content above the shutter control. */
+export const PILL_BOTTOM =
+  CAPTURE_BUTTON_SIZE +
+  CAPTURE_BUTTON_BOTTOM_PADDING +
+  CAPTURE_STATUS_GAP
 
 /** Reserved portrait space for quality chips, warnings, and status pill. */
 export const STACK_MIN_HEIGHT = 120
