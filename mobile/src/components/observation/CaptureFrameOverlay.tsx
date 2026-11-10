@@ -27,7 +27,6 @@ import type {
 } from '../../utils/liveFrameQuality'
 
 import {
-  areCameraControlsOnLeft,
   computeLayout,
   EDGE,
   FRAME_RADIUS,
@@ -170,18 +169,7 @@ export const CaptureFrameOverlay = memo(
         ? dimensions.width
         : dimensions.height)
 
-    const layoutIsLandscape =
-      screenWidth > screenHeight
-
-    /**
-     * Actual dimensions determine whether landscape layout is active.
-     * The Expo orientation value determines which physical edge contains
-     * the camera controls.
-     */
-    const controlsOnLeft =
-      layoutIsLandscape &&
-      areCameraControlsOnLeft(orientation)
-
+    /** Use measured preview dimensions with landscape controls fixed on the right. */
     const {
       isLandscape,
       frameWidth,
@@ -189,11 +177,7 @@ export const CaptureFrameOverlay = memo(
       frameLeft,
       frameTop,
       panel,
-    } = computeLayout(
-      screenWidth,
-      screenHeight,
-      controlsOnLeft,
-    )
+    } = computeLayout(screenWidth, screenHeight, false)
 
     const frameBottom =
       frameTop + frameHeight

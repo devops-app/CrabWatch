@@ -183,19 +183,3 @@ export function isLandscapeOrientation(
       ScreenOrientation.Orientation.LANDSCAPE_RIGHT
   )
 }
-
-/**
- * Converts Expo's orientation value into this camera screen's physical
- * control position.
- *
- * If the camera-screen control placement changes, update this helper or
- * replace the orientation prop with `controlsSide: 'left' | 'right'`.
- */
-export function areCameraControlsOnLeft(
-  orientation: ScreenOrientation.Orientation,
-): boolean {
-  return (
-    orientation ===
-    ScreenOrientation.Orientation.LANDSCAPE_RIGHT
-  )
-}

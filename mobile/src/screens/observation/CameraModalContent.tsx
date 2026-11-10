@@ -129,7 +129,6 @@ export function CameraModalContent({
   const isLandscape =
     orientation === ScreenOrientation.Orientation.LANDSCAPE_LEFT
     || orientation === ScreenOrientation.Orientation.LANDSCAPE_RIGHT
-  const isLandscapeLeft = orientation === ScreenOrientation.Orientation.LANDSCAPE_LEFT
   const currentCaptureStep = CAPTURE_STEPS.find((step) => step.key === capturingView)
   const currentCaptureLabel = currentCaptureStep?.label || currentStepLabel
   const currentCaptureIcon = (currentCaptureStep?.icon ?? 'camera') as keyof typeof Ionicons.glyphMap
@@ -174,7 +173,7 @@ export function CameraModalContent({
             style={[
               styles.closeButton,
               styles.closeButtonLandscapeNative,
-              isLandscapeLeft ? styles.closeButtonLandscapeLeft : styles.closeButtonLandscapeRight,
+              styles.closeButtonLandscapeLeft,
             ]}
           >
             <Ionicons name="close" size={24} color="#ffffff" />
@@ -193,6 +192,7 @@ export function CameraModalContent({
             device={device}
             outputs={cameraOutputs}
             isActive={cameraActive}
+            androidPreviewViewType="texture-view"
             orientationSource="interface"
             mirrorMode="off"
           />
@@ -212,7 +212,7 @@ export function CameraModalContent({
         style={[
           styles.cameraFooter,
           isLandscape && styles.cameraFooterLandscape,
-          isLandscape && (isLandscapeLeft ? styles.cameraFooterLandscapeRight : styles.cameraFooterLandscapeLeft),
+          isLandscape && styles.cameraFooterLandscapeRight,
         ]}
       >
         <TouchableOpacity
@@ -271,9 +271,6 @@ const styles = StyleSheet.create({
   },
   closeButtonLandscapeLeft: {
     left: 14,
-  },
-  closeButtonLandscapeRight: {
-    right: 14,
   },
   cameraTitleCenter: {
     color: '#ffffff',
@@ -351,10 +348,6 @@ const styles = StyleSheet.create({
   cameraFooterLandscapeRight: {
     right: 10,
     left: undefined,
-  },
-  cameraFooterLandscapeLeft: {
-    left: 10,
-    right: undefined,
   },
   captureButton: {
     width: CAPTURE_BUTTON_SIZE,
