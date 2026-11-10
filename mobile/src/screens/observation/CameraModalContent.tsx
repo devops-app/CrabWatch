@@ -127,7 +127,8 @@ export function CameraModalContent({
   }, [])
 
   const isLandscape =
-    orientation === ScreenOrientation.Orientation.LANDSCAPE_LEFT
+    dims.width > dims.height
+    || orientation === ScreenOrientation.Orientation.LANDSCAPE_LEFT
     || orientation === ScreenOrientation.Orientation.LANDSCAPE_RIGHT
   const currentCaptureStep = CAPTURE_STEPS.find((step) => step.key === capturingView)
   const currentCaptureLabel = currentCaptureStep?.label || currentStepLabel
@@ -209,11 +210,7 @@ export function CameraModalContent({
       </View>
 
       <View
-        style={[
-          styles.cameraFooter,
-          isLandscape && styles.cameraFooterLandscape,
-          isLandscape && styles.cameraFooterLandscapeRight,
-        ]}
+        style={isLandscape ? styles.cameraFooterLandscapeRight : styles.cameraFooter}
       >
         <TouchableOpacity
           style={[
@@ -335,19 +332,19 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     gap: 12,
   },
-  cameraFooterLandscape: {
+  cameraFooterLandscapeRight: {
+    position: 'absolute',
     top: 0,
     bottom: 0,
+    right: 10,
     width: 88,
+    zIndex: 20,
+    elevation: 20,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 0,
     paddingTop: 0,
     paddingBottom: 0,
-  },
-  cameraFooterLandscapeRight: {
-    right: 10,
-    left: undefined,
   },
   captureButton: {
     width: CAPTURE_BUTTON_SIZE,
