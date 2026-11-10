@@ -193,7 +193,7 @@ export function CameraModalContent({
             device={device}
             outputs={cameraOutputs}
             isActive={cameraActive}
-            androidPreviewViewType="texture-view"
+            implementationMode="performance"
             orientationSource="interface"
             mirrorMode="off"
           />
