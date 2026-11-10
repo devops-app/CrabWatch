@@ -20,6 +20,16 @@ describe('Zod Schemas', () => {
       expect(result.success).toBe(true)
     })
 
+    it('should validate registration without optional personal info fields', () => {
+      const result = schemas.registerSchema.safeParse({
+        name: 'Jane Doe',
+        email: 'jane@example.com',
+        password: 'password123',
+        consentAccepted: true,
+      })
+      expect(result.success).toBe(true)
+    })
+
     it('should validate with optional addressLine2', () => {
       const result = schemas.registerSchema.safeParse({
         ...validRegistration,

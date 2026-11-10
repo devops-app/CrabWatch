@@ -98,14 +98,14 @@ export default function RegisterPage(): React.JSX.Element {
       await api.register({
         name: data.name,
         email: data.email,
-        phoneCode: data.phoneCode,
-        phoneNumber: data.phoneNumber,
-        addressLine1: data.addressLine1,
+        phoneCode: data.phoneCode || undefined,
+        phoneNumber: data.phoneNumber || undefined,
+        addressLine1: data.addressLine1 || undefined,
         addressLine2: data.addressLine2 || undefined,
         consentAccepted: data.consentAccepted,
-        state: data.state,
-        postcode: data.postcode,
-        country: data.country,
+        state: data.state || undefined,
+        postcode: data.postcode || undefined,
+        country: data.country || undefined,
         password: data.password,
         inviteToken: inviteToken || undefined,
       })
@@ -253,12 +253,11 @@ export default function RegisterPage(): React.JSX.Element {
             </div>
             <div className="flex-1">
               <label htmlFor="reg-phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('phone')} <span className="text-red-500">*</span>
+                {t('phone')}
               </label>
               <input
                 id="reg-phoneNumber"
                 {...register('phoneNumber', {
-                  required: t('phoneRequired'),
                   minLength: { value: 7, message: t('phoneMin') },
                 })}
                 type="tel"
@@ -273,11 +272,11 @@ export default function RegisterPage(): React.JSX.Element {
 
           <div>
             <label htmlFor="reg-addressLine1" className="block text-sm font-medium text-gray-700 mb-1">
-              {t('addressLine1')} <span className="text-red-500">*</span>
+              {t('addressLine1')}
             </label>
             <input
               id="reg-addressLine1"
-              {...register('addressLine1', { required: t('addressLine1Required') })}
+              {...register('addressLine1')}
               className="input-field"
               placeholder="Street address"
             />
@@ -298,22 +297,22 @@ export default function RegisterPage(): React.JSX.Element {
           <div className="flex gap-3">
             <div className="flex-1">
               <label htmlFor="reg-state" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('state')} <span className="text-red-500">*</span>
+                {t('state')}
               </label>
               <input
                 id="reg-state"
-                {...register('state', { required: t('stateRequired') })}
+                {...register('state')}
                 className="input-field"
                 placeholder={t('state')}
               />
             </div>
             <div className="w-28">
               <label htmlFor="reg-postcode" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('postcode')} <span className="text-red-500">*</span>
+                {t('postcode')}
               </label>
               <input
                 id="reg-postcode"
-                {...register('postcode', { required: t('postcodeRequired') })}
+                {...register('postcode')}
                 className="input-field"
                 placeholder={t('postcode')}
               />
@@ -322,7 +321,7 @@ export default function RegisterPage(): React.JSX.Element {
 
           <div>
             <label htmlFor="reg-country" className="block text-sm font-medium text-gray-700 mb-1">
-              {t('country')} <span className="text-red-500">*</span>
+              {t('country')}
             </label>
             <Controller
               control={control}

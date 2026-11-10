@@ -78,13 +78,13 @@ export function RegisterScreen() {
         data.name,
         data.email,
         data.password,
-        data.phoneCode,
-        data.phoneNumber,
-        data.addressLine1,
+        data.phoneCode || undefined,
+        data.phoneNumber || undefined,
+        data.addressLine1 || undefined,
         data.addressLine2 || undefined,
-        data.state,
-        data.postcode,
-        data.country,
+        data.state || undefined,
+        data.postcode || undefined,
+        data.country || undefined,
         data.consentAccepted
       )
       Alert.alert(

@@ -26,7 +26,7 @@ const PHONE_CODES: PhoneCodeOption[] = COUNTRIES.map((c) => ({
 
 interface PhoneCodePickerProps {
   label?: string
-  selectedCode: string
+  selectedCode: string | undefined
   onSelect: (code: string) => void
   error?: string
 }

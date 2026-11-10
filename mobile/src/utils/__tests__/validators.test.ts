@@ -55,6 +55,30 @@ describe('validators', () => {
       expect(result.success).toBe(true)
     })
 
+    it('accepts registration without optional personal info fields', () => {
+      const result = registerSchema.safeParse({
+        name: 'Jane Doe',
+        email: 'jane@example.com',
+        password: 'password123',
+        confirmPassword: 'password123',
+        consentAccepted: true,
+      })
+      expect(result.success).toBe(true)
+    })
+
+    it('accepts registration with empty-string personal info fields', () => {
+      const result = registerSchema.safeParse({
+        ...validRegistration,
+        phoneCode: '',
+        phoneNumber: '',
+        addressLine1: '',
+        state: '',
+        postcode: '',
+        country: '',
+      })
+      expect(result.success).toBe(true)
+    })
+
     it('rejects name that is too long', () => {
       const result = registerSchema.safeParse({
         ...validRegistration,

@@ -16,7 +16,7 @@ import { COUNTRIES, CountryOption } from '@crabwatch/shared'
 
 interface CountryPickerProps {
   label: string
-  selectedCode: string
+  selectedCode: string | undefined
   onSelect: (country: CountryOption) => void
   error?: string
 }
