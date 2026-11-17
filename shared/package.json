@@ -1,6 +1,6 @@
 {
     "name":  "@crabwatch/shared",
-    "version":  "1.0.3+0040",
+    "version":  "1.0.3+0041",
     "private":  true,
     "main":  "dist/index.js",
     "types":  "dist/index.d.ts",
