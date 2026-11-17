@@ -1,7 +1,7 @@
 {
     "name":  "crabwatch",
     "private":  true,
-    "version":  "1.0.3+0041",
+    "version":  "1.0.3+0042",
     "description":  "Citizen science platform for mud crab conservation in Malaysia",
     "scripts":  {
                     "dev":  "pnpm -r --parallel dev",
@@ -42,7 +42,7 @@
                     "pnpm":  "\u003e=10.0.0"
                 },
     "peerDependencies":  {
-                             "expo":  "~54.0.35",
+                             "expo":  "~54.0.37",
                              "react":  "19.1.4",
                              "react-native":  "0.81.6"
                          },

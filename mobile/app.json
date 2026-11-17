@@ -31,13 +31,9 @@
                              "bundleIdentifier":  "com.dsigncodehub.crabwatch",
                              "supportsTablet":  false,
                              "infoPlist":  {
-                                               "ITSAppUsesNonExemptEncryption":  false
-                                           },
-                             "config":  {
-                                            "googleMaps":  {
-                                                               "apiKey":  "AIzaSyByTGbC7NQ-X1wwS3cHcPby8InFYx26F58"
-                                                           }
-                                        }
+                                               "ITSAppUsesNonExemptEncryption":  false,
+                                               "GOOGLE_MAPS_API_KEY":  "AIzaSyByTGbC7NQ-X1wwS3cHcPby8InFYx26F58"
+                                           }
                          },
                  "android":  {
                                  "icon":  "./assets/icons/app-icon-1024.png",
